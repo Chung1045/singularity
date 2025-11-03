@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script
+            src="https://code.jquery.com/jquery-3.7.1.js"
+            integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+            crossorigin="anonymous"></script>
+    <script src="/scripts/tempSignup.js"></script>
+    <title>Temp signup</title>
+</head>
+<body>
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+
+    <input type="hidden" name="_csrf" id="hidden-csrf" value="<%= csrfToken %>">
+
+    <div>
+        <label for="input-username">Username</label><br>
+        <input type="text" id="input-username">
+    </div>
+
+    <div>
+        <label for="input-email">Email Address</label><br>
+        <input type="email" id="input-email">
+    </div>
+
+    <div>
+        <label for="input-firstName">First Name</label><br>
+        <input type="text" id="input-firstName" maxlength="50">
+    </div>
+
+    <div>
+        <label for="input-lastName">Last Name</label><br>
+        <input type="text" id="input-lastName" maxlength="50">
+    </div>
+
+    <div>
+        <label for="input-password">Password</label><br>
+        <input type="password" id="input-password">
+    </div>
+
+    <div>
+        <label for="input-confirmPassword">Confirm Password</label><br>
+        <input type="password" id="input-confirmPassword">
+    </div>
+
+    <button id="btn-signup">Submit</button>
+</div>
+
+
+</body>
+</html>
