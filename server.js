@@ -11,7 +11,6 @@ const io = require('socket.io')(server);
 
 const passport = require('passport');
 
-
 app.use(cookieParser());
 
 app.use(session({
@@ -65,14 +64,31 @@ app.get('/login', (req, res) => {
 })
 
 app.get('/home', async (req, res) => {
-    console.log("New request from /home")
-    if (!req.session.user || !req.session.user.sessionID) {
+    console.log("New request from /home");
+
+    // ✅ Use req.cookies instead of req.cookie or req.session
+    console.log("Cookies:", req.cookies);
+
+    const sessionID = req.cookies?.session_id; // match the name you set in res.cookie()
+    console.log("Session ID from cookie:", sessionID);
+
+    if (!sessionID) {
+        console.log("❌ No session cookie found, redirecting to login");
         return res.redirect("/login");
     }
-    console.log(`Is session active: ${await sessionDBService.isSessionActive(req.session.user.sessionID)}`)
-    if (!await sessionDBService.isSessionActive(req.session.user.sessionID)) {
+
+    console.log(`Checking if session ${sessionID} is active...`);
+    const sessionData = await sessionDBService.isSessionActive(sessionID);
+
+    console.log(`Is session active: ${!!sessionData}`);
+
+    if (!sessionData) {
+        console.log("❌ Session not active, redirecting to login");
         return res.redirect("/login");
     }
+
+    console.log("✅ Session valid, rendering home page");
+
     res.render("tempHome", { csrfToken: req.csrfToken() });
 });
 
@@ -80,18 +96,6 @@ app.get('/home', async (req, res) => {
 app.get('/csrf-token', (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
-
-app.get('/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-        req.session.userId = req.user.userUUID;
-        res.redirect('/home');
-    }
-);
 
 server.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

@@ -31,7 +31,7 @@ $(document).ready(() => {
     $("#btn-googleOAuth").on("click", () => {
         // Cache selectors
         const csrf = $("#hidden-csrf")
-        window.location.href = "auth/google"
+        window.location.href = "api/auth/google"
     });
 
     $("#btn-signup").on("click", () => {

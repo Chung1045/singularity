@@ -32,18 +32,26 @@ const SESSION_TABLE_SCHEMA = () => `
 
 const LOGINATTEMPTS_TABLE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS loginAttempts (
-                                           attemptID TEXT PRIMARY KEY UNIQUE,
-                                           uid TEXT NOT NULL,
-                                           ipAddress TEXT,
-                                           attemptOS TEXT,
-                                           attemptBrowser TEXT,
-                                           attemptIP TEXT,
-                                           FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE);
+                                                 attemptID TEXT PRIMARY KEY UNIQUE,
+                                                 uid TEXT NOT NULL,
+                                                 attemptDate TEXT NOT NULL,
+                                                 attemptOS TEXT NOT NULL,
+                                                 attemptBrowser TEXT NOT NULL,
+                                                 attemptIP TEXT NOT NULL,
+                                                 FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE);
+`
+
+const GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA = () => `
+    CREATE TABLE IF NOT EXISTS googleOauth_identity (
+                                                        userGoogleId TEXT PRIMARY KEY,
+                                                        uid TEXT UNIQUE,
+                                                        FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE
+    );
 `
 
 
 
-module.exports = {USER_TABLE_SCHEMA, CREDENTIAL_TABLE_SCHEMA, SESSION_TABLE_SCHEMA, LOGINATTEMPTS_TABLE_SCHEMA}
+module.exports = {USER_TABLE_SCHEMA, CREDENTIAL_TABLE_SCHEMA, SESSION_TABLE_SCHEMA, LOGINATTEMPTS_TABLE_SCHEMA, GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA}
 
 
 
