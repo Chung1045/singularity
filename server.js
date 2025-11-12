@@ -42,12 +42,14 @@ app.use(csrfProtection)
 
 // Middleware setup
 app.set('view engine', 'ejs');
+app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));  // Serves /scripts, /css, /images
-app.set('views', __dirname + '/views');
+app.set('views', __dirname + '/public/views');
 const sessionDBService = require("./public/services/sessionDBService.js")
-const accountManagerRouter = require('./accountManager');
+const accountManagerRouter = require('./public/managers/accountManager');
+const dbService = require("./public/services/accountDBService");
 
 app.use('/api', accountManagerRouter);
 
@@ -63,7 +65,7 @@ app.get('/login', (req, res) => {
     res.render("tempLogin", {csrfToken: req.csrfToken()})
 })
 
-app.get('/home', async (req, res) => {
+app.get('/home', async(req, res) => {
     console.log("New request from /home");
 
     // ✅ Use req.cookies instead of req.cookie or req.session
@@ -90,6 +92,35 @@ app.get('/home', async (req, res) => {
     console.log("✅ Session valid, rendering home page");
 
     res.render("tempHome", { csrfToken: req.csrfToken() });
+});
+
+app.get('/passkeys', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(400).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    let passkeys = await dbService.listPasskey(userID);
+
+    // CRITICAL: Ensure it's always an array
+    passkeys = Array.isArray(passkeys) ? passkeys : [];
+
+    // Optional: Normalize fields
+    passkeys = passkeys.map(pk => ({
+        keyID: pk.keyID || '',
+        keyName: pk.keyName || 'Unnamed Passkey',
+        dateCreate: pk.dateCreate || new Date().toISOString()
+    }));
+
+    res.locals.passkeys = passkeys;
+
+    res.render("tempPasskey", {
+        csrfToken: req.csrfToken(),
+    });
 });
 
 // ✅ Example route that returns a CSRF token to the frontend

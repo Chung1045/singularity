@@ -57,6 +57,7 @@ const PASSKEYS_SCHEMA = () => `
                                             signCount INTEGER NOT NULL DEFAULT 0,
                                             publicKey TEXT NOT NULL,
                                             dateCreate TEXT NOT NULL,
+                                            lastUsed TEXT,
                                             FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE);
 `
 

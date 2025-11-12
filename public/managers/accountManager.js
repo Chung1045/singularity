@@ -1,9 +1,9 @@
 const express = require('express');
 const uuid = require("uuid-v4")
-const dbService = require('./public/services/accountDBService.js')
-const credDBService = require('./public/services/credentialDBService.js')
-const sessionDBService = require('./public/services/sessionDBService')
-const {checkUsernameEmail} = require("./public/services/accountDBService");
+const dbService = require('../services/accountDBService.js')
+const credDBService = require('../services/credentialDBService.js')
+const sessionDBService = require('../services/sessionDBService')
+const {checkUsernameEmail} = require("../services/accountDBService");
 const passport = require("passport");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const router = express.Router();
@@ -36,7 +36,7 @@ passport.use(new GoogleStrategy({
             return done(null, { uid: uidResponse });
         } else {
             console.log("User is not found, proceeding to sign up the user")
-            const newUser = await dbService.insertGoogleOAuthUserAccount(profile);
+            const newUser = await credDBService.insertGoogleOAuthUserAccount(profile);
 
             if (!newUser || !newUser.uid) {
                 console.error("❌ Failed to create new user!");
@@ -141,7 +141,7 @@ router.post('/signup', async (req, res) => {
             userName: formData.username
         };
 
-        let uidResult = await dbService.insertUserAccount(userData)
+        let uidResult = await credDBService.insertUserAccount(userData)
         console.log("user Data is inserted")
         let uid = uidResult.uid;
 
@@ -187,7 +187,7 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({success: false, message: `Bad requests: Field(s) ${emptyFields.join(", ")} is/are required`});
         }
 
-        let uidResponse = await checkUsernameEmail(userData.usernameEmail)
+        let uidResponse = await credDBService.checkUsernameEmail(userData.usernameEmail)
         if (uidResponse) {
             console.log(`Found with uid ${uidResponse}`)
             console.log("Now verifying Password")
@@ -197,7 +197,7 @@ router.post("/login", async (req, res) => {
                 password: userData.password
             }
 
-            if (await dbService.checkPassword(data)){
+            if (await credDBService.checkPassword(data)){
                 console.log("Matched, now logging in")
 
                 if (await createSession(req, res, uidResponse)) {
@@ -239,7 +239,7 @@ router.post("/logout", async (req, res) => {
             }
         })
 
-        res.redirect('/login');
+        return res.status(200).json({success: true});
 
     }
 });
@@ -320,7 +320,7 @@ router.post("/passkey/gen-auth-option", async (req, res) => {
 
         req.session.challenge = options.challenge;
 
-        console.log("✅ Auth options generated (usernameless flow)");
+        console.log("✅ Auth options generated");
         res.json(options);
 
     } catch (err) {
@@ -368,7 +368,7 @@ router.post("/passkey/verify-register", async (req, res) => {
                 signCount: signCount
             };
 
-            await dbService.savePasskey(data);
+            await credDBService.savePasskey(data);
 
             // ✅ Clear challenge from session
             delete req.session.challenge;
@@ -388,10 +388,10 @@ router.post("/passkey/verify-authentication", async (req, res) => {
         const { credential } = req.body;
         const expectedChallenge = req.session.challenge;
 
-        if (!expectedChallenge) {
+        if (!expectedChallenge || !credential) {
             return res.status(400).json({
-                verified: false,
-                error: "No challenge found in session",
+                successful: false,
+                message: "Bad request: Missing required Field",
             });
         }
 
@@ -423,13 +423,18 @@ router.post("/passkey/verify-authentication", async (req, res) => {
 
             console.log("Result: " + JSON.stringify(verification))
 
-            res.json({
-                verified: verification.verified,
-                authenticationInfo: verification.authenticationInfo,
+            let uid = await dbService.findUserIDByPasskeyID(passkey.keyID)
+
+                if (await createSession(req, res, uid)) {
+                    console.log("Session successfully created")
+                }
+
+            return res.json({
+                successful: true
             });
         } catch (error) {
             console.error(error);
-            return res.status(400).send({ error: error.message });
+            return res.status(400).send({ successful:false, message: error.message });
         }
 
     } catch (err) {
@@ -441,7 +446,7 @@ router.post("/passkey/verify-authentication", async (req, res) => {
     }
 });
 
-router.get("/passkey/list", async (req, res) => {
+router.post("/passkey/list", async (req, res) => {
     let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     try {
@@ -453,6 +458,19 @@ router.get("/passkey/list", async (req, res) => {
         res.send("Could not fetch passkey List")
     }
 })
+
+router.post("/passkey/delete", async (req, res) => {
+    console.log("Raw body:", req.body);  // debug
+
+    let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    let passkeyID = req.body.passkeyID;
+
+    console.log("PasskeyID: " + passkeyID);
+
+    // perform deletion here...
+    res.sendStatus(200);
+});
+
 
 function inferProviderName(transports, userAgent) {
     const ua = userAgent.toLowerCase();
