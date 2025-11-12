@@ -7,6 +7,7 @@ const {checkUsernameEmail} = require("./public/services/accountDBService");
 const passport = require("passport");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const router = express.Router();
+const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse} = require('@simplewebauthn/server');
 const UAParser = require('ua-parser-js');
 
 passport.use(new GoogleStrategy({
@@ -243,6 +244,7 @@ router.post("/logout", async (req, res) => {
     }
 });
 
+
 router.get('/auth/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
@@ -263,5 +265,217 @@ router.get('/auth/google/callback',
         }
     }
 );
+
+router.post("/passkey/gen-option", async (req, res) => {
+    try {
+
+        if (!req.cookies.session_id){
+            res.status(400).json({successful: false, message: "Unauthorized"})
+        }
+
+        let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+        let userInfo = {
+            sessionID: req.cookies.session_id,
+            userName: await dbService.findUserNameByUserID(userID)
+        }
+
+        console.log(`Attempting to add Passkey to uid: ${userID} username: ${userInfo.userName}`)
+
+        if (!userInfo) return res.status(400).json({ error: "No user found" });
+
+        const options = await generateRegistrationOptions({
+            rpName: 'Singularity',
+            rpID: process.env.domain || 'localhost',
+            userID: new TextEncoder().encode(userID),
+            userName: userInfo.userName, // Required to have non-empty value :/
+            userDisplayName: userInfo.userName, // Required to have non-empty value :/
+            attestationType: 'none',
+            authenticatorSelection: {
+                residentKey: 'preferred',
+                userVerification: 'preferred',
+            },
+        });
+
+        req.session.challenge = options.challenge;
+
+        console.log("Options:", options);
+        console.log("Options JSON:", JSON.stringify(options, null, 2));
+
+        res.json(options);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post("/passkey/gen-auth-option", async (req, res) => {
+    try {
+        const options = await generateAuthenticationOptions({
+            rpID: process.env.domain || 'localhost',
+            allowCredentials: [],
+            userVerification: 'required',
+            timeout: 60000,
+        });
+
+        req.session.challenge = options.challenge;
+
+        console.log("✅ Auth options generated (usernameless flow)");
+        res.json(options);
+
+    } catch (err) {
+        console.error('❌ Error generating auth options:', err);
+        res.status(500).json({ error: err.message });
+    }
+})
+
+router.post("/passkey/verify-register", async (req, res) => {
+    const { attResp } = req.body;
+    const expectedChallenge = req.session.challenge;
+
+    try {
+        const verification = await verifyRegistrationResponse({
+            response: attResp,
+            expectedChallenge,
+            expectedOrigin: 'http://localhost:9090', // match your frontend
+            expectedRPID: 'localhost',
+        });
+
+        if (verification.verified) {
+            console.log("✅ User passkey is verified");
+            console.log("💾 Saving passkey information to database...");
+
+            const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+            const keyID = verification.registrationInfo.credential.id;
+            const publicKey = verification.registrationInfo.credential.publicKey;
+            const signCount = verification.registrationInfo.credential.counter
+
+            console.log(verification.registrationInfo)
+            console.log("Credential ID:" + keyID)
+            console.log("Credential Public Key:" + Buffer.from(publicKey).toString('base64'))
+
+            const transports = attResp.response.transports || [];
+
+            const providerName = inferProviderName(transports, req.headers['user-agent']);
+            console.log("Provider: " + providerName)
+
+            const data = {
+                keyID: keyID,
+                uid: userID,
+                keyName: providerName,
+                transports: JSON.stringify(transports),
+                publicKey: publicKey,
+                signCount: signCount
+            };
+
+            await dbService.savePasskey(data);
+
+            // ✅ Clear challenge from session
+            delete req.session.challenge;
+
+            console.log("✅ Passkey saved successfully!");
+        }
+
+        res.json({ verified: verification.verified });
+    } catch (err) {
+        console.error(err);
+        res.status(400).json({ verified: false, error: err.message });
+    }
+})
+
+router.post("/passkey/verify-authentication", async (req, res) => {
+    try {
+        const { credential } = req.body;
+        const expectedChallenge = req.session.challenge;
+
+        if (!expectedChallenge) {
+            return res.status(400).json({
+                verified: false,
+                error: "No challenge found in session",
+            });
+        }
+
+        console.log("Credential:", credential);
+
+        const passkey = await dbService.getPasskey(credential.id);
+        if (!passkey) {
+            console.log("❌ Passkey not found");
+            return res.status(400).json({
+                verified: false,
+                error: "Passkey not found",
+            });
+        }
+
+        try {
+            let verification = await verifyAuthenticationResponse({
+                response: credential,
+                expectedChallenge: expectedChallenge,
+                expectedOrigin: "http://localhost:9090",
+                expectedRPID: "localhost",
+                credential: {
+                    id: passkey.keyID,
+                    publicKey: passkey.publicKey,
+                    counter: passkey.signCount,
+                    transports: passkey.transports,
+                },
+                requireUserVerification: true,
+            });
+
+            console.log("Result: " + JSON.stringify(verification))
+
+            res.json({
+                verified: verification.verified,
+                authenticationInfo: verification.authenticationInfo,
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(400).send({ error: error.message });
+        }
+
+    } catch (err) {
+        console.error("❌ Authentication error:", err);
+        res.status(500).json({
+            verified: false,
+            error: err.message,
+        });
+    }
+});
+
+router.get("/passkey/list", async (req, res) => {
+    let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    try {
+        let passkeyList = await dbService.listPasskey(userID)
+        console.log(passkeyList)
+        res.send(passkeyList)
+    } catch (err) {
+        console.error(err);
+        res.send("Could not fetch passkey List")
+    }
+})
+
+function inferProviderName(transports, userAgent) {
+    const ua = userAgent.toLowerCase();
+
+    if (transports.includes('internal')) {
+        if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('mac')) {
+            return 'iCloud Keychain';
+        } else if (ua.includes('windows')) {
+            return 'Windows Hello';
+        } else if (ua.includes('android')) {
+            return 'Google Password Manager';
+        } else if (ua.includes('samsung')) {
+            return 'Samsung Pass';
+        } else {
+            return 'Platform Authenticator';
+        }
+    } else if (transports.includes('usb') || transports.includes('nfc')) {
+        return 'Hardware Security Key';
+    } else if (transports.includes('hybrid')) {
+        return 'Phone/Tablet (Cross-Device)';
+    } else {
+        return 'Passkey';
+    }
+}
 
 module.exports = router;

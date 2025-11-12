@@ -42,6 +42,32 @@ async function findUserByUsername(username) {
     });
 }
 
+async function findUserNameByUserID(uid) {
+    return new Promise((resolve, reject) => {
+        db.get(`SELECT userName FROM user WHERE uid = ?`, [uid], (err, row) => {
+            if (err) {
+                console.error('Error in findUserNameByUserID:', err);
+                return reject(err);
+            }
+            console.log(`🔍 findUserByUserNameID("${uid}"):`, row || 'NOT FOUND');
+            resolve(row ? row.userName : null);
+        });
+    });
+}
+
+async function findUserIDBySessionID(sessionID) {
+    return new Promise((resolve, reject) => {
+        db.get(`SELECT uid FROM session WHERE sessionID = ?`, [sessionID], (err, row) => {
+            if (err) {
+                console.error('Error in findUserIDBySessionID:', err);
+                return reject(err);
+            }
+            console.log(`🔍 findUserIDBySessionID("${sessionID}"):`, row || 'NOT FOUND');
+            resolve(row ? row.uid : null);
+        });
+    });
+}
+
 async function insertGoogleOAuthUserAccount(profile) {
     const uid = uuid();
     const firstName = profile.name?.givenName?.trim() || "user";
@@ -253,5 +279,61 @@ async function logLoginAttempts(data) {
     }
 }
 
+async function savePasskey(data) {
+
+    console.log("Data received: " + JSON.stringify(data))
+
+    const sql = `INSERT INTO passkeys (keyID, uid, keyName, transports, signCount, publicKey, dateCreate) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    const params = [
+        data.keyID,
+        data.uid,
+        data.keyName,
+        data.transports,
+        data.signCount,
+        data.publicKey,
+        new Date().toISOString()
+    ]
+
+    console.log("Params: " + params)
+    try {
+        await db.run(sql, params);
+        return true;
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function listPasskey(data) {  // ✅ Just pass uid directly, not data object
+    const query = `SELECT keyID, keyName, dateCreate FROM passkeys WHERE uid = ? ORDER BY dateCreate DESC`;
+
+    return new Promise((resolve, reject) => {
+        db.all(query, [data], (err, rows) => {  // ✅ Use db.all() to get ALL rows
+            if (err) {
+                console.error('Error listing passkeys:', err);
+                return reject(err);
+            }
+            console.log(`Found ${rows.length} passkey(s) for userID ${data}`);
+            resolve(rows || []);  // ✅ Return array of all passkeys
+        });
+    });
+}
+
+async function getPasskey(data) {
+    const query = `
+        SELECT * 
+        FROM passkeys
+        WHERE keyID = ?
+    `;
+    const params = [data];
+
+    return new Promise((resolve, reject) => {
+        db.get(query, params, (err, row) => {
+            if (err) return reject(err);
+            resolve(row);
+        });
+    });
+}
+
 module.exports = { insertUserAccount, checkUsernameEmail, checkPassword,
-    isGoogleOAuthUserExist, insertGoogleOAuthUserAccount, getUIDfromOAuth, logLoginAttempts }
+    isGoogleOAuthUserExist, insertGoogleOAuthUserAccount, getUIDfromOAuth,
+    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID, savePasskey, listPasskey, getPasskey }

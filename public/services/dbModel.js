@@ -45,13 +45,24 @@ const GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS googleOauth_identity (
                                                         userGoogleId TEXT PRIMARY KEY,
                                                         uid TEXT UNIQUE,
-                                                        FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE
-    );
+                                                        FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE);
+`
+
+const PASSKEYS_SCHEMA = () => `
+    CREATE TABLE IF NOT EXISTS passkeys (
+                                            keyID TEXT PRIMARY KEY UNIQUE,
+                                            uid TEXT NOT NULL,
+                                            keyName TEXT,
+                                            transports TEXT NOT NULL,
+                                            signCount INTEGER NOT NULL DEFAULT 0,
+                                            publicKey TEXT NOT NULL,
+                                            dateCreate TEXT NOT NULL,
+                                            FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE);
 `
 
 
-
-module.exports = {USER_TABLE_SCHEMA, CREDENTIAL_TABLE_SCHEMA, SESSION_TABLE_SCHEMA, LOGINATTEMPTS_TABLE_SCHEMA, GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA}
+module.exports = {USER_TABLE_SCHEMA, CREDENTIAL_TABLE_SCHEMA, SESSION_TABLE_SCHEMA,
+    LOGINATTEMPTS_TABLE_SCHEMA, GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA, PASSKEYS_SCHEMA}
 
 
 

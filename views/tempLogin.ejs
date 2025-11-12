@@ -31,6 +31,36 @@
 
     <button id="btn-googleOAuth">Continue with Google</button>
     <button id="btn-signup">Signup</button>
+    <button id="btn-passkeyLogin">Login with Passkey</button>
+
+    <script type="module">
+        import { startAuthentication } from 'https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.js';
+
+        $("#btn-passkeyLogin").on("click", async () => {
+            const csrfToken = $("#hidden-csrf").val();
+            const resp = await fetch('/api/passkey/gen-auth-option', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({}),
+            });
+
+            const response = await resp.json()
+            const credential = await startAuthentication(response)
+
+            const verifyResp = await fetch('/api/passkey/verify-authentication', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ credential }),
+            });
+
+        })
+    </script>
 
 </div>
 </body>
