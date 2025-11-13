@@ -334,12 +334,15 @@ router.post("/passkey/verify-register", async (req, res) => {
     const expectedChallenge = req.session.challenge;
 
     try {
+        console.log("Verifying passkey register")
+
         const verification = await verifyRegistrationResponse({
             response: attResp,
             expectedChallenge,
             expectedOrigin: 'http://localhost:9090', // match your frontend
             expectedRPID: 'localhost',
         });
+        console.log(`Credential: ${JSON.stringify(verification.registrationInfo.credential)}`)
 
         if (verification.verified) {
             console.log("✅ User passkey is verified");
@@ -452,24 +455,47 @@ router.post("/passkey/list", async (req, res) => {
     try {
         let passkeyList = await dbService.listPasskey(userID)
         console.log(passkeyList)
-        res.send(passkeyList)
+        return res.send(passkeyList)
     } catch (err) {
         console.error(err);
-        res.send("Could not fetch passkey List")
+        return res.send("Could not fetch passkey List")
     }
 })
 
 router.post("/passkey/delete", async (req, res) => {
-    console.log("Raw body:", req.body);  // debug
+    console.log("Raw body:", req.body);
 
-    let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
-    let passkeyID = req.body.passkeyID;
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    const passkeyID = req.body.passkeyID;
 
-    console.log("PasskeyID: " + passkeyID);
+    console.log(`Received uid ${userID} for deleting passkeyID ${passkeyID}, checking`);
 
-    // perform deletion here...
-    res.sendStatus(200);
+    const owner = await dbService.findUserIDByPasskeyID(passkeyID);
+
+    if (owner !== userID) {
+        console.log(`uid ${userID} does not own passkeyID ${passkeyID}, terminating`);
+        return res.status(403).json({
+            successful: false,
+            message: "Unauthorized"
+        });
+    }
+
+    const result = await dbService.deletePasskey(passkeyID);
+
+    if (result) {
+        console.log(`uid ${userID} deleted passkeyID ${passkeyID}`);
+        return res.status(200).json({
+            successful: true
+        });
+    } else {
+        console.log(`uid ${userID} failed to delete passkeyID ${passkeyID}`);
+        return res.status(400).json({
+            successful: false,
+            message: "Failed to delete passkey"
+        });
+    }
 });
+
 
 
 function inferProviderName(transports, userAgent) {

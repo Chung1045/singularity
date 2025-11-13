@@ -154,14 +154,14 @@ async function deletePasskey(data) {
         db.run(query, [data], function(err) {
             if (err) {
                 console.error('Error deleting passkey:', err);
-                return reject(err);
+                return reject(false);
             }
             console.log(`Passkey ${data} deleted`);
-            resolve();
+            resolve(true);
         });
     });
 }
 
 
 module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
-    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID, listPasskey, getPasskey, findUserIDByPasskeyID }
+    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID, listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey }

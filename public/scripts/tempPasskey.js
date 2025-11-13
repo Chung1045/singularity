@@ -37,7 +37,7 @@ async function registerPasskey() {
                 'Content-Type': 'application/json',
                 'CSRF-Token': csrfToken
             },
-            body: JSON.stringify(attResp)
+            body: JSON.stringify({attResp} )
         });
 
         const verificationJSON = await verificationResp.json();
@@ -54,28 +54,34 @@ async function registerPasskey() {
     }
 }
 
-async function deletePasskey(passkeyID) {
-    try {
-        console.log("PasskeyID: " + passkeyID);
+async function deletePasskey(passkeyID, passkeyName) {
+    if (confirm(`Are you sure you want to delete this passkey? (${passkeyName}`)) {
+        try {
+            console.log("PasskeyID: " + passkeyID);
 
-        const resp = await fetch("/api/passkey/delete", {
-            method: 'POST',                     // changed from DELETE
-            headers: {
-                'CSRF-Token': csrfToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ passkeyID })
-        });
+            const resp = await fetch("/api/passkey/delete", {
+                method: 'POST',                     // changed from DELETE
+                headers: {
+                    'CSRF-Token': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ passkeyID })
+            });
 
-        if (resp.ok) {
-            alert("Passkey deleted");
-            location.reload();   // or remove from state for smoother UX
-        } else {
-            alert("Failed to delete passkey");
+            if (resp.ok) {
+                alert("Passkey deleted");
+                location.reload();   // or remove from state for smoother UX
+            } else {
+                alert("Failed to delete passkey");
+            }
+        } catch (e) {
+            alert("Error: " + e.message);
         }
-    } catch (e) {
-        alert("Error: " + e.message);
+    } else {
+        // User clicked "No" (Cancel)
+        console.log("User chose NO");
     }
+
 }
 
 
@@ -102,7 +108,7 @@ const TempPasskey = ({ csrfToken, passkeys }) => {
                 "button",
                 {
                     className: "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600",
-                    onClick: () => deletePasskey(keyID),
+                    onClick: () => deletePasskey(keyID, passkey.keyName),
                 },
                 "Delete"
             )
