@@ -228,7 +228,7 @@ router.post("/login", async (req, res) => {
 router.post("/logout", async (req, res) => {
     console.log("New requests /logout")
     if (!req.cookies.session_id) {
-        return res.status(400).json({success:false, message: `Bad requests: Session ID not found`})
+        return res.status(403).json({success:false, message: `Bad requests: Session ID not found`})
     }
 
     if (await sessionDBService.destroySession(req.cookies.session_id)){
@@ -270,7 +270,7 @@ router.post("/passkey/gen-option", async (req, res) => {
     try {
 
         if (!req.cookies.session_id){
-            res.status(400).json({successful: false, message: "Unauthorized"})
+            res.status(403).json({successful: false, message: "Unauthorized"})
         }
 
         let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
@@ -510,6 +510,10 @@ router.post("/session/list", async (req, res) => {
 })
 
 router.post("/session/logout", async(req, res) => {
+    if (!req.cookies.session_id){
+        res.status(403).json({successful: false, message: "Unauthorized"})
+    }
+
     let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
     let sessionID = req.body.sessionID;
     let target = await dbService.findUserIDBySessionID(sessionID);
@@ -527,6 +531,10 @@ router.post("/session/logout", async(req, res) => {
 })
 
 router.post("/loginAttempts/deleteAll", async(req, res) => {
+    if (!req.cookies.session_id){
+        res.status(403).json({successful: false, message: "Unauthorized"})
+    }
+
     let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     if( await dbService.deleteAllLoginAttempts(userID) ){
@@ -538,6 +546,103 @@ router.post("/loginAttempts/deleteAll", async(req, res) => {
     }
 
 })
+
+router.post("/userInfo/query", async(req, res) => {
+    if (!req.cookies.session_id){
+        res.status(403).json({successful: false, message: "Unauthorized"})
+    }
+
+    let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    let userinfo = await dbService.getUserInfo(userID);
+
+    if( userinfo ){
+        console.log(`Uid: ${userID} query for user info`);
+        return res.send({successful: true, userinfo})
+    } else {
+        console.log(`Failed to query user info for Uid: ${userID}`);
+        return res.status(500).json({successful: false, message: `Failed to query user info for Uid: ${userID}`})
+    }
+
+})
+
+router.post("/password/change", async (req, res) => {
+    try {
+        if (!req.cookies.session_id) {
+            console.log("❌ Unauthorized attempt for changing password");
+            return res.status(403).json({ successful: false, message: "Unauthorized" });
+        }
+
+        const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+        const userInfo = await dbService.getUserInfo(userID);
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        console.log(`🔄 Attempting to change password for UID: ${userID}`);
+
+        if (userInfo.userType === "google") {
+            console.log("⚠️ Change Password not applicable for Google OAuth users");
+            return res.status(400).json({
+                successful: false,
+                message: "Password change not available for Google OAuth users",
+            });
+        }
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            console.log("⚠️ Missing required fields");
+            return res.status(400).json({
+                successful: false,
+                message: "Please fill in all required fields",
+            });
+        }
+
+        const validPassword = await credDBService.checkPassword({
+            uid: userID,
+            password: currentPassword,
+        });
+
+        if (!validPassword) {
+            console.log("❌ Current password does not match");
+            return res.status(400).json({
+                successful: false,
+                message: "Current password is incorrect",
+            });
+        }
+
+        if (newPassword !== confirmPassword) {
+            console.log("❌ New password and confirm password do not match");
+            return res.status(400).json({
+                successful: false,
+                message: "New password and confirmation do not match",
+            });
+        }
+
+        const updateResult = await credDBService.updatePassword({
+            uid: userID,
+            password: newPassword,
+        });
+
+        if (!updateResult) {
+            console.log("❌ Failed to update password");
+            return res.status(500).json({
+                successful: false,
+                message: "Failed to update user password",
+            });
+        }
+
+        console.log("✅ Password changed successfully");
+        return res.status(200).json({
+            successful: true,
+            message: "Password changed successfully",
+        });
+
+    } catch (error) {
+        console.error("💥 Error changing password:", error);
+        return res.status(500).json({
+            successful: false,
+            message: "Internal server error",
+        });
+    }
+});
+
 
 function inferProviderName(transports, userAgent) {
     const ua = userAgent.toLowerCase();

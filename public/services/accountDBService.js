@@ -53,6 +53,19 @@ async function findUserIDByPasskeyID(passkeyID) {
     });
 }
 
+async function getUserInfo(userID) {
+    return new Promise((resolve, reject) => {
+        db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`, [userID], (err, row) => {
+            if (err) {
+                console.error('Error in getting user information:', err);
+                return reject(err);
+            }
+            console.log(`Query for user info uid ${userID}"):`, row || 'NOT FOUND');
+            resolve(row);
+        });
+    });
+}
+
 async function getUIDfromOAuth(oAuthID) {
     const query = `
         SELECT uid
@@ -224,4 +237,7 @@ async function deleteAllLoginAttempts(data) {
 
 
 module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
-    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID, listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey, listSessions, listLoginAttempts, deleteAllLoginAttempts, logoutSession }
+    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
+    listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
+    listSessions, listLoginAttempts, deleteAllLoginAttempts,
+    logoutSession, getUserInfo }

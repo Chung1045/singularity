@@ -132,11 +132,13 @@ app.get('/profile', async (req, res) => {
     }
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    let userInfo = await dbService.getUserInfo(userID)
+
     if (!userID) {
         return res.redirect('/login');
     }
 
-    res.render("tempUserProfile");
+    res.render("tempUserProfile", {userInfo: userInfo});
 });
 
 app.get('/session', async (req, res) => {
@@ -153,6 +155,19 @@ app.get('/session', async (req, res) => {
     const loginAttempts = await dbService.listLoginAttempts(userID)
 
     res.render("tempSession", { csrfToken: req.csrfToken(), sessions: sessions, loginAttempts: loginAttempts });
+});
+
+app.get('/change-password', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    res.render("tempChangePassword", { csrfToken: req.csrfToken() });
 });
 
 

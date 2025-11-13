@@ -1,6 +1,6 @@
 const { useState } = React;
 
-const TempUserProfile = () => {
+const TempUserProfile = ({userInfo}) => {
 
 
     function handleSessionManagement() {
@@ -11,8 +11,15 @@ const TempUserProfile = () => {
         window.location.href = "/passkeys"
     }
 
+    function handleChangePassword() {
+        window.location.href = "/change-password"
+    }
+
     return React.createElement('div', { className: 'flex flex-col gap-2.5 p-4 max-w-md mx-auto mt-8' },
         React.createElement('h2', {}, "User Profile"),
+        React.createElement('p', {}, `@${userInfo.userName}`),
+        React.createElement('p', {}, `${userInfo.lastName} ${userInfo.firstName}`),
+        React.createElement('p', {}, `${userInfo.userEmail}`),
         React.createElement('button', {
             id: 'btn-logout',
             onClick: handleSessionManagement,
@@ -22,7 +29,12 @@ const TempUserProfile = () => {
             id: 'btn-manageSessions',
             onClick: handlePasskeyManagement,
             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
-        }, 'Manage Passkeys')
+        }, 'Manage Passkeys'),
+        React.createElement('button', {
+            id: 'btn-changePassword',
+            onClick: handleChangePassword,
+            className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
+        }, 'Change Password')
     );
 };
 

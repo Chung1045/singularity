@@ -21,8 +21,7 @@ const TempLogin = ({ csrfToken }) => {
                 })
             });
 
-            const result = await response.json();
-            if (result.successful) {
+            if (response.ok) {
                 window.location.href = '/home';
             }
         } catch (error) {

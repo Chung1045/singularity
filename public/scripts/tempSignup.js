@@ -7,7 +7,8 @@ const TempSignup = ({ csrfToken }) => {
         firstName: '',
         lastName: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        userType: "general"
     });
     const [isLoading, setIsLoading] = useState(false);
 

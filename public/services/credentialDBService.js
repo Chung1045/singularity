@@ -207,6 +207,26 @@ async function checkPassword(data) {
     });
 }
 
+async function updatePassword(data) {
+    const query = `
+        UPDATE credential
+        SET credentialPassword = ?, changeDate = ?
+        WHERE uid = ?
+    `;
+    const params = [data.password, Date.now(), data.uid];
+
+    return new Promise((resolve, reject) => {
+        db.run(query, params, function (err) {
+            if (err) {
+                console.error("Error updating password:", err);
+                return reject(err);
+            }
+            resolve(true);
+        });
+    });
+}
+
+
 async function checkUsernameEmail(data) {
     const query = `
         SELECT uid
@@ -232,4 +252,4 @@ async function checkUsernameEmail(data) {
 
 
 
-module.exports = { insertCredentials, insertUserAccount, insertGoogleOAuthUserAccount, savePasskey, checkPassword, checkUsernameEmail }
+module.exports = { insertCredentials, insertUserAccount, insertGoogleOAuthUserAccount, savePasskey, checkPassword, checkUsernameEmail, updatePassword }
