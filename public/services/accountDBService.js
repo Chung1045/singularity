@@ -162,6 +162,66 @@ async function deletePasskey(data) {
     });
 }
 
+async function listSessions(data) {
+    const query = `SELECT sessionID, lastSeenTime, sessionOS, sessionBrowser, sessionIP FROM session WHERE uid = ? ORDER BY lastSeenTime DESC`;
+
+    return new Promise((resolve, reject) => {
+        db.all(query, [data], (err, rows) => {
+            if (err) {
+                console.error('Error listing sessions:', err);
+                return reject(err);
+            }
+            console.log(`Found ${rows.length} sessions for userID ${data}`);
+            resolve(rows || []);
+        });
+    });
+}
+
+async function logoutSession(data) {
+    const query = `DELETE FROM session WHERE sessionID = ?`;
+
+    return new Promise((resolve, reject) => {
+        db.run(query, [data], function(err) {
+            if (err) {
+                console.error(`Error removing session ${data}:`, err);
+                return reject(false);
+            }
+            console.log(`session ${data} have been removed`);
+            resolve(true);
+        });
+    });
+}
+
+async function listLoginAttempts(data) {
+    const query = `SELECT attemptID, attemptDate, attemptOS, attemptBrowser, attemptIP FROM loginAttempts WHERE uid = ? ORDER BY attemptDate DESC`;
+
+    return new Promise((resolve, reject) => {
+        db.all(query, [data], (err, rows) => {
+            if (err) {
+                console.error('Error listing login attempts:', err);
+                return reject(err);
+            }
+            console.log(`Found ${rows.length} login attempts for userID ${data}`);
+            resolve(rows || []);
+        });
+    });
+}
+
+async function deleteAllLoginAttempts(data) {
+    const query = `DELETE FROM loginAttempts WHERE uid = ?`;
+
+    return new Promise((resolve, reject) => {
+        db.run(query, [data], function(err) {
+            if (err) {
+                console.error('Error deleting login attempts record:', err);
+                return reject(false);
+            }
+            console.log(`uid ${data} login attempts record deleted`);
+            resolve(true);
+        });
+    });
+}
+
 
 module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
-    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID, listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey }
+    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID, listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey, listSessions, listLoginAttempts, deleteAllLoginAttempts, logoutSession }

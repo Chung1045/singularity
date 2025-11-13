@@ -54,6 +54,9 @@ const dbService = require("./public/services/accountDBService");
 app.use('/api', accountManagerRouter);
 
 app.get('/', (req, res) => {
+    if (req.cookies.session_id) {
+        return res.redirect("/home")
+    }
     res.redirect("/login");
 });
 
@@ -122,6 +125,36 @@ app.get('/passkeys', async (req, res) => {
         csrfToken: req.csrfToken(),
     });
 });
+
+app.get('/profile', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(400).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    res.render("tempUserProfile");
+});
+
+app.get('/session', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(400).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    const sessions = await dbService.listSessions(userID)
+    const loginAttempts = await dbService.listLoginAttempts(userID)
+
+    res.render("tempSession", { csrfToken: req.csrfToken(), sessions: sessions, loginAttempts: loginAttempts });
+});
+
 
 // ✅ Example route that returns a CSRF token to the frontend
 app.get('/csrf-token', (req, res) => {

@@ -489,14 +489,55 @@ router.post("/passkey/delete", async (req, res) => {
         });
     } else {
         console.log(`uid ${userID} failed to delete passkeyID ${passkeyID}`);
-        return res.status(400).json({
+        return res.status(500).json({
             successful: false,
             message: "Failed to delete passkey"
         });
     }
 });
 
+router.post("/session/list", async (req, res) => {
+    let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
+    try {
+        let sessionList = await dbService.listSessions(userID)
+        console.log(sessionList)
+        return res.send(sessionList)
+    } catch (err) {
+        console.error(err);
+        return res.send("Could not fetch passkey List")
+    }
+})
+
+router.post("/session/logout", async(req, res) => {
+    let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    let sessionID = req.body.sessionID;
+    let target = await dbService.findUserIDBySessionID(sessionID);
+
+    if (userID !== target) {
+        return res.status(403).json({successful: false, message: `Unauthorized`})
+    }
+    if( await dbService.logoutSession(sessionID) ){
+        console.log(`Uid: ${userID} have logged out session ${sessionID}`);
+        return res.status(200).json({successful: true})
+    } else {
+        return res.status(500).json({successful: false, message: `Failed to logout session ${sessionID} for uid ${userID}`})
+    }
+
+})
+
+router.post("/loginAttempts/deleteAll", async(req, res) => {
+    let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    if( await dbService.deleteAllLoginAttempts(userID) ){
+        console.log(`Uid: ${userID} have deleted all current login attempt history`);
+        return res.status(200).json({successful: true})
+    } else {
+        console.log(`Failed to delete all login attempt history for Uid: ${userID}`);
+        return res.status(500).json({successful: false, message: `Failed to delete all login attempt history for Uid: ${userID}`})
+    }
+
+})
 
 function inferProviderName(transports, userAgent) {
     const ua = userAgent.toLowerCase();
