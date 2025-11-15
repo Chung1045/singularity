@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const express = require('express');
 const uuid = require("uuid-v4")
 const dbService = require('../services/accountDBService.js')
@@ -11,11 +9,6 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const router = express.Router();
 const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse} = require('@simplewebauthn/server');
 const UAParser = require('ua-parser-js');
-
-// Validate required env vars
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLEOAUTH_CALLBACK_URL) {
-    throw new Error("Missing required Google OAuth env vars: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLEOAUTH_CALLBACK_URL");
-}
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
