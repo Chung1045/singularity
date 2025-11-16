@@ -6,16 +6,18 @@ async function createSession(data) {
     INSERT INTO session (sessionID, uid, lastSeenTime, sessionOS, sessionBrowser, sessionIP
     ) VALUES (?, ?, ?, ?, ?, ?)
   `;
+
     const params = [
         id,
         data.uid,
         Date(),
-        "MacOS",
-        "Chrome",
-        "123.456.789.012"
+        data.sessionOS,
+        data.sessionOS,
+        data.sessionIP
     ];
 
     try {
+        console.log(`Insert value data.uid: ${data.uid}`)
         await db.run(sql, params); // safe: values are bound, not interpolated
         return id;
     } catch (error) {

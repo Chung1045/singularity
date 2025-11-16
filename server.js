@@ -43,16 +43,21 @@ app.use(csrfProtection)
 
 // Middleware setup
 app.set('view engine', 'ejs');
+app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));  // Serves /scripts, /css, /images
-app.set('views', __dirname + '/views');
+app.set('views', __dirname + '/public/views');
 const sessionDBService = require("./public/services/sessionDBService.js")
-const accountManagerRouter = require('./accountManager');
+const accountManagerRouter = require('./public/managers/accountManager');
+const dbService = require("./public/services/accountDBService");
 
 app.use('/api', accountManagerRouter);
 
 app.get('/', (req, res) => {
+    if (req.cookies.session_id) {
+        return res.redirect("/home")
+    }
     res.redirect("/login");
 });
 
@@ -64,34 +69,113 @@ app.get('/login', (req, res) => {
     res.render("tempLogin", {csrfToken: req.csrfToken()})
 })
 
-app.get('/home', async (req, res) => {
-    console.log("New request from /home")
-    if (!req.session.user || !req.session.user.sessionID) {
+app.get('/home', async(req, res) => {
+    console.log("New request from /home");
+
+    // ✅ Use req.cookies instead of req.cookie or req.session
+    console.log("Cookies:", req.cookies);
+
+    const sessionID = req.cookies?.session_id; // match the name you set in res.cookie()
+    console.log("Session ID from cookie:", sessionID);
+
+    if (!sessionID) {
+        console.log("❌ No session cookie found, redirecting to login");
         return res.redirect("/login");
     }
-    console.log(`Is session active: ${await sessionDBService.isSessionActive(req.session.user.sessionID)}`)
-    if (!await sessionDBService.isSessionActive(req.session.user.sessionID)) {
+
+    console.log(`Checking if session ${sessionID} is active...`);
+    const sessionData = await sessionDBService.isSessionActive(sessionID);
+
+    console.log(`Is session active: ${!!sessionData}`);
+
+    if (!sessionData) {
+        console.log("❌ Session not active, redirecting to login");
         return res.redirect("/login");
     }
+
+    console.log("✅ Session valid, rendering home page");
+
     res.render("tempHome", { csrfToken: req.csrfToken() });
 });
+
+app.get('/passkeys', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(400).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    let passkeys = await dbService.listPasskey(userID);
+
+    // CRITICAL: Ensure it's always an array
+    passkeys = Array.isArray(passkeys) ? passkeys : [];
+
+    // Optional: Normalize fields
+    passkeys = passkeys.map(pk => ({
+        keyID: pk.keyID || '',
+        keyName: pk.keyName || 'Unnamed Passkey',
+        dateCreate: pk.dateCreate || new Date().toISOString()
+    }));
+
+    res.locals.passkeys = passkeys;
+
+    res.render("tempPasskey", {
+        csrfToken: req.csrfToken(),
+    });
+});
+
+app.get('/profile', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(400).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    let userInfo = await dbService.getUserInfo(userID)
+
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    res.render("tempUserProfile", {userInfo: userInfo});
+});
+
+app.get('/session', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(400).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    const sessions = await dbService.listSessions(userID)
+    const loginAttempts = await dbService.listLoginAttempts(userID)
+
+    res.render("tempSession", { csrfToken: req.csrfToken(), sessions: sessions, loginAttempts: loginAttempts });
+});
+
+app.get('/change-password', async (req, res) => {
+    if (!req.cookies.session_id) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID) {
+        return res.redirect('/login');
+    }
+
+    res.render("tempChangePassword", { csrfToken: req.csrfToken() });
+});
+
 
 // ✅ Example route that returns a CSRF token to the frontend
 app.get('/csrf-token', (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
-
-app.get('/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-        req.session.userId = req.user.userUUID;
-        res.redirect('/home');
-    }
-);
 
 server.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
