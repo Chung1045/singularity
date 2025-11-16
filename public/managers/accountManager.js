@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const uuid = require("uuid-v4")
 const dbService = require('../services/accountDBService.js')
