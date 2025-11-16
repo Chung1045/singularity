@@ -257,7 +257,7 @@ const TempLogin = ({ csrfToken }) => {
                     React.createElement('div', { className: 'logo-text' },
                         React.createElement('div', { className: 'text-wrapper' }, 'Singularity')
                     ),
-                    React.createElement('img', { className: 'union', src: 'img/union.svg', alt: 'Union' })
+                    React.createElement('img', { className: 'union', src: 'img/Union.svg', alt: 'Union' })
                 ),
 
                 React.createElement('div', { className: 'content' },
