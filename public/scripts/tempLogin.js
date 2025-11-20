@@ -315,10 +315,12 @@ const TempLogin = ({ csrfToken }) => {
 
                         // Terms & Privacy
                         React.createElement('p', { className: 'by-continuing-you' },
-                            React.createElement('span', { className: 'span' }, 'By continuing, you agree to Singularity\'s '),
-                            React.createElement('span', { className: 'text-wrapper-5' }, 'Privacy Policy'),
-                            React.createElement('span', { className: 'span' }, ' and '),
-                            React.createElement('span', { className: 'text-wrapper-5' }, 'Terms of Use')
+                                    React.createElement('span', { className: 'span' },
+                                        'By continuing, you agree to Singularity’s ',
+                                        React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Privacy Policy'),
+                                        ' and ',
+                                        React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Terms of Use')
+                                    )
                         ),
 
                         // Login Button
