@@ -3,7 +3,7 @@ const uuid = require("uuid-v4")
 const dbService = require('../services/accountDBService.js')
 const credDBService = require('../services/credentialDBService.js')
 const sessionDBService = require('../services/sessionDBService')
-const {checkUsernameEmail} = require("../services/accountDBService");
+const {checkUsernameEmail, findUserByUsername} = require("../services/accountDBService");
 const passport = require("passport");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const router = express.Router();
@@ -563,6 +563,27 @@ router.post("/userInfo/query", async(req, res) => {
         return res.status(500).json({successful: false, message: `Failed to query user info for Uid: ${userID}`})
     }
 
+})
+
+router.post("/user/search", async (req, res) => {
+    if (!req.cookies.session_id){
+        res.status(403).json({successful: false, message: "Unauthorized"})
+    }
+
+    let selfUID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (selfUID) {
+        let { query } = req.body
+        try {
+            let users = await findUserByUsername(query, selfUID)
+            return res.status(200).json({successful: true, users})
+        } catch (err) {
+            console.log(err)
+            return res.status(500).json({successful: false, message: "Internal Server Error"})
+        }
+
+    } else {
+        return res.status(403).json({successful: false, message: "Unauthorized"})
+    }
 })
 
 router.post("/password/change", async (req, res) => {

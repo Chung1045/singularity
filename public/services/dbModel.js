@@ -88,11 +88,27 @@ const PROJECT_SHARE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS projectShare
     (
         shareID   TEXT PRIMARY KEY UNIQUE,
-        projectID TEXT NOT NULL,
-        collabUid TEXT NOT NULL,
+        projectID TEXT    NOT NULL,
+        collabUid TEXT    NOT NULL,
+        confirmed INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
         FOREIGN KEY (collabUid) REFERENCES user (uid) ON DELETE CASCADE
     );
+`
+// kind: invitation / removal / leaving project / delete
+const NOTIFICATION_SCHEMA = () => `
+    CREATE TABLE IF NOT EXISTS notification
+    (
+        notifID     TEXT PRIMARY KEY UNIQUE,
+        receiveUid  TEXT    NOT NULL,
+        dateReceive TEXT    NOT NULL,
+        kind        TEXT    NOT NULL CHECK (kind IN ('invitation', 'removal', 'leaving', 'delete')),
+        projectID   TEXT,
+        message     TEXT,
+        isRead      INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (receiveUid) REFERENCES user (uid) ON DELETE CASCADE,
+        FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
+    )
 `
 
 module.exports = {

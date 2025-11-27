@@ -10,6 +10,11 @@ const TempHome = ({ csrfToken }) => {
     const [renameProjectName, setRenameProjectName] = useState('');
     const [projects, setProjects] = useState([]);
     const [selectedProject, setSelectedProject] = useState('');
+    const [showUserSearchModal, setShowUserSearchModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [selectedProjectForSharing, setSelectedProjectForSharing] = useState(null);
+
 
     useEffect(() => {
         // Fetch projects when component mounts
@@ -148,6 +153,35 @@ const TempHome = ({ csrfToken }) => {
         }
     };
 
+    const searchUsers = async () => {
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/user/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ query: searchQuery })
+            });
+
+            const data = await res.json();
+            if (data.successful) {
+                setSearchResults(data.users);
+            } else {
+                setSearchResults([]);
+            }
+        } catch (err) {
+            console.error("Search failed:", err);
+            setSearchResults([]);
+        }
+    };
+
+
     const logout = async () => {
         $.ajax({
             url: '/api/logout',
@@ -195,7 +229,14 @@ const TempHome = ({ csrfToken }) => {
                             React.createElement('button', {
                                 onClick: () => openDeleteModal(p),
                                 className: 'px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm'
-                            }, 'Delete')
+                            }, 'Delete'),
+                            React.createElement('button', {
+                                onClick: () => {
+                                    setSelectedProjectForSharing(p);
+                                    setShowUserSearchModal(true);
+                                },
+                                className: 'px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm'
+                            }, 'Share')
                         )
                     )
                 )
@@ -296,7 +337,67 @@ const TempHome = ({ csrfToken }) => {
                     }, 'Delete')
                 )
             )
+        ),
+
+        // Modal for user search + adding collaborator
+        showUserSearchModal && React.createElement('div', {
+                className: 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'
+            },
+            React.createElement('div', { className: 'bg-white p-6 rounded shadow-md w-96' },
+
+                // Header
+                React.createElement('h3', { className: 'text-lg font-bold mb-4' },
+                    `Add collaborator to "${selectedProjectForSharing?.projectName}"`
+                ),
+
+                // Search input
+                React.createElement('input', {
+                    type: 'text',
+                    value: searchQuery,
+                    onChange: e => setSearchQuery(e.target.value),
+                    placeholder: 'Search username...',
+                    className: 'w-full px-3 py-2 border rounded mb-3'
+                }),
+
+                // Search button
+                React.createElement('button', {
+                    onClick: searchUsers,
+                    className: 'w-full px-4 py-2 mb-4 bg-purple-600 text-white rounded hover:bg-purple-700'
+                }, 'Search'),
+
+                // Results
+                React.createElement('div', { className: 'max-h-48 overflow-y-auto space-y-2' },
+                    searchResults.length === 0
+                        ? React.createElement('p', { className: 'text-gray-500 text-sm text-center' }, 'No users found')
+                        : searchResults.map(u =>
+                            React.createElement('div', {
+                                    key: u.userName,
+                                    className: 'flex justify-between items-center p-2 border rounded'
+                                },
+                                React.createElement('div', {},
+                                    React.createElement('p', { className: 'font-medium' }, u.userName),
+                                    React.createElement('p', { className: 'text-sm text-gray-500' },
+                                        `${u.firstName} ${u.lastName}`
+                                    )
+                                ),
+
+                                // Add button
+                                React.createElement('button', {
+                                    onClick: () => alert(`TODO: add ${u.userName} to ${selectedProjectForSharing.projectID}`),
+                                    className: 'px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm'
+                                }, 'Add')
+                            )
+                        )
+                ),
+
+                // Cancel button
+                React.createElement('button', {
+                    onClick: () => setShowUserSearchModal(false),
+                    className: 'w-full mt-4 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400'
+                }, 'Close')
+            )
         )
+
     );
 };
 
