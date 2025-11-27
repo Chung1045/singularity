@@ -10,8 +10,6 @@ const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 
 const passport = require('passport');
-
-
 app.use(cookieParser());
 
 app.use(session({
@@ -28,7 +26,6 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
-
 app.use(express.json());
 
 const csrfProtection = csrf({
@@ -41,18 +38,20 @@ const csrfProtection = csrf({
 
 app.use(csrfProtection)
 
-// Middleware setup
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));  // Serves /scripts, /css, /images
 app.set('views', __dirname + '/public/views');
+
 const sessionDBService = require("./public/services/sessionDBService.js")
 const accountManagerRouter = require('./public/managers/accountManager');
+const projectManagerRouter = require("./public/managers/projectManager");
 const dbService = require("./public/services/accountDBService");
 
 app.use('/api', accountManagerRouter);
+app.use('/api', projectManagerRouter);
 
 app.get('/', (req, res) => {
     if (req.cookies.session_id) {

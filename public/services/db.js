@@ -15,6 +15,8 @@ const db = new sqlite3.Database(dbPath, async (err) => {
         await db.exec(dbModel.LOGINATTEMPTS_TABLE_SCHEMA());
         await db.exec(dbModel.GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA());
         await db.exec(dbModel.PASSKEYS_SCHEMA());
+        await db.exec(dbModel.PROJECT_SCHEMA());
+        await db.exec(dbModel.PROJECT_SHARE_SCHEMA());
     }
 });
 

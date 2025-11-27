@@ -1,6 +1,152 @@
-const { useState } = React;
+const { useState, useEffect } = React;
 
 const TempHome = ({ csrfToken }) => {
+    const [showModal, setShowModal] = useState(false);
+    const [showRenameModal, setShowRenameModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState(null);
+    const [projectToRename, setProjectToRename] = useState(null);
+    const [newProjectName, setNewProjectName] = useState('');
+    const [renameProjectName, setRenameProjectName] = useState('');
+    const [projects, setProjects] = useState([]);
+    const [selectedProject, setSelectedProject] = useState('');
+
+    useEffect(() => {
+        // Fetch projects when component mounts
+        fetchProjects();
+    }, []);
+
+    const fetchProjects = async () => {
+        try {
+            const res = await fetch('/api/project/list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            console.log(data)
+            setProjects(data.projects);
+            if (data.projects && data.projects.length > 0) {
+                setSelectedProject(data.projects[0].projectID);
+            }
+        } catch (err) {
+            console.error("Error fetching projects:", err);
+        }
+    };
+
+    const createProject = async () => {
+        if (!newProjectName) {
+            alert("Please enter a project name.");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/project/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ projectName: newProjectName })
+            });
+            if (res.ok) {
+                alert("Project created successfully!");
+                setShowModal(false);
+                setNewProjectName('');
+                fetchProjects(); // refresh dropdown
+            } else {
+                const errData = await res.json();
+                alert(errData.message || "Failed to create project.");
+            }
+        } catch (err) {
+            console.error("Error creating project:", err);
+        }
+    };
+
+    const openRenameModal = (project) => {
+        setProjectToRename(project);
+        setRenameProjectName(project.projectName);
+        setShowRenameModal(true);
+    };
+
+    const closeRenameModal = () => {
+        setShowRenameModal(false);
+        setProjectToRename(null);
+        setRenameProjectName('');
+    };
+
+    const renameProject = async () => {
+        if (!renameProjectName || !projectToRename) {
+            alert("Please enter a project name.");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/project/rename', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    projectID: projectToRename.projectID,
+                    newProjectName: renameProjectName
+                })
+            });
+
+            if (res.ok) {
+                alert("Project renamed successfully!");
+                closeRenameModal();
+                fetchProjects(); // refresh project list
+            } else {
+                const errData = await res.json();
+                alert(errData.message || "Failed to rename project.");
+            }
+        } catch (err) {
+            console.error("Error renaming project:", err);
+            alert("Error renaming project.");
+        }
+    };
+
+    const openDeleteModal = (project) => {
+        setProjectToDelete(project);
+        setShowDeleteModal(true);
+    };
+
+    const closeDeleteModal = () => {
+        setShowDeleteModal(false);
+        setProjectToDelete(null);
+    };
+
+    const deleteProject = async () => {
+        if (!projectToDelete) return;
+
+        try {
+            const res = await fetch('/api/project/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ projectID: projectToDelete.projectID })
+            });
+
+            if (res.ok) {
+                alert("Project deleted successfully!");
+                closeDeleteModal();
+                fetchProjects(); // refresh project list
+            } else {
+                const errData = await res.json();
+                alert(errData.message || "Failed to delete project.");
+            }
+        } catch (err) {
+            console.error("Error deleting project:", err);
+            alert("Error deleting project.");
+        }
+    };
 
     const logout = async () => {
         $.ajax({
@@ -21,26 +167,138 @@ const TempHome = ({ csrfToken }) => {
     };
 
     function handleProfileRoute() {
-        window.location.href = "/profile"
+        window.location.href = "/profile";
     }
 
     return React.createElement('div', { className: 'flex flex-col gap-2.5 p-4 max-w-md mx-auto mt-8' },
         React.createElement('h2', {}, "Hello"),
         React.createElement('p', {}, "You have logged in"),
         React.createElement('input', { type: 'hidden', name: '_csrf', value: csrfToken }),
+
+        React.createElement('h3', { className: 'mt-4 mb-2' }, "Your Projects"),
+
+        // Project list with rename and delete buttons
+        React.createElement('div', { className: 'space-y-2 mb-4' },
+            projects.length === 0
+                ? React.createElement('p', { className: 'text-gray-500' }, 'No projects yet')
+                : projects.map(p =>
+                    React.createElement('div', {
+                            key: p.projectID,
+                            className: 'flex items-center justify-between p-3 border rounded hover:bg-gray-50'
+                        },
+                        React.createElement('span', { className: 'font-medium' }, p.projectName),
+                        React.createElement('div', { className: 'flex gap-2' },
+                            React.createElement('button', {
+                                onClick: () => openRenameModal(p),
+                                className: 'px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm'
+                            }, 'Rename'),
+                            React.createElement('button', {
+                                onClick: () => openDeleteModal(p),
+                                className: 'px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm'
+                            }, 'Delete')
+                        )
+                    )
+                )
+        ),
+
         React.createElement('button', {
-            id: 'btn-logout',
+            onClick: () => setShowModal(true),
+            className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
+        }, 'Create Project'),
+
+        React.createElement('button', {
             onClick: logout,
             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
         }, 'Logout'),
+
         React.createElement('button', {
-            id: 'btn-passkeyRegister',
             onClick: handleProfileRoute,
             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
-        }, 'Manage Profile')
+        }, 'Manage Profile'),
+
+        // Modal for creating new project
+        showModal && React.createElement('div', {
+                className: 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'
+            },
+            React.createElement('div', { className: 'bg-white p-6 rounded shadow-md w-80' },
+                React.createElement('h3', { className: 'text-lg mb-4' }, 'New Project'),
+                React.createElement('input', {
+                    type: 'text',
+                    value: newProjectName,
+                    onChange: e => setNewProjectName(e.target.value),
+                    placeholder: 'Enter project name',
+                    className: 'w-full px-3 py-2 border rounded mb-4'
+                }),
+                React.createElement('div', { className: 'flex justify-end gap-2' },
+                    React.createElement('button', {
+                        onClick: () => setShowModal(false),
+                        className: 'px-4 py-2 bg-gray-300 rounded hover:bg-gray-400'
+                    }, 'Cancel'),
+                    React.createElement('button', {
+                        onClick: createProject,
+                        className: 'px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700'
+                    }, 'Create')
+                )
+            )
+        ),
+
+        // Modal for renaming project
+        showRenameModal && projectToRename && React.createElement('div', {
+                className: 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'
+            },
+            React.createElement('div', { className: 'bg-white p-6 rounded shadow-md w-96' },
+                React.createElement('h3', { className: 'text-lg font-bold mb-4' }, 'Rename Project'),
+                React.createElement('p', { className: 'mb-2 text-sm text-gray-600' }, 'Current name:'),
+                React.createElement('p', { className: 'mb-4 font-semibold text-gray-800' },
+                    `"${projectToRename.projectName}"`
+                ),
+                React.createElement('input', {
+                    type: 'text',
+                    value: renameProjectName,
+                    onChange: e => setRenameProjectName(e.target.value),
+                    placeholder: 'Enter new project name',
+                    className: 'w-full px-3 py-2 border rounded mb-4'
+                }),
+                React.createElement('div', { className: 'flex justify-end gap-2' },
+                    React.createElement('button', {
+                        onClick: closeRenameModal,
+                        className: 'px-4 py-2 bg-gray-300 rounded hover:bg-gray-400'
+                    }, 'Cancel'),
+                    React.createElement('button', {
+                        onClick: renameProject,
+                        className: 'px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'
+                    }, 'Rename')
+                )
+            )
+        ),
+
+        // Modal for deleting project
+        showDeleteModal && projectToDelete && React.createElement('div', {
+                className: 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'
+            },
+            React.createElement('div', { className: 'bg-white p-6 rounded shadow-md w-96' },
+                React.createElement('h3', { className: 'text-lg font-bold mb-4 text-red-600' }, 'Delete Project'),
+                React.createElement('p', { className: 'mb-2' }, 'Are you sure you want to delete this project?'),
+                React.createElement('p', { className: 'mb-6 font-semibold text-gray-800' },
+                    `"${projectToDelete.projectName}"`
+                ),
+                React.createElement('p', { className: 'mb-6 text-sm text-gray-600' },
+                    'This action cannot be undone.'
+                ),
+                React.createElement('div', { className: 'flex justify-end gap-2' },
+                    React.createElement('button', {
+                        onClick: closeDeleteModal,
+                        className: 'px-4 py-2 bg-gray-300 rounded hover:bg-gray-400'
+                    }, 'Cancel'),
+                    React.createElement('button', {
+                        onClick: deleteProject,
+                        className: 'px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700'
+                    }, 'Delete')
+                )
+            )
+        )
     );
 };
 
 // Make available globally
 window.TempHome = TempHome;
-
