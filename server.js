@@ -48,10 +48,12 @@ app.set('views', __dirname + '/public/views');
 const sessionDBService = require("./public/services/sessionDBService.js")
 const accountManagerRouter = require('./public/managers/accountManager');
 const projectManagerRouter = require("./public/managers/projectManager");
+const notifManager = require("./public/managers/notificationManager")
 const dbService = require("./public/services/accountDBService");
 
 app.use('/api', accountManagerRouter);
 app.use('/api', projectManagerRouter);
+app.use('/api', notifManager);
 
 app.get('/', (req, res) => {
     if (req.cookies.session_id) {

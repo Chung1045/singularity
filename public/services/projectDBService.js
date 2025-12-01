@@ -137,12 +137,16 @@ async function updateProjectShare(projectID, shareOptions) {
             case "invite":
                 console.log(`Setting up invitation for user ${uid} to project ${projectID}`)
                 await db.run(sql_invite, [uuid(), projectID, uid, 0])
+                await setupProjectShareNotification(projectID, uid)
                 console.log("invite", uid);
                 break;
             case "remove":
             case "remove-invite":
                 console.log(`Removing / Deleting invitation / collaboration for user ${uid} for project ${projectID}`)
                 await db.run(sql_delete, [projectID, uid])
+                if (operation === "remove") {
+                    await setProjectShareRemoveNotification(projectID, uid)
+                }
                 console.log("remove", uid);
                 break;
             default:
@@ -178,6 +182,118 @@ async function isProjectCollaborator(projectID, userID) {
     });
 }
 
+async function fetchProjectCollaborator(projectID) {
+    const query = `
+        SELECT
+            user.firstName,
+            user.lastName,
+            user.userName,
+            user.uid
+        FROM projectShare ps
+                 JOIN user
+                      ON ps.collabUid = user.uid
+        WHERE ps.projectID = ?;
+    `;
+
+    return new Promise((resolve, reject) => {
+        db.all(query, [projectID], (err, rows) => {
+            if (err) {
+                console.error("Error fetching collaborators:", err);
+                return reject(err);
+            }
+            resolve(rows);
+        });
+    });
+}
+
+async function fetchProjectName(projectID) {
+    const query = `SELECT projectName FROM project WHERE projectID = ?`;
+
+    return new Promise((resolve, reject) => {
+        db.get(query, [projectID], (err, row) => {
+            if (err) {
+                console.error("Error fetching project name:", err);
+                return reject(err);
+            }
+            resolve(row ? row.projectName : null);
+        });
+    });
+}
+
+
+async function setupProjectShareNotification(projectID, collaboratorID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await fetchProjectName(projectID);
+
+        const params = [
+            uuid(),
+            collaboratorID,
+            Date.now(),
+            "invitation",
+            projectID,
+            `You are invited to join ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Notification setup failed:", err);
+        return false;
+    }
+}
+
+async function setProjectShareRemoveNotification(projectID, collaboratorID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await fetchProjectName(projectID);
+
+        const params = [
+            uuid(),
+            collaboratorID,
+            Date.now(),
+            "remove",
+            projectID,
+            `You have been removed from the project ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Notification setup failed:", err);
+        return false;
+    }
+}
+
+
 
 
 module.exports = {
@@ -187,5 +303,7 @@ module.exports = {
     renameProject,
     updateProjectShare,
     queryProjectOwner,
-    isProjectCollaborator
+    isProjectCollaborator,
+    fetchProjectCollaborator,
+    fetchProjectName
 }

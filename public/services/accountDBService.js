@@ -1,9 +1,24 @@
 const db = require("./db")
 const uuid = require("uuid-v4")
 
+async function apiAuthUser(req, res, next) {
+    const sessionID = req.cookies.session_id;
+    if (!sessionID) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await findUserIDBySessionID(sessionID);
+    if (!userID) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    req.userID = userID;
+    next();
+}
+
 async function findUserByUsername(username, selfUid) {
     const query = `
-        SELECT userName, lastName, firstName, userAvatarPath
+        SELECT userName, lastName, firstName, userAvatarPath, uid
         FROM user
         WHERE userName LIKE ?
           AND uid != ?
@@ -273,5 +288,5 @@ module.exports = {
     logLoginAttempts, findUserByUsername, findUserIDBySessionID, findUserNameByUserID,
     listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
     listSessions, listLoginAttempts, deleteAllLoginAttempts,
-    logoutSession, getUserInfo
+    logoutSession, getUserInfo, apiAuthUser
 }
