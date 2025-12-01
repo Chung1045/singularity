@@ -17,6 +17,8 @@ const db = new sqlite3.Database(dbPath, async (err) => {
         await db.exec(dbModel.PASSKEYS_SCHEMA());
         await db.exec(dbModel.PROJECT_SCHEMA());
         await db.exec(dbModel.PROJECT_SHARE_SCHEMA());
+        await db.exec(dbModel.NOTIFICATION_SCHEMA());
+        await db.exec(dbModel.DOCUMENTS_SCHEMA());
     }
 });
 

@@ -1,5 +1,6 @@
 const db = require("./db");
 const fss = require("./fsServices")
+const uuid = require("uuid-v4")
 
 async function listProjects(uid) {
     return new Promise((resolve, reject) => {
@@ -124,10 +125,67 @@ async function queryProjectOwner(projectID) {
     });
 }
 
+async function updateProjectShare(projectID, shareOptions) {
+
+    const sql_invite = `INSERT INTO projectShare (shareID, projectID, collabUid, confirmed) VALUES (?, ?, ?, ?)`;
+    const sql_delete = `DELETE FROM projectShare WHERE projectID = ? AND collabUid = ?`
+
+    for (const option of shareOptions) {
+        const { uid, operation } = option;
+
+        switch (operation) {
+            case "invite":
+                console.log(`Setting up invitation for user ${uid} to project ${projectID}`)
+                await db.run(sql_invite, [uuid(), projectID, uid, 0])
+                console.log("invite", uid);
+                break;
+            case "remove":
+            case "remove-invite":
+                console.log(`Removing / Deleting invitation / collaboration for user ${uid} for project ${projectID}`)
+                await db.run(sql_delete, [projectID, uid])
+                console.log("remove", uid);
+                break;
+            default:
+                console.log("unknown operation", operation);
+        }
+    }
+}
+
+async function isProjectCollaborator(projectID, userID) {
+    const query = `
+        SELECT collabUid AS uid
+        FROM projectShare
+        WHERE projectID = ? AND collabUid = ?
+
+        UNION ALL
+
+        SELECT projectOwnerUid AS uid
+        FROM project
+        WHERE projectID = ?
+
+        LIMIT 1
+    `;
+    const param = [projectID, userID, projectID];
+
+    return new Promise((resolve, reject) => {
+        db.get(query, param, (err, row) => {
+            if (err) {
+                console.error("DB error:", err);
+                return reject(false);
+            }
+            resolve(!!row); // return true if row exists, else false
+        });
+    });
+}
+
+
+
 module.exports = {
     listProjects,
     createProject,
     deleteProject,
     renameProject,
-    queryProjectOwner
+    updateProjectShare,
+    queryProjectOwner,
+    isProjectCollaborator
 }
