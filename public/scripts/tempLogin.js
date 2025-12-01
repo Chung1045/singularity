@@ -316,7 +316,7 @@ const TempLogin = ({ csrfToken }) => {
                         // Terms & Privacy
                         React.createElement('p', { className: 'by-continuing-you' },
                                     React.createElement('span', { className: 'span' },
-                                        'By continuing, you agree to Singularity’s ',
+                                        'By continuing, you agree to Singularity\u2019s ',
                                         React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Privacy Policy'),
                                         ' and ',
                                         React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Terms of Use')
