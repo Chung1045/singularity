@@ -282,11 +282,32 @@ async function deleteAllLoginAttempts(data) {
     });
 }
 
+async function testConnection() {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT 1", (err) => {
+            if (err) reject(err);
+            else resolve(true);
+        });
+    });
+}
+
 
 module.exports = {
-    isGoogleOAuthUserExist, getUIDfromOAuth,
-    logLoginAttempts, findUserByUsername, findUserIDBySessionID, findUserNameByUserID,
-    listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
-    listSessions, listLoginAttempts, deleteAllLoginAttempts,
-    logoutSession, getUserInfo, apiAuthUser
+    isGoogleOAuthUserExist,
+    getUIDfromOAuth,
+    logLoginAttempts,
+    findUserByUsername,
+    findUserIDBySessionID,
+    findUserNameByUserID,
+    listPasskey,
+    getPasskey,
+    findUserIDByPasskeyID,
+    deletePasskey,
+    listSessions,
+    listLoginAttempts,
+    deleteAllLoginAttempts,
+    logoutSession,
+    getUserInfo,
+    apiAuthUser,
+    testConnection
 }

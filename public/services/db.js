@@ -38,5 +38,4 @@ function run(db, sql) {
     });
 }
 
-
 module.exports = db;

@@ -254,6 +254,10 @@ async function getFileMetadata(documentID, projectID) {
     });
 }
 
+async function testConnection() {
+    return await minioClient.bucketExists(process.env.MINIO_BUCKET);
+}
+
 init()
 
 module.exports = {
@@ -269,6 +273,7 @@ module.exports = {
     deleteProjectFolder,
     listProjectFiles,
     getFileMetadata,
+    testConnection,
     minioClient
 };
 
