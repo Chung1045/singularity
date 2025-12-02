@@ -6,21 +6,37 @@ const dbModel = require('./dbModel');
 const dbPath = path.resolve(__dirname, 'database.db');
 const db = new sqlite3.Database(dbPath, async (err) => {
     if (err) {
-        console.error('Error opening database:', err.message);
-    } else {
-        console.log('Connected to SQLite database.');
-        await db.exec(dbModel.USER_TABLE_SCHEMA());
-        await db.exec(dbModel.CREDENTIAL_TABLE_SCHEMA());
-        await db.exec(dbModel.SESSION_TABLE_SCHEMA());
-        await db.exec(dbModel.LOGINATTEMPTS_TABLE_SCHEMA());
-        await db.exec(dbModel.GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA());
-        await db.exec(dbModel.PASSKEYS_SCHEMA());
-        await db.exec(dbModel.PROJECT_SCHEMA());
-        await db.exec(dbModel.PROJECT_SHARE_SCHEMA());
-        await db.exec(dbModel.NOTIFICATION_SCHEMA());
-        await db.exec(dbModel.DOCUMENTS_SCHEMA());
+        console.error("Error opening database:", err.message);
+        return;
+    }
+
+    console.log("Connected to SQLite database.");
+
+    try {
+        await run(db, "PRAGMA foreign_keys = ON;");
+
+        for (const [name, schemaFn] of Object.entries(dbModel)) {
+            if (typeof schemaFn === "function") {
+                const sql = schemaFn();
+                console.log(`Creating table for ${name}...`);
+                await run(db, sql);
+            }
+        }
+
+        console.log("All tables created successfully.");
+    } catch (err) {
+        console.error("Error creating tables:", err);
     }
 });
+
+function run(db, sql) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, (err) => {
+            if (err) return reject(err);
+            resolve();
+        });
+    });
+}
 
 
 module.exports = db;
