@@ -50,18 +50,18 @@ const db = new sqlite3.Database(dbPath, async (err) => {
     } else {
         console.log('Connected to SQLite database.');
 
-        // Drop existing tables if they exist (prerequisites)
-        try {
-            await db.exec("DROP TABLE IF EXISTS passkeys;");
-            await db.exec("DROP TABLE IF EXISTS googleoauth_identity;");
-            await db.exec("DROP TABLE IF EXISTS login_attempts;");
-            await db.exec("DROP TABLE IF EXISTS sessions;");
-            await db.exec("DROP TABLE IF EXISTS credentials;");
-            await db.exec("DROP TABLE IF EXISTS users;");
-            console.log('Dropped existing tables.');
-        } catch (dropErr) {
-            console.error('Error dropping tables:', dropErr.message);
-        }
+        // Drop existing tables if they exist (prerequisites) For development purposes!!!
+        // try {
+        //     await db.exec("DROP TABLE IF EXISTS passkeys;");
+        //     await db.exec("DROP TABLE IF EXISTS googleoauth_identity;");
+        //     await db.exec("DROP TABLE IF EXISTS login_attempts;");
+        //     await db.exec("DROP TABLE IF EXISTS sessions;");
+        //     await db.exec("DROP TABLE IF EXISTS credentials;");
+        //     await db.exec("DROP TABLE IF EXISTS users;");
+        //     console.log('Dropped existing tables.');
+        // } catch (dropErr) {
+        //     console.error('Error dropping tables:', dropErr.message);
+        // }
 
         // Create fresh tables
         try {

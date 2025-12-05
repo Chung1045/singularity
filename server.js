@@ -69,6 +69,7 @@ app.get('/login', (req, res) => {
     res.render("tempLogin", {csrfToken: req.csrfToken()})
 })
 
+
 app.get('/home', async(req, res) => {
     console.log("New request from /home");
 
@@ -95,7 +96,19 @@ app.get('/home', async(req, res) => {
 
     console.log("✅ Session valid, rendering home page");
 
-    res.render("tempHome", { csrfToken: req.csrfToken() });
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (!userID){ 
+        return res.redirect("/login");
+    }
+
+    let userInfo = await dbService.getUserInfo(userID)
+    console.log("Sending to tempHome:", userInfo); 
+    res.render("tempHome", {
+        csrfToken: req.csrfToken(),
+        userInfo: userInfo 
+    });
+
+    // res.render("tempHome", { csrfToken: req.csrfToken() });
 });
 
 app.get('/passkeys', async (req, res) => {
@@ -139,7 +152,20 @@ app.get('/profile', async (req, res) => {
         return res.redirect('/login');
     }
 
-    res.render("tempUserProfile", {userInfo: userInfo});
+    // res.render("tempUserProfile", {userInfo: userInfo, csrfToken: req.csrfToken()});
+
+    //i commented out the line above and added the lines below to handle potential csrfToken errors
+    //to say in short term, i wanna add a logout function in the profile page but it seems that sometimes
+    //the csrfToken is not found and it throws an error, by adding a let statement and try catch block
+    //i can do logout without errors
+
+    let csrfToken = '';
+    try {
+    csrfToken = req.csrfToken() || '';
+    } catch (err) {
+    console.error('CSRF token error:', err);
+    }
+    res.render("tempUserProfile", {userInfo: userInfo, csrfToken: csrfToken});
 });
 
 app.get('/session', async (req, res) => {
