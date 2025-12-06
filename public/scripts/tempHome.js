@@ -52,7 +52,7 @@
 const { useState } = React;
 
 const TempHome = ({ csrfToken, userInfo }) => {
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
 
     console.log("Inside TempHome component – userInfo:", userInfo);
