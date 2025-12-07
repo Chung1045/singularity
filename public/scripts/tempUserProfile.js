@@ -509,7 +509,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     React.createElement('div', {
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: '400',
+                                            fontWeight: 'bold',
                                             color: '#000000',
                                             fontSize: '16px',
                                             letterSpacing: '0',
@@ -547,18 +547,28 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     })
                                 )
                             ),
-                            React.createElement('img', {
-                                src: './img/vector-4.svg',
-                                alt: '',
+                            // React.createElement('img', {
+                            //     src: './img/vector-4.svg',
+                            //     alt: '',
+                            //     style: {
+                            //         position: 'absolute',
+                            //         top: '72px',
+                            //         left: '0',
+                            //         width: '412px',
+                            //         height: '1px',
+                            //         objectFit: 'cover'
+                            //     }
+                            // }),
+
+                            React.createElement('hr', {
                                 style: {
-                                    position: 'absolute',
-                                    top: '72px',
-                                    left: '0',
-                                    width: '412px',
-                                    height: '1px',
-                                    objectFit: 'cover'
+                                    margin: '0',
+                                    border: 'none',
+                                    borderTop: '1px solid #000000ff',
+                                    width: '100%'
                                 }
                             }),
+
                             // Display Name
                             React.createElement('div', {
                                 style: {
@@ -581,7 +591,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     React.createElement('div', {
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: '400',
+                                            fontWeight: 'bold',
                                             color: '#000000',
                                             fontSize: '16px',
                                             letterSpacing: '0',
@@ -619,6 +629,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     })
                                 )
                             ),
+
                             // React.createElement('img', {
                             //     src: './img/vector-3.svg',
                             //     alt: '',
@@ -631,6 +642,16 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             //         objectFit: 'cover'
                             //     }
                             // }),
+
+                            React.createElement('hr', {
+                                    style: {
+                                    margin: '0',
+                                    border: 'none',
+                                    borderTop: '1px solid #000000ff',
+                                    width: '100%'
+                                }
+                            }), 
+
                             // Email
                             React.createElement('div', {
                                 style: {
@@ -653,7 +674,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     React.createElement('div', {
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: '400',
+                                            fontWeight: '600',
                                             color: '#000000',
                                             fontSize: '16px',
                                             letterSpacing: '0',
@@ -691,18 +712,28 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     })
                                 )
                             ),
-                            React.createElement('img', {
-                                src: './img/vector-2-2.svg',
-                                alt: '',
+                            // React.createElement('img', {
+                            //     src: './img/vector-2-2.svg',
+                            //     alt: '',
+                            //     style: {
+                            //         position: 'absolute',
+                            //         top: '208px',
+                            //         left: '0',
+                            //         width: '412px',
+                            //         height: '1px',
+                            //         objectFit: 'cover'
+                            //     }
+                            // }),
+
+                            React.createElement('hr', {
                                 style: {
-                                    position: 'absolute',
-                                    top: '208px',
-                                    left: '0',
-                                    width: '412px',
-                                    height: '1px',
-                                    objectFit: 'cover'
+                                    margin: '0',
+                                    border: 'none',
+                                    borderTop: '1px solid #000000ff',
+                                    width: '100%'
                                 }
                             }),
+
                             // Account Type
                             React.createElement('div', {
                                 style: {
@@ -725,7 +756,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     React.createElement('div', {
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: '400',
+                                            fontWeight: 'bold',
                                             color: '#000000',
                                             fontSize: '16px',
                                             letterSpacing: '0',
@@ -774,7 +805,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: '400',
+                                        fontWeight: 'bold',
                                         color: '#000000',
                                         fontSize: '20px',
                                         letterSpacing: '0',
@@ -818,7 +849,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: '400',
+                                        fontWeight: 'bold',
                                         color: '#000000',
                                         fontSize: '20px',
                                         letterSpacing: '0',
@@ -862,7 +893,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: '400',
+                                        fontWeight: 'bold',
                                         color: '#000000',
                                         fontSize: '20px',
                                         letterSpacing: '0',
@@ -906,7 +937,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: '400',
+                                        fontWeight: 'bold',
                                         color: '#b62e2e',
                                         fontSize: '20px',
                                         letterSpacing: '0',
