@@ -27,6 +27,20 @@ async function findUserNameByUserID(uid) {
     });
 }
 
+// Check if user has any passkeys
+async function hasUserPasskeys(uid) {
+    return new Promise((resolve, reject) => {
+        db.get(`SELECT COUNT(*) as count FROM passkeys WHERE uid = ?`, [uid], (err, row) => {
+            if (err) {
+                console.error('Error checking user passkeys:', err);
+                return reject(err);
+            }
+            resolve(row && row.count > 0);
+        });
+    });
+}
+
+
 async function findUserIDBySessionID(sessionID) {
     return new Promise((resolve, reject) => {
         db.get(`SELECT uid FROM session WHERE sessionID = ?`, [sessionID], (err, row) => {
@@ -236,8 +250,14 @@ async function deleteAllLoginAttempts(data) {
 }
 
 
+// module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
+//     logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
+//     listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
+//     listSessions, listLoginAttempts, deleteAllLoginAttempts,
+//     logoutSession, getUserInfo }
+
 module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
     logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
     listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
     listSessions, listLoginAttempts, deleteAllLoginAttempts,
-    logoutSession, getUserInfo }
+    logoutSession, getUserInfo, hasUserPasskeys }

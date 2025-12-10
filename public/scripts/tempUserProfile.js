@@ -43,6 +43,8 @@
 
 const { useState } = React;
 
+
+
 const TempUserProfile = ({userInfo, csrfToken}) => {
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -62,6 +64,21 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     function handleChangePassword() {
         window.location.href = "/change-password"
     }
+
+    const getAccountType = () => {
+    // Priority 1: Check if user has passkeys (this takes highest priority)
+    if (userInfo?.hasPasskey) {
+        return 'Passkey';
+    }
+    
+    // Priority 2: Check if user type is Google OAuth
+    if (userInfo?.userType === 'google') {
+        return 'Google Sign-In';
+    }
+    
+    // Priority 3: Default to Email login
+    return 'Email login';
+};
 
     const logout = async () => {
         $.ajax({
@@ -772,7 +789,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
-                                    }, 'Email login')
+                                    }, getAccountType())
                                 )
                             )
                         ),

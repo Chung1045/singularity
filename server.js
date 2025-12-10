@@ -147,10 +147,16 @@ app.get('/profile', async (req, res) => {
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
     let userInfo = await dbService.getUserInfo(userID)
-
+ 
+    //check if user has passkeys
+    const hasPasskey = await dbService.hasUserPasskeys(userID);
+    userInfo.hasPasskey = hasPasskey;
+    
     if (!userID) {
         return res.redirect('/login');
     }
+
+   
 
     // res.render("tempUserProfile", {userInfo: userInfo, csrfToken: req.csrfToken()});
 
