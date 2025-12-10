@@ -48,7 +48,7 @@ const { useState } = React;
 const TempUserProfile = ({userInfo, csrfToken}) => {
 
     // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-    
+
     // Persist sidebar state in localStorage
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -382,7 +382,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 React.createElement('div', {
                     style: {
                         fontSize: '24px',
-                        fontWeight: '700',
+                        fontWeight: '500',
                         fontFamily: 'SF Pro-Bold, Helvetica',
                         color: '#000000',
                         marginBottom: '131px',
