@@ -47,7 +47,14 @@ const { useState } = React;
 
 const TempUserProfile = ({userInfo, csrfToken}) => {
 
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+    // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+    
+    // Persist sidebar state in localStorage
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved !== null ? JSON.parse(saved) : true;
+    });
+    
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
@@ -80,6 +87,8 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     return 'Email login';
 };
 
+
+
     const logout = async () => {
         $.ajax({
             url: '/api/logout',
@@ -108,8 +117,15 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         }
     }
 
+    // const toggleSidebar = () => {
+    //     setSidebarCollapsed(!sidebarCollapsed);
+    //     setUserMenuOpen(false);
+    // };
+
     const toggleSidebar = () => {
-        setSidebarCollapsed(!sidebarCollapsed);
+        const newState = !sidebarCollapsed;
+        setSidebarCollapsed(newState);
+        localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
         setUserMenuOpen(false);
     };
 

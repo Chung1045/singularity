@@ -52,7 +52,12 @@
 const { useState } = React;
 
 const TempHome = ({ csrfToken, userInfo }) => {
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+    // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved !== null ? JSON.parse(saved) : true;
+    });
+
     const [userMenuOpen, setUserMenuOpen] = useState(false);
 
     console.log("Inside TempHome component – userInfo:", userInfo);
@@ -86,9 +91,16 @@ const TempHome = ({ csrfToken, userInfo }) => {
         window.location.href = "/profile";
     }
 
+    // const toggleSidebar = () => {
+    //     setSidebarCollapsed(!sidebarCollapsed);
+    //     setUserMenuOpen(false); // Close menu when sidebar toggles
+    // };
+
     const toggleSidebar = () => {
-        setSidebarCollapsed(!sidebarCollapsed);
-        setUserMenuOpen(false); // Close menu when sidebar toggles
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+    setUserMenuOpen(false);
     };
 
     const toggleUserMenu = (e) => {
