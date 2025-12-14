@@ -1,11 +1,12 @@
 const db = require("./db")
 const uuid = require("uuid-v4");
+
 async function createSession(data) {
     const id = uuid();
     const sql = `
-    INSERT INTO session (sessionID, uid, lastSeenTime, sessionOS, sessionBrowser, sessionIP
-    ) VALUES (?, ?, ?, ?, ?, ?)
-  `;
+        INSERT INTO session (sessionID, uid, lastSeenTime, sessionOS, sessionBrowser, sessionIP)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
 
     const params = [
         id,
@@ -25,10 +26,12 @@ async function createSession(data) {
     }
 }
 
-async function destroySession(data){
+async function destroySession(data) {
     const sql = `
-    DELETE FROM session WHERE sessionID = ?
-  `;
+        DELETE
+        FROM session
+        WHERE sessionID = ?
+    `;
 
     const param = [data]
 
@@ -77,4 +80,20 @@ async function isSessionActive(sessionID) {
     });
 }
 
-module.exports = {createSession, destroySession, isSessionActive}
+async function updateLastSeen(sessionID) {
+    const sql = `UPDATE session
+                 SET lastSeenTime = ?
+                 WHERE sessionID = ?;`
+
+    return new Promise((resolve, reject) => {
+        db.run(sql, [sessionID], (err) => {
+            if (err) {
+                console.error("Error updating last seen time:", err);
+                return reject(err);
+            }
+            resolve(true);
+        });
+    });
+}
+
+module.exports = {createSession, destroySession, isSessionActive, updateLastSeen}

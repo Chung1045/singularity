@@ -195,17 +195,19 @@ const CHAT_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS chat (
         chatID TEXT PRIMARY KEY NOT NULL UNIQUE,
         projectID TEXT NOT NULL,
+        threadName TEXT,
         FOREIGN KEY (projectID) REFERENCES project(projectID) ON DELETE CASCADE
     );
 `
 
+// Rename conversationID to chatID
 const CONVERSATION_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS conversation (
         conversationID TEXT NOT NULL UNIQUE,
-        conversationSeq INTEGER NOT NULL,
+        chatSeq INTEGER NOT NULL, 
         chatID TEXT NOT NULL,
         conversationMessage TEXT NOT NULL,
-        PRIMARY KEY (conversationID, conversationSeq),
+        PRIMARY KEY (conversationID, chatSeq),
         FOREIGN KEY (chatID) REFERENCES chat ON DELETE CASCADE 
     );
 `
@@ -230,6 +232,7 @@ const RESPONSE_SCHEMA = () => `
         conversationSeq INTEGER NOT NULL,
         responseMessage TEXT NOT NULL,
         responseTimeDate TEXT NOT NULL,
+        isActive INTEGER NOT NULL,
         FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation ON DELETE CASCADE
     );
 `
