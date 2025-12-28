@@ -174,7 +174,15 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         })
                     ),
 
-                    React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' }),
+                    // React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' }),
+
+                    React.createElement('button', {
+                        style: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
+                        onClick: () => window.location.href = '/home',
+                        'aria-label': 'Go to home'
+                    },
+                        React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' })
+                    ),
 
                     React.createElement('button', {
                         className: 'trigger',
@@ -466,7 +474,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('img', {
-                                    src: './img/icon.svg',
+                                    src: './img/Edit.svg',
                                     alt: '',
                                     style: {
                                         position: 'absolute',
@@ -558,7 +566,8 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
-                                    }, `@${username}`)
+                                    // }, `@${username}`)
+                                    }, `${username}`)
                                 ),
                                 React.createElement('div', {
                                     style: {
@@ -567,17 +576,17 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                         position: 'relative'
                                     }
                                 },
-                                    React.createElement('img', {
-                                        src: './img/vector.svg',
-                                        alt: '',
-                                        style: {
-                                            position: 'absolute',
-                                            width: '75%',
-                                            height: '75%',
-                                            top: '12.50%',
-                                            left: '12.50%'
-                                        }
-                                    })
+                                    // React.createElement('img', {
+                                    //     src: './img/vector.svg',
+                                    //     alt: '',
+                                    //     style: {
+                                    //         position: 'absolute',
+                                    //         width: '75%',
+                                    //         height: '75%',
+                                    //         top: '12.50%',
+                                    //         left: '12.50%'
+                                    //     }
+                                    // })
                                 )
                             ),
                             // React.createElement('img', {
@@ -649,17 +658,17 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                         position: 'relative'
                                     }
                                 },
-                                    React.createElement('img', {
-                                        src: './img/image.svg',
-                                        alt: '',
-                                        style: {
-                                            position: 'absolute',
-                                            width: '75%',
-                                            height: '75%',
-                                            top: '12.50%',
-                                            left: '12.50%'
-                                        }
-                                    })
+                                    // React.createElement('img', {
+                                    //     src: './img/image.svg',
+                                    //     alt: '',
+                                    //     style: {
+                                    //         position: 'absolute',
+                                    //         width: '75%',
+                                    //         height: '75%',
+                                    //         top: '12.50%',
+                                    //         left: '12.50%'
+                                    //     }
+                                    // })
                                 )
                             ),
 
@@ -732,17 +741,17 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                         position: 'relative'
                                     }
                                 },
-                                    React.createElement('img', {
-                                        src: './img/vector-2.svg',
-                                        alt: '',
-                                        style: {
-                                            position: 'absolute',
-                                            width: '75%',
-                                            height: '75%',
-                                            top: '12.50%',
-                                            left: '12.50%'
-                                        }
-                                    })
+                                    // React.createElement('img', {
+                                    //     src: './img/edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
+                                    //     alt: '',
+                                    //     style: {
+                                    //         position: 'absolute',
+                                    //         width: '75%',
+                                    //         height: '75%',
+                                    //         top: '12.50%',
+                                    //         left: '12.50%'
+                                    //     }
+                                    // })
                                 )
                             ),
                             // React.createElement('img', {
@@ -853,12 +862,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('img', {
-                                        src: './img/vector-7.svg',
+                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                                         alt: '',
                                         style: {
                                             position: 'absolute',
-                                            width: '49.06%',
-                                            height: '83.33%',
+                                            width: '24px',
+                                            height: '24px',
                                             top: '8.33%',
                                             left: '26.04%'
                                         }
@@ -897,12 +906,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('img', {
-                                        src: './img/vector-5.svg',
+                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                                         alt: '',
                                         style: {
                                             position: 'absolute',
-                                            width: '49.06%',
-                                            height: '83.33%',
+                                            width: '24px',
+                                            height: '24px',
                                             top: '8.33%',
                                             left: '26.04%'
                                         }
@@ -941,12 +950,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('img', {
-                                        src: './img/vector-6.svg',
+                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                                         alt: '',
                                         style: {
                                             position: 'absolute',
-                                            width: '49.06%',
-                                            height: '83.33%',
+                                            width: '24px',
+                                            height: '24px',
                                             top: '8.33%',
                                             left: '26.04%'
                                         }

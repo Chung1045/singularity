@@ -145,8 +145,16 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         })
                     ),
 
-                    React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' }),
+                    // React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' }),
 
+                    React.createElement('button', {
+                        style: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
+                        onClick: () => window.location.href = '/home',
+                        'aria-label': 'Go to home'
+                    },
+                        React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' })
+                    ),
+                    
                     React.createElement('button', {
                         className: 'trigger',
                         type: 'button',
