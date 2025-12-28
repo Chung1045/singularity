@@ -9,6 +9,7 @@ const socketIo = require('socket.io');
 const startupCheck = require('./public/services/startupCheck');
 const routeManager = require('./public/managers/routesManager');
 const accountManagerRouter = require('./public/managers/accountManager');
+const aiAgentManagerRouter = require('./public/managers/aiAgentManager');
 const projectManagerRouter = require("./public/managers/projectManager");
 const notifManager = require("./public/managers/notificationManager")
 
@@ -53,6 +54,7 @@ app.use(express.static('public'));
 app.use('/api', accountManagerRouter);
 app.use('/api', projectManagerRouter);
 app.use('/api', notifManager);
+app.use('/api', aiAgentManagerRouter)
 app.use("/", routeManager)
 
 async function startServer() {

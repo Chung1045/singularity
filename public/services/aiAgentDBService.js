@@ -105,7 +105,7 @@ async function saveConversationRequest(data) {
 
 async function saveConversationRequestRef(data, conversationID, conversationSeq) {
     const sql = `
-        INSERT INTO conversationDocRef
+        INSERT OR REPLACE INTO conversationDocRef
             (refID, conversationID, conversationSeq, documentID, remarks)
         VALUES (?, ?, ?, ?, ?)
     `;
@@ -147,9 +147,9 @@ async function saveConversationResponse(chatSeq, conversationID, responseMessage
     }
 }
 
-async function deleteConversation(conversationID) {
-    const sql = `DELETE FROM conversation WHERE conversationID = ?`;
-    const params = [conversationID];
+async function deleteConversation(chatID, conversationID) {
+    const sql = `DELETE FROM conversation WHERE conversationID = ? AND chatID = ?`;
+    const params = [conversationID, chatID];
 
     try {
         await dbRun(sql, params);
@@ -159,17 +159,87 @@ async function deleteConversation(conversationID) {
     }
 }
 
-async function conversationEdit(conversationID, newConversationRequest) {
+async function conversationEdit(chatID, chatSeq, conversationID, newConversationRequest) {
     const sql = `UPDATE conversation SET conversationMessage = ? WHERE conversationID = ?`
-    const sql2 = `DELETE FROM response WHERE conversationID = ?`
+    const sql2 = `DELETE FROM conversation WHERE chatID = ? AND chatSeq > ?`
+    const sql3 = `DELETE FROM response WHERE conversationID = ?`
 
     try {
-        await dbRun(sql, [conversationID, newConversationRequest]);
-        await dbRun(sql2, [conversationID])
+        await dbRun(sql, [newConversationRequest, conversationID]);
+        await dbRun(sql2, [chatID, chatSeq])
+        await dbRun(sql3, [conversationID])
         return true;
     } catch (error) {
         throw error;
     }
+}
+
+/**
+ * Fetches complete chat thread with all conversations, responses, and document references
+ * @param {string} projectID - UUID of the project
+ * @param {string} chatID - UUID of the chat thread
+ * @returns {Promise<Object>} Chat thread data with nested conversations
+ */
+async function fetchChatThread(projectID, chatID) {
+    const sql = `
+        SELECT
+            c.conversationID,
+            c.chatSeq,
+            c.chatID,
+            c.conversationMessage,
+            GROUP_CONCAT(DISTINCT cdr.documentID) as documentIDs,
+            r.responseMessage,
+            r.responseTimeDate
+        FROM conversation c
+                 LEFT JOIN conversationDocRef cdr
+                           ON c.conversationID = cdr.conversationID
+                               AND c.chatSeq = cdr.conversationSeq
+                 LEFT JOIN response r
+                           ON c.conversationID = r.conversationID
+                               AND c.chatSeq = r.conversationSeq
+                               AND r.isActive = 1
+        WHERE c.chatID = ?
+        GROUP BY c.conversationID, c.chatSeq
+        ORDER BY c.chatSeq ASC
+    `;
+
+    return new Promise((resolve, reject) => {
+        db.all(sql, [chatID], (err, rows) => {
+            if (err) {
+                console.error(`Error fetching chat thread: ${err}`);
+                reject(err);
+                return;
+            }
+
+            if (!Array.isArray(rows)) {
+                console.error('Expected rows to be an array, got:', typeof rows);
+                resolve({
+                    chatID: chatID,
+                    projectID: projectID,
+                    conversations: []
+                });
+                return;
+            }
+
+            // Transform flat rows into structured JSON
+            const conversations = rows.map(row => ({
+                conversationID: row.conversationID,
+                chatSeq: row.chatSeq,
+                message: row.conversationMessage,
+                attachedDocuments: row.documentIDs ? row.documentIDs.split(',') : [],
+                response: row.responseMessage ? {
+                    message: row.responseMessage,
+                    timestamp: row.responseTimeDate
+                } : null
+            }));
+
+            resolve({
+                chatID: chatID,
+                projectID: projectID,
+                conversations: conversations
+            });
+        });
+    });
 }
 
 async function getConversationRecall(projectID, chatID) {
@@ -184,7 +254,6 @@ async function getConversationRecall(projectID, chatID) {
             ON c.conversationID = r.conversationID
         WHERE c.chatID = ? AND r.isActive = 1 
         ORDER BY c.chatSeq DESC
-        LIMIT 5
     `;
 
     const rows = await dbAll(sql, [chatID]);
@@ -500,6 +569,8 @@ module.exports = {
     renameChatThread,
     deleteChatThread,
     deleteConversation,
+    fetchChatThread,
+    getConversationRecall,
     getProjectRequirements,
     getRequirementsSource,
     getProjectUserStories,

@@ -1,25 +1,4 @@
 const tools = [
-    // {
-    //     type: "function",
-    //     function: {
-    //         name: "get_chat_memory",
-    //         description: "Retrieve conversation memory/history for a specific chat in a project",
-    //         parameters: {
-    //             type: "object",
-    //             properties: {
-    //                 projectID: {
-    //                     type: "string",
-    //                     description: "The ID of the project"
-    //                 },
-    //                 chatID: {
-    //                     type: "string",
-    //                     description: "The ID of the chat conversation"
-    //                 },
-    //             },
-    //             required: ["projectID", "chatID"],
-    //         },
-    //     },
-    // },
     {
         type: "function",
         function: {
