@@ -102,6 +102,13 @@ app.get('/home', async(req, res) => {
     }
 
     let userInfo = await dbService.getUserInfo(userID)
+    
+    // NEW: Check if userInfo exists
+    if (!userInfo) {
+        console.error(`❌ User info not found for userID: ${userID}`);
+        return res.redirect('/login');
+    }
+    
     console.log("Sending to tempHome:", userInfo); 
     res.render("tempHome", {
         csrfToken: req.csrfToken(),
@@ -138,6 +145,12 @@ app.get('/passkeys', async (req, res) => {
     res.locals.passkeys = passkeys;
 
     let userInfo = await dbService.getUserInfo(userID);
+    
+    // NEW: Check if userInfo exists
+    if (!userInfo) {
+        console.error(`❌ User info not found for userID: ${userID}`);
+        return res.redirect('/login');
+    }
 
     res.render("tempPasskey", {
         csrfToken: req.csrfToken(),
@@ -151,15 +164,23 @@ app.get('/profile', async (req, res) => {
     }
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
-    let userInfo = await dbService.getUserInfo(userID)
- 
-    //check if user has passkeys
-    const hasPasskey = await dbService.hasUserPasskeys(userID);
-    userInfo.hasPasskey = hasPasskey;
     
     if (!userID) {
         return res.redirect('/login');
     }
+
+    let userInfo = await dbService.getUserInfo(userID)
+    
+    // OLD: userInfo.hasPasskey = hasPasskey;
+    // NEW: Check if userInfo exists before setting properties
+    if (!userInfo) {
+        console.error(`❌ User info not found for userID: ${userID}`);
+        return res.redirect('/login');
+    }
+ 
+    //check if user has passkeys
+    const hasPasskey = await dbService.hasUserPasskeys(userID);
+    userInfo.hasPasskey = hasPasskey;
 
    
 

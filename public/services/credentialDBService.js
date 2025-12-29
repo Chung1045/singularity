@@ -1,6 +1,9 @@
 const db = require("./db")
 const uuid = require("uuid-v4")
 
+// Import findUserByUsername for use in insertGoogleOAuthUserAccount
+const { findUserByUsername } = require("./accountDBService")
+
 async function insertCredentials(data){
     const id = uuid();
     const sql = `

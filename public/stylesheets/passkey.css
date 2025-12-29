@@ -551,9 +551,9 @@ a {
   bottom: 50px;
   gap: 0;
 }
-.sidebar-expand.collapsed .username-display .text-wrapper-6 {
+/* .sidebar-expand.collapsed .username-display .text-wrapper-6 {
   /* display: none !important; */
-}
+/* } */ 
 .sidebar-expand.collapsed .username-display .user {
   margin: 0;
 }

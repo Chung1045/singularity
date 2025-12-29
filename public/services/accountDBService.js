@@ -69,12 +69,20 @@ async function findUserIDByPasskeyID(passkeyID) {
 
 async function getUserInfo(userID) {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`, [userID], (err, row) => {
+        // OLD: db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`, [userID], (err, row) => {
+        // NEW: Added more detailed logging
+        const query = `SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`;
+        console.log(`🔍 getUserInfo: Querying for uid="${userID}"`);
+        db.get(query, [userID], (err, row) => {
             if (err) {
-                console.error('Error in getting user information:', err);
+                console.error('❌ Error in getting user information:', err);
                 return reject(err);
             }
-            console.log(`Query for user info uid ${userID}"):`, row || 'NOT FOUND');
+            if (!row) {
+                console.error(`❌ getUserInfo: NO USER FOUND for uid="${userID}"`);
+            } else {
+                console.log(`✅ getUserInfo result:`, row);
+            }
             resolve(row);
         });
     });
@@ -250,6 +258,7 @@ async function deleteAllLoginAttempts(data) {
     });
 }
 
+// Database Schemas
 
 // module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
 //     logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
@@ -257,8 +266,10 @@ async function deleteAllLoginAttempts(data) {
 //     listSessions, listLoginAttempts, deleteAllLoginAttempts,
 //     logoutSession, getUserInfo }
 
+
+
 module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
     logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
     listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
     listSessions, listLoginAttempts, deleteAllLoginAttempts,
-    logoutSession, getUserInfo, hasUserPasskeys }
+    logoutSession, getUserInfo, hasUserPasskeys, findUserByUsername }
