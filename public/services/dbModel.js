@@ -58,6 +58,7 @@ const PASSKEYS_SCHEMA = () => `
                                             publicKey TEXT NOT NULL,
                                             dateCreate TEXT NOT NULL,
                                             lastUsed TEXT,
+                                            lastUsedDevice TEXT,
                                             FOREIGN KEY (uid) REFERENCES user(uid) ON DELETE CASCADE);
 `
 

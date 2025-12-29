@@ -126,17 +126,22 @@ app.get('/passkeys', async (req, res) => {
     // CRITICAL: Ensure it's always an array
     passkeys = Array.isArray(passkeys) ? passkeys : [];
 
-    // Optional: Normalize fields
+    // MODIFIED: Include lastUsed and lastUsedDevice in the normalized fields
     passkeys = passkeys.map(pk => ({
         keyID: pk.keyID || '',
         keyName: pk.keyName || 'Unnamed Passkey',
-        dateCreate: pk.dateCreate || new Date().toISOString()
+        dateCreate: pk.dateCreate || new Date().toISOString(),
+        lastUsed: pk.lastUsed || null,  // ADDED: Include lastUsed field
+        lastUsedDevice: pk.lastUsedDevice || null  // ADDED: Include device info
     }));
 
     res.locals.passkeys = passkeys;
 
+    let userInfo = await dbService.getUserInfo(userID);
+
     res.render("tempPasskey", {
         csrfToken: req.csrfToken(),
+        userInfo: userInfo
     });
 });
 

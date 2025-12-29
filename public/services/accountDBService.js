@@ -144,7 +144,8 @@ async function logLoginAttempts(data) {
 }
 
 async function listPasskey(data) {  // ✅ Just pass uid directly, not data object
-    const query = `SELECT keyID, keyName, dateCreate FROM passkeys WHERE uid = ? ORDER BY dateCreate DESC`;
+    // MODIFIED: Added lastUsed and lastUsedDevice to SELECT statement
+    const query = `SELECT keyID, keyName, dateCreate, lastUsed, lastUsedDevice FROM passkeys WHERE uid = ? ORDER BY dateCreate DESC`;
 
     return new Promise((resolve, reject) => {
         db.all(query, [data], (err, rows) => {  // ✅ Use db.all() to get ALL rows

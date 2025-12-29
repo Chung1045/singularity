@@ -8,6 +8,7 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
+    <link rel="stylesheet" href="/stylesheets/passkey.css">
 </head>
 <body>
 <div id="root"></div>
@@ -17,12 +18,17 @@
 <script>
     const csrfToken = "<%= csrfToken %>";
     const passkeys = <%- JSON.stringify(passkeys || []) %>;
+    const userInfo  = <%- JSON.stringify(userInfo || {}) %>;
+
 
     console.log("CSRF:", csrfToken);
     console.log("Passkeys:", passkeys);
 
+    console.log("tempPasskey.ejs → userInfo received:", userInfo);
+
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(window.TempPasskey, { csrfToken, passkeys }));
+    root.render(React.createElement(window.TempPasskey, { csrfToken, passkeys, userInfo }));
 </script>
 </body>
 </html>

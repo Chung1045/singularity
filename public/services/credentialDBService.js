@@ -171,7 +171,9 @@ async function insertGoogleOAuthUserAccount(profile) {
 async function savePasskey(data) {
     console.log("Data received: " + JSON.stringify(data))
 
-    const sql = `INSERT INTO passkeys (keyID, uid, keyName, transports, signCount, publicKey, dateCreate) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    // MODIFIED: Include lastUsed set to NULL initially (will update on first use)
+    const sql = `INSERT INTO passkeys (keyID, uid, keyName, transports, signCount, publicKey, dateCreate, lastUsed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    const now = new Date().toISOString();
     const params = [
         data.keyID,
         data.uid,
@@ -179,7 +181,8 @@ async function savePasskey(data) {
         data.transports,
         data.signCount,
         data.publicKey,
-        new Date().toISOString()
+        now,
+        null  // lastUsed starts as null
     ]
 
     console.log("Params: " + params)
@@ -250,6 +253,23 @@ async function checkUsernameEmail(data) {
     });
 }
 
+// MODIFIED: Updated to include device information
+async function updatePasskeyLastUsed(keyID, deviceInfo) {
+    const sql = `UPDATE passkeys SET lastUsed = ?, lastUsedDevice = ? WHERE keyID = ?`;
+    const params = [new Date().toISOString(), deviceInfo || 'Unknown Device', keyID];
+    
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function(err) {
+            if (err) {
+                console.error(`❌ Error updating passkey lastUsed:`, err);
+                return reject(err);
+            }
+            console.log(`✅ Updated lastUsed for passkey: ${keyID} with device: ${deviceInfo}`);
+            resolve(true);
+        });
+    });
+}
 
 
-module.exports = { insertCredentials, insertUserAccount, insertGoogleOAuthUserAccount, savePasskey, checkPassword, checkUsernameEmail, updatePassword }
+
+module.exports = { insertCredentials, insertUserAccount, insertGoogleOAuthUserAccount, savePasskey, checkPassword, checkUsernameEmail, updatePassword, updatePasskeyLastUsed }

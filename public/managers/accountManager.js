@@ -428,15 +428,38 @@ router.post("/passkey/verify-authentication", async (req, res) => {
 
             console.log("Result: " + JSON.stringify(verification))
 
-            let uid = await dbService.findUserIDByPasskeyID(passkey.keyID)
+            // MODIFIED: Capture device info and update lastUsed
+            if (verification.verified) {
+                let uid = await dbService.findUserIDByPasskeyID(passkey.keyID)
+
+                // Get device information from user agent
+                const userAgent = req.headers['user-agent'] || 'Unknown';
+                const parser = new UAParser(userAgent);
+                const result = parser.getResult();
+                const deviceInfo = `${result.browser.name || 'Unknown Browser'} on ${result.os.name || 'Unknown OS'}`;
+
+                // Update lastUsed timestamp and device when passkey is successfully used
+                try {
+                    await credDBService.updatePasskeyLastUsed(passkey.keyID, deviceInfo);
+                    console.log("✅ LastUsed timestamp and device updated successfully");
+                } catch (updateError) {
+                    console.error("❌ Failed to update lastUsed:", updateError);
+                }
 
                 if (await createSession(req, res, uid)) {
                     console.log("Session successfully created")
                 }
 
-            return res.json({
-                successful: true
-            });
+                return res.json({
+                    successful: true
+                });
+            } else {
+                console.log("❌ Verification failed");
+                return res.status(400).json({
+                    successful: false,
+                    message: "Verification failed"
+                });
+            }
         } catch (error) {
             console.error(error);
             return res.status(400).send({ successful:false, message: error.message });
@@ -646,17 +669,68 @@ router.post("/password/change", async (req, res) => {
 });
 
 
+// ORIGINAL VERSION - Commented out before modification
+// function inferProviderName(transports, userAgent) {
+//     const ua = userAgent.toLowerCase();
+
+//     if (transports.includes('internal')) {
+//         if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('mac')) {
+//             return 'iCloud Keychain';
+//         } else if (ua.includes('windows')) {
+//             return 'Windows Hello';
+//         } else if (ua.includes('android')) {
+//             return 'Google Password Manager';
+//         } else if (ua.includes('samsung')) {
+//             return 'Samsung Pass';
+//         } else {
+//             return 'Platform Authenticator';
+//         }
+//     } else if (transports.includes('usb') || transports.includes('nfc')) {
+//         return 'Hardware Security Key';
+//     } else if (transports.includes('hybrid')) {
+//         return 'Phone/Tablet (Cross-Device)';
+//     } else {
+//         return 'Passkey';
+//     }
+// }
+
+// MODIFIED VERSION - Enhanced with device-specific names
 function inferProviderName(transports, userAgent) {
     const ua = userAgent.toLowerCase();
+    const parser = new UAParser(userAgent);
+    const result = parser.getResult();
 
     if (transports.includes('internal')) {
+        // Use UAParser for more detailed device info
+        const osName = result.os.name || 'Unknown';
+        const deviceModel = result.device.model || '';
+        const deviceVendor = result.device.vendor || '';
+        
         if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('mac')) {
+            // Build descriptive name for Apple devices
+            if (deviceModel) {
+                return `iCloud Keychain (${deviceModel})`;
+            } else if (ua.includes('iphone')) {
+                return `iCloud Keychain (iPhone)`;
+            } else if (ua.includes('ipad')) {
+                return `iCloud Keychain (iPad)`;
+            } else if (ua.includes('mac')) {
+                return `iCloud Keychain (Mac)`;
+            }
             return 'iCloud Keychain';
         } else if (ua.includes('windows')) {
-            return 'Windows Hello';
+            return `Windows Hello (${osName})`;
         } else if (ua.includes('android')) {
+            if (deviceVendor && deviceModel) {
+                return `Google Password Manager (${deviceVendor} ${deviceModel})`;
+            } else if (deviceModel) {
+                return `Google Password Manager (${deviceModel})`;
+            }
             return 'Google Password Manager';
         } else if (ua.includes('samsung')) {
+            if (deviceModel) {
+                return `Samsung Pass (${deviceModel})`;
+            }
             return 'Samsung Pass';
         } else {
             return 'Platform Authenticator';
@@ -664,7 +738,9 @@ function inferProviderName(transports, userAgent) {
     } else if (transports.includes('usb') || transports.includes('nfc')) {
         return 'Hardware Security Key';
     } else if (transports.includes('hybrid')) {
-        return 'Phone/Tablet (Cross-Device)';
+        // For hybrid (cross-device), we can't detect the phone type from desktop browser
+        // Return a generic clean name matching the mockup style
+        return 'Cross-Device Passkey';
     } else {
         return 'Passkey';
     }
