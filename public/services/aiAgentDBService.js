@@ -552,6 +552,26 @@ async function getUserStoriesSource(storyID){
     return await dbAll(sql, [storyID]);
 }
 
+async function getStoryTitle(storyID, projectID) {
+    const sql = `
+        SELECT storyTitle
+        FROM userStories
+        WHERE storyID = ? AND projectID = ?
+    `;
+
+    return new Promise((resolve, reject) => {
+        console.log(`Passed in value ${storyID}, ${projectID}`);
+        db.get(sql, [storyID, projectID], (err, row) => {
+            if (err) {
+                console.error('Error in getStoryTitle:', err);
+                return reject(err);
+            }
+            console.log('Result:', row);
+            resolve(row);
+        });
+    });
+}
+
 async function searchChatHistory(projectID, chatID, keyword){
     const sql = `
         SELECT chatSeq, conversationMessage
@@ -575,6 +595,7 @@ module.exports = {
     getRequirementsSource,
     getProjectUserStories,
     getUserStoriesSource,
+    getStoryTitle,
     saveConversationRequest,
     saveConversationRequestRef,
     saveConversationResponse,

@@ -293,9 +293,6 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID) {
     }
 }
 
-
-
-
 module.exports = {
     listProjects,
     createProject,
