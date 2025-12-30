@@ -191,9 +191,16 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         'aria-expanded': !sidebarCollapsed,
                         onClick: toggleSidebar
                     },
-                        React.createElement('span', { className: 'close-side-bar' },
-                            React.createElement('span',  { className: 'text-wrapper-5' }, '>>')
-                        )
+                        // OLD: Text version
+                        // React.createElement('span', { className: 'close-side-bar' },
+                        //     React.createElement('span',  { className: 'text-wrapper-5' }, '>>')
+                        // )
+                        // NEW: SVG version
+                        React.createElement('img', {
+                            src: './img/double-arrow-right-svgrepo-com.svg',
+                            alt: 'Toggle sidebar',
+                            style: { width: '24px', height: '24px' }
+                        })
                     ),
 
                     React.createElement('div', { className: 'horizontal-inset', role: 'separator' },

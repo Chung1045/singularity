@@ -212,8 +212,21 @@ app.get('/session', async (req, res) => {
 
     const sessions = await dbService.listSessions(userID)
     const loginAttempts = await dbService.listLoginAttempts(userID)
+    
+    // NEW: Get user info for sidebar
+    let userInfo = await dbService.getUserInfo(userID);
+    
+    if (!userInfo) {
+        console.error(`❌ User info not found for userID: ${userID}`);
+        return res.redirect('/login');
+    }
 
-    res.render("tempSession", { csrfToken: req.csrfToken(), sessions: sessions, loginAttempts: loginAttempts });
+    res.render("tempSession", { 
+        csrfToken: req.csrfToken(), 
+        sessions: sessions, 
+        loginAttempts: loginAttempts,
+        userInfo: userInfo 
+    });
 });
 
 app.get('/change-password', async (req, res) => {

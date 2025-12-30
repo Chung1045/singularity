@@ -193,7 +193,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 width: '100%',
                 borderRadius: '10px',
                 backgroundColor: '#ffffff',
-                border: '1px solid #e8e8e8',
+                // border: '1px solid #e8e8e8',
                 boxSizing: 'border-box'
             }
         },
@@ -351,9 +351,16 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         'aria-expanded': !sidebarCollapsed,
                         onClick: toggleSidebar
                     },
-                        React.createElement('span', { className: 'close-side-bar' },
-                            React.createElement('span',  { className: 'text-wrapper-5' }, '>>')
-                        )
+                        // OLD: Text version
+                        // React.createElement('span', { className: 'close-side-bar' },
+                        //     React.createElement('span',  { className: 'text-wrapper-5' }, '>>')
+                        // )
+                        // NEW: SVG version
+                        React.createElement('img', {
+                            src: './img/double-arrow-right-svgrepo-com.svg',
+                            alt: 'Toggle sidebar',
+                            style: { width: '24px', height: '24px' }
+                        })
                     ),
 
                     React.createElement('div', { className: 'horizontal-inset', role: 'separator' },
@@ -594,7 +601,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                             React.createElement('div', {
                                 style: {
                                     fontFamily: 'SF Pro-Bold, Helvetica',
-                                    fontWeight: '700',
+                                    fontWeight: '400',
                                     color: '#000000',
                                     fontSize: '24px',
                                     letterSpacing: '0',
@@ -650,8 +657,43 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                 )
                             ),
 
-                            // Passkey list
-                            passkeyElements
+                            // Passkey list or empty state message
+                            passkeys.length === 0 
+                                ? React.createElement('div', {
+                                    style: {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        minHeight: '550px',
+                                        textAlign: 'center',
+                                        color: '#999999',
+                                        fontFamily: 'SF Pro-Regular, Helvetica',
+                                        fontSize: '18px',
+                                        lineHeight: '1.6'
+                                    }
+                                },
+                                    React.createElement('div', {
+                                        style: {
+                                            fontWeight: '600',
+                                            fontSize: '20px',
+                                            color: '#666666',
+                                            marginBottom: '10px'
+                                        }
+                                    }, 'No Passkey'),
+                                    React.createElement('div', null, 
+                                        'Create new passkey by clicking ',
+                                        React.createElement('span', {
+                                            onClick: () => registerPasskey(),
+                                            style: {
+                                                color: '#666666',
+                                                cursor: 'pointer',
+                                                fontWeight: '400'
+                                            }
+                                        }, 'Create Passkey')
+                                    )
+                                )
+                                : passkeyElements
                         )
                     )
                 )

@@ -367,7 +367,17 @@ a {
   bottom: 20px;
   transform: none;
 }
+/* OLD: Text version rotation
 .sidebar-expand.collapsed .text-wrapper-5 {
+  transform: rotate(0deg);
+}
+*/
+/* NEW: SVG version rotation */
+.sidebar-expand .trigger img {
+  transform: rotate(180deg);
+  transition: transform 220ms ease;
+}
+.sidebar-expand.collapsed .trigger img {
   transform: rotate(0deg);
 }
 .sidebar-expand.collapsed .horizontal-inset,
