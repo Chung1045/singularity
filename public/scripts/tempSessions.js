@@ -100,29 +100,103 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
         }
     }
 
-    const sessionElements = sessions.map((session) => {
-        // Safety: ensure key exists
+    const sessionElements = sessions.map((session, index) => {
         const keyID = session.sessionID;
+        const isCurrent = index === 0;
 
         return React.createElement(
             "div",
             {
                 key: keyID,
-                className: "flex items-center justify-between border border-gray-300 rounded p-3 mt-3",
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '15px',
+                    padding: '10px 20px',
+                    position: 'relative',
+                    width: '100%',
+                    borderRadius: '10px',
+                    backgroundColor: '#fafafa',
+                    transition: 'background-color 0.2s ease'
+                }
             },
+            React.createElement("div", { 
+                style: { 
+                    width: '48px', 
+                    height: '48px', 
+                    backgroundColor: '#d9d9d9', 
+                    borderRadius: '10px',
+                    flexShrink: 0
+                } 
+            }),
             React.createElement(
                 "div",
-                null,
-                React.createElement("h3", { className: "font-semibold text-lg" }, session.sessionOS),
-                React.createElement("p", { className: "text-gray-600 text-sm" }, session.lastSeenTime)
+                { style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } },
+                React.createElement(
+                    "div",
+                    { style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } },
+                    React.createElement("div", { 
+                        style: { 
+                            fontFamily: 'Inter, Helvetica', 
+                            fontWeight: 400, 
+                            fontSize: '20px',
+                            color: '#000000'
+                        } 
+                    }, session.sessionOS),
+                    React.createElement(
+                        "div",
+                        { style: { display: 'flex', gap: '10px', width: '100%' } },
+                        React.createElement("div", { 
+                            style: { 
+                                fontFamily: 'Inter, Helvetica', 
+                                fontWeight: 400, 
+                                fontSize: '14px',
+                                color: '#000000'
+                            } 
+                        }, session.sessionIP || "Unknown IP"),
+                        React.createElement("div", { 
+                            style: { 
+                                fontFamily: 'Inter, Helvetica', 
+                                fontWeight: 400, 
+                                fontSize: '14px',
+                                color: '#000000'
+                            } 
+                        }, session.sessionLocation || "Unknown Location")
+                    ),
+                    React.createElement(
+                        "div",
+                        { style: { display: 'flex', gap: '10px', width: '100%' } },
+                        React.createElement("div", { 
+                            style: { 
+                                fontFamily: 'Inter, Helvetica', 
+                                fontWeight: 400, 
+                                fontSize: '14px',
+                                color: '#000000'
+                            } 
+                        }, isCurrent ? "Current" : session.lastSeenTime)
+                    )
+                )
             ),
             React.createElement(
                 "button",
-                {
-                    className: "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600",
+                { 
+                    style: { 
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    },
                     onClick: () => handleSessionLogout(keyID)
                 },
-                "Logout this session"
+                React.createElement('img', {
+                    src: './img/logout_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
+                    alt: 'Logout',
+                    style: { width: '24px', height: '24px' }
+                })
             )
         );
     });
@@ -134,16 +208,75 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
             "div",
             {
                 key: keyID,
-                className: "flex items-center justify-between border border-gray-300 rounded p-3 mt-3",
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '15px',
+                    padding: '10px 20px',
+                    position: 'relative',
+                    width: '100%',
+                    borderRadius: '10px',
+                    backgroundColor: '#fafafa',
+                    transition: 'background-color 0.2s ease'
+                }
             },
+            React.createElement("div", { 
+                style: { 
+                    width: '48px', 
+                    height: '48px', 
+                    backgroundColor: '#d9d9d9', 
+                    borderRadius: '10px',
+                    flexShrink: 0
+                } 
+            }),
             React.createElement(
                 "div",
-                null,
-                React.createElement("h3", { className: "font-semibold text-lg" }, attempt.attemptIP),
-                React.createElement("p", { className: "text-gray-600 text-sm" }, attempt.attemptBrowser),
-                React.createElement("p", { className: "text-gray-600 text-sm" }, attempt.attemptOS),
-                React.createElement("p", { className: "text-gray-600 text-sm" }, attempt.attemptDate)
-            ),
+                { style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } },
+                React.createElement(
+                    "div",
+                    { style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } },
+                    React.createElement("div", { 
+                        style: { 
+                            fontFamily: 'Inter, Helvetica', 
+                            fontWeight: 400, 
+                            fontSize: '20px',
+                            color: '#000000'
+                        } 
+                    }, `${attempt.attemptOS} - ${attempt.attemptBrowser}`),
+                    React.createElement(
+                        "div",
+                        { style: { display: 'flex', gap: '10px', width: '100%' } },
+                        React.createElement("div", { 
+                            style: { 
+                                fontFamily: 'Inter, Helvetica', 
+                                fontWeight: 400, 
+                                fontSize: '14px',
+                                color: '#000000'
+                            } 
+                        }, attempt.attemptIP),
+                        React.createElement("div", { 
+                            style: { 
+                                fontFamily: 'Inter, Helvetica', 
+                                fontWeight: 400, 
+                                fontSize: '14px',
+                                color: '#000000'
+                            } 
+                        }, attempt.attemptLocation || "Unknown Location")
+                    ),
+                    React.createElement(
+                        "div",
+                        { style: { display: 'flex', gap: '10px', width: '100%' } },
+                        React.createElement("div", { 
+                            style: { 
+                                fontFamily: 'Inter, Helvetica', 
+                                fontWeight: 400, 
+                                fontSize: '14px',
+                                color: '#000000'
+                            } 
+                        }, attempt.attemptDate)
+                    )
+                )
+            )
         );
     });
 
@@ -392,10 +525,97 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
 
             // Main content area
             React.createElement('main', { className: 'right-container' },
-                React.createElement('section', { className: 'main-screen' },
+                React.createElement('section', { 
+                    className: 'main-screen',
+                    style: {
+                        backgroundColor: '#ffffff',
+                        width: '100%',
+                        minHeight: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: 0,
+                        alignItems: 'flex-start'
+                    }
+                },
+                    // Header with back button and title
                     React.createElement(
                         "div",
-                        { className: "flex flex-col gap-2.5 p-4 max-w-md mx-auto mt-8" },
+                        { 
+                            style: {
+                                display: 'flex',
+                                marginLeft: '27px',
+                                width: 'fit-content',
+                                height: '44px',
+                                position: 'relative',
+                                marginTop: '38px',
+                                alignItems: 'center',
+                                gap: '15px'
+                            }
+                        },
+                        React.createElement(
+                            "button",
+                            { 
+                                style: {
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '44px',
+                                    height: '44px',
+                                    padding: '10px',
+                                    borderRadius: '10px',
+                                    border: '1px solid #e0e0e0',
+                                    background: '#fff',
+                                    cursor: 'pointer'
+                                },
+                                onClick: () => window.history.back(),
+                                'aria-label': 'Go back'
+                            },
+                            React.createElement(
+                                "div",
+                                { style: { position: 'relative', width: '24px', height: '24px' } },
+                                 React.createElement('img', {
+                                    src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                                    alt: 'Back',
+                                    style: {
+                                        width: '24px',
+                                        height: '24px'
+                                    }
+                                })
+                            )
+                        ),
+                        React.createElement("div", { 
+                            style: {
+                                position: 'relative',
+                                width: 'fit-content',
+                                fontFamily: 'Urbanist, Helvetica',
+                                fontWeight: 700,
+                                // fontStyle: 'italic',
+                                color: '#000000',
+                                fontSize: '24px',
+                                letterSpacing: 0,
+                                lineHeight: 'normal',
+                                textAlign: 'left'
+                            }
+                        }, "Manage Login Sessions")
+                    ),
+
+                    // Main content container
+                    React.createElement(
+                        "div",
+                        { 
+                            style: {
+                                display: 'flex',
+                                marginLeft: '33px',
+                                marginRight: '33px',
+                                width: 'calc(100% - 66px)',
+                                position: 'relative',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                gap: '15px',
+                                marginTop: '20px',
+                                flex: 1
+                            }
+                        },
 
                         // Hidden CSRF
                         React.createElement("input", {
@@ -405,24 +625,232 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                             value: csrfToken,
                         }),
 
-                        React.createElement("h2", { className: "text-xl font-semibold mb-2" }, "Manage Sessions"),
+                        // Clear all button
+                        React.createElement(
+                            "button",
+                            {
+                                style: {
+                                    display: 'flex',
+                                    width: '129px',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '10px',
+                                    position: 'relative',
+                                    flex: '0 0 auto',
+                                    borderRadius: '10px',
+                                    border: '1px solid #000000',
+                                    background: 'transparent',
+                                    cursor: loginAttempts.length > 0 ? 'pointer' : 'not-allowed',
+                                    transition: 'background-color 0.2s ease',
+                                    // opacity: loginAttempts.length > 0 ? 1 : 0.5
+                                    opacity: loginAttempts.length > 0 ? 1 : 1
 
-                        sessionElements,
-
-                        React.createElement("h2", { className: "text-xl font-semibold mb-2" }, "Login attempts"),
-
-                        loginAttempts.length > 0
-                            ? React.createElement(
-                                "button",
-                                {
-                                    className: "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600",
-                                    onClick: handleClearLoginAttempts
                                 },
-                                "Clear Login Attempts History"
-                            )
-                            : React.createElement("p", { className: "text-gray-600 text-sm" }, "No record"),
+                                onClick: loginAttempts.length > 0 ? handleClearLoginAttempts : null,
+                                disabled: loginAttempts.length === 0
+                            },
+                            React.createElement(
+                                "div",
+                                { style: { position: 'relative', width: '24px', height: '24px', marginRight: '10px' } },
+                                React.createElement("img", { 
+                                    src: "./img/clear_all_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg", 
+                                    alt: "",
+                                    style: {
+                                        width: '24px',
+                                        height: '24px',
+                                        marginRight: '20px'
+                                    }
 
-                        loginAttemptElement
+
+
+                                })
+                            ),
+                            React.createElement("div", { 
+                                style: {
+                                    position: 'relative',
+                                    width: 'fit-content',
+                                    marginTop: '-1px',
+                                    fontFamily: 'Urbanist, Helvetica',
+                                    fontWeight: 600,
+                                    color: '#000000',
+                                    fontSize: '20px',
+                                    letterSpacing: 0,
+                                    lineHeight: 'normal',
+                                    whiteSpace: 'nowrap'
+                                }
+                            }, "Clear all")
+                        ),
+
+                        // Content sections container
+                        React.createElement(
+                            "div",
+                            { 
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    width: '100%',
+                                    alignItems: 'flex-start',
+                                    gap: '26px',
+                                    position: 'relative'
+                                }
+                            },
+
+                            // Login attempts section
+                            React.createElement(
+                                "div",
+                                { 
+                                    style: {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'flex-start',
+                                        gap: '15px',
+                                        position: 'relative',
+                                        width: '100%'
+                                    }
+                                },
+                                React.createElement("div", { 
+                                    style: {
+                                        position: 'relative',
+                                        width: '100%',
+                                        marginTop: '-1px',
+                                        fontFamily: 'Urbanist, Helvetica',
+                                        fontWeight: 700,
+                                        color: '#000000',
+                                        fontSize: '24px',
+                                        letterSpacing: 0,
+                                        lineHeight: 'normal'
+                                    }
+                                }, "Log in attempts"),
+                                loginAttempts.length > 0
+                                    ? loginAttemptElement
+                                    : React.createElement("p", { 
+                                        style: {
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontWeight: 400,
+                                            fontSize: '14px',
+                                            color: '#000000',
+                                            padding: '10px 20px'
+                                        }
+                                    }, "No login attempts recorded")
+                                    // OLD CODE - Full card structure
+                                    // React.createElement("div", {
+                                    //     style: {
+                                    //         display: 'flex',
+                                    //         alignItems: 'center',
+                                    //         gap: '15px',
+                                    //         padding: '10px 20px',
+                                    //         position: 'relative',
+                                    //         width: '100%',
+                                    //         borderRadius: '10px',
+                                    //         backgroundColor: '#fafafa'
+                                    //     }
+                                    // },
+                                    //     React.createElement("div", { 
+                                    //         style: { 
+                                    //             width: '48px', 
+                                    //             height: '48px', 
+                                    //             backgroundColor: '#d9d9d9', 
+                                    //             borderRadius: '10px',
+                                    //             flexShrink: 0
+                                    //         } 
+                                    //     }),
+                                    //     React.createElement("div", { 
+                                    //         style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } 
+                                    //     },
+                                    //         React.createElement("div", { 
+                                    //             style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } 
+                                    //         },
+                                    //             React.createElement("div", { 
+                                    //                 style: {
+                                    //                     fontFamily: 'Inter, Helvetica',
+                                    //                     fontWeight: 400,
+                                    //                     fontSize: '20px',
+                                    //                     color: '#000000'
+                                    //                 }
+                                    //             }, "No login attempts recorded")
+                                    //         )
+                                    //     )
+                                    // )
+                            ),
+
+                            // Logged in sessions section
+                            React.createElement(
+                                "div",
+                                { 
+                                    style: {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'flex-start',
+                                        gap: '15px',
+                                        position: 'relative',
+                                        width: '100%'
+                                    }
+                                },
+                                React.createElement("div", { 
+                                    style: {
+                                        position: 'relative',
+                                        width: 'fit-content',
+                                        marginTop: '-1px',
+                                        fontFamily: 'Urbanist, Helvetica',
+                                        fontWeight: 700,
+                                        color: '#000000',
+                                        fontSize: '24px',
+                                        letterSpacing: 0,
+                                        lineHeight: 'normal'
+                                    }
+                                }, "Logged in sessions"),
+                                sessions.length > 0
+                                    ? sessionElements
+                                    : React.createElement("p", { 
+                                        style: {
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontWeight: 400,
+                                            fontSize: '14px',
+                                            color: '#000000',
+                                            padding: '10px 20px'
+                                        }
+                                    }, "No active sessions")
+                                    // OLD CODE - Full card structure
+                                    // React.createElement("div", {
+                                    //     style: {
+                                    //         display: 'flex',
+                                    //         alignItems: 'center',
+                                    //         gap: '15px',
+                                    //         padding: '10px 20px',
+                                    //         position: 'relative',
+                                    //         width: '100%',
+                                    //         borderRadius: '10px',
+                                    //         backgroundColor: '#fafafa'
+                                    //     }
+                                    // },
+                                    //     React.createElement("div", { 
+                                    //         style: { 
+                                    //             width: '48px', 
+                                    //             height: '48px', 
+                                    //             backgroundColor: '#d9d9d9', 
+                                    //             borderRadius: '10px',
+                                    //             flexShrink: 0
+                                    //         } 
+                                    //     }),
+                                    //     React.createElement("div", { 
+                                    //         style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } 
+                                    //     },
+                                    //         React.createElement("div", { 
+                                    //             style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } 
+                                    //         },
+                                    //             React.createElement("div", { 
+                                    //                 style: {
+                                    //                     fontFamily: 'Inter, Helvetica',
+                                    //                     fontWeight: 400,
+                                    //                     fontSize: '20px',
+                                    //                     color: '#000000'
+                                    //                 }
+                                    //             }, "No active sessions")
+                                    //         )
+                                    //     )
+                                    // )
+                            )
+                        )
                     )
                 )
             )

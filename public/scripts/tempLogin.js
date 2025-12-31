@@ -171,6 +171,7 @@ const TempLogin = ({ csrfToken }) => {
     const [usernameEmail, setUsernameEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async () => {
         setIsLoading(true);
@@ -294,23 +295,50 @@ const TempLogin = ({ csrfToken }) => {
                         // Password Input
                         React.createElement('div', { className: 'div-3' },
                             React.createElement('div', { className: 'text-wrapper-3' }, 'Password'),
-                            React.createElement('input', {
-                                    type: 'password',
-                                    className: 'div-4',
+                            React.createElement('div', { className: 'div-wrapper', style: { position: 'relative' } },
+                                React.createElement('input', {
+                                    type: showPassword ? 'text' : 'password',
+                                    className: 'text-wrapper-4',
                                     value: password,
                                     onChange: (e) => setPassword(e.target.value),
                                     onKeyPress: handleKeyPress,
                                     disabled: isLoading,
+                                    // placeholder: '********',
                                     style: {
-                                        border: '2px solid #e4e4e4',
-                                        borderRadius: '8px',
-                                        padding: '5px',
+                                        border: 'none',
+                                        background: 'transparent',
                                         outline: 'none',
                                         width: '100%',
-                                        fontSize: '10px'
-                                        
+                                        fontSize: '10px',
+                                        margin: '10px',
+                                        paddingRight: '35px'
                                     }
-                                })
+                                }),
+                                React.createElement('button', {
+                                    type: 'button',
+                                    onClick: () => setShowPassword(!showPassword),
+                                    style: {
+                                        position: 'absolute',
+                                        right: '1px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: '5px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    },
+                                    'aria-label': showPassword ? 'Hide password' : 'Show password'
+                                },
+                                    React.createElement('img', {
+                                        src: showPassword ? './img/eye-open.svg' : './img/eye-closed.svg',
+                                        alt: showPassword ? 'Hide password' : 'Show password',
+                                        style: { width: '14px', height: '14px', opacity: 0.6 }
+                                    })
+                                )
+                            )
                         ),
 
                         // Terms & Privacy
