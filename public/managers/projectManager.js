@@ -35,6 +35,20 @@ const upload = multer({
     }
 });
 
+/** POST Create a new project
+ * @param {string} projectName - Name of the project to create (required)
+ * @example
+ * // Request body:
+ * {
+ *   "projectName": "My New Project"
+ * }
+ *
+ * // Success response:
+ * {
+ *   "success": true,
+ *   "message": "successful"
+ * }
+ */
 router.post('/project/create', async (req, res) => {
     try{
         console.log("New requests /project/create")
@@ -46,9 +60,10 @@ router.post('/project/create', async (req, res) => {
 
         const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
-        let formData = req.body
-
-        console.log(formData)
+        let formData = req.body;
+        if (formData.projectName == null) {
+            return res.status(400).json({ success: false, message: "projectName is required" });
+        }
 
         const data = {
             projectID: uuid(),
@@ -68,6 +83,10 @@ router.post('/project/create', async (req, res) => {
     return res.status(200).json({ success: true, message: 'successful' });
 });
 
+
+/** DELETE project
+ * @param {string} projectID - UUID of the project to delete (required)
+ */
 router.post('/project/delete', async (req, res) => {
     try {
         console.log("New request /project/delete");
@@ -80,7 +99,7 @@ router.post('/project/delete', async (req, res) => {
         const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
         const { projectID } = req.body;
 
-        if (!projectID) {
+        if (projectID == null) {
             return res.status(400).json({ success: false, message: "Project ID is required" });
         } else if (await projectDBService.queryProjectOwner(projectID) !== userID) {
             return res.status(403).json({ successful: false, message: "Unauthorized" });
@@ -101,6 +120,11 @@ router.post('/project/delete', async (req, res) => {
     }
 });
 
+/** Rename a project
+ * @param {string} newprojectName - New name of the project (required)
+ * @param {string} projectID - UUID of the project to rename (required)
+ */
+
 router.post('/project/rename', async (req, res) => {
     try {
         console.log("New request /project/rename");
@@ -113,7 +137,7 @@ router.post('/project/rename', async (req, res) => {
         const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
         const { projectID, newProjectName } = req.body;
 
-        if (!newProjectName || !projectID) {
+        if (newProjectName == null || projectID == null) {
             return res.status(400).json({ success: false, message: "New Project Name and project ID are required" });
         } else if (await projectDBService.queryProjectOwner(projectID) !== userID) {
             return res.status(403).json({ successful: false, message: "Unauthorized" });
@@ -175,9 +199,7 @@ router.post('/project/list', async (req, res) => {
  * }
  */
 router.post('/project/editShare', async (req, res) => {
-
     try {
-
         console.log("New requests /project/editShare")
 
         if (!req.cookies.session_id) {
@@ -190,6 +212,10 @@ router.post('/project/editShare', async (req, res) => {
         // uid: xxxxxxxx,
         // operation: "invite" / "remove", "remove-invite"
         // }]
+
+        if (projectID == null || shareOptions == null) {
+            return res.status(400).json({ success: false, message: "Missing required field(s)" });
+        }
 
         const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
         if (await projectDBService.queryProjectOwner(projectID) !== userID) {
@@ -205,11 +231,20 @@ router.post('/project/editShare', async (req, res) => {
 
 })
 
+
+/** POST Upload a file to a project
+ * @param {File} file - File to upload (required, sent as form-data)
+ * @param {string} projectID - UUID of the project (required, sent as form-data)
+ */
 router.post("/project/file/upload", upload.single('file'), async(req, res) => {
     console.log("New request /project/file/upload");
 
     const { projectID } = req.body;
     const uploadedFile = req.file;
+
+    if (projectID == null) {
+        return res.status(400).json({ success: false, message: "projectID is required" });
+    }
 
     // Helper function to safely delete temp file
     const cleanupTempFile = async () => {
@@ -287,6 +322,12 @@ router.post("/project/file/upload", upload.single('file'), async(req, res) => {
     }
 });
 
+/** POST Rename an uploaded file in a project
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} documentID - UUID of the document to rename (required)
+ * @param {string} newFileName - New file name for the document (required)
+ */
+
 router.post("/project/file/rename", async(req, res) => {
     console.log("New requests /project/file/rename")
 
@@ -295,6 +336,10 @@ router.post("/project/file/rename", async(req, res) => {
     if (!req.cookies.session_id) {
         console.log("Unauthorized attempt for renaming project documents");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null || documentID == null || newFileName == null) {
+        return res.status(400).json({ success: false, message: "Missing required field(s)" });
     }
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
@@ -309,6 +354,10 @@ router.post("/project/file/rename", async(req, res) => {
     }
 })
 
+/** POST Delete an uploaded file in a project
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} documentID - UUID of the document to delete (required)
+ */
 router.post("/project/file/delete", async(req, res) => {
     console.log("New requests /project/file/delete")
     let { projectID, documentID } = req.body // need to have file extension at back, for instance, sample.txt
@@ -316,6 +365,10 @@ router.post("/project/file/delete", async(req, res) => {
     if (!req.cookies.session_id) {
         console.log("Unauthorized attempt for deleting project documents");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null || documentID == null) {
+        return res.status(400).json({ success: false, message: "Missing required field(s)" });
     }
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
@@ -330,6 +383,11 @@ router.post("/project/file/delete", async(req, res) => {
     }
 })
 
+/** POST Download an uploaded file in a project
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} documentID - UUID of the document to download (required)
+ */
+
 router.post("/project/file/download", async (req, res) => {
     console.log("New request /project/file/download");
 
@@ -338,6 +396,10 @@ router.post("/project/file/download", async (req, res) => {
     if (!req.cookies.session_id) {
         console.log("Unauthorized attempt for downloading project documents");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null || documentID == null) {
+        return res.status(400).json({ success: false, message: "Missing required field(s)" });
     }
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
@@ -377,6 +439,10 @@ router.post("/project/file/list", async(req, res) => {
     if (!req.cookies.session_id) {
         console.log("Unauthorized attempt for listing project documents");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null) {
+        return res.status(400).json({ success: false, message: "projectID is required" });
     }
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
@@ -478,6 +544,47 @@ router.post("/project/report/delete", async(req, res) => {
     }
 
 })
+
+/** POST Download a generated report in a project
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} reportID - UUID of the document to download (required)
+ */
+
+router.post("/project/report/download", async (req, res) => {
+    console.log("New request /project/report/download");
+
+    const { projectID, reportID } = req.body;
+
+    if (!req.cookies.session_id) {
+        console.log("Unauthorized attempt for downloading project report");
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null || reportID == null) {
+        return res.status(400).json({ success: false, message: "Missing required field(s)" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    try {
+        const fileName = await fss.queryReportname(projectID, reportID) + `.docx`;
+
+        // Then get the file stream from MinIO
+        const stream = await fss.downloadReport(projectID, reportID);
+
+        res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+        res.setHeader("Content-Type", "application/octet-stream");
+
+        stream.pipe(res);
+    } catch (err) {
+        console.error("Download failed:", err);
+        res.status(500).send("Download failed");
+    }
+});
 
 
 module.exports = router;

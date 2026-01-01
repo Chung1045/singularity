@@ -305,6 +305,16 @@ async function listReportRecord(projectID) {
     });
 }
 
+async function downloadReport(projectID, reportID){
+    try {
+        const objectPath = `project/${projectID}/reports/${reportID}`;
+        return await minioClient.getObject(bucket, objectPath);
+    } catch (err) {
+        console.error("Download error:", err);
+        throw err;
+    }
+}
+
 async function insertReportRecord(projectID, reportType) {
     const sql = `INSERT INTO reports (reportID, projectID, reportName, reportType, reportDate)
                  VALUES (?, ?, ?, ?, ?)`;
@@ -318,12 +328,13 @@ async function insertReportRecord(projectID, reportType) {
     }
 
     const reportID = uuid();
-    const dateStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const dateTimeStr = now.toISOString().replace('T', ' ').split('.')[0];
 
     const params = [
         reportID,
         projectID,
-        `${reportName}-${dateStr}`,
+        `${reportName}-${dateTimeStr}`,
         reportType,
         dateStr
     ]
@@ -335,6 +346,21 @@ async function insertReportRecord(projectID, reportType) {
     });
 
     return reportID;
+}
+
+async function queryReportName(projectID, reportID) {
+    const sql = `SELECT reportName FROM reports WHERE projectID = ? AND reportID = ?`;
+
+    return new Promise((resolve, reject) => {
+        db.get(sql, [projectID, reportID], (err, row) => {
+            if (err) {
+                console.error("Error querying report name:", err);
+                reject(err);
+            } else {
+                resolve(row ? row.reportName : null);
+            }
+        });
+    });
 }
 
 async function deleteReportRecord(projectID, reportID) {
@@ -376,25 +402,27 @@ async function testConnection() {
 init()
 
 module.exports = {
-    init,
     createFolder,
     createProjectFolder,
-    uploadFile,
-    uploadProjectFile,
-    insertFileData,
-    downloadProjectFile,
     deleteProjectFile,
-    renameProjectFile,
     deleteProjectFolder,
-    listProjectFiles,
-    getFileMetadata,
-    testConnection,
-    saveGeneratedReport,
-    insertReportRecord,
-    listReportRecord,
     deleteReportRecord,
-    minioClient,
+    downloadProjectFile,
+    downloadReport,
+    FSS_REPORT_REQUIREMENTS,
     FSS_REPORT_USERSTORIES,
-    FSS_REPORT_REQUIREMENTS
+    getFileMetadata,
+    init,
+    insertFileData,
+    insertReportRecord,
+    listProjectFiles,
+    listReportRecord,
+    minioClient,
+    queryReportName,
+    renameProjectFile,
+    saveGeneratedReport,
+    testConnection,
+    uploadFile,
+    uploadProjectFile
 };
 

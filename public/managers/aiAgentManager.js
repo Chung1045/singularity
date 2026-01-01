@@ -8,7 +8,7 @@ const router = express.Router();
 const aiDB = require("../services/aiAgentDBService");
 const agent = require("../services/aiAgentService");
 const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
-const docGen = require("../services/documentGeneration");
+const docGen = require("../services/docGenerationService");
 
 /**
  * Chat API Request Body
