@@ -158,6 +158,22 @@ router.post('/project/list', async (req, res) => {
     return res.status(200).json({ success: true, message: 'successful' });
 });
 
+
+/** POST Edit project sharing settings
+ * @param {string} projectID - UUID of the project (required)
+ * @param {Array<Object>} shareOptions - Array of share operations to perform (required)
+ * @param {string} shareOptions[].uid - User ID to share with or remove
+ * @param {string} shareOptions[].operation - Operation type: "invite", "remove", or "remove-invite"
+ * @example
+ * // Request body:
+ * {
+ *   "projectID": "f3342960-06b7-4875-8081-e962c83b23a4,
+ *   "shareOptions": [
+ *     { "uid": "257b31e2-be71-4cfd-8051-e37ec343fdfa", "operation": "invite" },
+ *     { "uid": "9cb37a7f-b1fe-41dc-8064-7bbbed289f85", "operation": "remove" }
+ *   ]
+ * }
+ */
 router.post('/project/editShare', async (req, res) => {
 
     try {
@@ -378,6 +394,89 @@ router.post("/project/file/list", async(req, res) => {
         console.error("Download failed:", err);
         res.status(500).send("Download failed");
     }
+})
+
+/** List project reports
+ * @param {string} projectID - UUID of the current project (required)
+ *
+ * return format:
+ * {
+ *  "successful":true,
+ *  "reports":[{
+ *      "reportID":"ec436183-a928-40a7-a9ab-40bd9141559f",
+ *      "reportName":"Project User Stories Report-2026-01-01",
+ *      "reportType":"userStories"}
+ *  ]
+ *  }
+ */
+
+router.post("/project/report/list", async(req, res) => {
+    const { projectID } = req.body;
+
+    if (!req.cookies.session_id) {
+        console.log("Unauthorized attempt for listing project documents");
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null) {
+        return res.status(400).json({success: false, message: `Missing required fields`})
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    try {
+        let reports = await fss.listReportRecord(projectID);
+        console.log(`Results: ${reports}`)
+
+        return res.status(200).json({ successful: true, reports: reports })
+
+    } catch (err) {
+        console.error("Unable to list out report record:", err);
+        res.status(500).send("Internal Server Error, cannot list report record");
+    }
+})
+
+/** DELETE project reports
+ * @param {string} projectID - UUID of the current project (required)
+ * @param {string} reportID - UUID of the report to delete (required)
+ */
+
+router.post("/project/report/delete", async(req, res) => {
+    const { projectID, reportID } = req.body;
+
+    if (!req.cookies.session_id) {
+        console.log("Unauthorized attempt for listing project documents");
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null || reportID == null) {
+        return res.status(400).json({success: false, message: `Missing required fields`})
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    try {
+        let result = await fss.deleteReportRecord(projectID, reportID);
+
+        if (result) {
+            return res.status(200).json({ successful: true })
+        } else {
+            return res.status(400).json({ successful: false, message: "Unable to delete report record" })
+        }
+
+    } catch (err) {
+        console.error("Unable to delete report record:", err);
+        res.status(500).send("Internal Server Error, unable to delete report record");
+    }
+
 })
 
 

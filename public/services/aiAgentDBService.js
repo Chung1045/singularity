@@ -242,29 +242,11 @@ async function fetchChatThread(projectID, chatID) {
     });
 }
 
-async function getConversationRecall(projectID, chatID) {
-    const sql = `
-        SELECT
-            c.conversationID,
-            c.chatSeq,
-            c.conversationMessage,
-            r.responseMessage
-        FROM conversation c
-        LEFT JOIN response r
-            ON c.conversationID = r.conversationID
-        WHERE c.chatID = ? AND r.isActive = 1 
-        ORDER BY c.chatSeq DESC
-    `;
-
-    const rows = await dbAll(sql, [chatID]);
-    return rows.reverse();
-}
-
 async function getProjectRequirements(projectID) {
     const sql = `SELECT * FROM requirements WHERE projectID = ?`;
     const rows = await dbAll(sql, [projectID]);
 
-    const requirementsWithSources = await Promise.all(
+    return await Promise.all(
         rows.map(async (requirement) => {
             const sources = await getRequirementsSource(requirement.requirementsID);
             const stories = await getRequirementsStoryRef(requirement.requirementsID)
@@ -290,8 +272,6 @@ async function getProjectRequirements(projectID) {
             };
         })
     );
-
-    return requirementsWithSources;
 }
 
 async function getRequirementsSource(requirementsID) {
@@ -504,7 +484,29 @@ async function updateUserStorySourceRef(jsonList){
 
 async function getProjectUserStories(projectID) {
     const sql = `SELECT * FROM userStories WHERE projectID = ?`
-    return await dbAll(sql, [projectID]);
+    const rows = await dbAll(sql, [projectID]);
+
+    return await Promise.all(
+        rows.map(async (story) => {
+            const sources = await getUserStoriesSource(story.storyID)
+
+            return {
+                storyID: story.storyID,
+                details: {
+                    storySeq: story.storySeq,
+                    title: story.storyTitle,
+                    description: story.storyContent,
+                    role: story.storyRole,
+                    sourceReference: sources.map(src => ({
+                        documentID: src.documentID,
+                        documentName: src.documentName,
+                        remarks: src.remarks,
+                        location: src.location || ""
+                    })),
+                }
+            }
+        })
+    );
 }
 
 async function updateProjectRequirementStoryRef(jsonList){
@@ -554,7 +556,7 @@ async function getUserStoriesSource(storyID){
 
 async function getStoryTitle(storyID, projectID) {
     const sql = `
-        SELECT storyTitle
+        SELECT storyTitle, storySeq
         FROM userStories
         WHERE storyID = ? AND projectID = ?
     `;
@@ -590,7 +592,6 @@ module.exports = {
     deleteChatThread,
     deleteConversation,
     fetchChatThread,
-    getConversationRecall,
     getProjectRequirements,
     getRequirementsSource,
     getProjectUserStories,

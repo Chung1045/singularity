@@ -5,8 +5,10 @@ const projectDBService = require("../services/projectDBService");
 const express = require('express');
 const {json} = require("express");
 const router = express.Router();
-const aiDB = require("../services/aiAgentDBService")
-const agent = require("../services/aiAgentService")
+const aiDB = require("../services/aiAgentDBService");
+const agent = require("../services/aiAgentService");
+const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
+const docGen = require("../services/documentGeneration");
 
 /**
  * Chat API Request Body
@@ -366,6 +368,78 @@ router.post('/agent/conversation-edit', async(req, res) => {
         return res.status(500).json({ success: false, message: `Internal server error, unable to complete edit conversation message procedure.` });
     }
 })
+
+/** Generate user stories report
+ * @param {string} projectID - UUID of the current project (required)
+ */
+
+router.post("/agent/document-generation/requirements", async (req, res) => {
+    if (!req.cookies.session_id) {
+        console.log("❌ Unauthorized attempt for agent requirement document generation");
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    let data = req.body;
+    let projectID = data.projectID;
+
+
+    if (!projectID) {
+        return res.status(400).json({success: false, message: `Missing required fields`})
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    let requirementsData = await getProjectRequirements(projectID)
+    console.log(`Requirement data : ${requirementsData}`)
+    let result = await docGen.generateRequirementsDocument(projectID, requirementsData)
+
+    if (result) {
+        return res.status(200).json({ successful: true });
+    } else {
+        return res.status(500).json({ successful: false, message: "Error generating requirements document" });
+    }
+
+});
+
+/** Generate user stories report
+ * @param {string} projectID - UUID of the current project (required)
+ */
+
+router.post("/agent/document-generation/user-stories", async (req, res) => {
+
+    if (!req.cookies.session_id) {
+        console.log("❌ Unauthorized attempt for agent requirement document generation");
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    let data = req.body;
+    let projectID = data.projectID;
+
+    if (projectID == null) {
+        return res.status(400).json({success: false, message: `Missing required fields`})
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    let userStoriesData = await getProjectUserStories(projectID)
+    console.log(`User stories data : ${JSON.stringify(userStoriesData)}`)
+    let result = await docGen.generateUserStoriesDocument(projectID, userStoriesData)
+
+    if (result) {
+        return res.status(200).json({ successful: true });
+    } else {
+        return res.status(500).json({ successful: false, message: "Error generating user stories document" });
+    }
+
+});
 
 
 

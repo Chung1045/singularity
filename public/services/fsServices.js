@@ -2,6 +2,10 @@ const Minio = require("minio");
 const fs = require("fs");
 const path = require("path");
 const db = require("./db")
+const uuid = require("uuid-v4");
+
+const FSS_REPORT_USERSTORIES = "userStories";
+const FSS_REPORT_REQUIREMENTS = "requirements";
 
 const minioClient = new Minio.Client({
     endPoint: process.env.MINIO_END_POINT,
@@ -180,19 +184,6 @@ async function deleteProjectFile(documentID, projectID) {
     }
 }
 
-/**
- * Rename a file or folder (by copy + delete)
- */
-
-async function checkExists(filePath) {
-    return await minioClient.statObject(bucket, filePath)
-        .then(() => true)
-        .catch(err => {
-            if (err.code === 'NotFound') return false;
-            throw err; // unexpected error
-        });
-}
-
 async function listProjectFiles(projectID) {
     return new Promise((resolve, reject) => {
         const sql = `
@@ -273,6 +264,111 @@ async function filePreProcessing(projectID, documentID, fileExt){
 
 }
 
+async function saveGeneratedReport(projectID, buffer, kind) {
+    try {
+
+        const reportID = await insertReportRecord(projectID, kind)
+        const pathName = `project/${projectID}/reports/${reportID}`;
+
+        // Use putObject for buffer data
+        await minioClient.putObject(bucket, pathName, buffer, buffer.length, {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        });
+
+        console.log(`Uploaded ${pathName}`);
+
+        return {
+            successful: true,
+            path: pathName,
+        };
+    } catch (err) {
+        console.error("Upload error:", err);
+        return {
+            successful: false,
+            message: err.message
+        };
+    }
+}
+
+async function listReportRecord(projectID) {
+    const sql = `SELECT reportID, reportName, reportType FROM reports WHERE projectID = ?`;
+
+    return new Promise((resolve, reject) => {
+        db.all(sql, [projectID], (err, rows) => {
+            if (err) {
+                console.error("Error fetching report records:", err);
+                reject(err);
+            } else {
+                resolve(rows); // rows is already an array of objects (JSON-ready)
+            }
+        });
+    });
+}
+
+async function insertReportRecord(projectID, reportType) {
+    const sql = `INSERT INTO reports (reportID, projectID, reportName, reportType, reportDate)
+                 VALUES (?, ?, ?, ?, ?)`;
+
+    let reportName;
+
+    if (reportType === FSS_REPORT_REQUIREMENTS) {
+        reportName = "Project Requirements Report"
+    } else if (reportType === FSS_REPORT_USERSTORIES) {
+        reportName = "Project User Stories Report"
+    }
+
+    const reportID = uuid();
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    const params = [
+        reportID,
+        projectID,
+        `${reportName}-${dateStr}`,
+        reportType,
+        dateStr
+    ]
+
+    await db.run(sql, params, (err) => {
+        if (err) {
+            console.error("Error inserting report record:", err);
+        }
+    });
+
+    return reportID;
+}
+
+async function deleteReportRecord(projectID, reportID) {
+    try {
+        const objectPath = `project/${projectID}/reports/${reportID}`;
+        await minioClient.removeObject(bucket, objectPath);
+
+        const sql = `DELETE
+                     FROM reports
+                     WHERE projectID = ?
+                       AND reportID = ?`;
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, [projectID, reportID], function (err) {
+                if (err) {
+                    console.error("Error deleting report record:", err);
+                    reject(err);
+                } else {
+                    resolve({
+                        success: true,
+                        deletedCount: this.changes
+                    });
+                }
+            });
+        });
+    } catch (err) {
+        console.error("Report deletion error:", err);
+        return {
+            successful: false,
+            message: err.message
+        };
+    }
+}
+
 async function testConnection() {
     return await minioClient.bucketExists(process.env.MINIO_BUCKET);
 }
@@ -293,6 +389,12 @@ module.exports = {
     listProjectFiles,
     getFileMetadata,
     testConnection,
-    minioClient
+    saveGeneratedReport,
+    insertReportRecord,
+    listReportRecord,
+    deleteReportRecord,
+    minioClient,
+    FSS_REPORT_USERSTORIES,
+    FSS_REPORT_REQUIREMENTS
 };
 

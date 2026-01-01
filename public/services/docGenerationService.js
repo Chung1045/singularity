@@ -1,0 +1,381 @@
+const fs = require("fs");
+const fss = require("./fsServices")
+const aiDB = require("./aiAgentDBService")
+const projectDB = require("./projectDBService")
+const lodash = require('lodash');
+const uuid = require("uuid-v4")
+const {
+    Document,
+    Packer,
+    Paragraph,
+    Table,
+    TableRow,
+    TableCell,
+    TextRun,
+    WidthType,
+    TableLayoutType
+} = require("docx");
+const db = require("./db");
+const {FSS_REPORT_USERSTORIES} = require("./fsServices");
+
+async function createRequirementTable(requirement, projectID) {
+    // Generate paragraphs for each document reference
+    const referencedDocsParagraphs = [];
+
+    if (requirement.sourceReference && requirement.sourceReference.length > 0) {
+        for (const doc of requirement.sourceReference) {
+            const metadata = await fss.getFileMetadata(doc.documentID, projectID);
+            referencedDocsParagraphs.push(
+                new Paragraph({
+                    text: `${metadata.documentName}.${metadata.documentExt} (${doc.location})`,
+                    bullet: {level: 0},
+                })
+            );
+        }
+    } else {
+        referencedDocsParagraphs.push(new Paragraph("None"));
+    }
+
+    const referencedStoryParagraphs = [];
+    if (requirement.referenceStory && requirement.referenceStory.length > 0) {
+        for (const story of requirement.referenceStory) {
+            const info = await aiDB.getStoryTitle(story.storyID, projectID)
+            referencedStoryParagraphs.push(
+                new Paragraph({
+                    text: `Story ${info.storySeq} (${info.storyTitle})`,
+                    bullet: {level: 0},
+                })
+            );
+        }
+    } else {
+        referencedStoryParagraphs.push(new Paragraph("None"));
+    }
+
+
+    return new Table({
+        width: {size: 100, type: WidthType.PERCENTAGE},
+
+        // Fix column layout — keeps cells from resizing when text is long
+        layout: TableLayoutType.FIXED,
+
+        rows: [
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Requirement Type")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [new Paragraph(`${lodash.capitalize(requirement.requirementType)}`)],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Requirement Sequence")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [new Paragraph(`${requirement.requirementSeq}`)],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Requirement Title")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [
+                            new Paragraph({
+                                text: `${requirement.title}`,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Requirement Description")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [
+                            new Paragraph({
+                                text: `${requirement.description}`,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Requirement Source")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [
+                            new Paragraph("Document"),
+                        ],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Referenced Documents")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: referencedDocsParagraphs,
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Referenced Story")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: referencedStoryParagraphs,
+                    }),
+                ],
+            }),
+        ],
+    });
+}
+
+async function createUserStoryTable(story, projectID) {
+    // Generate paragraphs for each document reference
+    const referencedDocsParagraphs = [];
+
+    if (story.details.sourceReference && story.details.sourceReference.length > 0) {
+        for (const doc of story.details.sourceReference) {
+            const metadata = await fss.getFileMetadata(doc.documentID, projectID);
+            referencedDocsParagraphs.push(
+                new Paragraph({
+                    text: `${metadata.documentName}.${metadata.documentExt} (${doc.location})`,
+                    bullet: {level: 0},
+                })
+            );
+        }
+    } else {
+        referencedDocsParagraphs.push(new Paragraph("None"));
+    }
+
+    return new Table({
+        width: {size: 100, type: WidthType.PERCENTAGE},
+        layout: TableLayoutType.FIXED,
+
+        rows: [
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Story Sequence")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [new Paragraph(`Story ${story.details.storySeq}`)],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Story Role")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [
+                            new Paragraph({
+                                text: `${story.details.role}`,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Story Title")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [
+                            new Paragraph({
+                                text: `${story.details.title}`,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Story Content")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [
+                            new Paragraph({
+                                text: `${story.details.description}`,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Story Source")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: [
+                            new Paragraph("Document"),
+                        ],
+                    }),
+                ],
+            }),
+            new TableRow({
+                children: [
+                    new TableCell({
+                        width: {size: 3000, type: WidthType.DXA},
+                        children: [new Paragraph("Referenced Documents")],
+                    }),
+                    new TableCell({
+                        width: {size: 7000, type: WidthType.DXA},
+                        children: referencedDocsParagraphs,
+                    }),
+                ],
+            }),
+        ],
+    });
+}
+
+async function generateRequirementsDocument(projectID, requirements) {
+    console.log(`Passed in data: projectID: ${projectID}, requirements: ${requirements}`)
+    const projectName = await projectDB.fetchProjectName(projectID);
+
+    const requirementDocContent = [
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: projectName,
+                    size: 32,
+                    bold: true
+                })
+            ]
+        }),
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: "Project Requirements Report",
+                    size: 24
+                })
+            ]
+        }),
+        new Paragraph(`Generated by Singularity AI: ${new Date().toLocaleString()}`),
+        new Paragraph(""), // spacing
+    ];
+
+    for (const requirement of requirements) {
+        console.log(`\nExtracted Requirement:\n${JSON.stringify(requirement)}`)
+        requirementDocContent.push(await createRequirementTable(requirement.details, projectID));
+        requirementDocContent.push(new Paragraph("")); // spacing
+    }
+
+    const doc = new Document({
+        sections: [
+            {
+                properties: {},
+                children: requirementDocContent,
+            },
+        ],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    let result = await fss.saveGeneratedReport(projectID, buffer, fss.FSS_REPORT_REQUIREMENTS)
+
+    if (result.successful) {
+        console.log("Requirements report created successfully");
+        return true
+    } else {
+        console.log("Unable to create user story report");
+        return false
+    }
+}
+
+async function generateUserStoriesDocument(projectID, userStories) {
+    const projectName = await projectDB.fetchProjectName(projectID);
+
+    const userStoryDocContent = [
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: projectName,
+                    size: 32,
+                    bold: true
+                })
+            ]
+        }),
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: "Project User Stories Report",
+                    size: 24
+                })
+            ]
+        }),
+        new Paragraph(`Generated by Singularity AI: ${new Date().toLocaleString()}`),
+        new Paragraph(""), // spacing
+    ];
+
+    for (const story of userStories) {
+        userStoryDocContent.push(await createUserStoryTable(story));
+        userStoryDocContent.push(new Paragraph("")); // spacing
+    }
+
+    const doc = new Document({
+        sections: [
+            {
+                properties: {},
+                children: userStoryDocContent,
+            },
+        ],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    let result = await fss.saveGeneratedReport(projectID, buffer, fss.FSS_REPORT_USERSTORIES)
+
+    if (result.successful) {
+        console.log("User stories report created successfully");
+        return true
+    } else {
+        console.log("Unable to create user story report");
+        return false
+    }
+}
+
+
+module.exports = {
+    generateRequirementsDocument,
+    generateUserStoriesDocument
+}
