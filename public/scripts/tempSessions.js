@@ -752,31 +752,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                             }
                                         }, "No login attempts recorded")
                                 )
-                                // OPTION 3: Uncomment below for "Show more" with limit
-                                // loginAttempts.length > 0
-                                //     ? React.createElement(React.Fragment, null,
-                                //         loginAttemptElement.slice(0, showAllAttempts ? loginAttempts.length : 5),
-                                //         loginAttempts.length > 5 && React.createElement('button', {
-                                //             style: {
-                                //                 marginTop: '10px',
-                                //                 padding: '8px 16px',
-                                //                 border: '1px solid #000',
-                                //                 borderRadius: '8px',
-                                //                 background: 'transparent',
-                                //                 cursor: 'pointer'
-                                //             },
-                                //             onClick: () => setShowAllAttempts(!showAllAttempts)
-                                //         }, showAllAttempts ? 'Show less' : `Show ${loginAttempts.length - 5} more`)
-                                //     )
-                                //     : React.createElement("p", { 
-                                //         style: {
-                                //             fontFamily: 'Inter, Helvetica',
-                                //             fontWeight: 400,
-                                //             fontSize: '14px',
-                                //             color: '#000000',
-                                //             padding: '10px 20px'
-                                //         }
-                                //     }, "No login attempts recorded")
+                               
                             ),
 
                             // Logged in sessions section
@@ -833,31 +809,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                             }
                                         }, "No active sessions")
                                 )
-                                // OPTION 3: Uncomment below for "Show more" with limit  
-                                // sessions.length > 0
-                                //     ? React.createElement(React.Fragment, null,
-                                //         sessionElements.slice(0, showAllSessions ? sessions.length : 5),
-                                //         sessions.length > 5 && React.createElement('button', {
-                                //             style: {
-                                //                 marginTop: '10px',
-                                //                 padding: '8px 16px',
-                                //                 border: '1px solid #000',
-                                //                 borderRadius: '8px',
-                                //                 background: 'transparent',
-                                //                 cursor: 'pointer'
-                                //             },
-                                //             onClick: () => setShowAllSessions(!showAllSessions)
-                                //         }, showAllSessions ? 'Show less' : `Show ${sessions.length - 5} more`)
-                                //     )
-                                //     : React.createElement("p", { 
-                                //         style: {
-                                //             fontFamily: 'Inter, Helvetica',
-                                //             fontWeight: 400,
-                                //             fontSize: '14px',
-                                //             color: '#000000',
-                                //             padding: '10px 20px'
-                                //         }
-                                //     }, "No active sessions")
+                               
                             )
                         )
                     )
