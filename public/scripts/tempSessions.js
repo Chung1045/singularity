@@ -202,7 +202,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
     });
 
     const loginAttemptElement = loginAttempts.map((attempt) => {
-        const keyID = attempt.attemptID;
+    const keyID = attempt.attemptID;
 
         return React.createElement(
             "div",
