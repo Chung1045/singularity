@@ -691,7 +691,10 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     width: '100%',
                                     alignItems: 'flex-start',
                                     gap: '26px',
-                                    position: 'relative'
+                                    position: 'relative',
+                                    // OPTION 2: Uncomment below to scroll entire content area
+                                    // maxHeight: 'calc(100vh - 200px)',
+                                    // overflowY: 'auto'
                                 }
                             },
 
@@ -721,56 +724,59 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                         lineHeight: 'normal'
                                     }
                                 }, "Log in attempts"),
-                                loginAttempts.length > 0
-                                    ? loginAttemptElement
-                                    : React.createElement("p", { 
+                                // OPTION 1: Scrollable section wrapper (ACTIVE)
+                                React.createElement(
+                                    "div",
+                                    {
                                         style: {
-                                            fontFamily: 'Inter, Helvetica',
-                                            fontWeight: 400,
-                                            fontSize: '14px',
-                                            color: '#000000',
-                                            padding: '10px 20px'
+                                            width: '100%',
+                                            maxHeight: '500px',
+                                            overflowY: 'auto',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '15px',
+                                            scrollbarWidth: 'none',
+                                            msOverflowStyle: 'none',
+                                            WebkitOverflowScrolling: 'touch'
                                         }
-                                    }, "No login attempts recorded")
-                                    // OLD CODE - Full card structure
-                                    // React.createElement("div", {
-                                    //     style: {
-                                    //         display: 'flex',
-                                    //         alignItems: 'center',
-                                    //         gap: '15px',
-                                    //         padding: '10px 20px',
-                                    //         position: 'relative',
-                                    //         width: '100%',
-                                    //         borderRadius: '10px',
-                                    //         backgroundColor: '#fafafa'
-                                    //     }
-                                    // },
-                                    //     React.createElement("div", { 
-                                    //         style: { 
-                                    //             width: '48px', 
-                                    //             height: '48px', 
-                                    //             backgroundColor: '#d9d9d9', 
-                                    //             borderRadius: '10px',
-                                    //             flexShrink: 0
-                                    //         } 
-                                    //     }),
-                                    //     React.createElement("div", { 
-                                    //         style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } 
-                                    //     },
-                                    //         React.createElement("div", { 
-                                    //             style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } 
-                                    //         },
-                                    //             React.createElement("div", { 
-                                    //                 style: {
-                                    //                     fontFamily: 'Inter, Helvetica',
-                                    //                     fontWeight: 400,
-                                    //                     fontSize: '20px',
-                                    //                     color: '#000000'
-                                    //                 }
-                                    //             }, "No login attempts recorded")
-                                    //         )
-                                    //     )
-                                    // )
+                                    },
+                                    loginAttempts.length > 0
+                                        ? loginAttemptElement
+                                        : React.createElement("p", { 
+                                            style: {
+                                                fontFamily: 'Inter, Helvetica',
+                                                fontWeight: 400,
+                                                fontSize: '14px',
+                                                color: '#000000',
+                                                padding: '10px 20px'
+                                            }
+                                        }, "No login attempts recorded")
+                                )
+                                // OPTION 3: Uncomment below for "Show more" with limit
+                                // loginAttempts.length > 0
+                                //     ? React.createElement(React.Fragment, null,
+                                //         loginAttemptElement.slice(0, showAllAttempts ? loginAttempts.length : 5),
+                                //         loginAttempts.length > 5 && React.createElement('button', {
+                                //             style: {
+                                //                 marginTop: '10px',
+                                //                 padding: '8px 16px',
+                                //                 border: '1px solid #000',
+                                //                 borderRadius: '8px',
+                                //                 background: 'transparent',
+                                //                 cursor: 'pointer'
+                                //             },
+                                //             onClick: () => setShowAllAttempts(!showAllAttempts)
+                                //         }, showAllAttempts ? 'Show less' : `Show ${loginAttempts.length - 5} more`)
+                                //     )
+                                //     : React.createElement("p", { 
+                                //         style: {
+                                //             fontFamily: 'Inter, Helvetica',
+                                //             fontWeight: 400,
+                                //             fontSize: '14px',
+                                //             color: '#000000',
+                                //             padding: '10px 20px'
+                                //         }
+                                //     }, "No login attempts recorded")
                             ),
 
                             // Logged in sessions section
@@ -799,56 +805,59 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                         lineHeight: 'normal'
                                     }
                                 }, "Logged in sessions"),
-                                sessions.length > 0
-                                    ? sessionElements
-                                    : React.createElement("p", { 
+                                // OPTION 1: Scrollable section wrapper (ACTIVE)
+                                React.createElement(
+                                    "div",
+                                    {
                                         style: {
-                                            fontFamily: 'Inter, Helvetica',
-                                            fontWeight: 400,
-                                            fontSize: '14px',
-                                            color: '#000000',
-                                            padding: '10px 20px'
+                                            width: '100%',
+                                            maxHeight: '300px',
+                                            overflowY: 'auto',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '15px',
+                                            scrollbarWidth: 'none',
+                                            msOverflowStyle: 'none',
+                                            WebkitOverflowScrolling: 'touch'
                                         }
-                                    }, "No active sessions")
-                                    // OLD CODE - Full card structure
-                                    // React.createElement("div", {
-                                    //     style: {
-                                    //         display: 'flex',
-                                    //         alignItems: 'center',
-                                    //         gap: '15px',
-                                    //         padding: '10px 20px',
-                                    //         position: 'relative',
-                                    //         width: '100%',
-                                    //         borderRadius: '10px',
-                                    //         backgroundColor: '#fafafa'
-                                    //     }
-                                    // },
-                                    //     React.createElement("div", { 
-                                    //         style: { 
-                                    //             width: '48px', 
-                                    //             height: '48px', 
-                                    //             backgroundColor: '#d9d9d9', 
-                                    //             borderRadius: '10px',
-                                    //             flexShrink: 0
-                                    //         } 
-                                    //     }),
-                                    //     React.createElement("div", { 
-                                    //         style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } 
-                                    //     },
-                                    //         React.createElement("div", { 
-                                    //             style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } 
-                                    //         },
-                                    //             React.createElement("div", { 
-                                    //                 style: {
-                                    //                     fontFamily: 'Inter, Helvetica',
-                                    //                     fontWeight: 400,
-                                    //                     fontSize: '20px',
-                                    //                     color: '#000000'
-                                    //                 }
-                                    //             }, "No active sessions")
-                                    //         )
-                                    //     )
-                                    // )
+                                    },
+                                    sessions.length > 0
+                                        ? sessionElements
+                                        : React.createElement("p", { 
+                                            style: {
+                                                fontFamily: 'Inter, Helvetica',
+                                                fontWeight: 400,
+                                                fontSize: '14px',
+                                                color: '#000000',
+                                                padding: '10px 20px'
+                                            }
+                                        }, "No active sessions")
+                                )
+                                // OPTION 3: Uncomment below for "Show more" with limit  
+                                // sessions.length > 0
+                                //     ? React.createElement(React.Fragment, null,
+                                //         sessionElements.slice(0, showAllSessions ? sessions.length : 5),
+                                //         sessions.length > 5 && React.createElement('button', {
+                                //             style: {
+                                //                 marginTop: '10px',
+                                //                 padding: '8px 16px',
+                                //                 border: '1px solid #000',
+                                //                 borderRadius: '8px',
+                                //                 background: 'transparent',
+                                //                 cursor: 'pointer'
+                                //             },
+                                //             onClick: () => setShowAllSessions(!showAllSessions)
+                                //         }, showAllSessions ? 'Show less' : `Show ${sessions.length - 5} more`)
+                                //     )
+                                //     : React.createElement("p", { 
+                                //         style: {
+                                //             fontFamily: 'Inter, Helvetica',
+                                //             fontWeight: 400,
+                                //             fontSize: '14px',
+                                //             color: '#000000',
+                                //             padding: '10px 20px'
+                                //         }
+                                //     }, "No active sessions")
                             )
                         )
                     )
