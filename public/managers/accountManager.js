@@ -5,12 +5,38 @@ const uuid = require("uuid-v4")
 const dbService = require('../services/accountDBService.js')
 const credDBService = require('../services/credentialDBService.js')
 const sessionDBService = require('../services/sessionDBService')
-const {checkUsernameEmail} = require("../services/accountDBService");
+const {checkUsernameEmail, findUserByUsername} = require("../services/accountDBService");
 const passport = require("passport");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const router = express.Router();
 const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse} = require('@simplewebauthn/server');
 const UAParser = require('ua-parser-js');
+const multer = require("multer");
+const {promises: fs} = require("fs");
+
+const storage = multer.diskStorage({
+    destination: async (req, file, cb) => {
+        const uploadDir = './temp/avatar';
+        try {
+            await fs.mkdir(uploadDir, { recursive: true });
+        } catch (err) {
+            console.error('Error creating upload directory:', err);
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        // Generate unique filename to avoid conflicts
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 2 * 1024 * 1024
+    }
+});
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -590,6 +616,27 @@ router.post("/userInfo/query", async(req, res) => {
 
 })
 
+router.post("/user/search", async (req, res) => {
+    if (!req.cookies.session_id){
+        res.status(403).json({successful: false, message: "Unauthorized"})
+    }
+
+    let selfUID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    if (selfUID) {
+        let { query } = req.body
+        try {
+            let users = await findUserByUsername(query, selfUID)
+            return res.status(200).json({successful: true, users})
+        } catch (err) {
+            console.log(err)
+            return res.status(500).json({successful: false, message: "Internal Server Error"})
+        }
+
+    } else {
+        return res.status(403).json({successful: false, message: "Unauthorized"})
+    }
+})
+
 router.post("/password/change", async (req, res) => {
     try {
         if (!req.cookies.session_id) {
@@ -667,6 +714,22 @@ router.post("/password/change", async (req, res) => {
         });
     }
 });
+
+router.post("/avatar/replace", upload.single('file'), async (req, res) =>  {
+    const { userID } = req.body;
+    const uploadedFile = req.file;
+
+    if (!req.cookies.session_id) {
+        console.log("❌ Unauthorized attempt for avatar replace");
+
+        if (uploadedFile) {
+            await fs.unlink(uploadedFile.path)
+        }
+
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+})
 
 
 // ORIGINAL VERSION - Commented out before modification

@@ -1,22 +1,49 @@
 const db = require("./db")
 const uuid = require("uuid-v4")
 
-async function findUserByUsername(username) {
+async function apiAuthUser(req, res, next) {
+    const sessionID = req.cookies.session_id;
+    if (!sessionID) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const userID = await findUserIDBySessionID(sessionID);
+    if (!userID) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    req.userID = userID;
+    next();
+}
+
+async function findUserByUsername(username, selfUid) {
+    const query = `
+        SELECT userName, lastName, firstName, userAvatarPath, uid
+        FROM user
+        WHERE userName LIKE ?
+          AND uid != ?
+            LIMIT 20
+    `;
+    const params = [`%${username}%`, selfUid]; // Matches anywhere in the string
+
     return new Promise((resolve, reject) => {
-        db.get(`SELECT uid FROM user WHERE userName = ?`, [username], (err, row) => {
-            if (err) {
-                console.error('Error in findUserByUsername:', err);
-                return reject(err);
+        db.all(query, params, (err, rows) => {
+            if (err) return reject(err);
+            if (rows && rows.length > 0) {
+                console.log(`Found ${rows.length} users matching "${username}"`);
+                resolve(rows); // Return array of matching users
+            } else {
+                resolve([]);
             }
-            console.log(`🔍 findUserByUsername("${username}"):`, row || 'NOT FOUND');
-            resolve(row);
         });
     });
 }
 
 async function findUserNameByUserID(uid) {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT userName FROM user WHERE uid = ?`, [uid], (err, row) => {
+        db.get(`SELECT userName
+                FROM user
+                WHERE uid = ?`, [uid], (err, row) => {
             if (err) {
                 console.error('Error in findUserNameByUserID:', err);
                 return reject(err);
@@ -27,23 +54,11 @@ async function findUserNameByUserID(uid) {
     });
 }
 
-// Check if user has any passkeys
-async function hasUserPasskeys(uid) {
-    return new Promise((resolve, reject) => {
-        db.get(`SELECT COUNT(*) as count FROM passkeys WHERE uid = ?`, [uid], (err, row) => {
-            if (err) {
-                console.error('Error checking user passkeys:', err);
-                return reject(err);
-            }
-            resolve(row && row.count > 0);
-        });
-    });
-}
-
-
 async function findUserIDBySessionID(sessionID) {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT uid FROM session WHERE sessionID = ?`, [sessionID], (err, row) => {
+        db.get(`SELECT uid
+                FROM session
+                WHERE sessionID = ?`, [sessionID], (err, row) => {
             if (err) {
                 console.error('Error in findUserIDBySessionID:', err);
                 return reject(err);
@@ -56,7 +71,9 @@ async function findUserIDBySessionID(sessionID) {
 
 async function findUserIDByPasskeyID(passkeyID) {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT uid FROM passkeys WHERE keyID = ?`, [passkeyID], (err, row) => {
+        db.get(`SELECT uid
+                FROM passkeys
+                WHERE keyID = ?`, [passkeyID], (err, row) => {
             if (err) {
                 console.error('Error in findUserIDByPasskeyID:', err);
                 return reject(err);
@@ -69,20 +86,14 @@ async function findUserIDByPasskeyID(passkeyID) {
 
 async function getUserInfo(userID) {
     return new Promise((resolve, reject) => {
-        // OLD: db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`, [userID], (err, row) => {
-        // NEW: Added more detailed logging
-        const query = `SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`;
-        console.log(`🔍 getUserInfo: Querying for uid="${userID}"`);
-        db.get(query, [userID], (err, row) => {
+        db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType
+                FROM user
+                WHERE uid = ?`, [userID], (err, row) => {
             if (err) {
-                console.error('❌ Error in getting user information:', err);
+                console.error('Error in getting user information:', err);
                 return reject(err);
             }
-            if (!row) {
-                console.error(`❌ getUserInfo: NO USER FOUND for uid="${userID}"`);
-            } else {
-                console.log(`✅ getUserInfo result:`, row);
-            }
+            console.log(`Query for user info uid ${userID}"):`, row || 'NOT FOUND');
             resolve(row);
         });
     });
@@ -92,8 +103,7 @@ async function getUIDfromOAuth(oAuthID) {
     const query = `
         SELECT uid
         FROM googleOauth_identity
-        WHERE userGoogleId = ?
-        LIMIT 1
+        WHERE userGoogleId = ? LIMIT 1
     `;
     const params = [oAuthID];
 
@@ -110,7 +120,7 @@ async function getUIDfromOAuth(oAuthID) {
     });
 }
 
-async function isGoogleOAuthUserExist(oauthID){
+async function isGoogleOAuthUserExist(oauthID) {
     const query = `
         SELECT COUNT(*) AS count
         FROM googleOauth_identity
@@ -129,9 +139,9 @@ async function isGoogleOAuthUserExist(oauthID){
 async function logLoginAttempts(data) {
     const attemptID = uuid();
     const sql = `
-    INSERT INTO loginAttempts (attemptID, uid, attemptDate, attemptOS, attemptBrowser, attemptIP
-    ) VALUES (?, ?, ?, ?, ?, ?)
-  `;
+        INSERT INTO loginAttempts (attemptID, uid, attemptDate, attemptOS, attemptBrowser, attemptIP)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
 
     const params = [
         attemptID,
@@ -152,8 +162,10 @@ async function logLoginAttempts(data) {
 }
 
 async function listPasskey(data) {  // ✅ Just pass uid directly, not data object
-    // MODIFIED: Added lastUsed and lastUsedDevice to SELECT statement
-    const query = `SELECT keyID, keyName, dateCreate, lastUsed, lastUsedDevice FROM passkeys WHERE uid = ? ORDER BY dateCreate DESC`;
+    const query = `SELECT keyID, keyName, dateCreate
+                   FROM passkeys
+                   WHERE uid = ?
+                   ORDER BY dateCreate DESC`;
 
     return new Promise((resolve, reject) => {
         db.all(query, [data], (err, rows) => {  // ✅ Use db.all() to get ALL rows
@@ -169,7 +181,7 @@ async function listPasskey(data) {  // ✅ Just pass uid directly, not data obje
 
 async function getPasskey(data) {
     const query = `
-        SELECT * 
+        SELECT *
         FROM passkeys
         WHERE keyID = ?
     `;
@@ -184,10 +196,12 @@ async function getPasskey(data) {
 }
 
 async function deletePasskey(data) {
-    const query = `DELETE FROM passkeys WHERE keyID = ?`;
+    const query = `DELETE
+                   FROM passkeys
+                   WHERE keyID = ?`;
 
     return new Promise((resolve, reject) => {
-        db.run(query, [data], function(err) {
+        db.run(query, [data], function (err) {
             if (err) {
                 console.error('Error deleting passkey:', err);
                 return reject(false);
@@ -199,7 +213,10 @@ async function deletePasskey(data) {
 }
 
 async function listSessions(data) {
-    const query = `SELECT sessionID, lastSeenTime, sessionOS, sessionBrowser, sessionIP FROM session WHERE uid = ? ORDER BY lastSeenTime DESC`;
+    const query = `SELECT sessionID, lastSeenTime, sessionOS, sessionBrowser, sessionIP
+                   FROM session
+                   WHERE uid = ?
+                   ORDER BY lastSeenTime DESC`;
 
     return new Promise((resolve, reject) => {
         db.all(query, [data], (err, rows) => {
@@ -214,10 +231,12 @@ async function listSessions(data) {
 }
 
 async function logoutSession(data) {
-    const query = `DELETE FROM session WHERE sessionID = ?`;
+    const query = `DELETE
+                   FROM session
+                   WHERE sessionID = ?`;
 
     return new Promise((resolve, reject) => {
-        db.run(query, [data], function(err) {
+        db.run(query, [data], function (err) {
             if (err) {
                 console.error(`Error removing session ${data}:`, err);
                 return reject(false);
@@ -229,7 +248,10 @@ async function logoutSession(data) {
 }
 
 async function listLoginAttempts(data) {
-    const query = `SELECT attemptID, attemptDate, attemptOS, attemptBrowser, attemptIP FROM loginAttempts WHERE uid = ? ORDER BY attemptDate DESC`;
+    const query = `SELECT attemptID, attemptDate, attemptOS, attemptBrowser, attemptIP
+                   FROM loginAttempts
+                   WHERE uid = ?
+                   ORDER BY attemptDate DESC`;
 
     return new Promise((resolve, reject) => {
         db.all(query, [data], (err, rows) => {
@@ -244,10 +266,12 @@ async function listLoginAttempts(data) {
 }
 
 async function deleteAllLoginAttempts(data) {
-    const query = `DELETE FROM loginAttempts WHERE uid = ?`;
+    const query = `DELETE
+                   FROM loginAttempts
+                   WHERE uid = ?`;
 
     return new Promise((resolve, reject) => {
-        db.run(query, [data], function(err) {
+        db.run(query, [data], function (err) {
             if (err) {
                 console.error('Error deleting login attempts record:', err);
                 return reject(false);
@@ -258,18 +282,32 @@ async function deleteAllLoginAttempts(data) {
     });
 }
 
-// Database Schemas
+async function testConnection() {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT 1", (err) => {
+            if (err) reject(err);
+            else resolve(true);
+        });
+    });
+}
 
-// module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
-//     logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
-//     listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
-//     listSessions, listLoginAttempts, deleteAllLoginAttempts,
-//     logoutSession, getUserInfo }
 
-
-
-module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
-    logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
-    listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
-    listSessions, listLoginAttempts, deleteAllLoginAttempts,
-    logoutSession, getUserInfo, hasUserPasskeys, findUserByUsername }
+module.exports = {
+    isGoogleOAuthUserExist,
+    getUIDfromOAuth,
+    logLoginAttempts,
+    findUserByUsername,
+    findUserIDBySessionID,
+    findUserNameByUserID,
+    listPasskey,
+    getPasskey,
+    findUserIDByPasskeyID,
+    deletePasskey,
+    listSessions,
+    listLoginAttempts,
+    deleteAllLoginAttempts,
+    logoutSession,
+    getUserInfo,
+    apiAuthUser,
+    testConnection
+}
