@@ -55,8 +55,16 @@ router.get("/home", async (req, res) => {
         return res.redirect("/login");
     }
 
-    console.log("✅ Session OK — showing home");
-    res.render("tempHome", { csrfToken: req.csrfToken() });
+    try {
+        const userID = await dbService.findUserIDBySessionID(sessionID)
+        const userInfo = await dbService.getUserInfo(userID)
+
+        console.log("✅ Session OK — showing home");
+        res.render("tempHome", { csrfToken: req.csrfToken(), userInfo: userInfo });
+    } catch(err) {
+        console.error(`Error occurred at /home : ${err.message}`)
+        res.send("Server error")
+    }
 });
 
 /* ----------------------------------------
@@ -77,8 +85,11 @@ router.get("/passkeys", async (req, res) => {
 
     res.locals.passkeys = passkeys;
 
+    const userInfo = await dbService.getUserInfo(userID)
+
     res.render("tempPasskey", {
-        csrfToken: req.csrfToken()
+        csrfToken: req.csrfToken(),
+        userInfo
     });
 });
 
@@ -90,7 +101,7 @@ router.get("/profile", async (req, res) => {
     if (!userID) return res.redirect("/login");
 
     const userInfo = await dbService.getUserInfo(userID);
-    res.render("tempUserProfile", { userInfo });
+    res.render("tempUserProfile", { csrfToken: req.csrfToken(), userInfo });
 });
 
 /* ----------------------------------------
@@ -102,11 +113,13 @@ router.get("/session", async (req, res) => {
 
     const sessions = await dbService.listSessions(userID);
     const loginAttempts = await dbService.listLoginAttempts(userID);
+    const userInfo = await dbService.getUserInfo(userID)
 
     res.render("tempSession", {
         csrfToken: req.csrfToken(),
         sessions,
-        loginAttempts
+        loginAttempts,
+        userInfo
     });
 });
 

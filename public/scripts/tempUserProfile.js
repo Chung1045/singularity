@@ -1,49 +1,4 @@
-// const { useState } = React;
-
-// const TempUserProfile = ({userInfo}) => {
-
-
-//     function handleSessionManagement() {
-//         window.location.href = "/session"
-//     }
-
-//     function handlePasskeyManagement() {
-//         window.location.href = "/passkeys"
-//     }
-
-//     function handleChangePassword() {
-//         window.location.href = "/change-password"
-//     }
-
-//     return React.createElement('div', { className: 'flex flex-col gap-2.5 p-4 max-w-md mx-auto mt-8' },
-//         React.createElement('h2', {}, "User Profile"),
-//         React.createElement('p', {}, `@${userInfo.userName}`),
-//         React.createElement('p', {}, `${userInfo.lastName} ${userInfo.firstName}`),
-//         React.createElement('p', {}, `${userInfo.userEmail}`),
-//         React.createElement('button', {
-//             id: 'btn-logout',
-//             onClick: handleSessionManagement,
-//             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
-//         }, 'Manage Sessions'),
-//         React.createElement('button', {
-//             id: 'btn-manageSessions',
-//             onClick: handlePasskeyManagement,
-//             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
-//         }, 'Manage Passkeys'),
-//         React.createElement('button', {
-//             id: 'btn-changePassword',
-//             onClick: handleChangePassword,
-//             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
-//         }, 'Change Password')
-//     );
-// };
-
-// // Make available globally
-// window.TempUserProfile = TempUserProfile;
-
 const { useState } = React;
-
-
 
 const TempUserProfile = ({userInfo, csrfToken}) => {
 
@@ -54,7 +9,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved !== null ? JSON.parse(saved) : true;
     });
-    
+
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
@@ -77,12 +32,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     if (userInfo?.hasPasskey) {
         return 'Passkey';
     }
-    
+
     // Priority 2: Check if user type is Google OAuth
     if (userInfo?.userType === 'google') {
         return 'Google Sign-In';
     }
-    
+
     // Priority 3: Default to Email login
     return 'Email login';
 };
@@ -135,11 +90,11 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     };
 
     const username = userInfo?.userName || userInfo?.email || 'User';
-    const displayName = userInfo?.firstName && userInfo?.lastName 
-        ? `${userInfo.firstName} ${userInfo.lastName}` 
+    const displayName = userInfo?.firstName && userInfo?.lastName
+        ? `${userInfo.firstName} ${userInfo.lastName}`
         : userInfo?.userName || 'User';
 
-    return React.createElement('div', { 
+    return React.createElement('div', {
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
@@ -208,24 +163,24 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     ),
 
                     // User section
-                    React.createElement('div', { 
-                        style: { 
-                            position: 'absolute', 
-                            bottom: '80px', 
-                            left: sidebarCollapsed ? '12px' : '0px', 
+                    React.createElement('div', {
+                        style: {
+                            position: 'absolute',
+                            bottom: '80px',
+                            left: sidebarCollapsed ? '12px' : '0px',
                             width: 'max-content',
                             transition: 'left 220ms ease',
-                            overflow: 'visible', 
-                            zIndex: 1002  
+                            overflow: 'visible',
+                            zIndex: 1002
                         },
                         onClick: toggleUserMenu
                     },
                         // Expanded view
-                        !sidebarCollapsed && React.createElement('a', { 
+                        !sidebarCollapsed && React.createElement('a', {
                             href: '#',
                             className: 'username-display',
-                            style: { 
-                                cursor: 'pointer', 
+                            style: {
+                                cursor: 'pointer',
                                 position: 'relative',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -238,7 +193,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         },
                             React.createElement('img', { className: 'user', src: './img/user.svg', alt: 'User', style: { width: '22px', height: '22px' } }),
                             React.createElement('span', { className: 'text-wrapper-6' }, username),
-                            
+
                             userMenuOpen && React.createElement('div', {
                                 style: {
                                     position: 'absolute',
@@ -311,12 +266,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 transition: 'all 220ms ease'
                             }
                         },
-                            React.createElement('img', { 
-                                src: './img/user.svg', 
-                                alt: 'User', 
-                                style: { width: '22px', height: '22px' } 
+                            React.createElement('img', {
+                                src: './img/user.svg',
+                                alt: 'User',
+                                style: { width: '22px', height: '22px' }
                             }),
-                            
+
                             sidebarCollapsed && userMenuOpen && React.createElement('div', {
                                 style: {
                                     position: 'fixed',
@@ -377,7 +332,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             )
                         )
                     )
-                ) 
+                )
             ),
 
             // MAIN CONTENT AREA
@@ -699,7 +654,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     borderTop: '1px solid #000000ff',
                                     width: '100%'
                                 }
-                            }), 
+                            }),
 
                             // Email
                             React.createElement('div', {
