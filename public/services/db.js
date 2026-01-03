@@ -18,12 +18,11 @@ const db = new sqlite3.Database(dbPath, async (err) => {
         for (const [name, schemaFn] of Object.entries(dbModel)) {
             if (typeof schemaFn === "function") {
                 const sql = schemaFn();
-                console.log(`Creating table for ${name}...`);
                 await run(db, sql);
             }
         }
 
-        console.log("All tables created successfully.");
+        console.log("All tables initialized successfully.");
     } catch (err) {
         console.error("Error creating tables:", err);
     }

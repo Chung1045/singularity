@@ -256,11 +256,13 @@ async function checkUsernameEmail(data) {
     });
 }
 
+
+// TODO: Fix logic
 // MODIFIED: Updated to include device information
-async function updatePasskeyLastUsed(keyID, deviceInfo) {
-    const sql = `UPDATE passkeys SET lastUsed = ?, lastUsedDevice = ? WHERE keyID = ?`;
-    const params = [new Date().toISOString(), deviceInfo || 'Unknown Device', keyID];
-    
+async function updatePasskeyLastUsed(keyID) {
+    const sql = `UPDATE passkeys SET lastUsed = ? WHERE keyID = ?`;
+    const params = [new Date().toISOString(), keyID];
+
     return new Promise((resolve, reject) => {
         db.run(sql, params, function(err) {
             if (err) {

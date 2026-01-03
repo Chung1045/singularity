@@ -10,13 +10,12 @@ router.use(dbService.apiAuthUser);
 router.post('/notification/invite/respond', async (req, res) => {
     console.log("New requests /notifications/invite-respond")
 
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
     const { notificationID, response } = req.body;
     if (!notificationID || !response) {
         return res.status(400).json({ successful: false, message: "Bad request: Missing notificationID or response" });
     }
 
-    if (await notifDB.getNotificationRecipient(notificationID) !== userID) {
+    if (await notifDB.getNotificationRecipient(notificationID) !== req.userID) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
@@ -61,7 +60,7 @@ router.post('/notification/remove', async (req, res) => {
 
 router.post('/notification/fetch', async (req, res) => {
     console.log("New requests /notifications/fetch")
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    const userID = await dbService.findUserIDBySessionID(req.cookies.req.userID);
 
     try {
         console.log(`Attempt to fetch notifications for user ${userID}`)

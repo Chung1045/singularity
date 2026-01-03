@@ -10,6 +10,8 @@ const agent = require("../services/aiAgentService");
 const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
 const docGen = require("../services/docGenerationService");
 
+router.use(dbService.apiAuthUser);
+
 /**
  * Chat API Request Body
  *
@@ -39,13 +41,6 @@ const docGen = require("../services/docGenerationService");
 router.post('/agent/chat', async (req, res) => {
     try {
         console.log("New requests /agent/chat")
-
-        if (!req.cookies.session_id) {
-            console.log("❌ Unauthorized attempt for agent chat");
-            return res.status(403).json({successful: false, message: "Unauthorized"});
-        }
-
-        const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
         let chatData = req.body;
         const projectID = chatData.projectID;
@@ -232,11 +227,6 @@ router.post('/agent/chat-delete', async (req, res) => {
 // TODO: Test functionality
 router.post('/agent/conversation-delete', async(req, res) => {
 
-    if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent chat conversation message delete");
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
-
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     let data = req.body;
@@ -303,12 +293,6 @@ router.post('/agent/conversation-delete', async(req, res) => {
  * 4. Generate a new AI response based on the edited message and conversation history
  */
 router.post('/agent/conversation-edit', async(req, res) => {
-    if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent chat conversation edit");
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
-
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     let chatData = req.body;
     const projectID = chatData.projectID;
@@ -330,7 +314,6 @@ router.post('/agent/conversation-edit', async(req, res) => {
         let success = await aiDB.conversationEdit(chatID, chatSeq, conversationID, message)
 
         if (success) {
-
             const data = {
                 projectID: projectID,
                 chatID: chatID,
@@ -374,22 +357,15 @@ router.post('/agent/conversation-edit', async(req, res) => {
  */
 
 router.post("/agent/document-generation/requirements", async (req, res) => {
-    if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent requirement document generation");
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
-
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     let data = req.body;
     let projectID = data.projectID;
-
 
     if (!projectID) {
         return res.status(400).json({success: false, message: `Missing required fields`})
     }
 
-    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+    if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
@@ -411,13 +387,6 @@ router.post("/agent/document-generation/requirements", async (req, res) => {
 
 router.post("/agent/document-generation/user-stories", async (req, res) => {
 
-    if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent requirement document generation");
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
-
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
-
     let data = req.body;
     let projectID = data.projectID;
 
@@ -425,7 +394,7 @@ router.post("/agent/document-generation/user-stories", async (req, res) => {
         return res.status(400).json({success: false, message: `Missing required fields`})
     }
 
-    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+    if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 

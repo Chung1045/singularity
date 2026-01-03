@@ -11,11 +11,13 @@ async function setupProjectShareNotification(projectID, collaboratorID) {
 
     try {
         const projectName = await projectDB.fetchProjectName(projectID);
+        const now = new Date();
+        const dateTimeStr = now.toISOString().replace('T', ' ').split('.')[0];
 
         const params = [
             uuid(),
             collaboratorID,
-            Date.now(),
+            dateTimeStr,
             "invitation",
             projectID,
             `You are invited to join ${projectName}`,
@@ -67,11 +69,13 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID) {
 
     try {
         const projectName = await projectDB.fetchProjectName(projectID);
+        const now = new Date();
+        const dateTimeStr = now.toISOString().replace('T', ' ').split('.')[0];
 
         const params = [
             uuid(),
             collaboratorID,
-            Date,
+            dateTimeStr,
             "remove",
             projectID,
             `You have been removed from the project ${projectName}`,

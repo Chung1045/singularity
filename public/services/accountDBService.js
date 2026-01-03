@@ -1,19 +1,42 @@
 const db = require("./db")
 const uuid = require("uuid-v4")
+const utils = require("./utlisService")
 
 async function apiAuthUser(req, res, next) {
-    const sessionID = req.cookies.session_id;
-    if (!sessionID) {
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
 
-    const userID = await findUserIDBySessionID(sessionID);
-    if (!userID) {
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
+    console.log('Path:', req.path);           // e.g., '/api/users'
+    console.log('URL:', req.url);             // e.g., '/api/users?id=123'
+    console.log('Original URL:', req.originalUrl); // same as req.url
+    console.log('Base URL:', req.baseUrl);    // e.g., '/api' (if router is mounted)
+    console.log('Method:', req.method);       // e.g., 'GET', 'POST'
+    console.log('Full path:', req.path);      // path without query string
 
-    req.userID = userID;
-    next();
+    const clientInfo = await utils.getClientDeviceInfo(req)
+    console.log(`Client Info: ${JSON.stringify(clientInfo)}`)
+
+    if (process.env.ENABLE_USER_CHECKING === 'true') {
+        const sessionID = req.cookies.session_id;
+        if (!sessionID) {
+            return res.status(403).json({successful: false, message: "Unauthorized"});
+        }
+
+        const userID = await findUserIDBySessionID(sessionID);
+        if (!userID) {
+            return res.status(403).json({successful: false, message: "Unauthorized"});
+        }
+
+        req.userID = userID;
+        next();
+    } else {
+
+        let userID = await findUserIDBySessionID(req.cookies.session_id);
+        if (!userID) {
+            userID = ""
+        }
+
+        req.userID = userID
+        next();
+    }
 }
 
 async function findUserByUsername(username, selfUid) {

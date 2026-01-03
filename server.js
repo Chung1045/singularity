@@ -38,14 +38,39 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-const csrfProtection = csrf({
-    cookie: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-    }
-});
-app.use(csrfProtection);
+console.log("Server is starting...")
+
+if (process.env.ENABLE_USER_CHECKING === 'true') {
+    const csrfProtection = csrf({
+        cookie: {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+        }
+    });
+    app.use(csrfProtection);
+} else {
+
+    const red = '\x1b[31m';
+    const yellow = '\x1b[33m';
+    const reset = '\x1b[0m';
+    const bold = '\x1b[1m';
+
+    console.warn(`\n${red}${bold}${"=".repeat(70)}`);
+    console.warn(`WARNING: SECURITY FEATURES DISABLED`);
+    console.warn(`${"=".repeat(70)}${reset}`);
+    console.warn(`${yellow}User authentication and CSRF protection are NOT enforced!`);
+    console.warn(`This should ONLY be used in development/testing.`);
+    console.warn(`DO NOT run this configuration in production!${reset}`);
+
+    console.warn(`${red}${bold}To enforce User and CSRF checking, set the value of ENABLE_USER_CHECKING environment variable to 'true'${reset}`);
+    console.warn(`${red}${bold}${"=".repeat(70)}${reset}\n`);
+
+    app.use((req, res, next) => {
+        req.csrfToken = () => 'disabled';
+        next();
+    });
+}
 
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/public/views');

@@ -10,6 +10,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 
+router.use(dbService.apiAuthUser);
+
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
         const uploadDir = './temp_uploads';
@@ -49,16 +51,11 @@ const upload = multer({
  *   "message": "successful"
  * }
  */
+
+// TODO: Test change to req.userID
 router.post('/project/create', async (req, res) => {
     try{
-        console.log("New requests /project/create")
-
-        if (!req.cookies.session_id) {
-            console.log("❌ Unauthorized attempt for creating project");
-            return res.status(403).json({ successful: false, message: "Unauthorized" });
-        }
-
-        const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+        console.log("New request /project/create")
 
         let formData = req.body;
         if (formData.projectName == null) {
@@ -67,7 +64,7 @@ router.post('/project/create', async (req, res) => {
 
         const data = {
             projectID: uuid(),
-            uid: userID,
+            uid: req.userID,
             projectName: formData.projectName
         };
 
@@ -90,13 +87,6 @@ router.post('/project/create', async (req, res) => {
 router.post('/project/delete', async (req, res) => {
     try {
         console.log("New request /project/delete");
-
-        if (!req.cookies.session_id) {
-            console.log("❌ Unauthorized attempt for deleting project");
-            return res.status(403).json({ successful: false, message: "Unauthorized" });
-        }
-
-        const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
         const { projectID } = req.body;
 
         if (projectID == null) {
@@ -128,13 +118,6 @@ router.post('/project/delete', async (req, res) => {
 router.post('/project/rename', async (req, res) => {
     try {
         console.log("New request /project/rename");
-
-        if (!req.cookies.session_id) {
-            console.log("❌ Unauthorized attempt for renaming project");
-            return res.status(403).json({ successful: false, message: "Unauthorized" });
-        }
-
-        const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
         const { projectID, newProjectName } = req.body;
 
         if (newProjectName == null || projectID == null) {
@@ -158,18 +141,11 @@ router.post('/project/rename', async (req, res) => {
     }
 });
 
+// TODO: Test change req.userID
 router.post('/project/list', async (req, res) => {
     try{
         console.log("New requests /project/list")
-
-        if (!req.cookies.session_id) {
-            console.log("❌ Unauthorized attempt for creating project");
-            return res.status(403).json({ successful: false, message: "Unauthorized" });
-        }
-
-        const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
-
-        let projects = await projectDBService.listProjects(userID)
+        let projects = await projectDBService.listProjects(req.userID)
 
         console.log(projects)
 
@@ -180,6 +156,21 @@ router.post('/project/list', async (req, res) => {
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
     return res.status(200).json({ success: true, message: 'successful' });
+});
+
+router.get('/project/list', async (req, res) => {
+    try{
+        console.log("New requests /project/list")
+        let projects = await projectDBService.listProjects(req.userID)
+
+        console.log(projects)
+
+        return res.send({ success: true, projects });
+
+    } catch (error){
+        console.log(error)
+        return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
+    }
 });
 
 
@@ -201,11 +192,6 @@ router.post('/project/list', async (req, res) => {
 router.post('/project/editShare', async (req, res) => {
     try {
         console.log("New requests /project/editShare")
-
-        if (!req.cookies.session_id) {
-            console.log("❌ Unauthorized attempt for editing project share");
-            return res.status(403).json({ successful: false, message: "Unauthorized" });
-        }
 
         let {projectID, shareOptions} = req.body
         // shareOptions = [{

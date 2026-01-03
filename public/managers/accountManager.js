@@ -13,6 +13,7 @@ const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthent
 const UAParser = require('ua-parser-js');
 const multer = require("multer");
 const {promises: fs} = require("fs");
+const utils = require("../services/utlisService")
 
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
@@ -126,22 +127,13 @@ const createSession = async (req, res, uid) => {
 
 const logLoginAttempt = async (req, res, uid) => {
     try {
-        const parser = new UAParser(req.headers['user-agent']);
-        const uaResult = parser.getResult();
-
-        const ip =
-            req.headers['x-forwarded-for']?.split(',').shift() ||
-            req.socket?.remoteAddress;
-        const osName = uaResult.os.name;          // e.g., "Mac OS"
-        const osVersion = uaResult.os.version;    // e.g., "10.15.7"
-        const browserName = uaResult.browser.name; // e.g., "Chrome"
-        const browserVersion = uaResult.browser.version;
+        const {clientOS, clientBrowser, clientIP} = await utils.getClientDeviceInfo(req)
 
         const data = {
             uid: uid,
-            attemptOS: `${osName} ${osVersion}`,
-            attemptBrowser: `${browserName} ${browserVersion}`,
-            attemptIP: ip
+            attemptOS: `${clientOS}`,
+            attemptBrowser: `${clientBrowser}`,
+            attemptIP: `${clientIP}`
         }
 
         console.log(`Logging Login attempt for uid: ${uid}...`)
@@ -466,10 +458,10 @@ router.post("/passkey/verify-authentication", async (req, res) => {
 
                 // Update lastUsed timestamp and device when passkey is successfully used
                 try {
-                    await credDBService.updatePasskeyLastUsed(passkey.keyID, deviceInfo);
-                    console.log("✅ LastUsed timestamp and device updated successfully");
+                    await credDBService.updatePasskeyLastUsed(passkey.keyID);
+                    console.log("LastUsed timestamp and device updated successfully");
                 } catch (updateError) {
-                    console.error("❌ Failed to update lastUsed:", updateError);
+                    console.error("Failed to update lastUsed:", updateError);
                 }
 
                 if (await createSession(req, res, uid)) {
@@ -480,7 +472,7 @@ router.post("/passkey/verify-authentication", async (req, res) => {
                     successful: true
                 });
             } else {
-                console.log("❌ Verification failed");
+                console.log("Verification failed");
                 return res.status(400).json({
                     successful: false,
                     message: "Verification failed"
@@ -492,7 +484,7 @@ router.post("/passkey/verify-authentication", async (req, res) => {
         }
 
     } catch (err) {
-        console.error("❌ Authentication error:", err);
+        console.error("Authentication error:", err);
         res.status(500).json({
             verified: false,
             error: err.message,
@@ -768,7 +760,7 @@ function inferProviderName(transports, userAgent) {
         const osName = result.os.name || 'Unknown';
         const deviceModel = result.device.model || '';
         const deviceVendor = result.device.vendor || '';
-        
+
         if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('mac')) {
             // Build descriptive name for Apple devices
             if (deviceModel) {
