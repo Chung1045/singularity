@@ -92,6 +92,20 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
     });
 
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    // Responsive breakpoints
+    const isMobile = windowWidth <= 480;
+    const isTablet = windowWidth > 480 && windowWidth <= 768;
+    const isSmallLaptop = windowWidth > 768 && windowWidth <= 1024;
+    const isLargeLaptop = windowWidth > 1024 && windowWidth <= 1440;
+    const isDesktop = windowWidth > 1440;
+
+    React.useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     console.log("Rendering TempPasskey with passkeys:", passkeys); // Debug
 
@@ -188,22 +202,21 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
             style: {
                 display: 'flex',
                 alignItems: 'center',
-                gap: '15px',
-                padding: '20px',
+                gap: isMobile ? '10px' : (isTablet ? '12px' : '15px'),
+                padding: isMobile ? '15px' : (isTablet ? '18px' : '20px'),
                 width: '100%',
-                borderRadius: '10px',
+                borderRadius: isMobile ? '8px' : '10px',
                 backgroundColor: '#ffffff',
-                // border: '1px solid #e8e8e8',
                 boxSizing: 'border-box'
             }
         },
             // Icon rectangle
             React.createElement('div', {
                 style: {
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     backgroundColor: '#e0e0e0',
-                    borderRadius: '10px',
+                    borderRadius: isMobile ? '8px' : '10px',
                     flexShrink: 0
                 }
             }),
@@ -212,7 +225,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 style: {
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
+                    gap: isMobile ? '6px' : '8px',
                     flex: 1
                 }
             },
@@ -222,7 +235,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         fontFamily: 'SF Pro-Regular, Helvetica',
                         fontWeight: '600',
                         color: '#000000',
-                        fontSize: '18px',
+                        fontSize: isMobile ? '16px' : (isTablet ? '17px' : '18px'),
                         lineHeight: '1.2'
                     }
                 }, passkey.keyName || 'Unnamed Passkey'),
@@ -230,8 +243,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 React.createElement('div', {
                     style: {
                         display: 'flex',
-                        gap: '8px',
-                        fontSize: '14px'
+                        gap: isMobile ? '6px' : '8px',
+                        fontSize: isMobile ? '12px' : '14px'
                     }
                 },
                     React.createElement('span', {
@@ -253,8 +266,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 React.createElement('div', {
                     style: {
                         display: 'flex',
-                        gap: '8px',
-                        fontSize: '14px'
+                        gap: isMobile ? '6px' : '8px',
+                        fontSize: isMobile ? '12px' : '14px'
                     }
                 },
                     React.createElement('span', {
@@ -277,8 +290,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
             React.createElement('button', {
                 onClick: () => deletePasskey(keyID, passkey.keyName),
                 style: {
-                    width: '24px',
-                    height: '24px',
+                    width: isMobile ? '20px' : '24px',
+                    height: isMobile ? '20px' : '24px',
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
@@ -293,8 +306,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     src: './img/delete_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                     alt: 'Delete',
                     style: {
-                        width: '24px',
-                        height: '24px'
+                        width: isMobile ? '20px' : '24px',
+                        height: isMobile ? '20px' : '24px'
                     }
                 })
             )
@@ -556,9 +569,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     // MODIFIED: Container for entire page content
                     React.createElement('div', {
                         style: {
-                            // padding: '40px 87px',
-                            padding: '20px 5px',
-
+                            padding: isMobile ? '15px 12px' : (isTablet ? '20px 20px' : (isSmallLaptop ? '25px 30px' : (isLargeLaptop ? '30px 50px' : '40px 87px'))),
                             width: '100%',
                             boxSizing: 'border-box'
                         }
@@ -568,8 +579,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                             style: {
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '15px',
-                                marginBottom: '40px'
+                                gap: isMobile ? '10px' : (isTablet ? '12px' : '15px'),
+                                marginBottom: isMobile ? '25px' : (isTablet ? '30px' : '40px')
                             }
                         },
                             // Back button with square icon
@@ -579,10 +590,10 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    width: '44px',
-                                    height: '44px',
-                                    padding: '10px',
-                                    borderRadius: '10px',
+                                    width: isMobile ? '36px' : (isTablet ? '40px' : '44px'),
+                                    height: isMobile ? '36px' : (isTablet ? '40px' : '44px'),
+                                    padding: isMobile ? '8px' : '10px',
+                                    borderRadius: isMobile ? '8px' : '10px',
                                     border: '1px solid #e0e0e0',
                                     background: '#fff',
                                     cursor: 'pointer'
@@ -592,8 +603,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                     src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                     alt: 'Back',
                                     style: {
-                                        width: '24px',
-                                        height: '24px'
+                                        width: isMobile ? '20px' : '24px',
+                                        height: isMobile ? '20px' : '24px'
                                     }
                                 })
                             ),
@@ -603,7 +614,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                     fontFamily: 'SF Pro-Bold, Helvetica',
                                     fontWeight: '400',
                                     color: '#000000',
-                                    fontSize: '24px',
+                                    fontSize: isMobile ? '20px' : (isTablet ? '22px' : '24px'),
                                     letterSpacing: '0',
                                     lineHeight: 'normal'
                                 }
@@ -615,16 +626,15 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                             style: {
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '15px',
-                                // maxWidth: '1265px'
-                                minWidth: '400px',
+                                gap: isMobile ? '12px' : '15px',
+                                minWidth: isMobile ? '0' : (isTablet ? '300px' : '400px')
                             }
                         },
                             // Create Passkey button aligned to right
                             React.createElement('div', {
                                 style: {
                                     display: 'flex',
-                                    justifyContent: 'flex-end'
+                                    justifyContent: isMobile ? 'flex-start' : 'flex-end'
                                 }
                             },
                                 React.createElement('button', {
@@ -632,25 +642,25 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                     style: {
                                         display: 'inline-flex',
                                         alignItems: 'center',
-                                        gap: '10px',
-                                        padding: '8px 12px',
-                                        borderRadius: '10px',
+                                        gap: isMobile ? '6px' : '10px',
+                                        padding: isMobile ? '8px 12px' : '8px 12px',
+                                        borderRadius: isMobile ? '8px' : '10px',
                                         border: '1px solid #000000',
                                         background: '#fff',
                                         cursor: 'pointer',
                                         fontFamily: 'Urbanist-SemiBold, Helvetica',
                                         fontWeight: '600',
                                         color: '#000000',
-                                        fontSize: '16px'
+                                        fontSize: isMobile ? '14px' : '16px'
                                     }
                                 },
                                     React.createElement('img', {
                                         src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                         alt: 'Add',
                                         style: {
-                                            width: '24px',
-                                            height: '24px',
-                                            marginRight: '5px'
+                                            width: isMobile ? '20px' : '24px',
+                                            height: isMobile ? '20px' : '24px',
+                                            marginRight: isMobile ? '2px' : '5px'
                                         }
                                     }),
                                     React.createElement('span', null, 'Create Passkey')
@@ -665,18 +675,18 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                         flexDirection: 'column',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        minHeight: '550px',
+                                        minHeight: isMobile ? '300px' : (isTablet ? '400px' : '550px'),
                                         textAlign: 'center',
                                         color: '#999999',
                                         fontFamily: 'SF Pro-Regular, Helvetica',
-                                        fontSize: '18px',
+                                        fontSize: isMobile ? '16px' : '18px',
                                         lineHeight: '1.6'
                                     }
                                 },
                                     React.createElement('div', {
                                         style: {
                                             fontWeight: '600',
-                                            fontSize: '20px',
+                                            fontSize: isMobile ? '18px' : '20px',
                                             color: '#666666',
                                             marginBottom: '10px'
                                         }

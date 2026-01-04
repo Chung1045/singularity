@@ -58,6 +58,9 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
+    // Define responsive breakpoints for MacBook compatibility
+    const isSmallDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerWidth < 1440;
+
     console.log("Inside TempUserProfile component – userInfo:", userInfo);
 
     function handleSessionManagement() {
@@ -141,11 +144,34 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
     return React.createElement('div', { 
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
-        onClick: () => setUserMenuOpen(false)
+        onClick: () => setUserMenuOpen(false),
+        style: {
+            display: 'flex',
+            width: '100%',
+            height: '100vh',
+            overflow: 'hidden'
+        }
     },
-        React.createElement('div', { className: 'group' },
+        React.createElement('div', { 
+            className: 'group',
+            style: {
+                display: 'flex',
+                width: '100%',
+                height: '100%'
+            }
+        },
             // SIDEBAR
-            React.createElement('aside', { className: 'side-bar', 'aria-label': 'Sidebar navigation' },
+            React.createElement('aside', { 
+                className: 'side-bar', 
+                'aria-label': 'Sidebar navigation',
+                style: {
+                    flexShrink: 0,
+                    width: sidebarCollapsed ? '65px' : '256px',
+                    transition: 'width 220ms ease',
+                    height: '100vh',
+                    position: 'relative'
+                }
+            },
                 React.createElement('nav', null,
                     // History button
                     React.createElement('button', {
@@ -390,7 +416,9 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     padding: '36px 30px 40px 30px',
                     backgroundColor: '#ffffff',
                     overflowY: 'auto',
-                    minHeight: '900px'
+                    minHeight: '100vh',
+                    width: `calc(100vw - ${sidebarCollapsed ? '65px' : '256px'})`,
+                    transition: 'width 220ms ease'
                 }
             },
                 // Header
@@ -400,7 +428,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         fontWeight: '500',
                         fontFamily: 'SF Pro-Bold, Helvetica',
                         color: '#000000',
-                        marginBottom: '131px',
+                        marginBottom: isSmallDesktop ? '80px' : '131px',
                         width: '147px',
                         height: '10px',
                         display: 'flex',
@@ -414,12 +442,13 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 // Profile Container
                 React.createElement('div', {
                     style: {
-                        width: '323px',
+                        width: isSmallDesktop ? '400px' : '450px',
+                        maxWidth: isSmallDesktop ? '500px' : '100%',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '31px',
-                        marginLeft: '76px'
+                        gap: isSmallDesktop ? '25px' : '31px',
+                        marginLeft: isSmallDesktop ? '76px' : '30px'
                     }
                 },
                     // Avatar Section
@@ -515,11 +544,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         style: {
                             display: 'flex',
                             flexDirection: 'column',
-                            width: '433px',
+                            width: isSmallDesktop ? '100%' : '433px',
+                            maxWidth: isSmallDesktop ? '500px' : '100%',
                             alignItems: 'flex-start',
                             gap: '20px',
-                            marginLeft: '-55px',
-                            marginRight: '-55px'
+                            marginLeft: isSmallDesktop ? '-20px' : '-55px',
+                            marginRight: isSmallDesktop ? '-20px' : '-55px'
                         }
                     },
                         // Info Card
