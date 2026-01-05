@@ -85,6 +85,80 @@ async function deleteProjectFolder(projectID) {
     });
 }
 
+// TODO: New, need testing
+async function updateProfilePic(userID, uploadedFile) {
+    try {
+        const objectPath = `user/${userID}`;
+        const localPath = uploadedFile.path; // Path from multer
+
+        // Upload to MinIO
+        await minioClient.fPutObject(bucket, objectPath, localPath);
+        console.log(`✅ Uploaded profile pic for user ${userID}`);
+
+        // Delete temporary file after successful upload
+        await fs.unlink(localPath);
+        console.log(`🗑️ Deleted temp file: ${localPath}`);
+
+        return {
+            successful: true,
+            path: objectPath
+        };
+    } catch (err) {
+        console.error("❌ Upload error:", err);
+
+        // Try to clean up temp file even if upload failed
+        try {
+            await fs.unlink(uploadedFile.path);
+        } catch (cleanupErr) {
+            console.error("Failed to cleanup temp file:", cleanupErr);
+        }
+
+        return {
+            successful: false,
+            error: err.message
+        };
+    }
+}
+
+async function removeProfilePic(userID) {
+    const objectPath = `user/${userID}`;
+    await minioClient.removeObject(bucket, objectPath);
+    console.log(`Deleted from MinIO: ${objectPath}`);
+
+    return {
+        successful: true,
+    };
+}
+
+async function fetchProfilePics(userIDs) {
+    const promises = userIDs.map(async (userID) => {
+        try {
+            const objectPath = `user/${userID}`;
+            const stream = await minioClient.getObject(bucket, objectPath);
+
+            const chunks = [];
+            for await (const chunk of stream) {
+                chunks.push(chunk);
+            }
+            const buffer = Buffer.concat(chunks);
+
+            return {
+                userID,
+                image: buffer.toString('base64'),
+                mimeType: 'image/jpeg', // or detect from file
+            };
+        } catch (error) {
+            return {
+                userID,
+                image: null,
+                mimeType: 'image/jpeg'
+            };
+        }
+    });
+
+    return await Promise.all(promises);
+}
+
 
 /**
  * Upload a file
@@ -423,6 +497,9 @@ module.exports = {
     saveGeneratedReport,
     testConnection,
     uploadFile,
-    uploadProjectFile
+    uploadProjectFile,
+    updateProfilePic,
+    removeProfilePic,
+    fetchProfilePics
 };
 
