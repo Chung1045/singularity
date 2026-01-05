@@ -545,11 +545,13 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     style: {
                         backgroundColor: '#ffffff',
                         width: '100%',
-                        minHeight: '100%',
+                        height: '100vh',
+                        maxHeight: '100vh',
                         display: 'flex',
                         flexDirection: 'column',
                         padding: 0,
-                        alignItems: 'flex-start'
+                        alignItems: 'flex-start',
+                        overflow: 'hidden'
                     }
                 },
                     // Header with back button and title
@@ -558,9 +560,9 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         { 
                             style: {
                                 display: 'flex',
-                                marginLeft: isMobile ? '15px' : isTablet ? '20px' : '27px',
-                                marginRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                width: isMobile ? 'calc(100% - 30px)' : isTablet ? 'calc(100% - 40px)' : 'calc(100% - 60px)',
+                                paddingLeft: isMobile ? '15px' : isTablet ? '20px' : '27px',
+                                paddingRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                width: '100%',
                                 position: 'sticky',
                                 top: '0',
                                 backgroundColor: '#ffffff',
@@ -568,7 +570,8 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                 paddingTop: isMobile ? '20px' : isTablet ? '30px' : '38px',
                                 paddingBottom: isMobile ? '10px' : isTablet ? '15px' : '20px',
                                 alignItems: 'center',
-                                gap: isMobile ? '10px' : '15px'
+                                gap: isMobile ? '10px' : '15px',
+                                boxSizing: 'border-box'
                             }
                         },
                         React.createElement(
@@ -626,16 +629,19 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         { 
                             style: {
                                 display: 'flex',
-                                marginLeft: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                marginRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                width: isMobile ? 'calc(100% - 30px)' : isTablet ? 'calc(100% - 40px)' : 'calc(100% - 66px)',
+                                paddingLeft: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                paddingRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                width: '100%',
                                 position: 'relative',
                                 flexDirection: 'column',
-                                alignItems: isMobile ? 'flex-start' : 'flex-end',
+                                alignItems: 'flex-start',
                                 gap: isMobile ? '10px' : '15px',
                                 marginTop: '0',
                                 flex: 1,
-                                paddingBottom: isMobile ? '15px' : '20px'
+                                paddingBottom: isMobile ? '15px' : '20px',
+                                boxSizing: 'border-box',
+                                minHeight: 0,
+                                overflow: 'hidden'
                             }
                         },
 
@@ -659,6 +665,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     padding: isMobile ? '8px' : '10px',
                                     position: 'relative',
                                     flex: '0 0 auto',
+                                    alignSelf: 'flex-end',
                                     borderRadius: isMobile ? '8px' : '10px',
                                     border: '1px solid #000000',
                                     background: 'transparent',
@@ -710,9 +717,8 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     alignItems: 'flex-start',
                                     gap: isMobile ? '20px' : '26px',
                                     position: 'relative',
-                                    // OPTION 2: Uncomment below to scroll entire content area
-                                    // maxHeight: 'calc(100vh - 200px)',
-                                    // overflowY: 'auto'
+                                    flex: '1 1 auto',
+                                    minHeight: 0
                                 }
                             },
 
@@ -726,7 +732,9 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                         alignItems: 'flex-start',
                                         gap: '15px',
                                         position: 'relative',
-                                        width: '100%'
+                                        width: '100%',
+                                        flex: '1 1 0',
+                                        minHeight: 0
                                     }
                                 },
                                 React.createElement("div", { 
@@ -748,16 +756,14 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     {
                                         style: {
                                             width: '100%',
-                                            maxHeight: isMobile ? '200px' : isTablet ? '220px' : isSmallLaptop ? '250px' : '330px',
-                                            minHeight: isMobile ? '150px' : '200px',
+                                            flex: '1 1 auto',
+                                            minHeight: 0,
                                             overflowY: 'auto',
+                                            overflowX: 'hidden',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: isMobile ? '10px' : '15px',
-                                            scrollbarWidth: 'none',
-                                            msOverflowStyle: 'none',
-                                            WebkitOverflowScrolling: 'touch',
-                                            paddingBottom: '15px'
+                                            paddingRight: '5px'
                                         }
                                     },
                                     loginAttempts.length > 0
@@ -785,7 +791,9 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                         alignItems: 'flex-start',
                                         gap: '15px',
                                         position: 'relative',
-                                        width: '100%'
+                                        width: '100%',
+                                        flex: '1 1 0',
+                                        minHeight: 0
                                     }
                                 },
                                 React.createElement("div", { 
@@ -807,16 +815,14 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     {
                                         style: {
                                             width: '100%',
-                                            maxHeight: isMobile ? '180px' : isTablet ? '200px' : isSmallLaptop ? '220px' : '330px',
-                                            minHeight: '150px',
+                                            flex: '1 1 auto',
+                                            minHeight: 0,
                                             overflowY: 'auto',
+                                            overflowX: 'hidden',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: isMobile ? '10px' : '15px',
-                                            scrollbarWidth: 'none',
-                                            msOverflowStyle: 'none',
-                                            WebkitOverflowScrolling: 'touch',
-                                            paddingBottom: '15px'
+                                            paddingRight: '5px'
                                         }
                                     },
                                     sessions.length > 0
