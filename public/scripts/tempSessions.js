@@ -7,6 +7,21 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
     });
 
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    React.useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Responsive breakpoints
+    const isMobile = windowWidth <= 480;
+    const isTablet = windowWidth > 480 && windowWidth <= 768;
+    const isSmallLaptop = windowWidth > 768 && windowWidth <= 1024;
+    const isLargeLaptop = windowWidth > 1024 && windowWidth <= 1440;
+    const isDesktop = windowWidth > 1440;
 
     console.log("Rendering TempSession with sessions:", sessions); // Debug
 
@@ -177,7 +192,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     )
                 )
             ),
-            React.createElement(
+            !isCurrent && React.createElement(
                 "button",
                 { 
                     style: { 
@@ -543,13 +558,17 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         { 
                             style: {
                                 display: 'flex',
-                                marginLeft: '27px',
-                                width: 'fit-content',
-                                height: '44px',
-                                position: 'relative',
-                                marginTop: '38px',
+                                marginLeft: isMobile ? '15px' : isTablet ? '20px' : '27px',
+                                marginRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                width: isMobile ? 'calc(100% - 30px)' : isTablet ? 'calc(100% - 40px)' : 'calc(100% - 60px)',
+                                position: 'sticky',
+                                top: '0',
+                                backgroundColor: '#ffffff',
+                                zIndex: 100,
+                                paddingTop: isMobile ? '20px' : isTablet ? '30px' : '38px',
+                                paddingBottom: isMobile ? '10px' : isTablet ? '15px' : '20px',
                                 alignItems: 'center',
-                                gap: '15px'
+                                gap: isMobile ? '10px' : '15px'
                             }
                         },
                         React.createElement(
@@ -559,13 +578,14 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    width: '44px',
-                                    height: '44px',
-                                    padding: '10px',
-                                    borderRadius: '10px',
+                                    width: isMobile ? '36px' : '44px',
+                                    height: isMobile ? '36px' : '44px',
+                                    padding: isMobile ? '8px' : '10px',
+                                    borderRadius: isMobile ? '8px' : '10px',
                                     border: '1px solid #e0e0e0',
                                     background: '#fff',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    flexShrink: 0
                                 },
                                 onClick: () => window.history.back(),
                                 'aria-label': 'Go back'
@@ -586,15 +606,16 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         React.createElement("div", { 
                             style: {
                                 position: 'relative',
-                                width: 'fit-content',
+                                flex: '1',
                                 fontFamily: 'Urbanist, Helvetica',
                                 fontWeight: 700,
-                                // fontStyle: 'italic',
                                 color: '#000000',
-                                fontSize: '24px',
+                                fontSize: isMobile ? '18px' : isTablet ? '20px' : '24px',
                                 letterSpacing: 0,
                                 lineHeight: 'normal',
-                                textAlign: 'left'
+                                textAlign: 'left',
+                                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                overflow: 'visible'
                             }
                         }, "Manage Login Sessions")
                     ),
@@ -605,15 +626,16 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         { 
                             style: {
                                 display: 'flex',
-                                marginLeft: '33px',
-                                marginRight: '33px',
-                                width: 'calc(100% - 66px)',
+                                marginLeft: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                marginRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                width: isMobile ? 'calc(100% - 30px)' : isTablet ? 'calc(100% - 40px)' : 'calc(100% - 66px)',
                                 position: 'relative',
                                 flexDirection: 'column',
-                                alignItems: 'flex-end',
-                                gap: '15px',
-                                marginTop: '20px',
-                                flex: 1
+                                alignItems: isMobile ? 'flex-start' : 'flex-end',
+                                gap: isMobile ? '10px' : '15px',
+                                marginTop: '0',
+                                flex: 1,
+                                paddingBottom: isMobile ? '15px' : '20px'
                             }
                         },
 
@@ -626,28 +648,24 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         }),
 
                         // Clear all button
-                        React.createElement(
+                        loginAttempts.length > 0 && React.createElement(
                             "button",
                             {
                                 style: {
                                     display: 'flex',
-                                    width: '129px',
+                                    width: isMobile ? '110px' : '129px',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    padding: '10px',
+                                    padding: isMobile ? '8px' : '10px',
                                     position: 'relative',
                                     flex: '0 0 auto',
-                                    borderRadius: '10px',
+                                    borderRadius: isMobile ? '8px' : '10px',
                                     border: '1px solid #000000',
                                     background: 'transparent',
-                                    cursor: loginAttempts.length > 0 ? 'pointer' : 'not-allowed',
-                                    transition: 'background-color 0.2s ease',
-                                    // opacity: loginAttempts.length > 0 ? 1 : 0.5
-                                    opacity: loginAttempts.length > 0 ? 1 : 1
-
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.2s ease'
                                 },
-                                onClick: loginAttempts.length > 0 ? handleClearLoginAttempts : null,
-                                disabled: loginAttempts.length === 0
+                                onClick: handleClearLoginAttempts
                             },
                             React.createElement(
                                 "div",
@@ -673,7 +691,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     fontFamily: 'Urbanist, Helvetica',
                                     fontWeight: 600,
                                     color: '#000000',
-                                    fontSize: '20px',
+                                    fontSize: isMobile ? '16px' : '20px',
                                     letterSpacing: 0,
                                     lineHeight: 'normal',
                                     whiteSpace: 'nowrap'
@@ -690,7 +708,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     flexDirection: 'column',
                                     width: '100%',
                                     alignItems: 'flex-start',
-                                    gap: '26px',
+                                    gap: isMobile ? '20px' : '26px',
                                     position: 'relative',
                                     // OPTION 2: Uncomment below to scroll entire content area
                                     // maxHeight: 'calc(100vh - 200px)',
@@ -719,7 +737,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                         fontFamily: 'Urbanist, Helvetica',
                                         fontWeight: 700,
                                         color: '#000000',
-                                        fontSize: '24px',
+                                        fontSize: isMobile ? '18px' : isTablet ? '20px' : '24px',
                                         letterSpacing: 0,
                                         lineHeight: 'normal'
                                     }
@@ -730,14 +748,16 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     {
                                         style: {
                                             width: '100%',
-                                            maxHeight: '500px',
+                                            maxHeight: isMobile ? '200px' : isTablet ? '220px' : isSmallLaptop ? '250px' : '330px',
+                                            minHeight: isMobile ? '150px' : '200px',
                                             overflowY: 'auto',
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            gap: '15px',
+                                            gap: isMobile ? '10px' : '15px',
                                             scrollbarWidth: 'none',
                                             msOverflowStyle: 'none',
-                                            WebkitOverflowScrolling: 'touch'
+                                            WebkitOverflowScrolling: 'touch',
+                                            paddingBottom: '15px'
                                         }
                                     },
                                     loginAttempts.length > 0
@@ -776,7 +796,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                         fontFamily: 'Urbanist, Helvetica',
                                         fontWeight: 700,
                                         color: '#000000',
-                                        fontSize: '24px',
+                                        fontSize: isMobile ? '18px' : isTablet ? '20px' : '24px',
                                         letterSpacing: 0,
                                         lineHeight: 'normal'
                                     }
@@ -787,14 +807,16 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     {
                                         style: {
                                             width: '100%',
-                                            maxHeight: '300px',
+                                            maxHeight: isMobile ? '180px' : isTablet ? '200px' : isSmallLaptop ? '220px' : '330px',
+                                            minHeight: '150px',
                                             overflowY: 'auto',
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            gap: '15px',
+                                            gap: isMobile ? '10px' : '15px',
                                             scrollbarWidth: 'none',
                                             msOverflowStyle: 'none',
-                                            WebkitOverflowScrolling: 'touch'
+                                            WebkitOverflowScrolling: 'touch',
+                                            paddingBottom: '15px'
                                         }
                                     },
                                     sessions.length > 0

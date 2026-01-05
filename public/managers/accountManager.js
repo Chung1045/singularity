@@ -226,11 +226,11 @@ router.post("/login", async (req, res) => {
 
                 return res.status(200).json({ success: true, message: 'successful' });
             } else {
-                console.log("Check your credentials again")
+                console.log("Password is incorrect")
                 if (uidResponse){
                     await logLoginAttempt(req, res, uidResponse)
                 }
-                return res.status(400).json({success: false, message: "Check your credentials again"})
+                return res.status(401).json({success: false, message: "Password is incorrect. Please try again."})
             }
 
         } else {

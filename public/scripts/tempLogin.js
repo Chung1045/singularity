@@ -165,15 +165,84 @@
 
 // for testing the code
 
-const { useState } = React;
+const { useState, useEffect } = React;
+
+const Message = ({ text, visible, onClose, showClose = true, emoji = '👋' }) => {
+    // Use useEffect to apply/remove the 'hidden' class for animations
+    useEffect(() => {
+        const messageElement = document.getElementById('message');
+        if (messageElement) {
+            if (visible) {
+                messageElement.classList.remove('hidden');
+            } else {
+                // The timeout allows the slide-down animation to complete
+                setTimeout(() => messageElement.classList.add('hidden'), 500);
+            }
+        }
+    }, [visible]);
+
+    // Render nothing if not visible
+    if (!visible) {
+        return null;
+    }
+
+    return React.createElement(
+        'div',
+        {
+            id: 'message',
+            // Start with hidden to let useEffect control visibility
+            className: 'hidden' 
+        },
+        `${emoji} ${text}`,
+        showClose ? React.createElement(
+            'span',
+            { id: 'close', onClick: onClose },
+            'x'
+        ) : null
+    );
+};
+
 
 const TempLogin = ({ csrfToken }) => {
     const [usernameEmail, setUsernameEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [message, setMessage] = useState({ text: '', visible: false, showClose: true, emoji: '👋' });
+
+    const showSlideUpMessage = (text, showClose = true, autoHideDuration = 5000, emoji = '⚠️') => {
+        setMessage({ text, visible: true, showClose, emoji });
+        // Automatically hide the message after some time (if autoHideDuration is set)
+        if (autoHideDuration > 0) {
+            setTimeout(() => {
+                hideSlideUpMessage();
+            }, autoHideDuration);
+        }
+    };
+
+    const hideSlideUpMessage = () => {
+        setMessage(prev => ({ ...prev, visible: false }));
+    };
+
+    const handleLoginSuccess = () => {
+        showSlideUpMessage('Login successful! Redirecting...', false, 0, '✅');
+        setTimeout(() => {
+            window.location.href = '/home';
+        }, 2000);
+    };
 
     const handleLogin = async () => {
+        // Validation
+        if (!usernameEmail.trim()) {
+            showSlideUpMessage('Please enter your username or email address', true, 5000, '⚠️');
+            return;
+        }
+        
+        if (!password.trim()) {
+            showSlideUpMessage('Please enter your password', true, 5000, '⚠️');
+            return;
+        }
+
         setIsLoading(true);
         try {
             const response = await fetch('/api/login', {
@@ -186,12 +255,20 @@ const TempLogin = ({ csrfToken }) => {
             });
 
             if (response.ok) {
-                window.location.href = '/home';
+                // Old code:
+                // showSlideUpMessage('Login successful! Redirecting...', false, 0, '✅');
+                // setTimeout(() => {
+                //     window.location.href = '/home';
+                // }, 2000);
+                handleLoginSuccess();
+            } else {
+                const data = await response.json();
+                showSlideUpMessage(data.message || 'Login failed. Please try again.', true, 5000, '❌');
+                setIsLoading(false);
             }
         } catch (error) {
             console.error('Login error:', error);
-            alert('Login failed. Please try again.');
-        } finally {
+            showSlideUpMessage('Login failed. Please try again.', true, 5000, '❌');
             setIsLoading(false);
         }
     };
@@ -231,12 +308,19 @@ const TempLogin = ({ csrfToken }) => {
 
             const verifyResult = await verifyResp.json();
             if (verifyResult.successful) {
-                alert('Verification is successful');
-                window.location.href = '/home';
+                // Old code:
+                // showSlideUpMessage('Verification successful! Redirecting...', false, 0, '✅');
+                // setTimeout(() => {
+                //     window.location.href = '/home';
+                // }, 2000);
+                handleLoginSuccess();
+            } else {
+                showSlideUpMessage(verifyResult.message || 'Passkey login failed. Please try again.');
+                setIsLoading(false);
             }
         } catch (error) {
             console.error('Passkey login error:', error);
-            alert('Passkey login failed. Please try again.');
+            showSlideUpMessage('Passkey login failed. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -249,6 +333,7 @@ const TempLogin = ({ csrfToken }) => {
     };
 
     return React.createElement('div', { className: 'frame' },
+        React.createElement(Message, { text: message.text, visible: message.visible, showClose: message.showClose, emoji: message.emoji, onClose: hideSlideUpMessage }),
         React.createElement('div', { className: 'login' },
             React.createElement('div', { className: 'content-background' }),
             
