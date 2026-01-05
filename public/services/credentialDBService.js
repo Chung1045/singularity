@@ -45,7 +45,7 @@ async function insertUserAccount(data){
         id,
         data.firstName.trim(),
         data.lastName.trim(),
-        data.userType ? data.userType : 'general',
+        'general',
         data.userEmail ? data.userEmail.trim() : null,
         data.userName.trim()
     ];

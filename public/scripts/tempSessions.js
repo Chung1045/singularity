@@ -7,7 +7,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
     });
 
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    
+
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     React.useEffect(() => {
@@ -35,7 +35,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
         try {
             const response = await fetch('/api/logout', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'CSRF-Token': csrfToken,
                     'Content-Type': 'application/json'
                 },
@@ -135,14 +135,14 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     transition: 'background-color 0.2s ease'
                 }
             },
-            React.createElement("div", { 
-                style: { 
-                    width: '48px', 
-                    height: '48px', 
-                    backgroundColor: '#d9d9d9', 
+            React.createElement("div", {
+                style: {
+                    width: '48px',
+                    height: '48px',
+                    backgroundColor: '#d9d9d9',
                     borderRadius: '10px',
                     flexShrink: 0
-                } 
+                }
             }),
             React.createElement(
                 "div",
@@ -150,52 +150,52 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                 React.createElement(
                     "div",
                     { style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } },
-                    React.createElement("div", { 
-                        style: { 
-                            fontFamily: 'Inter, Helvetica', 
-                            fontWeight: 400, 
+                    React.createElement("div", {
+                        style: {
+                            fontFamily: 'Inter, Helvetica',
+                            fontWeight: 400,
                             fontSize: '20px',
                             color: '#000000'
-                        } 
+                        }
                     }, session.sessionOS),
                     React.createElement(
                         "div",
                         { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        React.createElement("div", { 
-                            style: { 
-                                fontFamily: 'Inter, Helvetica', 
-                                fontWeight: 400, 
+                        React.createElement("div", {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: 400,
                                 fontSize: '14px',
                                 color: '#000000'
-                            } 
+                            }
                         }, session.sessionIP || "Unknown IP"),
-                        React.createElement("div", { 
-                            style: { 
-                                fontFamily: 'Inter, Helvetica', 
-                                fontWeight: 400, 
+                        React.createElement("div", {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: 400,
                                 fontSize: '14px',
                                 color: '#000000'
-                            } 
+                            }
                         }, session.sessionLocation || "Unknown Location")
                     ),
                     React.createElement(
                         "div",
                         { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        React.createElement("div", { 
-                            style: { 
-                                fontFamily: 'Inter, Helvetica', 
-                                fontWeight: 400, 
+                        React.createElement("div", {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: 400,
                                 fontSize: '14px',
                                 color: '#000000'
-                            } 
+                            }
                         }, isCurrent ? "Current" : session.lastSeenTime)
                     )
                 )
             ),
             !isCurrent && React.createElement(
                 "button",
-                { 
-                    style: { 
+                {
+                    style: {
                         backgroundColor: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
@@ -235,14 +235,14 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     transition: 'background-color 0.2s ease'
                 }
             },
-            React.createElement("div", { 
-                style: { 
-                    width: '48px', 
-                    height: '48px', 
-                    backgroundColor: '#d9d9d9', 
+            React.createElement("div", {
+                style: {
+                    width: '48px',
+                    height: '48px',
+                    backgroundColor: '#d9d9d9',
                     borderRadius: '10px',
                     flexShrink: 0
-                } 
+                }
             }),
             React.createElement(
                 "div",
@@ -250,44 +250,44 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                 React.createElement(
                     "div",
                     { style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } },
-                    React.createElement("div", { 
-                        style: { 
-                            fontFamily: 'Inter, Helvetica', 
-                            fontWeight: 400, 
+                    React.createElement("div", {
+                        style: {
+                            fontFamily: 'Inter, Helvetica',
+                            fontWeight: 400,
                             fontSize: '20px',
                             color: '#000000'
-                        } 
+                        }
                     }, `${attempt.attemptOS} - ${attempt.attemptBrowser}`),
                     React.createElement(
                         "div",
                         { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        React.createElement("div", { 
-                            style: { 
-                                fontFamily: 'Inter, Helvetica', 
-                                fontWeight: 400, 
+                        React.createElement("div", {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: 400,
                                 fontSize: '14px',
                                 color: '#000000'
-                            } 
+                            }
                         }, attempt.attemptIP),
-                        React.createElement("div", { 
-                            style: { 
-                                fontFamily: 'Inter, Helvetica', 
-                                fontWeight: 400, 
+                        React.createElement("div", {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: 400,
                                 fontSize: '14px',
                                 color: '#000000'
-                            } 
+                            }
                         }, attempt.attemptLocation || "Unknown Location")
                     ),
                     React.createElement(
                         "div",
                         { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        React.createElement("div", { 
-                            style: { 
-                                fontFamily: 'Inter, Helvetica', 
-                                fontWeight: 400, 
+                        React.createElement("div", {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: 400,
                                 fontSize: '14px',
                                 color: '#000000'
-                            } 
+                            }
                         }, attempt.attemptDate)
                     )
                 )
@@ -295,7 +295,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
         );
     });
 
-    return React.createElement('div', { 
+    return React.createElement('div', {
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
@@ -337,7 +337,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     },
                         React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' })
                     ),
-                    
+
                     React.createElement('button', {
                         className: 'trigger',
                         type: 'button',
@@ -362,24 +362,24 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     ),
 
                     // User section
-                    React.createElement('div', { 
-                        style: { 
-                            position: 'absolute', 
-                            bottom: '80px', 
-                            left: sidebarCollapsed ? '12px' : '0px', 
+                    React.createElement('div', {
+                        style: {
+                            position: 'absolute',
+                            bottom: '80px',
+                            left: sidebarCollapsed ? '12px' : '0px',
                             width: 'max-content',
                             transition: 'left 220ms ease',
-                            overflow: 'visible', 
-                            zIndex: 1002  
+                            overflow: 'visible',
+                            zIndex: 1002
                         },
                         onClick: toggleUserMenu
                     },
                         // Expanded view
-                        !sidebarCollapsed && React.createElement('a', { 
+                        !sidebarCollapsed && React.createElement('a', {
                             href: '#',
                             className: 'username-display',
-                            style: { 
-                                cursor: 'pointer', 
+                            style: {
+                                cursor: 'pointer',
                                 position: 'relative',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -392,7 +392,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         },
                             React.createElement('img', { className: 'user', src: './img/user.svg', alt: 'User', style: { width: '22px', height: '22px' } }),
                             React.createElement('span', { className: 'text-wrapper-6' }, username),
-                            
+
                             // User menu dropdown - expanded
                             userMenuOpen && React.createElement('div', {
                                 style: {
@@ -467,12 +467,12 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                 transition: 'all 220ms ease'
                             }
                         },
-                            React.createElement('img', { 
-                                src: './img/user.svg', 
-                                alt: 'User', 
-                                style: { width: '22px', height: '22px' } 
+                            React.createElement('img', {
+                                src: './img/user.svg',
+                                alt: 'User',
+                                style: { width: '22px', height: '22px' }
                             }),
-                            
+
                             // User menu dropdown - collapsed
                             sidebarCollapsed && userMenuOpen && React.createElement('div', {
                                 style: {
@@ -540,27 +540,29 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
 
             // Main content area
             React.createElement('main', { className: 'right-container' },
-                React.createElement('section', { 
+                React.createElement('section', {
                     className: 'main-screen',
                     style: {
                         backgroundColor: '#ffffff',
                         width: '100%',
-                        minHeight: '100%',
+                        height: '100vh',
+                        maxHeight: '100vh',
                         display: 'flex',
                         flexDirection: 'column',
                         padding: 0,
-                        alignItems: 'flex-start'
+                        alignItems: 'flex-start',
+                        overflow: 'hidden'
                     }
                 },
                     // Header with back button and title
                     React.createElement(
                         "div",
-                        { 
+                        {
                             style: {
                                 display: 'flex',
-                                marginLeft: isMobile ? '15px' : isTablet ? '20px' : '27px',
-                                marginRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                width: isMobile ? 'calc(100% - 30px)' : isTablet ? 'calc(100% - 40px)' : 'calc(100% - 60px)',
+                                paddingLeft: isMobile ? '15px' : isTablet ? '20px' : '27px',
+                                paddingRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                width: '100%',
                                 position: 'sticky',
                                 top: '0',
                                 backgroundColor: '#ffffff',
@@ -568,12 +570,13 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                 paddingTop: isMobile ? '20px' : isTablet ? '30px' : '38px',
                                 paddingBottom: isMobile ? '10px' : isTablet ? '15px' : '20px',
                                 alignItems: 'center',
-                                gap: isMobile ? '10px' : '15px'
+                                gap: isMobile ? '10px' : '15px',
+                                boxSizing: 'border-box'
                             }
                         },
                         React.createElement(
                             "button",
-                            { 
+                            {
                                 style: {
                                     display: 'inline-flex',
                                     alignItems: 'center',
@@ -603,7 +606,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                 })
                             )
                         ),
-                        React.createElement("div", { 
+                        React.createElement("div", {
                             style: {
                                 position: 'relative',
                                 flex: '1',
@@ -623,19 +626,22 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     // Main content container
                     React.createElement(
                         "div",
-                        { 
+                        {
                             style: {
                                 display: 'flex',
-                                marginLeft: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                marginRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                width: isMobile ? 'calc(100% - 30px)' : isTablet ? 'calc(100% - 40px)' : 'calc(100% - 66px)',
+                                paddingLeft: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                paddingRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
+                                width: '100%',
                                 position: 'relative',
                                 flexDirection: 'column',
-                                alignItems: isMobile ? 'flex-start' : 'flex-end',
+                                alignItems: 'flex-start',
                                 gap: isMobile ? '10px' : '15px',
                                 marginTop: '0',
-                                flex: 1,
-                                paddingBottom: isMobile ? '15px' : '20px'
+                                paddingBottom: isMobile ? '15px' : '20px',
+                                boxSizing: 'border-box',
+                                minHeight: 0,
+                                height: '100vh',
+                                overflowY: 'auto'
                             }
                         },
 
@@ -659,6 +665,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     padding: isMobile ? '8px' : '10px',
                                     position: 'relative',
                                     flex: '0 0 auto',
+                                    alignSelf: 'flex-end',
                                     borderRadius: isMobile ? '8px' : '10px',
                                     border: '1px solid #000000',
                                     background: 'transparent',
@@ -670,20 +677,17 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                             React.createElement(
                                 "div",
                                 { style: { position: 'relative', width: '24px', height: '24px', marginRight: '10px' } },
-                                React.createElement("img", { 
-                                    src: "./img/clear_all_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg", 
+                                React.createElement("img", {
+                                    src: "./img/clear_all_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg",
                                     alt: "",
                                     style: {
                                         width: '24px',
                                         height: '24px',
                                         marginRight: '20px'
                                     }
-
-
-
                                 })
                             ),
-                            React.createElement("div", { 
+                            React.createElement("div", {
                                 style: {
                                     position: 'relative',
                                     width: 'fit-content',
@@ -702,7 +706,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                         // Content sections container
                         React.createElement(
                             "div",
-                            { 
+                            {
                                 style: {
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -710,26 +714,26 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     alignItems: 'flex-start',
                                     gap: isMobile ? '20px' : '26px',
                                     position: 'relative',
-                                    // OPTION 2: Uncomment below to scroll entire content area
-                                    // maxHeight: 'calc(100vh - 200px)',
-                                    // overflowY: 'auto'
+                                    flex: '1 1 auto',
+                                    minHeight: 0
                                 }
                             },
 
                             // Login attempts section
                             React.createElement(
                                 "div",
-                                { 
+                                {
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'flex-start',
                                         gap: '15px',
                                         position: 'relative',
-                                        width: '100%'
+                                        width: '100%',
+                                        minHeight: 0
                                     }
                                 },
-                                React.createElement("div", { 
+                                React.createElement("div", {
                                     style: {
                                         position: 'relative',
                                         width: '100%',
@@ -748,21 +752,17 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     {
                                         style: {
                                             width: '100%',
-                                            maxHeight: isMobile ? '200px' : isTablet ? '220px' : isSmallLaptop ? '250px' : '330px',
-                                            minHeight: isMobile ? '150px' : '200px',
-                                            overflowY: 'auto',
+                                            flex: '1 1 auto',
+                                            minHeight: 0,
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: isMobile ? '10px' : '15px',
-                                            scrollbarWidth: 'none',
-                                            msOverflowStyle: 'none',
-                                            WebkitOverflowScrolling: 'touch',
-                                            paddingBottom: '15px'
+                                            paddingRight: '5px'
                                         }
                                     },
                                     loginAttempts.length > 0
                                         ? loginAttemptElement
-                                        : React.createElement("p", { 
+                                        : React.createElement("p", {
                                             style: {
                                                 fontFamily: 'Inter, Helvetica',
                                                 fontWeight: 400,
@@ -772,23 +772,25 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                             }
                                         }, "No login attempts recorded")
                                 )
-                               
+
                             ),
 
                             // Logged in sessions section
                             React.createElement(
                                 "div",
-                                { 
+                                {
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'flex-start',
                                         gap: '15px',
                                         position: 'relative',
-                                        width: '100%'
+                                        width: '100%',
+                                        flex: '1 1 0',
+                                        minHeight: 0
                                     }
                                 },
-                                React.createElement("div", { 
+                                React.createElement("div", {
                                     style: {
                                         position: 'relative',
                                         width: 'fit-content',
@@ -807,21 +809,17 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                     {
                                         style: {
                                             width: '100%',
-                                            maxHeight: isMobile ? '180px' : isTablet ? '200px' : isSmallLaptop ? '220px' : '330px',
-                                            minHeight: '150px',
-                                            overflowY: 'auto',
+                                            flex: '1 1 auto',
+                                            minHeight: 0,
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: isMobile ? '10px' : '15px',
-                                            scrollbarWidth: 'none',
-                                            msOverflowStyle: 'none',
-                                            WebkitOverflowScrolling: 'touch',
-                                            paddingBottom: '15px'
+                                            paddingRight: '5px'
                                         }
                                     },
                                     sessions.length > 0
                                         ? sessionElements
-                                        : React.createElement("p", { 
+                                        : React.createElement("p", {
                                             style: {
                                                 fontFamily: 'Inter, Helvetica',
                                                 fontWeight: 400,
@@ -831,7 +829,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                             }
                                         }, "No active sessions")
                                 )
-                               
+
                             )
                         )
                     )
