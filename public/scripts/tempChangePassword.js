@@ -137,22 +137,63 @@ const TempChangePassword = ({ csrfToken }) => {
         confirmPassword: '',
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [errors, setErrors] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+
+    const showAlert = (title, message, onConfirm = null) => {
+        setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
+    };
+
+    const closeModal = () => {
+        setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+    };
+
+    const handleModalOk = () => {
+        if (modal.onConfirm) {
+            modal.onConfirm();
+        }
+        closeModal();
+    };
 
     const handleChange = (field) => (e) => {
         setFormData({ ...formData, [field]: e.target.value });
+        // Clear error when user starts typing
+        if (errors[field]) {
+            setErrors({ ...errors, [field]: '' });
+        }
     };
 
     const handleSubmit = async () => {
-        const requiredFields = ["currentPassword", "newPassword", "confirmPassword"];
-        const emptyFields = requiredFields.filter(field => !formData[field]);
+        // Clear previous errors
+        const newErrors = {
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        };
 
-        if (emptyFields.length > 0) {
-            alert(`Please fill in: ${emptyFields.join(", ")}`);
-            return;
+        // Validate required fields
+        if (!formData.currentPassword) {
+            newErrors.currentPassword = 'Current password is required';
+        }
+        if (!formData.newPassword) {
+            newErrors.newPassword = 'New password is required';
+        }
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = 'Please confirm your new password';
         }
 
-        if (formData.newPassword !== formData.confirmPassword) {
-            alert("New passwords do not match!");
+        // Check if passwords match
+        if (formData.newPassword && formData.confirmPassword && formData.newPassword !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        // If there are errors, set them and return
+        if (newErrors.currentPassword || newErrors.newPassword || newErrors.confirmPassword) {
+            setErrors(newErrors);
             return;
         }
 
@@ -171,14 +212,26 @@ const TempChangePassword = ({ csrfToken }) => {
             const result = await response.json();
 
             if (response.ok) {
-                alert(result.message || "Password changed successfully!");
-                window.location.href = '/profile';
+                // Old: alert(result.message || "Password changed successfully!");
+                // Old: window.location.href = '/profile';
+                showAlert('Success', result.message || "Password changed successfully!", () => {
+                    window.location.href = '/profile';
+                });
             } else {
-                alert(result.message || "Failed to change password.");
+                // Check if it's a field-specific error
+                if (result.field) {
+                    setErrors({ ...errors, [result.field]: result.message || 'An error occurred' });
+                } else if (result.message && result.message.toLowerCase().includes('current password')) {
+                    setErrors({ ...errors, currentPassword: result.message });
+                } else {
+                    // Old: alert(result.message || "Failed to change password.");
+                    showAlert('Error', result.message || "Failed to change password.");
+                }
             }
         } catch (error) {
             console.error('Change password error:', error);
-            alert("An unexpected error occurred. Please try again.");
+            // Old: alert("An unexpected error occurred. Please try again.");
+            showAlert('Error', "An unexpected error occurred. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -307,7 +360,7 @@ const TempChangePassword = ({ csrfToken }) => {
                         style: {
                             borderRadius: '8px',
                             borderStyle: 'solid',
-                            borderColor: '#e4e4e4',
+                            borderColor: errors.currentPassword ? '#dc2626' : '#e4e4e4',
                             borderWidth: '2px',
                             width: '400px',
                             height: '35px',
@@ -318,7 +371,18 @@ const TempChangePassword = ({ csrfToken }) => {
                             fontFamily: 'SfPro-Regular, sans-serif',
                             fontSize: '13px'
                         }
-                    })
+                    }),
+                    errors.currentPassword && React.createElement('div', {
+                        style: {
+                            color: '#dc2626',
+                            fontSize: '12px',
+                            fontFamily: 'SfPro-Regular, sans-serif',
+                            position: 'absolute',
+                            left: '0px',
+                            top: '62px',
+                            width: '400px'
+                        }
+                    }, errors.currentPassword)
                 ),
 
                 // New Password
@@ -360,7 +424,7 @@ const TempChangePassword = ({ csrfToken }) => {
                         style: {
                             borderRadius: '8px',
                             borderStyle: 'solid',
-                            borderColor: '#e4e4e4',
+                            borderColor: errors.newPassword ? '#dc2626' : '#e4e4e4',
                             borderWidth: '2px',
                             width: '400px',
                             height: '35px',
@@ -371,7 +435,18 @@ const TempChangePassword = ({ csrfToken }) => {
                             fontFamily: 'SfPro-Regular, sans-serif',
                             fontSize: '13px'
                         }
-                    })
+                    }),
+                    errors.newPassword && React.createElement('div', {
+                        style: {
+                            color: '#dc2626',
+                            fontSize: '12px',
+                            fontFamily: 'SfPro-Regular, sans-serif',
+                            position: 'absolute',
+                            left: '0px',
+                            top: '142px',
+                            width: '400px'
+                        }
+                    }, errors.newPassword)
                 ),
 
                 // Confirm New Password
@@ -413,7 +488,7 @@ const TempChangePassword = ({ csrfToken }) => {
                         style: {
                             borderRadius: '8px',
                             borderStyle: 'solid',
-                            borderColor: '#e4e4e4',
+                            borderColor: errors.confirmPassword ? '#dc2626' : '#e4e4e4',
                             borderWidth: '2px',
                             width: '400px',
                             height: '35px',
@@ -424,7 +499,18 @@ const TempChangePassword = ({ csrfToken }) => {
                             fontFamily: 'SfPro-Regular, sans-serif',
                             fontSize: '13px'
                         }
-                    })
+                    }),
+                    errors.confirmPassword && React.createElement('div', {
+                        style: {
+                            color: '#dc2626',
+                            fontSize: '12px',
+                            fontFamily: 'SfPro-Regular, sans-serif',
+                            position: 'absolute',
+                            left: '0px',
+                            top: '222px',
+                            width: '400px'
+                        }
+                    }, errors.confirmPassword)
                 ),
 
                 // Confirmation Message
@@ -527,6 +613,88 @@ const TempChangePassword = ({ csrfToken }) => {
                             justifyContent: 'center'
                         }
                     }, 'Cancel')
+                )
+            )
+        ),
+
+        // Custom Modal
+        modal.isOpen && React.createElement('div', {
+            style: {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10001,
+                padding: '20px'
+            },
+            onClick: (e) => {
+                if (e.target === e.currentTarget) {
+                    closeModal();
+                }
+            }
+        },
+            React.createElement('div', {
+                style: {
+                    backgroundColor: '#ffffff',
+                    borderRadius: '15px',
+                    padding: '30px',
+                    maxWidth: '450px',
+                    width: '100%',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px'
+                },
+                onClick: (e) => e.stopPropagation()
+            },
+                React.createElement('div', {
+                    style: {
+                        fontFamily: 'SfPro-Bold, sans-serif',
+                        fontWeight: 700,
+                        fontSize: '24px',
+                        color: '#000000',
+                        lineHeight: 'normal'
+                    }
+                }, modal.title),
+                React.createElement('div', {
+                    style: {
+                        fontFamily: 'SfPro-Regular, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '16px',
+                        color: '#000000',
+                        lineHeight: '1.5'
+                    }
+                }, modal.message),
+                React.createElement('div', {
+                    style: {
+                        display: 'flex',
+                        gap: '10px',
+                        justifyContent: 'flex-end',
+                        marginTop: '10px'
+                    }
+                },
+                    React.createElement('button', {
+                        style: {
+                            padding: '12px 24px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            backgroundColor: '#333438',
+                            color: '#ffffff',
+                            fontFamily: 'SfPro-Bold, sans-serif',
+                            fontWeight: 700,
+                            fontSize: '16px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                        },
+                        onMouseEnter: (e) => e.target.style.backgroundColor = '#555',
+                        onMouseLeave: (e) => e.target.style.backgroundColor = '#333438',
+                        onClick: handleModalOk
+                    }, 'OK')
                 )
             )
         )

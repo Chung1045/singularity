@@ -57,11 +57,48 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    React.useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = windowWidth <= 480;
 
     // Define responsive breakpoints for MacBook compatibility
     const isSmallDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerWidth < 1440;
 
     console.log("Inside TempUserProfile component – userInfo:", userInfo);
+
+    const showAlert = (title, message) => {
+        setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null });
+    };
+
+    const showModal = (title, message, onConfirm, onCancel = null) => {
+        setModal({ isOpen: true, title, message, type: 'confirm', onConfirm, onCancel });
+    };
+
+    const closeModal = () => {
+        setModal({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+    };
+
+    const handleModalConfirm = async () => {
+        closeModal();
+        if (modal.onConfirm) {
+            await modal.onConfirm();
+        }
+    };
+
+    const handleModalCancel = () => {
+        closeModal();
+        if (modal.onCancel) {
+            modal.onCancel();
+        }
+    };
 
     function handleSessionManagement() {
         window.location.href = "/session"
@@ -100,12 +137,14 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
             data: JSON.stringify({}),
             contentType: 'application/json',
             success: function(response) {
-                alert("Logout response: " + JSON.stringify(response));
-                window.location = "/login";
+                showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
+                setTimeout(() => {
+                    window.location = "/login";
+                }, 3000);
             },
             error: function(xhr) {
                 const errorMessage = xhr.responseJSON?.message || "An error occurred. Please try again.";
-                alert(errorMessage);
+                showAlert('Error', errorMessage);
             }
         });
     };
@@ -115,9 +154,13 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     }
 
     function handleDeleteAccount() {
-        if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-            console.log("Delete account requested");
-        }
+        showModal(
+            'Delete Account',
+            'Are you sure you want to delete your account? This action cannot be undone.',
+            () => {
+                console.log("Delete account requested");
+            }
+        );
     }
 
     // const toggleSidebar = () => {
@@ -448,7 +491,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: isSmallDesktop ? '25px' : '31px',
-                        marginLeft: isSmallDesktop ? '76px' : '30px'
+                        // marginLeft: isSmallDesktop ? '76px' : '30px'
                     }
                 },
                     // Avatar Section
@@ -1025,6 +1068,105 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }, 'Delete Account')
                             )
                         )
+                    )
+                )
+            ),
+
+            // Custom Modal
+            modal.isOpen && React.createElement('div', {
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10001,
+                    padding: '20px'
+                },
+                onClick: (e) => {
+                    if (e.target === e.currentTarget && modal.type === 'alert') {
+                        closeModal();
+                    }
+                }
+            },
+                React.createElement('div', {
+                    style: {
+                        backgroundColor: '#ffffff',
+                        borderRadius: '15px',
+                        padding: isMobile ? '25px' : '30px',
+                        maxWidth: isMobile ? '90%' : '500px',
+                        width: '100%',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
+                    },
+                    onClick: (e) => e.stopPropagation()
+                },
+                    React.createElement('div', {
+                        style: {
+                            fontFamily: 'Urbanist, Helvetica',
+                            fontWeight: 700,
+                            fontSize: isMobile ? '20px' : '24px',
+                            color: '#000000',
+                            lineHeight: 'normal'
+                        }
+                    }, modal.title),
+                    React.createElement('div', {
+                        style: {
+                            fontFamily: 'Inter, Helvetica',
+                            fontWeight: 400,
+                            fontSize: isMobile ? '14px' : '16px',
+                            color: '#000000',
+                            lineHeight: '1.5'
+                        }
+                    }, modal.message),
+                    React.createElement('div', {
+                        style: {
+                            display: 'flex',
+                            gap: '10px',
+                            justifyContent: 'flex-end',
+                            marginTop: '10px'
+                        }
+                    },
+                        modal.type === 'confirm' && React.createElement('button', {
+                            style: {
+                                padding: isMobile ? '10px 20px' : '12px 24px',
+                                borderRadius: '10px',
+                                border: '1px solid #e0e0e0',
+                                backgroundColor: '#ffffff',
+                                color: '#000000',
+                                fontFamily: 'Urbanist, Helvetica',
+                                fontWeight: 600,
+                                fontSize: isMobile ? '14px' : '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = '#ffffff',
+                            onClick: handleModalCancel
+                        }, 'Cancel'),
+                        React.createElement('button', {
+                            style: {
+                                padding: isMobile ? '10px 20px' : '12px 24px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                backgroundColor: '#000000',
+                                color: '#ffffff',
+                                fontFamily: 'Urbanist, Helvetica',
+                                fontWeight: 600,
+                                fontSize: isMobile ? '14px' : '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#333333',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = '#000000',
+                            onClick: modal.type === 'confirm' ? handleModalConfirm : closeModal
+                        }, modal.type === 'confirm' ? 'Confirm' : 'OK')
                     )
                 )
             )

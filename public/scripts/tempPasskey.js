@@ -1,90 +1,5 @@
 const { useState } = React;
 
-async function registerPasskey() {
-    const csrfToken = document.querySelector('#hidden-csrf')?.value;
-    console.log("Running")
-    if (!csrfToken) {
-        alert("CSRF token missing!");
-        return;
-    }
-
-    const { startRegistration, browserSupportsWebAuthn } = window.SimpleWebAuthnBrowser;
-
-    if (!browserSupportsWebAuthn) {
-        alert("This browser does not support passkey")
-        return
-    }
-    try {
-        const resp = await fetch('/api/passkey/gen-option', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'CSRF-Token': csrfToken
-            },
-            body: JSON.stringify({})
-        });
-
-        if (!resp.ok) throw new Error("Failed to get registration options");
-
-        const options = await resp.json();
-
-        const attResp = await startRegistration(options);
-        console.log("Attestation response:", attResp);
-
-        const verificationResp = await fetch('/api/passkey/verify-register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'CSRF-Token': csrfToken
-            },
-            body: JSON.stringify({attResp} )
-        });
-
-        const verificationJSON = await verificationResp.json();
-
-        if (verificationResp.ok) {
-            alert("Passkey registered successfully!");
-            location.reload();
-        } else {
-            alert("Registration failed: " + (verificationJSON.error || "Unknown error"));
-        }
-    } catch (error) {
-        console.error(error);
-        alert("Error: " + error.message);
-    }
-}
-
-async function deletePasskey(passkeyID, passkeyName) {
-    if (confirm(`Are you sure you want to delete this passkey? (${passkeyName}`)) {
-        try {
-            console.log("PasskeyID: " + passkeyID);
-
-            const resp = await fetch("/api/passkey/delete", {
-                method: 'POST',                     // changed from DELETE
-                headers: {
-                    'CSRF-Token': csrfToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ passkeyID })
-            });
-
-            if (resp.ok) {
-                alert("Passkey deleted");
-                location.reload();   // or remove from state for smoother UX
-            } else {
-                alert("Failed to delete passkey");
-            }
-        } catch (e) {
-            alert("Error: " + e.message);
-        }
-    } else {
-        // User clicked "No" (Cancel)
-        console.log("User chose NO");
-    }
-
-}
-
-
 const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
@@ -93,6 +8,128 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
 
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+
+    const showAlert = (title, message, onConfirm = null) => {
+        setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
+    };
+
+    const showModal = (title, message, onConfirm) => {
+        setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
+    };
+
+    const closeModal = () => {
+        setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+    };
+
+    const handleModalOk = () => {
+        if (modal.onConfirm) {
+            modal.onConfirm();
+        }
+        closeModal();
+    };
+
+    const handleModalCancel = () => {
+        closeModal();
+    };
+
+    // Passkey registration function moved inside component
+    const registerPasskey = async () => {
+        console.log("Running");
+        if (!csrfToken) {
+            // Old: alert("CSRF token missing!");
+            showAlert('Error', 'CSRF token missing!');
+            return;
+        }
+
+        const { startRegistration, browserSupportsWebAuthn } = window.SimpleWebAuthnBrowser;
+
+        if (!browserSupportsWebAuthn) {
+            // Old: alert("This browser does not support passkey");
+            showAlert('Error', 'This browser does not support passkey');
+            return;
+        }
+        try {
+            const resp = await fetch('/api/passkey/gen-option', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({})
+            });
+
+            if (!resp.ok) throw new Error("Failed to get registration options");
+
+            const options = await resp.json();
+
+            const attResp = await startRegistration(options);
+            console.log("Attestation response:", attResp);
+
+            const verificationResp = await fetch('/api/passkey/verify-register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ attResp })
+            });
+
+            const verificationJSON = await verificationResp.json();
+
+            if (verificationResp.ok) {
+                // Old: alert("Passkey registered successfully!");
+                // Old: location.reload();
+                showAlert('Success', 'Passkey registered successfully!', () => {
+                    location.reload();
+                });
+            } else {
+                // Old: alert("Registration failed: " + (verificationJSON.error || "Unknown error"));
+                showAlert('Error', 'Registration failed: ' + (verificationJSON.error || "Unknown error"));
+            }
+        } catch (error) {
+            console.error(error);
+            // Old: alert("Error: " + error.message);
+            showAlert('Error', 'Error: ' + error.message);
+        }
+    };
+
+    // Passkey deletion function moved inside component
+    const deletePasskey = async (passkeyID, passkeyName) => {
+        // Old: if (confirm(`Are you sure you want to delete this passkey? (${passkeyName}`)) {
+        showModal(
+            'Delete Passkey',
+            `Are you sure you want to delete this passkey? (${passkeyName})`,
+            async () => {
+                try {
+                    console.log("PasskeyID: " + passkeyID);
+
+                    const resp = await fetch("/api/passkey/delete", {
+                        method: 'POST',
+                        headers: {
+                            'CSRF-Token': csrfToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ passkeyID })
+                    });
+
+                    if (resp.ok) {
+                        // Old: alert("Passkey deleted");
+                        // Old: location.reload();
+                        showAlert('Success', 'Passkey deleted', () => {
+                            location.reload();
+                        });
+                    } else {
+                        // Old: alert("Failed to delete passkey");
+                        showAlert('Error', 'Failed to delete passkey');
+                    }
+                } catch (e) {
+                    // Old: alert("Error: " + e.message);
+                    showAlert('Error', 'Error: ' + e.message);
+                }
+            }
+        );
+    };
 
     // Responsive breakpoints
     const isMobile = windowWidth <= 480;
@@ -112,7 +149,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
     const logout = async () => {
         if (!csrfToken) {
             console.error('CSRF token not available');
-            alert('Security token missing. Please refresh the page.');
+            // Old: alert('Security token missing. Please refresh the page.');
+            showAlert('Error', 'Security token missing. Please refresh the page.');
             return;
         }
 
@@ -128,16 +166,24 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
 
             if (response.ok) {
                 const data = await response.json();
-                alert("Logout response: " + JSON.stringify(data));
-                window.location = "/login";
+                // Old: alert("Logout response: " + JSON.stringify(data));
+                // Old: window.location = "/login";
+                showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.', () => {
+                    window.location = "/login";
+                });
+                setTimeout(() => {
+                    window.location = "/login";
+                }, 3000);
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 const errorMessage = errorData.message || "An error occurred. Please try again.";
-                alert(errorMessage);
+                // Old: alert(errorMessage);
+                showAlert('Error', errorMessage);
             }
         } catch (error) {
             console.error('Logout error:', error);
-            alert("An error occurred during logout. Please try again.");
+            // Old: alert("An error occurred during logout. Please try again.");
+            showAlert('Error', 'An error occurred during logout. Please try again.');
         }
     };
 
@@ -569,7 +615,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     // MODIFIED: Container for entire page content
                     React.createElement('div', {
                         style: {
-                            padding: isMobile ? '15px 12px' : (isTablet ? '20px 20px' : (isSmallLaptop ? '25px 30px' : (isLargeLaptop ? '30px 50px' : '40px 87px'))),
+                            // padding: isMobile ? '15px 12px' : (isTablet ? '20px 20px' : (isSmallLaptop ? '25px 30px' : (isLargeLaptop ? '30px 50px' : '40px 87px'))),
                             width: '100%',
                             boxSizing: 'border-box'
                         }
@@ -705,6 +751,104 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                 )
                                 : passkeyElements
                         )
+                    )
+                )
+            ),
+
+            // Custom Modal
+            modal.isOpen && React.createElement('div', {
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10001
+                },
+                onClick: (e) => {
+                    if (e.target === e.currentTarget) {
+                        closeModal();
+                    }
+                }
+            },
+                React.createElement('div', {
+                    style: {
+                        backgroundColor: '#ffffff',
+                        borderRadius: '15px',
+                        padding: '30px',
+                        maxWidth: '450px',
+                        width: '100%',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
+                    },
+                    onClick: (e) => e.stopPropagation()
+                },
+                    React.createElement('div', {
+                        style: {
+                            fontFamily: 'Urbanist, Helvetica',
+                            fontWeight: 700,
+                            fontSize: '24px',
+                            color: '#000000',
+                            lineHeight: 'normal'
+                        }
+                    }, modal.title),
+                    React.createElement('div', {
+                        style: {
+                            fontFamily: 'Inter, Helvetica',
+                            fontWeight: 400,
+                            fontSize: '16px',
+                            color: '#000000',
+                            lineHeight: '1.5'
+                        }
+                    }, modal.message),
+                    React.createElement('div', {
+                        style: {
+                            display: 'flex',
+                            gap: '10px',
+                            justifyContent: 'flex-end',
+                            marginTop: '10px'
+                        }
+                    },
+                        modal.type === 'confirm' && React.createElement('button', {
+                            style: {
+                                padding: '12px 24px',
+                                borderRadius: '10px',
+                                border: '1px solid #000000',
+                                backgroundColor: '#ffffff',
+                                color: '#000000',
+                                fontFamily: 'Urbanist, Helvetica',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f0f0f0',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = '#ffffff',
+                            onClick: handleModalCancel
+                        }, 'Cancel'),
+                        React.createElement('button', {
+                            style: {
+                                padding: '12px 24px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                backgroundColor: '#000000',
+                                color: '#ffffff',
+                                fontFamily: 'Urbanist, Helvetica',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#333333',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = '#000000',
+                            onClick: handleModalOk
+                        }, 'OK')
                     )
                 )
             )

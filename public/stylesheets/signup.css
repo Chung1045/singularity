@@ -35,9 +35,14 @@ a {
 .frame .sign-up {
     margin-top: 150px;
     width: 866px;
-    height: 600px;
+    height: 625px;
     margin-left: 287px;
     display: flex;
+    transition: height 0.3s ease;
+}
+
+.frame .sign-up.expanded {
+    height: 625px;
 }
 
 .frame .login {
@@ -63,10 +68,15 @@ a {
     top: 10px;
     left: 433px;
     width: 423px;
-    height: 579px;
+    height: 605px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: height 0.3s ease;
+}
+
+.frame .right-content.expanded {
+    height: 605px;
 }
 
 .frame .img {
@@ -272,7 +282,9 @@ display: flex;
 .frame .div-3 {
     position: relative;
     width: 362px;
-    height: 50px;
+    height: auto;
+    min-height: 50px;
+    padding-bottom: 20px;
     margin-right: -2.00px;
 }
 
@@ -450,4 +462,32 @@ display: flex;
     height: 50px;
 }
 
+/*
+*
+CSS FOR MESSAGE / ANIMATION HERE
+*
+*/
+#message {
+  background: #fff;
+  border-radius: 3px;
+  bottom: 0;
+  box-shadow: 0px 2px 8px #E1E1E1;
+  color: #4a4a4a;
+  font-weight: 700;
+  left: 50%;
+  padding: 12px 16px;
+  position: fixed;
+  transform: translate(-50%, -40px);
+  transition: transform 0.5s cubic-bezier(1, -0.5, .25, 1.25);
+}
+
+#message.hidden {
+  transform: translate(-50%, 100%);
+}
+
+#message #close {
+  cursor: pointer;
+  font-weight: 400;
+  margin-left: 16px;
+}
 
