@@ -1,5 +1,5 @@
 const Minio = require("minio");
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
 const db = require("./db")
 const uuid = require("uuid-v4");
@@ -89,15 +89,38 @@ async function deleteProjectFolder(projectID) {
 async function updateProfilePic(userID, uploadedFile) {
     try {
         const objectPath = `user/${userID}`;
-        const localPath = uploadedFile.path; // Path from multer
 
-        // Upload to MinIO
-        await minioClient.fPutObject(bucket, objectPath, localPath);
+        // Check if we have a compressed buffer or need to read from file
+        let buffer;
+        let contentType = uploadedFile.mimetype || 'image/jpeg';
+
+        if (uploadedFile.buffer) {
+            // Use the compressed buffer if available
+            buffer = uploadedFile.buffer;
+            console.log(`📦 Using compressed buffer (${buffer.length} bytes)`);
+        } else {
+            // Fallback: read from file path
+            buffer = await fs.readFile(uploadedFile.path);
+            console.log(`📁 Reading from file path (${buffer.length} bytes)`);
+        }
+
+        // Upload to MinIO using putObject (for buffers)
+        await minioClient.putObject(
+            bucket,
+            objectPath,
+            buffer,
+            buffer.length,
+            {
+                'Content-Type': contentType
+            }
+        );
         console.log(`✅ Uploaded profile pic for user ${userID}`);
 
-        // Delete temporary file after successful upload
-        await fs.unlink(localPath);
-        console.log(`🗑️ Deleted temp file: ${localPath}`);
+        // Delete temporary file if it exists
+        if (uploadedFile.path) {
+            await fs.unlink(uploadedFile.path);
+            console.log(`🗑️ Deleted temp file: ${uploadedFile.path}`);
+        }
 
         return {
             successful: true,
@@ -107,10 +130,12 @@ async function updateProfilePic(userID, uploadedFile) {
         console.error("❌ Upload error:", err);
 
         // Try to clean up temp file even if upload failed
-        try {
-            await fs.unlink(uploadedFile.path);
-        } catch (cleanupErr) {
-            console.error("Failed to cleanup temp file:", cleanupErr);
+        if (uploadedFile.path) {
+            try {
+                await fs.unlink(uploadedFile.path);
+            } catch (cleanupErr) {
+                console.error("Failed to cleanup temp file:", cleanupErr);
+            }
         }
 
         return {
@@ -125,9 +150,7 @@ async function removeProfilePic(userID) {
     await minioClient.removeObject(bucket, objectPath);
     console.log(`Deleted from MinIO: ${objectPath}`);
 
-    return {
-        successful: true,
-    };
+    return true;
 }
 
 async function fetchProfilePics(userIDs) {
@@ -144,10 +167,11 @@ async function fetchProfilePics(userIDs) {
 
             return {
                 userID,
-                image: buffer.toString('base64'),
+                image: `data:image/jpeg;base64,${buffer.toString('base64')}`,
                 mimeType: 'image/jpeg', // or detect from file
             };
         } catch (error) {
+            console.log("User avatar is not found, returning a generic one")
             return {
                 userID,
                 image: null,

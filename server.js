@@ -6,12 +6,13 @@ const passport = require('passport');
 const http = require('http');
 const socketIo = require('socket.io');
 
-const startupCheck = require('./public/services/startupCheck');
-const routeManager = require('./public/managers/routesManager');
-const accountManagerRouter = require('./public/managers/accountManager');
-const aiAgentManagerRouter = require('./public/managers/aiAgentManager');
+const startupCheck = require("./public/services/startupCheck");
+const routeManager = require("./public/managers/routesManager");
+const accountManagerRouter = require("./public/managers/accountManager");
+const aiAgentManagerRouter = require("./public/managers/aiAgentManager");
 const projectManagerRouter = require("./public/managers/projectManager");
-const notifManager = require("./public/managers/notificationManager")
+const notifManager = require("./public/managers/notificationManager");
+const testRouteManager = require("./public/managers/testRoutesManager");
 
 const PORT = process.env.PORT || 9090;
 
@@ -76,11 +77,12 @@ app.set('view engine', 'ejs');
 app.set('views', __dirname + '/public/views');
 app.use(express.static('public'));
 
-app.use('/api', accountManagerRouter);
-app.use('/api', projectManagerRouter);
-app.use('/api', notifManager);
-app.use('/api', aiAgentManagerRouter)
-app.use("/", routeManager)
+app.use("/api", accountManagerRouter);
+app.use("/api", projectManagerRouter);
+app.use("/api", notifManager);
+app.use("/api", aiAgentManagerRouter);
+app.use("/test", testRouteManager);
+app.use("/", routeManager);
 
 async function startServer() {
     try {

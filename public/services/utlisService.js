@@ -1,4 +1,5 @@
 const UAParser = require("ua-parser-js");
+const sharp = require("sharp");
 
 async function getClientDeviceInfo(req){
     const parser = new UAParser(req.headers['user-agent']);
@@ -26,6 +27,22 @@ async function getClientDeviceInfo(req){
     }
 }
 
+async function cropAndCompressImage(image) {
+    const compressedBuffer = await sharp(image.path)
+        .resize(800, 800, {
+            fit: 'cover',
+            position: 'center'
+        })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+
+    console.log(`Compressed size: ${compressedBuffer.length} bytes`);
+
+    return compressedBuffer
+
+}
+
 module.exports = {
+    cropAndCompressImage,
     getClientDeviceInfo
 }

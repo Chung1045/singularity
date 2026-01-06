@@ -1,7 +1,6 @@
 const { xai } = require('@ai-sdk/xai');
 const { OpenAI } = require('openai');
 const fs = require('fs')
-const mammoth = require("mammoth");
 const {tools, toolImpls} = require("./aiAgentToolsService")
 const aiDB = require("./aiAgentDBService");
 

@@ -4,8 +4,9 @@ const express = require('express');
 const uuid = require("uuid-v4")
 const dbService = require('../services/accountDBService.js')
 const credDBService = require('../services/credentialDBService.js')
+const fss = require("../services/fsServices")
 const sessionDBService = require('../services/sessionDBService')
-const {checkUsernameEmail, findUserByUsername} = require("../services/accountDBService");
+const {checkUsernameEmail, findUserByUsername, apiAuthUser} = require("../services/accountDBService");
 const passport = require("passport");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const router = express.Router();
@@ -35,7 +36,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 2 * 1024 * 1024
+        fileSize: 3 * 1024 * 1024
     }
 });
 
@@ -707,49 +708,85 @@ router.post("/password/change", async (req, res) => {
     }
 });
 
-router.post("/avatar/replace", upload.single('file'), async (req, res) =>  {
-    const { userID } = req.body;
+/** POST Replace user's profile picture
+ * @description Uploads and replaces the user's profile picture. The image is automatically cropped to a square and compressed.
+ * @param {File} file - Image file to upload (multipart/form-data, required)
+ */
+
+router.post("/profile-pic/replace", apiAuthUser, upload.single('file'), async (req, res) => {
+    const userID = req.userID;
     const uploadedFile = req.file;
 
-    if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for avatar replace");
+    console.log(`User ID is ${userID}`);
+    console.log(`Original file:`, uploadedFile);
 
-        if (uploadedFile) {
-            await fs.unlink(uploadedFile.path)
+    try {
+        // Compress and get buffer
+        let compressedBuffer = await utils.cropAndCompressImage(uploadedFile);
+
+        console.log(`Compressed buffer size: ${compressedBuffer.length} bytes`);
+
+        // Update the uploadedFile object with compressed data
+        const compressedFile = {
+            ...uploadedFile,
+            buffer: compressedBuffer,
+            size: compressedBuffer.length
+        };
+
+        console.log(`Passing to updateProfilePic:`, compressedFile);
+
+        let result = await fss.updateProfilePic(userID, compressedFile);
+
+        if (result) {
+            return res.status(200).json({ success: true, message: "Profile picture updated" });
+        } else {
+            return res.status(500).json({ success: false, message: "Error in updating profile picture of the user" });
         }
+    } catch (error) {
+        console.error('Upload error:', error);
+        return res.status(500).json({ success: false, message: "Unable to update profile picture of the user" });
+    }
+});
 
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
+/** POST Removes user's profile picture
+ * @description Removes the user profile picture.
+ */
+router.post("/profile-pic/remove", apiAuthUser, async(req, res) => {
+    const userID = req.userID;
+    try {
+        await fss.removeProfilePic(userID);
+        return res.status(200).json({ success: true, message: "Profile picture removed" });
+    } catch(error) {
+        return res.status(500).json({ success: false, message: "Unable to remove profile picture of the user" });
+    }
+})
+
+/** POST Fetches user's profile picture
+ * @description Fetches user profile picture.
+ * @param {array} userIDs (optional) - The userIDs for fetching the profile image in batch, can be multiple
+ * Defaults fetch current user profile picture when userIDs field is not given any value
+ */
+
+router.post("/profile-pic/fetch", apiAuthUser, async(req, res) => {
+    let { userIDs } = req.body; // accept an array of userID to fetch their user profile picture
+
+    if (!userIDs) {
+        userIDs = [req.userID]; // Default to fetch the current user user profile picture if not supplied
+    } else if (!Array.isArray(userIDs)) {
+        return res.status(400).json({ success: false, message: "Error fetching user profile pictures, userIDs must be an array" })
+    }
+
+    console.log(`User IDs is / are: ${userIDs}`)
+
+    try {
+        let userProfilePicData = await fss.fetchProfilePics(userIDs)
+        return res.status(200).json({ success: true, data: userProfilePicData })
+    } catch(error) {
+        return res.status(500).json({ success: false, message: "Unable to fetch user profile pictures" })
     }
 
 })
 
-
-// ORIGINAL VERSION - Commented out before modification
-// function inferProviderName(transports, userAgent) {
-//     const ua = userAgent.toLowerCase();
-
-//     if (transports.includes('internal')) {
-//         if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('mac')) {
-//             return 'iCloud Keychain';
-//         } else if (ua.includes('windows')) {
-//             return 'Windows Hello';
-//         } else if (ua.includes('android')) {
-//             return 'Google Password Manager';
-//         } else if (ua.includes('samsung')) {
-//             return 'Samsung Pass';
-//         } else {
-//             return 'Platform Authenticator';
-//         }
-//     } else if (transports.includes('usb') || transports.includes('nfc')) {
-//         return 'Hardware Security Key';
-//     } else if (transports.includes('hybrid')) {
-//         return 'Phone/Tablet (Cross-Device)';
-//     } else {
-//         return 'Passkey';
-//     }
-// }
-
-// MODIFIED VERSION - Enhanced with device-specific names
 function inferProviderName(transports, userAgent) {
     const ua = userAgent.toLowerCase();
     const parser = new UAParser(userAgent);
