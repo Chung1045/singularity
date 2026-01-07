@@ -8,7 +8,9 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-
+    <!-- Load Sidebar component FIRST -->
+    <script src="/components/Sidebar.js"></script>
+    <link rel="stylesheet" href="/components/sidebar.css">
     <link rel="stylesheet" href="/stylesheets/home.css">
 
 </head>
@@ -23,9 +25,16 @@
     const csrfToken = "<%= csrfToken %>";
 
     console.log("tempHome.ejs → userInfo received:", userInfo);
+    console.log("window.Sidebar available?", typeof window.Sidebar);
+    console.log("window.TempHome available?", typeof window.TempHome);
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(window.TempHome, { userInfo, csrfToken }));
+    try {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(window.TempHome, { userInfo, csrfToken }));
+    } catch (error) {
+        console.error("Error rendering TempHome:", error);
+        document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + error.message + '</div>';
+    }
 </script>
 
 </body>
