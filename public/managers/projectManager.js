@@ -8,6 +8,7 @@ const {json} = require("express");
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const {apiAuthUser} = require("../services/accountDBService");
 const fs = require('fs').promises;
 
 router.use(dbService.apiAuthUser);
@@ -52,7 +53,6 @@ const upload = multer({
  * }
  */
 
-// TODO: Test change to req.userID
 router.post('/project/create', async (req, res) => {
     try{
         console.log("New request /project/create")
@@ -141,8 +141,7 @@ router.post('/project/rename', async (req, res) => {
     }
 });
 
-// TODO: Test change req.userID
-router.post('/project/list', async (req, res) => {
+router.post('/project/list', apiAuthUser, async (req, res) => {
     try{
         console.log("New requests /project/list")
         let projects = await projectDBService.listProjects(req.userID)
@@ -155,24 +154,7 @@ router.post('/project/list', async (req, res) => {
         console.log(error)
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
-    return res.status(200).json({ success: true, message: 'successful' });
 });
-
-router.get('/project/list', async (req, res) => {
-    try{
-        console.log("New requests /project/list")
-        let projects = await projectDBService.listProjects(req.userID)
-
-        console.log(projects)
-
-        return res.send({ success: true, projects });
-
-    } catch (error){
-        console.log(error)
-        return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
-    }
-});
-
 
 /** POST Edit project sharing settings
  * @param {string} projectID - UUID of the project (required)
@@ -421,17 +403,11 @@ router.post("/project/file/list", async(req, res) => {
     console.log("New request /project/file/list");
 
     const { projectID } = req.body;
-
-    if (!req.cookies.session_id) {
-        console.log("Unauthorized attempt for listing project documents");
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
+    const userID = req.userID;
 
     if (projectID == null) {
         return res.status(400).json({ success: false, message: "projectID is required" });
     }
-
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });

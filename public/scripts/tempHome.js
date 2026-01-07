@@ -110,7 +110,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
 
     const username = userInfo?.userName || userInfo?.email || 'User';
 
-    return React.createElement('div', { 
+    return React.createElement('div', {
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false) // Close menu when clicking outside
     },
@@ -154,7 +154,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                     },
                         React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' })
                     ),
-                    
+
                     React.createElement('button', {
                         className: 'trigger',
                         type: 'button',
@@ -179,24 +179,24 @@ const TempHome = ({ csrfToken, userInfo }) => {
                     ),
 
                     // User section - visible in both expanded and collapsed
-                    React.createElement('div', { 
-                        style: { 
-                            position: 'absolute', 
-                            bottom: '80px', 
-                            left: sidebarCollapsed ? '12px' : '0px', 
+                    React.createElement('div', {
+                        style: {
+                            position: 'absolute',
+                            bottom: '80px',
+                            left: sidebarCollapsed ? '12px' : '0px',
                             width: 'max-content',
                             transition: 'left 220ms ease',
-                            overflow: 'visible', 
-                            zIndex: 1002  
+                            overflow: 'visible',
+                            zIndex: 1002
                         },
                         onClick: toggleUserMenu
                     },
                         // Expanded view: show username with icon
-                        !sidebarCollapsed && React.createElement('a', { 
+                        !sidebarCollapsed && React.createElement('a', {
                             href: '#',
                             className: 'username-display',
-                            style: { 
-                                cursor: 'pointer', 
+                            style: {
+                                cursor: 'pointer',
                                 position: 'relative',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -209,7 +209,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         },
                             React.createElement('img', { className: 'user', src: './img/user.svg', alt: 'User', style: { width: '22px', height: '22px' } }),
                             React.createElement('span', { className: 'text-wrapper-6' }, username),
-                            
+
                             // User menu dropdown - expanded
                             userMenuOpen && React.createElement('div', {
                                 style: {
@@ -287,14 +287,14 @@ const TempHome = ({ csrfToken, userInfo }) => {
                             // onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
                             // onMouseLeave: (e) => e.target.style.backgroundColor = '#eeeeee'
                         },
-                            React.createElement('img', { 
-                                // src: 'https://c.animaapp.com/W03AeLaz/img/user.svg', 
-                                src: './img/user.svg', 
+                            React.createElement('img', {
+                                // src: 'https://c.animaapp.com/W03AeLaz/img/user.svg',
+                                src: './img/user.svg',
 
-                                alt: 'User', 
-                                style: { width: '22px', height: '22px' } 
+                                alt: 'User',
+                                style: { width: '22px', height: '22px' }
                             }),
-                            
+
                             // User menu dropdown - collapsed (moved outside sidebar)
                     sidebarCollapsed && userMenuOpen && React.createElement('div', {
                         style: {
@@ -359,6 +359,8 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 )
             ),
 
+            testProjectInfoView(),
+
             // Main content
             React.createElement('main', { className: 'right-container' },
                 React.createElement('section', { className: 'main-screen' },
@@ -407,6 +409,133 @@ const TempHome = ({ csrfToken, userInfo }) => {
         )
     );
 };
+
+window.onload = async function() {
+    await fetchProjects()
+}
+
+function testProjectInfoView() {
+    return React.createElement('div', {
+            id: "div-test-project-container",
+            style: {
+                padding: "5px",
+                backgroundColor: "snow",
+                outline: "1px solid black",
+                borderRadius: "5px",
+                zIndex: 10,
+                position: "absolute",
+                top: "5px",
+                right: "5px"
+            }
+        },
+        React.createElement('h3', {
+            id: "p-test-project-container-label",
+        }, "Test Project Container"),
+        React.createElement('select', {
+            id: "select-project-drop-down",
+            onChange: async (e) => {
+                await fetchProjectFiles(e.target.value)
+                await fetchProjectReports(e.target.value)
+            }
+        }),
+        React.createElement('h3', {
+            id: "p-project-source-list-label",
+        }, "Sources"),
+        React.createElement('div', {
+            id: "div-project-source-list"
+        }),
+        React.createElement('h3', {
+            id: "p-project-report-list-label",
+        }, "Reports"),
+        React.createElement('div', {
+            id: "div-project-report-list"
+        })
+    )
+}
+
+async function fetchProjects() {
+    const response = await fetch('/api/project/list', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+    });
+
+    if (response.ok) {
+        let data = await response.json()
+        console.log(`Project Data: ${JSON.stringify(data)}`)
+        populateProjectDropdown(data.projects)
+        let defaultProjectID = data.projects[0]?.projectID;
+
+        if (defaultProjectID) {
+            await fetchProjectFiles(defaultProjectID)
+            await fetchProjectReports(defaultProjectID)
+        }
+    }
+}
+
+function populateProjectDropdown(projects) {
+    const dropdown = document.getElementById('select-project-drop-down');
+
+    const options = projects.map((project, index) =>
+        `<option value="${project.projectID}" ${index === 0 ? 'selected' : ''}>${project.projectName}</option>`
+    ).join('');
+
+    dropdown.innerHTML = options;
+
+    if (projects.length > 0) {
+        dropdown.dispatchEvent(new Event('change'));
+    }
+}
+
+async function fetchProjectFiles(projectID) {
+    console.log(`Fetching ${projectID} files`)
+    const response = await fetch('/api/project/file/list', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            projectID: projectID
+        })
+    });
+
+    if (response.ok) {
+        let data = await response.json()
+        console.log(`Response Data: ${JSON.stringify(data)}`)
+        const sourceContainer = document.getElementById("div-project-source-list");
+        for (file of data.files) {
+            const documentEntry = document.createElement('p');
+            documentEntry.innerHTML = `${file.documentName}.${file.documentExt}`
+            sourceContainer.append(documentEntry);
+        }
+    }
+}
+
+async function fetchProjectReports(projectID) {
+
+    const response = await fetch('/api/project/report/list', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            projectID: projectID
+        })
+    });
+
+    if (response.ok) {
+        let data = await response.json()
+        console.log(`Response Data: ${JSON.stringify(data)}`)
+        const reportContainer = document.getElementById("div-project-report-list")
+        for (report of data.reports) {
+            const reportEntry = document.createElement('p');
+            reportEntry.innerHTML = `${report.reportName}`
+            reportContainer.append(reportEntry);
+        }
+    }
+}
 
 // Make available globally
 window.TempHome = TempHome;

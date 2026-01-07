@@ -434,7 +434,7 @@ async function insertReportRecord(projectID, reportType) {
         projectID,
         `${reportName}-${dateTimeStr}`,
         reportType,
-        dateStr
+        dateTimeStr
     ]
 
     await db.run(sql, params, (err) => {

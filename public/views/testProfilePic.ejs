@@ -28,6 +28,13 @@
     <div id="test-container">
 
     </div>
+    <div id="test-projectContainer">
+        <select id="projectDropdown" onchange="fetchProjectFiles(this.value)">
+        </select>
+        <div id="div-testDocuments">
+
+        </div>
+    </div>
 </div>
 
 </body>
@@ -37,10 +44,11 @@
     window.onload = async function() {
         await fetchProfilePics()
         await testFetchOtherUser()
+        await fetchProjects()
     };
 
     async function fetchProfilePics(){
-        let response = await fetch('/api/avatar/fetch', {
+        let response = await fetch('/api/profile-pic/fetch', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -82,7 +90,7 @@
                 formData.append('file', file); // Must be 'file' to match upload.single('file')
 
                 try {
-                    const response = await fetch('/api/avatar/replace', {
+                    const response = await fetch('/api/profile-pic/replace', {
                         method: 'POST',
                         body: formData // Don't set Content-Type header
                     });
@@ -105,7 +113,7 @@
 
     async function removeProfilePic() {
         try {
-            const response = await fetch('/api/avatar/remove', {
+            const response = await fetch('/api/profile-pic/remove', {
                 method: 'POST',
             });
 
@@ -125,7 +133,7 @@
         let userIDs = ["a84d6226-d94c-423e-b530-07d0b5b9163b", "77a77387-b5f3-4c4c-9d8d-ed917b816bd1", "c9a0efe9-f801-46b5-a373-1a80277ae89c", "53e19356-ea50-44b1-b23b-d10f23053a24"];
 
         try {
-            const response = await fetch('/api/avatar/fetch', {
+            const response = await fetch('/api/profile-pic/fetch', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -165,6 +173,66 @@
         } catch (error) {
             console.error('Error fetching:', error);
         }
+    }
+
+    async function fetchProjects() {
+        const response = await fetch('/api/project/list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({})
+        });
+
+        if (response.ok) {
+            let data = await response.json()
+            console.log(`Project Data: ${JSON.stringify(data)}`)
+            populateProjectDropdown(data.projects)
+            let defaultProjectID = data.projects[0]?.projectID;
+
+            if (defaultProjectID) {
+                await fetchProjectFiles(defaultProjectID)
+            }
+        }
+    }
+
+    function populateProjectDropdown(projects) {
+        const dropdown = document.getElementById('projectDropdown');
+
+        const options = projects.map((project, index) =>
+            `<option value="${project.projectID}" ${index === 0 ? 'selected' : ''}>${project.projectName}</option>`
+        ).join('');
+
+        dropdown.innerHTML = options;
+
+        if (projects.length > 0) {
+            dropdown.dispatchEvent(new Event('change'));
+        }
+    }
+
+    async function fetchProjectFiles(projectID) {
+        console.log(`Fetching ${projectID} files`)
+        const response = await fetch('/api/project/file/list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                projectID: projectID
+            })
+        });
+
+        if (response.ok) {
+            let data = await response.json()
+            console.log(`Response Data: ${JSON.stringify(data)}`)
+            const testContainer = document.querySelector("div#div-testDocuments");
+            for (file of data.files) {
+                const documentEntry = document.createElement('p');
+                documentEntry.innerHTML = `${file.documentName}.${file.documentExt}`
+                testContainer.append(documentEntry);
+            }
+        }
+
     }
 
 </script>

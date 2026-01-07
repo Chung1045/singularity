@@ -22,7 +22,6 @@ async function listProjects(uid) {
                 console.error('Error in listProjects query:', err);
                 return reject(err);
             }
-            console.log(`🔍 Projects for user "${uid}":`, rows);
             resolve(rows);
         });
     });
@@ -156,6 +155,7 @@ async function updateProjectShare(projectID, shareOptions) {
 }
 
 async function isProjectCollaborator(projectID, userID) {
+    console.log(`Checking projectID: ${projectID} with userID ${userID}`)
     const query = `
         SELECT collabUid AS uid
         FROM projectShare
@@ -177,6 +177,7 @@ async function isProjectCollaborator(projectID, userID) {
                 console.error("DB error:", err);
                 return reject(false);
             }
+            console.log(`Is collaborator: ${!!row}`)
             resolve(!!row); // return true if row exists, else false
         });
     });
