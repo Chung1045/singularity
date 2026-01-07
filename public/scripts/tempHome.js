@@ -118,18 +118,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
             // Sidebar
             React.createElement('aside', { className: 'side-bar', 'aria-label': 'Sidebar navigation' },
                 React.createElement('nav', null,
-                    // History button
+
                     React.createElement('button', {
-                        className: 'history',
-                        type: 'button',
-                        'aria-expanded': 'false',
-                        'aria-controls': 'history-submenu'
-                    },
-                        React.createElement('img', { className: 'slash-circle', src: './img/slash-circle-1.svg', alt: '' }),
-                        React.createElement('span', { className: 'text-wrapper-2' }, 'History'),
-                        React.createElement('span', { className: 'submenu', 'aria-hidden': 'true' },
-                            React.createElement('span', { className: 'text-wrapper-3' }, '􀆊')
-                        )
+                            style: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
+                            onClick: () => window.location.href = '/home',
+                            'aria-label': 'Go to home'
+                        },
+                        React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' })
                     ),
 
                     // Search file field
@@ -145,16 +140,23 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         })
                     ),
 
-                    // React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' }),
-
+                    // History button
                     React.createElement('button', {
-                        style: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
-                        onClick: () => window.location.href = '/home',
-                        'aria-label': 'Go to home'
+                        className: 'history',
+                        type: 'button',
+                        'aria-expanded': 'false',
+                        'aria-controls': 'history-submenu'
                     },
-                        React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' })
+                        React.createElement('img', { className: 'slash-circle', src: './img/slash-circle-1.svg', alt: '' }),
+                        React.createElement('span', { className: 'text-wrapper-2' }, 'History'),
+                        React.createElement('span', { className: 'submenu', 'aria-hidden': 'true' },
+                            React.createElement('span', { className: 'text-wrapper-3' }, '􀆊')
+                        )
                     ),
 
+                    testProjectInfoView(),
+
+                    // React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' }),
                     React.createElement('button', {
                         className: 'trigger',
                         type: 'button',
@@ -181,13 +183,14 @@ const TempHome = ({ csrfToken, userInfo }) => {
                     // User section - visible in both expanded and collapsed
                     React.createElement('div', {
                         style: {
-                            position: 'absolute',
-                            bottom: '80px',
-                            left: sidebarCollapsed ? '12px' : '0px',
-                            width: 'max-content',
+                            // position: 'absolute',
+                            // bottom: '80px',
+                            // left: sidebarCollapsed ? '12px' : '0px',
+                            // width: 'max-content',
+                            width: "auto",
                             transition: 'left 220ms ease',
                             overflow: 'visible',
-                            zIndex: 1002
+                            // zIndex: 1002
                         },
                         onClick: toggleUserMenu
                     },
@@ -201,7 +204,6 @@ const TempHome = ({ csrfToken, userInfo }) => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '13px',
-                                bottom: '12px',
                                 textDecoration: 'none',
                                 width: 'auto'
                             },
@@ -359,8 +361,6 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 )
             ),
 
-            testProjectInfoView(),
-
             // Main content
             React.createElement('main', { className: 'right-container' },
                 React.createElement('section', { className: 'main-screen' },
@@ -418,21 +418,27 @@ function testProjectInfoView() {
     return React.createElement('div', {
             id: "div-test-project-container",
             style: {
-                padding: "5px",
                 backgroundColor: "snow",
                 outline: "1px solid black",
                 borderRadius: "5px",
-                zIndex: 10,
-                position: "absolute",
-                top: "5px",
-                right: "5px"
+                flexGrow: 1, // Keep this to fill remaining space
+                overflow: "auto", // Add scrolling for content
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px"
             }
         },
         React.createElement('h3', {
             id: "p-test-project-container-label",
+            style: { margin: 0, fontSize: "14px" }
         }, "Test Project Container"),
         React.createElement('select', {
             id: "select-project-drop-down",
+            style: {
+                padding: "5px",
+                borderRadius: "5px",
+                border: "1px solid #e4e4e4"
+            },
             onChange: async (e) => {
                 await fetchProjectFiles(e.target.value)
                 await fetchProjectReports(e.target.value)
@@ -440,15 +446,27 @@ function testProjectInfoView() {
         }),
         React.createElement('h3', {
             id: "p-project-source-list-label",
+            style: { margin: 0, fontSize: "14px" }
         }, "Sources"),
         React.createElement('div', {
-            id: "div-project-source-list"
+            id: "div-project-source-list",
+            style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "5px"
+            }
         }),
         React.createElement('h3', {
             id: "p-project-report-list-label",
+            style: { margin: 0, fontSize: "14px" }
         }, "Reports"),
         React.createElement('div', {
-            id: "div-project-report-list"
+            id: "div-project-report-list",
+            style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "5px"
+            }
         })
     )
 }
