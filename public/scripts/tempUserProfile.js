@@ -192,6 +192,8 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 height: '100%'
             }
         },
+
+        
             // Sidebar Component
             React.createElement(window.Sidebar, {
                 sidebarCollapsed: sidebarCollapsed,
@@ -202,6 +204,17 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 userMenuOpen: userMenuOpen,
                 setUserMenuOpen: setUserMenuOpen
             }),
+
+              React.createElement("div", {
+                style: {
+                width: '5px',
+                height: 'auto',
+                backgroundColor: '#F7F7F7',
+                borderRadius: '10px',
+                flexShrink: 0,
+                margin : '-5px'
+                }
+                }),
 
             // MAIN CONTENT AREA
             React.createElement('div', {
@@ -218,6 +231,8 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     transition: 'width 220ms ease'
                 }
             },
+               
+            
                 // Header
                 React.createElement('div', {
                     style: {
