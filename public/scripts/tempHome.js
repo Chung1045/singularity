@@ -59,14 +59,33 @@ const TempHome = ({ csrfToken, userInfo }) => {
     });
 
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    React.useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = windowWidth <= 480;
 
     console.log("Inside TempHome component – userInfo:", userInfo);
+
+    const showAlert = (title, message) => {
+        setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null });
+    };
+
+    const closeModal = () => {
+        setModal({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+    };
 
     const logout = async () => {
 
         if (!csrfToken) {
         console.error('CSRF token not available');
-        alert('Security token missing. Please refresh the page.');
+        showAlert('Error', 'Security token missing. Please refresh the page.');
         return;
     }
 
@@ -77,12 +96,14 @@ const TempHome = ({ csrfToken, userInfo }) => {
             data: JSON.stringify({}),
             contentType: 'application/json',
             success: function(response) {
-                alert("Logout response: " + JSON.stringify(response));
-                window.location = "/login";
+                showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
+                setTimeout(() => {
+                    window.location = "/login";
+                }, 3000);
             },
             error: function(xhr) {
                 const errorMessage = xhr.responseJSON?.message || "An error occurred. Please try again.";
-                alert(errorMessage);
+                showAlert('Error', errorMessage);
             }
         });
     };
@@ -96,18 +117,6 @@ const TempHome = ({ csrfToken, userInfo }) => {
     //     setUserMenuOpen(false); // Close menu when sidebar toggles
     // };
 
-    const toggleSidebar = () => {
-    const newState = !sidebarCollapsed;
-    setSidebarCollapsed(newState);
-    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
-    setUserMenuOpen(false);
-    };
-
-    const toggleUserMenu = (e) => {
-        e.stopPropagation();
-        setUserMenuOpen(!userMenuOpen);
-    };
-
     const username = userInfo?.userName || userInfo?.email || 'User';
 
     return React.createElement('div', {
@@ -115,248 +124,95 @@ const TempHome = ({ csrfToken, userInfo }) => {
         onClick: () => setUserMenuOpen(false) // Close menu when clicking outside
     },
         React.createElement('div', { className: 'group' },
-            // Sidebar
-            React.createElement('aside', { className: 'side-bar', 'aria-label': 'Sidebar navigation' },
-                React.createElement('nav', null,
+            // Sidebar Component
+            React.createElement(window.Sidebar, {
+                sidebarCollapsed: sidebarCollapsed,
+                setSidebarCollapsed: setSidebarCollapsed,
+                username: username,
+                onLogout: logout,
+                onProfileRoute: handleProfileRoute,
+                userMenuOpen: userMenuOpen,
+                setUserMenuOpen: setUserMenuOpen
+            }),
 
-                    React.createElement('button', {
-                            style: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
-                            onClick: () => window.location.href = '/home',
-                            'aria-label': 'Go to home'
-                        },
-                        React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' })
-                    ),
-
-                    // Search file field
-                    React.createElement('form', { className: 'search-file-field', role: 'search', 'aria-label': 'Search files' },
-                        React.createElement('img', { className: 'search', src: './img/search-1.svg', alt: '' }),
-                        React.createElement('label', { htmlFor: 'search-files-input', className: 'visually-hidden' }, 'Search files'),
-                        React.createElement('input', {
-                            type: 'search',
-                            id: 'search-files-input',
-                            className: 'text-wrapper-4',
-                            placeholder: 'Search files',
-                            'aria-label': 'Search files'
-                        })
-                    ),
-
-                    // History button
-                    React.createElement('button', {
-                        className: 'history',
-                        type: 'button',
-                        'aria-expanded': 'false',
-                        'aria-controls': 'history-submenu'
+            // Custom Modal
+            modal.isOpen && React.createElement('div', {
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10001,
+                    padding: '20px'
+                },
+                onClick: (e) => {
+                    if (e.target === e.currentTarget && modal.type === 'alert') {
+                        closeModal();
+                    }
+                }
+            },
+                React.createElement('div', {
+                    style: {
+                        backgroundColor: '#ffffff',
+                        borderRadius: '15px',
+                        padding: isMobile ? '25px' : '30px',
+                        maxWidth: isMobile ? '90%' : '500px',
+                        width: '100%',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
                     },
-                        React.createElement('img', { className: 'slash-circle', src: './img/slash-circle-1.svg', alt: '' }),
-                        React.createElement('span', { className: 'text-wrapper-2' }, 'History'),
-                        React.createElement('span', { className: 'submenu', 'aria-hidden': 'true' },
-                            React.createElement('span', { className: 'text-wrapper-3' }, '􀆊')
-                        )
-                    ),
-
-                    testProjectInfoView(),
-
-                    // React.createElement('img', { className: 'union', src: './img/union.svg', alt: 'Singularity Icon' }),
-                    React.createElement('button', {
-                        className: 'trigger',
-                        type: 'button',
-                        'aria-label': 'Toggle sidebar',
-                        'aria-expanded': !sidebarCollapsed,
-                        onClick: toggleSidebar
-                    },
-                        // OLD: Text version
-                        // React.createElement('span', { className: 'close-side-bar' },
-                        //     React.createElement('span',  { className: 'text-wrapper-5' }, '>>')
-                        // )
-                        // NEW: SVG version
-                        React.createElement('img', {
-                            src: './img/double-arrow-right-svgrepo-com.svg',
-                            alt: 'Toggle sidebar',
-                            style: { width: '24px', height: '24px' }
-                        })
-                    ),
-
-                    React.createElement('div', { className: 'horizontal-inset', role: 'separator' },
-                        React.createElement('hr', null)
-                    ),
-
-                    // User section - visible in both expanded and collapsed
+                    onClick: (e) => e.stopPropagation()
+                },
                     React.createElement('div', {
                         style: {
-                            // position: 'absolute',
-                            // bottom: '80px',
-                            // left: sidebarCollapsed ? '12px' : '0px',
-                            // width: 'max-content',
-                            width: "auto",
-                            transition: 'left 220ms ease',
-                            overflow: 'visible',
-                            // zIndex: 1002
-                        },
-                        onClick: toggleUserMenu
-                    },
-                        // Expanded view: show username with icon
-                        !sidebarCollapsed && React.createElement('a', {
-                            href: '#',
-                            className: 'username-display',
-                            style: {
-                                cursor: 'pointer',
-                                position: 'relative',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '13px',
-                                textDecoration: 'none',
-                                width: 'auto'
-                            },
-                            onClick: (e) => e.preventDefault()
-                        },
-                            React.createElement('img', { className: 'user', src: './img/user.svg', alt: 'User', style: { width: '22px', height: '22px' } }),
-                            React.createElement('span', { className: 'text-wrapper-6' }, username),
-
-                            // User menu dropdown - expanded
-                            userMenuOpen && React.createElement('div', {
-                                style: {
-                                    position: 'absolute',
-                                    bottom: '150%',
-                                    left: '0',
-                                    marginBottom: '10px',
-                                    backgroundColor: '#eeeeee',
-                                    border: '1px solid #e4e4e4',
-                                    borderRadius: '10px',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                    zIndex: 3,
-                                    minWidth: '234px',
-                                    padding: '10px',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '25px'
-                                }
-                            },
-                                React.createElement('button', {
-                                    id: 'btn-profile-expanded',
-                                    style: {
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '0',
-                                        border: 'none',
-                                        backgroundColor: 'transparent',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: '400',
-                                        color: '#1c1d21',
-                                        transition: 'background-color 0.2s'
-                                    },
-                                    onClick: (e) => { e.stopPropagation(); handleProfileRoute(); }
-                                }, 'Profile'),
-                                React.createElement('button', {
-                                    id: 'btn-logout-expanded',
-                                    style: {
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '0',
-                                        border: 'none',
-                                        backgroundColor: 'transparent',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontFamily: 'Urbanist-SemiBold, Helvetica',
-                                        fontWeight: '600',
-                                        color: '#b62e2e',
-                                        transition: 'background-color 0.2s'
-                                    },
-                                    onClick: (e) => { e.stopPropagation(); logout(); }
-                                }, 'Log Out')
-                            )
-                        ),
-
-                        // Collapsed view: show icon only
-                        sidebarCollapsed && React.createElement('button', {
-                            style: {
-                                position: 'relative',
-                                width: '48px',
-                                height: '48px',
-                                background: '#ffffff',
-                                // border: '1px solid #e4e4e4',
-                                // borderRadius: '11.12px',
-                                padding: '0',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 220ms ease'
-                            },
-                            // onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
-                            // onMouseLeave: (e) => e.target.style.backgroundColor = '#eeeeee'
-                        },
-                            React.createElement('img', {
-                                // src: 'https://c.animaapp.com/W03AeLaz/img/user.svg',
-                                src: './img/user.svg',
-
-                                alt: 'User',
-                                style: { width: '22px', height: '22px' }
-                            }),
-
-                            // User menu dropdown - collapsed (moved outside sidebar)
-                    sidebarCollapsed && userMenuOpen && React.createElement('div', {
+                            fontFamily: 'Urbanist, Helvetica',
+                            fontWeight: 700,
+                            fontSize: isMobile ? '20px' : '24px',
+                            color: '#000000',
+                            lineHeight: 'normal'
+                        }
+                    }, modal.title),
+                    React.createElement('div', {
                         style: {
-                            position: 'fixed',
-                            bottom: 'calc(50px + 30px + 20px)',
-                            left: '35px',
-                            backgroundColor: '#eeeeee',
-                            border: '1px solid #e4e4e4',
-                            borderRadius: '10px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                            zIndex: 9999,
-                            minWidth: '130px',
-                            padding: '10px',
+                            fontFamily: 'Inter, Helvetica',
+                            fontWeight: 400,
+                            fontSize: isMobile ? '14px' : '16px',
+                            color: '#000000',
+                            lineHeight: '1.5'
+                        }
+                    }, modal.message),
+                    React.createElement('div', {
+                        style: {
                             display: 'flex',
-                            flexDirection: 'column',
-                            gap: '20px'
+                            gap: '10px',
+                            justifyContent: 'flex-end',
+                            marginTop: '10px'
                         }
                     },
-                                React.createElement('button', {
-                                id: 'btn-profile-collapsed',
-                                style: {
-                                display: 'block',
-                                width: '100%',
-                                padding: '0',
-                                border: 'none',
-                                backgroundColor: 'transparent',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontFamily: 'SF Pro-Semibold, Helvetica',
-                                fontWeight: '400',
-                                color: '#1c1d21',
-                                transition: 'background-color 0.2s'
-                            },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
-                            onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                            onClick: (e) => { e.stopPropagation(); handleProfileRoute(); }
-                        }, 'Profile'),
-                               React.createElement('button', {
-                            id: 'btn-logout-collapsed',
+                        React.createElement('button', {
                             style: {
-                                display: 'block',
-                                width: '100%',
-                                padding: '0',
+                                padding: isMobile ? '10px 20px' : '12px 24px',
+                                borderRadius: '10px',
                                 border: 'none',
-                                backgroundColor: 'transparent',
-                                textAlign: 'left',
+                                backgroundColor: '#000000',
+                                color: '#ffffff',
+                                fontFamily: 'Urbanist, Helvetica',
+                                fontWeight: 600,
+                                fontSize: isMobile ? '14px' : '16px',
                                 cursor: 'pointer',
-                                fontSize: '14px',
-                                fontFamily: 'Urbanist-SemiBold, Helvetica',
-                                fontWeight: '600',
-                                color: '#b62e2e',
-                                transition: 'background-color 0.2s'
-                                },
-                                onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
-                                onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                                onClick: (e) => { e.stopPropagation(); logout(); }
-                                }, 'Log Out')
-                            )
-                        )
+                                transition: 'all 0.2s ease'
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#333333',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = '#000000',
+                            onClick: closeModal
+                        }, 'OK')
                     )
                 )
             ),
@@ -408,7 +264,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
             )
         )
     );
-};
+    };
 
 window.onload = async function() {
     await fetchProjects()

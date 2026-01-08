@@ -1,4 +1,4 @@
-const { useState } = React;
+const { useState, useEffect } = React;
 
 const TempSignup = ({ csrfToken }) => {
     const [formData, setFormData] = useState({
@@ -11,27 +11,210 @@ const TempSignup = ({ csrfToken }) => {
         userType: "general"
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [errors, setErrors] = useState({
+        username: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        password: '',
+        confirmPassword: ''
+    });
+    const [validFields, setValidFields] = useState({
+        username: false,
+        email: false,
+        firstName: false,
+        lastName: false,
+        password: false,
+        confirmPassword: false
+    });
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+    const [messageShown, setMessageShown] = useState(false);
+
+    // Show validation errors in message notification
+    useEffect(() => {
+        // Old code: Show error every time errors change
+        // const errorFields = Object.entries(errors)
+        //     .filter(([_, value]) => value !== '')
+        //     .map(([key, _]) => {
+        //         const fieldNames = {
+        //             username: 'Username',
+        //             email: 'Email',
+        //             firstName: 'First Name',
+        //             lastName: 'Last Name',
+        //             password: 'Password',
+        //             confirmPassword: 'Password Confirmation'
+        //         };
+        //         return fieldNames[key] || key;
+        //     });
+        // 
+        // const messageEl = document.getElementById('message');
+        // const messageTextEl = document.getElementById('messageText');
+        // 
+        // if (errorFields.length > 0 && messageEl && messageTextEl) {
+        //     const credentialsList = errorFields.join(', ');
+        //     messageTextEl.textContent = `⚠️ Warning: Please fill in your credentials`;
+        //     messageEl.classList.remove('hidden');
+        // } else if (messageEl) {
+        //     messageEl.classList.add('hidden');
+        // }
+        
+        // New code: Show error only once
+        const errorFields = Object.entries(errors)
+            .filter(([_, value]) => value !== '');
+        
+        const messageEl = document.getElementById('message');
+        const messageTextEl = document.getElementById('messageText');
+        
+        if (errorFields.length > 0 && !messageShown && messageEl && messageTextEl) {
+            messageTextEl.textContent = `⚠️ Warning: Please fill in your credentials`;
+            messageEl.classList.remove('hidden');
+            setMessageShown(true);
+        }
+    }, [errors, messageShown]);
+
+    const showAlert = (title, message, onConfirm = null) => {
+        setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
+    };
+
+    const closeModal = () => {
+        setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+    };
+
+    const handleModalOk = () => {
+        if (modal.onConfirm) {
+            modal.onConfirm();
+        }
+        closeModal();
+    };
 
     const handleChange = (field) => (e) => {
+        const value = e.target.value;
         setFormData(prev => ({
             ...prev,
-            [field]: e.target.value
+            [field]: value
         }));
+
+        // Original logic (commented out):
+        // // Clear error when user starts typing
+        // if (errors[field]) {
+        //     setErrors(prev => ({ ...prev, [field]: '' }));
+        // }
+
+        // New logic: Handle errors dynamically based on field state
+        // If field has value, clear error; if empty, show appropriate error message
+        let isValid = false;
+        let errorMessage = '';
+
+        if (field === 'email') {
+            // isValid = value.trim() !== '' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+            isValid = value.trim() !== ''; // Only check if not empty
+            if (!isValid) {
+                errorMessage = 'Please provide a valid email.'; // Set error when empty
+            }
+        } else if (field === 'confirmPassword') {
+            isValid = value.length > 0 && value === formData.password;
+            if (!isValid) {
+                if (value.length === 0) {
+                    errorMessage = 'Please confirm your password.'; // Set error when empty
+                } else {
+                    errorMessage = 'Passwords do not match!'; // Set error when doesn't match
+                }
+            }
+        } else if (field === 'password') {
+            // isValid = value.length >= 6;
+            isValid = value.length > 0; // Only check if not empty
+            if (!isValid) {
+                errorMessage = 'Please enter a password.'; // Set error when empty
+            }
+            // Also revalidate confirmPassword when password changes
+            if (formData.confirmPassword) {
+                const confirmIsValid = formData.confirmPassword.length > 0 && formData.confirmPassword === value;
+                setValidFields(prev => ({ ...prev, confirmPassword: confirmIsValid }));
+                if (!confirmIsValid) {
+                    if (formData.confirmPassword.length === 0) {
+                        setErrors(prev => ({ ...prev, confirmPassword: 'Please confirm your password.' }));
+                    } else {
+                        setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match!' }));
+                    }
+                } else {
+                    setErrors(prev => ({ ...prev, confirmPassword: '' }));
+                }
+            }
+        } else if (field === 'username') {
+            isValid = value.trim() !== '';
+            if (!isValid) {
+                errorMessage = 'Please choose a username.'; // Set error when empty
+            }
+        } else if (field === 'firstName') {
+            isValid = value.trim() !== '';
+            if (!isValid) {
+                errorMessage = 'Please provide your first name.'; // Set error when empty
+            }
+        } else if (field === 'lastName') {
+            isValid = value.trim() !== '';
+            if (!isValid) {
+                errorMessage = 'Please provide your last name.'; // Set error when empty
+            }
+        }
+
+        // Update validation state
+        setValidFields(prev => ({ ...prev, [field]: isValid }));
+        
+        // Clear error if field is valid, otherwise set/preserve error
+        if (isValid) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        } else {
+            setErrors(prev => ({ ...prev, [field]: errorMessage }));
+        }
     };
 
     const handleSubmit = async () => {
-        // Check required fields
-        const requiredFields = ["username", "email", "password", "confirmPassword"];
-        const emptyFields = requiredFields.filter(field => !formData[field]);
+        // Validate all fields
+        const newErrors = {
+            username: '',
+            email: '',
+            firstName: '',
+            lastName: '',
+            password: '',
+            confirmPassword: ''
+        };
 
-        if (emptyFields.length > 0) {
-            alert(`Please fill in: ${emptyFields.join(", ")}`);
-            return;
+        // Check required fields
+        if (!formData.username.trim()) {
+            newErrors.username = 'Please choose a username.';
+        } // else if (formData.username.length < 3) {
+        //     newErrors.username = 'Username must be at least 3 characters.';
+        // }
+
+        if (!formData.email.trim()) {
+            newErrors.email = 'Please provide a valid email.';
+        } // else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        //     newErrors.email = 'Please provide a valid email address.';
+        // }
+
+        if (!formData.firstName.trim()) {
+            newErrors.firstName = 'Please provide your first name.';
         }
 
-        // Check password match
-        if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match!");
+        if (!formData.lastName.trim()) {
+            newErrors.lastName = 'Please provide your last name.';
+        }
+
+        if (!formData.password) {
+            newErrors.password = 'Please enter a password.';
+        } // else if (formData.password.length < 6) {
+        //     newErrors.password = 'Password must be at least 6 characters.';
+        // }
+
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = 'Please confirm your password.';
+        } else if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match!';
+        }
+
+        // If there are errors, set them and return
+        if (Object.values(newErrors).some(error => error !== '')) {
+            setErrors(newErrors);
             return;
         }
 
@@ -50,15 +233,37 @@ const TempSignup = ({ csrfToken }) => {
             const result = await response.json();
 
             if (response.ok) {
-                alert(result.message);
-                // Optionally redirect to login or home
-                window.location.href = '/home';
+                // Old: Show modal alert for success
+                // showAlert('Success', result.message, () => {
+                //     window.location.href = '/home';
+                // });
+                
+                // New: Show success in message notification
+                const messageEl = document.getElementById('message');
+                const messageTextEl = document.getElementById('messageText');
+                
+                if (messageEl && messageTextEl) {
+                    messageTextEl.textContent = `✓ ${result.message}, redirecting...`;
+                    messageEl.classList.remove('hidden');
+                    
+                    // Redirect after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/home';
+                    }, 2000);
+                }
             } else {
-                alert(result.message || "An error occurred. Please try again.");
+                // Old: alert(result.message || "An error occurred. Please try again.");
+                // Check if it's a field-specific error
+                if (result.field && newErrors[result.field] !== undefined) {
+                    setErrors(prev => ({ ...prev, [result.field]: result.message }));
+                } else {
+                    showAlert('Error', result.message || "An error occurred. Please try again.");
+                }
             }
         } catch (error) {
             console.error('Signup error:', error);
-            alert("An error occurred. Please try again.");
+            // Old: alert("An error occurred. Please try again.");
+            showAlert('Error', "An error occurred. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -187,13 +392,17 @@ const TempSignup = ({ csrfToken }) => {
 
 // test signup 
 
+    // Check if any validation messages are visible
+    const hasValidationMessages = Object.values(errors).some(error => error !== '') || 
+                                   Object.values(validFields).some(valid => valid === true);
+
 return React.createElement('div', { className: 'frame' },
-        React.createElement('div', { className: 'sign-up' },
+        React.createElement('div', { className: hasValidationMessages ? 'sign-up expanded' : 'sign-up' },
             React.createElement('div', { className: 'login' },
                 React.createElement('div', { className: 'content-background' }),
 
                 // Right side group (already-have-account)
-                React.createElement('div', { className: 'right-content' },
+                React.createElement('div', { className: hasValidationMessages ? 'right-content expanded' : 'right-content' },
                     React.createElement('div', { className: 'group' },
                         React.createElement('div', { className: 'text-wrapper' }, 'Welcome!'),
                         React.createElement('p', { className: 'div' }, 'If you already have an account.'),
@@ -221,9 +430,16 @@ return React.createElement('div', { className: 'frame' },
                         React.createElement('div', { className: 'div-2' },
 
                             // Username
-                            React.createElement('div', { className: 'div-3' },
+                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
                                 React.createElement('div', { className: 'text-wrapper-5' }, 'Username'),
-                                React.createElement('div', { className: 'div-wrapper-2' },
+                                React.createElement('div', { 
+                                    className: 'div-wrapper-2',
+                                    style: {
+                                        borderColor: errors.username ? '#dc2626' : validFields.username ? '#22c55e' : '#e4e4e4',
+                                        borderWidth: '2px',
+                                        borderStyle: 'solid'
+                                    }
+                                },
                                     React.createElement('input', {
                                         type: 'text',
                                         placeholder: 'Username',
@@ -233,13 +449,36 @@ return React.createElement('div', { className: 'frame' },
                                         disabled: isLoading,
                                         style: { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '10px' , margin: '10px' }
                                     })
-                                )
+                                ),
+                                errors.username && React.createElement('div', {
+                                    style: {
+                                        color: '#dc2626',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, errors.username),
+                                validFields.username && !errors.username && React.createElement('div', {
+                                    style: {
+                                        color: '#22c55e',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, 'Looks good!')
                             ),
 
                             // Email
-                            React.createElement('div', { className: 'div-3' },
+                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
                                 React.createElement('div', { className: 'text-wrapper-5' }, 'Email address'),
-                                React.createElement('div', { className: 'div-wrapper-2' },
+                                React.createElement('div', { 
+                                    className: 'div-wrapper-2',
+                                    style: {
+                                        borderColor: errors.email ? '#dc2626' : validFields.email ? '#22c55e' : '#e4e4e4',
+                                        borderWidth: '2px',
+                                        borderStyle: 'solid'
+                                    }
+                                },
                                     React.createElement('input', {
                                         type: 'email',
                                         placeholder: 'someone@example.com',
@@ -249,13 +488,36 @@ return React.createElement('div', { className: 'frame' },
                                         disabled: isLoading,
                                         style: { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '10px' , margin: '10px' }
                                     })
-                                )
+                                ),
+                                errors.email && React.createElement('div', {
+                                    style: {
+                                        color: '#dc2626',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, errors.email),
+                                validFields.email && !errors.email && React.createElement('div', {
+                                    style: {
+                                        color: '#22c55e',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, 'Looks good!')
                             ),
 
                             // First name
-                            React.createElement('div', { className: 'div-3' },
+                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
                                 React.createElement('div', { className: 'text-wrapper-8' }, 'First Name'),
-                                React.createElement('div', { className: 'div-wrapper-2' },
+                                React.createElement('div', { 
+                                    className: 'div-wrapper-2',
+                                    style: {
+                                        borderColor: errors.firstName ? '#dc2626' : validFields.firstName ? '#22c55e' : '#e4e4e4',
+                                        borderWidth: '2px',
+                                        borderStyle: 'solid'
+                                    }
+                                },
                                     React.createElement('input', {
                                         type: 'text',
                                         placeholder: 'First Name',
@@ -265,13 +527,36 @@ return React.createElement('div', { className: 'frame' },
                                         disabled: isLoading,
                                         style: { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '10px' , margin: '10px' }
                                     })
-                                )
+                                ),
+                                errors.firstName && React.createElement('div', {
+                                    style: {
+                                        color: '#dc2626',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, errors.firstName),
+                                validFields.firstName && !errors.firstName && React.createElement('div', {
+                                    style: {
+                                        color: '#22c55e',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, 'Looks good!')
                             ),
 
                             // Last name
-                            React.createElement('div', { className: 'div-3' },
+                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
                                 React.createElement('div', { className: 'text-wrapper-8' }, 'Last Name'),
-                                React.createElement('div', { className: 'div-wrapper-2' },
+                                React.createElement('div', { 
+                                    className: 'div-wrapper-2',
+                                    style: {
+                                        borderColor: errors.lastName ? '#dc2626' : validFields.lastName ? '#22c55e' : '#e4e4e4',
+                                        borderWidth: '2px',
+                                        borderStyle: 'solid'
+                                    }
+                                },
                                     React.createElement('input', {
                                         type: 'text',
                                         placeholder: 'Last Name',
@@ -281,13 +566,36 @@ return React.createElement('div', { className: 'frame' },
                                         disabled: isLoading,
                                         style: { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '10px' , margin: '10px' }
                                     })
-                                )
+                                ),
+                                errors.lastName && React.createElement('div', {
+                                    style: {
+                                        color: '#dc2626',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, errors.lastName),
+                                validFields.lastName && !errors.lastName && React.createElement('div', {
+                                    style: {
+                                        color: '#22c55e',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, 'Looks good!')
                             ),
 
                             // Password
-                            React.createElement('div', { className: 'div-3' },
+                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
                                 React.createElement('div', { className: 'text-wrapper-8' }, 'Password'),
-                                React.createElement('div', { className: 'div-wrapper-2' },
+                                React.createElement('div', { 
+                                    className: 'div-wrapper-2',
+                                    style: {
+                                        borderColor: errors.password ? '#dc2626' : validFields.password ? '#22c55e' : '#e4e4e4',
+                                        borderWidth: '2px',
+                                        borderStyle: 'solid'
+                                    }
+                                },
                                     React.createElement('input', {
                                         type: 'password',
                                         placeholder: '',
@@ -297,13 +605,36 @@ return React.createElement('div', { className: 'frame' },
                                         disabled: isLoading,
                                         style: { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '10px' , margin: '10px' }
                                     })
-                                )
+                                ),
+                                errors.password && React.createElement('div', {
+                                    style: {
+                                        color: '#dc2626',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, errors.password),
+                                validFields.password && !errors.password && React.createElement('div', {
+                                    style: {
+                                        color: '#22c55e',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, 'Looks good!')
                             ),
 
                             // Confirm password
-                            React.createElement('div', { className: 'div-3' },
+                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
                                 React.createElement('div', { className: 'text-wrapper-8' }, 'Confirm Password'),
-                                React.createElement('div', { className: 'div-wrapper-2' },
+                                React.createElement('div', { 
+                                    className: 'div-wrapper-2',
+                                    style: {
+                                        borderColor: errors.confirmPassword ? '#dc2626' : validFields.confirmPassword ? '#22c55e' : '#e4e4e4',
+                                        borderWidth: '2px',
+                                        borderStyle: 'solid'
+                                    }
+                                },
                                     React.createElement('input', {
                                         type: 'password',
                                         placeholder: '',
@@ -313,7 +644,23 @@ return React.createElement('div', { className: 'frame' },
                                         disabled: isLoading,
                                         style: { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '10px' , margin: '10px' }
                                     })
-                                )
+                                ),
+                                errors.confirmPassword && React.createElement('div', {
+                                    style: {
+                                        color: '#dc2626',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, errors.confirmPassword),
+                                validFields.confirmPassword && !errors.confirmPassword && React.createElement('div', {
+                                    style: {
+                                        color: '#22c55e',
+                                        fontSize: '11px',
+                                        marginTop: '50px',
+                                        fontFamily: 'SF Pro, sans-serif'
+                                    }
+                                }, 'Looks good!')
                             ),
 
                             // Terms
@@ -342,6 +689,88 @@ return React.createElement('div', { className: 'frame' },
                             )
                         )
                     )
+                )
+            )
+        ),
+
+        // Custom Modal
+        modal.isOpen && React.createElement('div', {
+            style: {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10001,
+                padding: '20px'
+            },
+            onClick: (e) => {
+                if (e.target === e.currentTarget) {
+                    closeModal();
+                }
+            }
+        },
+            React.createElement('div', {
+                style: {
+                    backgroundColor: '#ffffff',
+                    borderRadius: '15px',
+                    padding: '30px',
+                    maxWidth: '450px',
+                    width: '100%',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px'
+                },
+                onClick: (e) => e.stopPropagation()
+            },
+                React.createElement('div', {
+                    style: {
+                        fontFamily: 'SF Pro, sans-serif',
+                        fontWeight: 700,
+                        fontSize: '24px',
+                        color: '#000000',
+                        lineHeight: 'normal'
+                    }
+                }, modal.title),
+                React.createElement('div', {
+                    style: {
+                        fontFamily: 'SF Pro, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '16px',
+                        color: '#000000',
+                        lineHeight: '1.5'
+                    }
+                }, modal.message),
+                React.createElement('div', {
+                    style: {
+                        display: 'flex',
+                        gap: '10px',
+                        justifyContent: 'flex-end',
+                        marginTop: '10px'
+                    }
+                },
+                    React.createElement('button', {
+                        style: {
+                            padding: '12px 24px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            backgroundColor: '#000000',
+                            color: '#ffffff',
+                            fontFamily: 'SF Pro, sans-serif',
+                            fontWeight: 700,
+                            fontSize: '16px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                        },
+                        onMouseEnter: (e) => e.target.style.backgroundColor = '#333333',
+                        onMouseLeave: (e) => e.target.style.backgroundColor = '#000000',
+                        onClick: handleModalOk
+                    }, 'OK')
                 )
             )
         )

@@ -183,9 +183,31 @@ router.post('/signup', async (req, res) => {
 
     } catch (error){
         console.log(error)
+        
+        // Check if it's a UNIQUE constraint error for username
+        if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('user.userName')) {
+            return res.status(400).json({
+                success: false, 
+                fieldMessage: 'An account with this username already exists.',
+                slideUpMessage: 'An account with this username already exists. Please enter a different one to proceed.',
+                field: 'username'
+            });
+        }
+        
+        // Check if it's a UNIQUE constraint error for email
+        if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('user.userEmail')) {
+            return res.status(400).json({
+                success: false, 
+                fieldMessage: 'An account with this email already exists.',
+                slideUpMessage: 'An account with this email already exists. Please enter a different one to proceed.',
+                field: 'email'
+            });
+        }
+        
+        // Generic error for other cases
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
-    return res.status(200).json({ success: true, message: 'successful' });
+    return res.status(200).json({ success: true, message: 'Account created successfully' });
 });
 
 router.post("/login", async (req, res) => {
