@@ -417,7 +417,8 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
                 userMenuOpen: userMenuOpen,
-                setUserMenuOpen: setUserMenuOpen
+                setUserMenuOpen: setUserMenuOpen,
+                userInfo: userInfo
             }),
 
             // Main content area

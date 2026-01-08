@@ -133,7 +133,8 @@
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
                 userMenuOpen: userMenuOpen,
-                setUserMenuOpen: setUserMenuOpen
+                setUserMenuOpen: setUserMenuOpen,
+                userInfo: userInfo
             }),
 
             // Custom Modal

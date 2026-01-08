@@ -133,12 +133,16 @@ async function insertGoogleOAuthUserAccount(profile) {
 
     console.log(`✅ Step 2 complete: Final username = "${username}" (attempts: ${attempt})\n`);
 
+    // Get Google profile picture URL
+    const googleAvatarUrl = profile.photos?.[0]?.value || null;
+    console.log(`🖼️ Google Avatar URL: ${googleAvatarUrl || 'None'}`);
+
     // Insert user
     const sqlUser = `
-        INSERT INTO user (uid, firstName, lastName, userType, userEmail, userName)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO user (uid, firstName, lastName, userType, userEmail, userName, googleAvatarUrl)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    const paramsUser = [uid, firstName, lastName, userType, email, username];
+    const paramsUser = [uid, firstName, lastName, userType, email, username, googleAvatarUrl];
 
     console.log(`📝 Step 3: Inserting into user table...`);
     console.log(`   uid: ${uid}`);
@@ -147,6 +151,7 @@ async function insertGoogleOAuthUserAccount(profile) {
     console.log(`   userType: ${userType}`);
     console.log(`   userEmail: ${email}`);
     console.log(`   userName: ${username}`);
+    console.log(`   googleAvatarUrl: ${googleAvatarUrl}`);
 
     try {
         await new Promise((resolve, reject) => {

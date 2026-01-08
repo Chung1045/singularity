@@ -70,8 +70,8 @@ async function findUserIDByPasskeyID(passkeyID) {
 async function getUserInfo(userID) {
     return new Promise((resolve, reject) => {
         // OLD: db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`, [userID], (err, row) => {
-        // NEW: Added more detailed logging
-        const query = `SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`;
+        // NEW: Added more detailed logging and avatar fields
+        const query = `SELECT uid, firstName, lastName, userEmail, userName, userType, userAvatarPath, googleAvatarUrl FROM user WHERE uid = ?`;
         console.log(`🔍 getUserInfo: Querying for uid="${userID}"`);
         db.get(query, [userID], (err, row) => {
             if (err) {
@@ -266,10 +266,25 @@ async function deleteAllLoginAttempts(data) {
 //     listSessions, listLoginAttempts, deleteAllLoginAttempts,
 //     logoutSession, getUserInfo }
 
-
+async function updateUserAvatar(userID, avatarPath) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `UPDATE user SET userAvatarPath = ? WHERE uid = ?`,
+            [avatarPath, userID],
+            function(err) {
+                if (err) {
+                    console.error('Error updating user avatar:', err);
+                    return reject(err);
+                }
+                console.log(`✅ Updated avatar for user ${userID}`);
+                resolve({ changes: this.changes });
+            }
+        );
+    });
+}
 
 module.exports = { isGoogleOAuthUserExist, getUIDfromOAuth,
     logLoginAttempts, findUserIDBySessionID, findUserNameByUserID,
     listPasskey, getPasskey, findUserIDByPasskeyID, deletePasskey,
     listSessions, listLoginAttempts, deleteAllLoginAttempts,
-    logoutSession, getUserInfo, hasUserPasskeys, findUserByUsername }
+    logoutSession, getUserInfo, hasUserPasskeys, findUserByUsername, updateUserAvatar }

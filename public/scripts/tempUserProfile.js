@@ -59,6 +59,13 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState(() => {
+        // Prioritize uploaded avatar, then Google avatar, then default
+        return userInfo?.userAvatarPath || userInfo?.googleAvatarUrl || './img/size-48.svg';
+    });
+    const [avatarError, setAvatarError] = useState(false);
+    const [googleAvatarError, setGoogleAvatarError] = useState(false);
 
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -72,6 +79,35 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
     // Define responsive breakpoints for MacBook compatibility
     const isSmallDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerWidth < 1440;
+
+    // Handle avatar loading errors
+    // Cascading fallback: uploaded avatar → Google avatar → default icon
+    // If Google avatar also fails to fetch, fall back to default
+    const handleAvatarError = () => {
+        console.log('⚠️ Avatar image failed to load, checking for fallback options');
+        const currentUrl = avatarUrl;
+        
+        // If currently showing uploaded avatar, try Google avatar next
+        if (currentUrl === userInfo?.userAvatarPath) {
+            setAvatarError(true);
+            const fallbackUrl = userInfo?.googleAvatarUrl || './img/size-48.svg';
+            console.log('📸 Falling back from uploaded avatar to:', fallbackUrl);
+            setAvatarUrl(fallbackUrl);
+        }
+        // If currently showing Google avatar (or it failed), use default
+        else if (currentUrl === userInfo?.googleAvatarUrl) {
+            console.log('📸 Google avatar also failed, falling back to default icon');
+            setGoogleAvatarError(true);
+            setAvatarUrl('./img/size-48.svg');
+        }
+    };
+
+    // Reset avatar error when userInfo changes
+    React.useEffect(() => {
+        setAvatarError(false);
+        setGoogleAvatarError(false);
+        setAvatarUrl(userInfo?.userAvatarPath || userInfo?.googleAvatarUrl || './img/size-48.svg');
+    }, [userInfo]);
 
     console.log("Inside TempUserProfile component – userInfo:", userInfo);
 
@@ -99,6 +135,81 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         if (modal.onCancel) {
             modal.onCancel();
         }
+    };
+
+    const handleAvatarUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            showAlert('Invalid File Type', 'Please upload an image file (JPEG, PNG, GIF, or WebP)');
+            return;
+        }
+
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showAlert('File Too Large', 'Please upload an image smaller than 5MB');
+            return;
+        }
+
+        setUploadingAvatar(true);
+
+        const formData = new FormData();
+        formData.append('profilePicture', file);
+
+        console.log('🔄 Starting avatar upload...', {
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type
+        });
+
+        try {
+            const response = await fetch('/api/upload-profile-picture', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfToken
+                },
+                body: formData
+            });
+
+            console.log('📡 Response status:', response.status);
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                console.error('❌ Failed to parse response:', jsonError);
+                throw new Error('Server returned invalid response');
+            }
+
+            console.log('📦 Response data:', data);
+
+            if (data.success) {
+                setAvatarUrl(data.avatarUrl);
+                showAlert('Success', 'Profile picture updated successfully!');
+                // Force reload avatar in sidebar
+                if (userInfo) {
+                    userInfo.userAvatarPath = data.avatarUrl;
+                }
+            } else {
+                console.error('❌ Upload failed:', data.message);
+                showAlert('Upload Failed', data.message || 'Failed to upload profile picture');
+            }
+        } catch (error) {
+            console.error('❌ Error uploading avatar:', error);
+            console.error('Error details:', error.message);
+            showAlert('Upload Error', `An error occurred: ${error.message || 'Please try again'}`);
+        } finally {
+            setUploadingAvatar(false);
+            // Clear the file input
+            event.target.value = '';
+        }
+    };
+
+    const triggerAvatarUpload = () => {
+        document.getElementById('avatar-upload-input').click();
     };
 
     function handleSessionManagement() {
@@ -202,7 +313,8 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
                 userMenuOpen: userMenuOpen,
-                setUserMenuOpen: setUserMenuOpen
+                setUserMenuOpen: setUserMenuOpen,
+                userInfo: userInfo
             }),
 
               React.createElement("div", {
@@ -265,6 +377,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 },
                     // Avatar Section
                     React.createElement('div', {
+                        id: 'profile-avatar-section',
                         style: {
                             position: 'relative',
                             width: '163px',
@@ -279,21 +392,35 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 width: '153px',
                                 height: '153px',
                                 borderRadius: '76.5px',
-                                backgroundColor: '#d9d9d9'
+                                backgroundColor: '#d9d9d9',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }
-                        }),
-                        React.createElement('img', {
-                            src: './img/size-48.svg',
-                            alt: 'User',
-                            style: {
-                                position: 'absolute',
-                                top: '53px',
-                                left: '53px',
-                                width: '48px',
-                                height: '48px'
-                            }
+                        },
+                            React.createElement('img', {
+                                id: 'profile-avatar-image',
+                                src: avatarUrl,
+                                alt: 'User',
+                                onError: handleAvatarError,
+                                style: {
+                                    width: avatarUrl.includes('size-48.svg') ? '48px' : '100%',
+                                    height: avatarUrl.includes('size-48.svg') ? '48px' : '100%',
+                                    objectFit: 'cover'
+                                }
+                            })
+                        ),
+                        // Hidden file input
+                        React.createElement('input', {
+                            type: 'file',
+                            id: 'avatar-upload-input',
+                            accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
+                            style: { display: 'none' },
+                            onChange: handleAvatarUpload
                         }),
                         React.createElement('div', {
+                            id: 'btn-edit-avatar',
                             style: {
                                 position: 'absolute',
                                 top: '140px',
@@ -305,11 +432,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 justifyContent: 'flex-end',
                                 gap: '10px',
                                 padding: '10px',
-                                backgroundColor: '#1c1d21',
+                                backgroundColor: uploadingAvatar ? '#666666' : '#1c1d21',
                                 borderRadius: '10px',
-                                cursor: 'pointer'
+                                cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
+                                opacity: uploadingAvatar ? 0.6 : 1
                             },
-                            onClick: () => setIsEditingProfile(!isEditingProfile)
+                            onClick: uploadingAvatar ? null : triggerAvatarUpload
                         },
                             React.createElement('div', {
                                 style: {
@@ -347,12 +475,13 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     lineHeight: 'normal',
                                     whiteSpace: 'nowrap'
                                 }
-                            }, 'Edit')
+                            }, uploadingAvatar ? 'Wait...' : 'Edit')
                         )
                     ),
 
                     // Profile Info Cards Container
                     React.createElement('div', {
+                        id: 'profile-info-container',
                         style: {
                             display: 'flex',
                             flexDirection: 'column',
@@ -378,6 +507,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         },
                             // Username
                             React.createElement('div', {
+                                id: 'profile-username-field',
                                 style: {
                                     display: 'flex',
                                     height: '73px',
@@ -462,6 +592,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
                             // Display Name
                             React.createElement('div', {
+                                id: 'profile-displayname-field',
                                 style: {
                                     display: 'flex',
                                     alignItems: 'center',
@@ -545,6 +676,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
                             // Email
                             React.createElement('div', {
+                                id: 'profile-email-field',
                                 style: {
                                     display: 'flex',
                                     alignItems: 'center',
@@ -627,6 +759,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
                             // Account Type
                             React.createElement('div', {
+                                id: 'profile-accounttype-field',
                                 style: {
                                     display: 'flex',
                                     alignItems: 'center',
@@ -670,6 +803,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
                         // Actions Card
                         React.createElement('div', {
+                            id: 'profile-actions-container',
                             style: {
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -681,6 +815,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         },
                             // Change Password
                             React.createElement('div', {
+                                id: 'btn-change-password',
                                 onClick: handleChangePassword,
                                 style: {
                                     display: 'flex',
@@ -725,6 +860,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             ),
                             // Manage Passkeys
                             React.createElement('div', {
+                                id: 'btn-manage-passkeys',
                                 onClick: handlePasskeyManagement,
                                 style: {
                                     display: 'flex',
@@ -769,6 +905,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             ),
                             // Manage Sessions
                             React.createElement('div', {
+                                id: 'btn-manage-sessions',
                                 onClick: handleSessionManagement,
                                 style: {
                                     display: 'flex',
@@ -813,6 +950,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             ),
                             // Delete Account
                             React.createElement('div', {
+                                id: 'btn-delete-account',
                                 onClick: handleDeleteAccount,
                                 style: {
                                     display: 'flex',

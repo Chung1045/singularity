@@ -6,7 +6,8 @@ const USER_TABLE_SCHEMA = () => `
                                         userType TEXT,
                                         userEmail TEXT,
                                         userName TEXT UNIQUE,
-                                        userAvatarPath TEXT
+                                        userAvatarPath TEXT,
+                                        googleAvatarUrl TEXT
     );
 `;
 

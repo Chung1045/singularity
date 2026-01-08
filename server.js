@@ -3,6 +3,65 @@ const session = require('express-session')
 const csrf = require("@dr.pogodin/csurf")
 const cookieParser = require('cookie-parser');
 const uuid = require('uuid-v4')
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// ============================================================================
+// OPTIONAL: MinIO Configuration (S3-compatible object storage)
+// ============================================================================
+// To use MinIO instead of local file storage:
+// 1. Uncomment the MinIO client import below
+// 2. Run: npm install minio
+// 3. Set environment variables in .env:
+//    MINIO_ENDPOINT=localhost
+//    MINIO_PORT=9000
+//    MINIO_ACCESS_KEY=your-access-key
+//    MINIO_SECRET_KEY=your-secret-key
+//    MINIO_BUCKET=avatars
+//    MINIO_USE_SSL=false
+// 4. Set STORAGE_TYPE=minio in .env
+// 5. Uncomment the MinIO client initialization below
+// ============================================================================
+
+// const Minio = require('minio');
+// const minioClient = new Minio.Client({
+//     endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+//     port: parseInt(process.env.MINIO_PORT) || 9000,
+//     useSSL: process.env.MINIO_USE_SSL === 'true',
+//     accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+//     secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin'
+// });
+
+// const MINIO_BUCKET = process.env.MINIO_BUCKET || 'avatars';
+
+// // Ensure bucket exists
+// (async () => {
+//     try {
+//         const exists = await minioClient.bucketExists(MINIO_BUCKET);
+//         if (!exists) {
+//             await minioClient.makeBucket(MINIO_BUCKET, 'us-east-1');
+//             // Set bucket policy to allow public read access for avatars
+//             const policy = {
+//                 Version: '2012-10-17',
+//                 Statement: [{
+//                     Effect: 'Allow',
+//                     Principal: { AWS: ['*'] },
+//                     Action: ['s3:GetObject'],
+//                     Resource: [`arn:aws:s3:::${MINIO_BUCKET}/*`]
+//                 }]
+//             };
+//             await minioClient.setBucketPolicy(MINIO_BUCKET, JSON.stringify(policy));
+//             console.log(`✅ MinIO bucket '${MINIO_BUCKET}' created and configured`);
+//         } else {
+//             console.log(`✅ MinIO bucket '${MINIO_BUCKET}' exists`);
+//         }
+//     } catch (err) {
+//         console.error('❌ MinIO bucket setup error:', err);
+//     }
+// })();
+
+const STORAGE_TYPE = process.env.STORAGE_TYPE || 'local'; // 'local' or 'minio'
 
 const port = process.env.PORT || 9090;
 const app = express();
@@ -41,6 +100,43 @@ const csrfProtection = csrf({
 
 app.use(csrfProtection)
 
+// ============================================================================
+// File Upload Configuration
+// ============================================================================
+// Configure multer for profile picture uploads (Local File System)
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, 'public', 'uploads', 'avatars');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+// For MinIO: Use memory storage instead of disk storage
+// const storage = multer.memoryStorage();
+
+// File filter to accept only image files
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: function (req, file, cb) {
+        const filetypes = /jpeg|jpg|png|gif|webp/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only image files are allowed!'));
+    }
+});
+
 // Middleware setup
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -51,6 +147,136 @@ app.set('views', __dirname + '/public/views');
 const sessionDBService = require("./public/services/sessionDBService.js")
 const accountManagerRouter = require('./public/managers/accountManager');
 const dbService = require("./public/services/accountDBService");
+
+// Profile picture upload endpoint - MUST be before app.use('/api', accountManagerRouter)
+app.post('/api/upload-profile-picture', (req, res) => {
+    // Handle multer upload with custom error handling
+    upload.single('profilePicture')(req, res, async (err) => {
+        if (err) {
+            console.error('Multer error:', err);
+            if (err instanceof multer.MulterError) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({ success: false, message: "File size exceeds 5MB limit" });
+                }
+                return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
+            }
+            return res.status(400).json({ success: false, message: err.message || "File upload failed" });
+        }
+
+        try {
+            if (!req.cookies.session_id) {
+                console.log('❌ No session cookie found');
+                return res.status(401).json({ success: false, message: "Unauthorized - Please log in again" });
+            }
+
+            const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+            if (!userID) {
+                console.log('❌ Session not found for cookie:', req.cookies.session_id);
+                return res.status(401).json({ success: false, message: "Unauthorized - Session expired" });
+            }
+
+            if (!req.file) {
+                console.log('❌ No file in request');
+                return res.status(400).json({ success: false, message: "No file uploaded" });
+            }
+
+            console.log(`📤 Uploading avatar for user ${userID}, file: ${req.file.filename || 'from memory'}`);
+
+            // Get user's old avatar to delete it (if it exists and is not a Google avatar)
+            const userInfo = await dbService.getUserInfo(userID);
+            
+            let avatarPath;
+
+            // ============================================================
+            // STORAGE LOGIC: Switch between local file system and MinIO
+            // ============================================================
+            if (STORAGE_TYPE === 'minio') {
+                // ==================== MinIO Upload ====================
+                // Uncomment this block when using MinIO:
+                /*
+                const fileName = `avatar-${userID}-${Date.now()}${path.extname(req.file.originalname)}`;
+                const metaData = {
+                    'Content-Type': req.file.mimetype,
+                    'X-User-ID': userID
+                };
+
+                try {
+                    // Upload to MinIO
+                    await minioClient.putObject(
+                        MINIO_BUCKET,
+                        fileName,
+                        req.file.buffer, // Use buffer from memory storage
+                        req.file.size,
+                        metaData
+                    );
+
+                    // Delete old avatar from MinIO if exists
+                    if (userInfo && userInfo.userAvatarPath && userInfo.userAvatarPath.startsWith('minio://')) {
+                        const oldFileName = userInfo.userAvatarPath.replace('minio://', '');
+                        try {
+                            await minioClient.removeObject(MINIO_BUCKET, oldFileName);
+                            console.log(`🗑️ Deleted old MinIO avatar: ${oldFileName}`);
+                        } catch (delErr) {
+                            console.warn('⚠️ Could not delete old MinIO avatar:', delErr.message);
+                        }
+                    }
+
+                    // Store MinIO path in database
+                    avatarPath = `minio://${fileName}`;
+                    
+                    // Generate presigned URL for frontend (valid for 7 days)
+                    const presignedUrl = await minioClient.presignedGetObject(MINIO_BUCKET, fileName, 7 * 24 * 60 * 60);
+                    
+                    await dbService.updateUserAvatar(userID, avatarPath);
+
+                    console.log(`✅ Profile picture uploaded to MinIO: ${fileName}`);
+                    
+                    return res.json({ 
+                        success: true, 
+                        message: "Profile picture updated successfully",
+                        avatarUrl: presignedUrl, // Return presigned URL for frontend
+                        storageType: 'minio'
+                    });
+                } catch (minioErr) {
+                    console.error('❌ MinIO upload error:', minioErr);
+                    throw new Error(`MinIO upload failed: ${minioErr.message}`);
+                }
+                */
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "MinIO is configured but code is commented out. See server.js for implementation." 
+                });
+            } else {
+                // ==================== Local File System Upload ====================
+                // Delete old avatar from file system if exists
+                if (userInfo && userInfo.userAvatarPath && !userInfo.userAvatarPath.startsWith('minio://')) {
+                    const oldAvatarPath = path.join(__dirname, 'public', userInfo.userAvatarPath);
+                    if (fs.existsSync(oldAvatarPath)) {
+                        fs.unlinkSync(oldAvatarPath);
+                        console.log(`🗑️ Deleted old avatar: ${oldAvatarPath}`);
+                    }
+                }
+
+                // Store relative path in database
+                avatarPath = `/uploads/avatars/${req.file.filename}`;
+                await dbService.updateUserAvatar(userID, avatarPath);
+
+                console.log(`✅ Profile picture uploaded successfully for user ${userID}: ${avatarPath}`);
+                
+                res.json({ 
+                    success: true, 
+                    message: "Profile picture updated successfully",
+                    avatarUrl: avatarPath,
+                    storageType: 'local'
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error in upload handler:', error);
+            console.error('Error stack:', error.stack);
+            res.status(500).json({ success: false, message: `Server error: ${error.message}` });
+        }
+    });
+});
 
 app.use('/api', accountManagerRouter);
 
