@@ -328,6 +328,7 @@ function testProjectInfoView() {
 }
 
 async function fetchProjects() {
+    console.log("fetchProjects is triggered")
     const response = await fetch('/api/project/list', {
         method: 'POST',
         headers: {
@@ -379,10 +380,24 @@ async function fetchProjectFiles(projectID) {
         let data = await response.json()
         console.log(`Response Data: ${JSON.stringify(data)}`)
         const sourceContainer = document.getElementById("div-project-source-list");
-        for (file of data.files) {
-            const documentEntry = document.createElement('p');
-            documentEntry.innerHTML = `${file.documentName}.${file.documentExt}`
-            sourceContainer.append(documentEntry);
+
+        // Clear existing content
+        sourceContainer.innerHTML = '';
+
+        for (let file of data.files) {
+            const fileElement = createFileItem(`${file.documentName}.${file.documentExt}`, file.documentID);
+
+            // Create a container div for this React element
+            const wrapper = document.createElement('div');
+            sourceContainer.appendChild(wrapper);
+
+            const root = ReactDOM.createRoot(wrapper);
+            root.render(fileElement);
+        }
+
+        const noSourceLabel = document.getElementById("p-label-source-no-entry")
+        if (noSourceLabel) {
+            noSourceLabel.style.display = data.files.length > 0 ? "none" : "block"
         }
     }
 }
@@ -410,6 +425,83 @@ async function fetchProjectReports(projectID) {
         }
     }
 }
+
+// Create a function that returns a React element for a file item
+function createFileItem(fileName, documentID) {
+    return React.createElement('div', {
+            className: 'sidebar-items',
+            'data-document-id': documentID,
+            style: {
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderRadius: '5px',
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            },
+            onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+            },
+            onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            },
+            onClick: (e) => {
+                // Prevent the div click when clicking the checkbox
+                if (e.target.type !== 'checkbox') {
+                    console.log(`Clicked on ${fileName}`);
+                }
+            }
+        },
+        React.createElement('input', {
+            type: 'checkbox',
+            style: {
+                width: "16px",
+                height: "16px",
+                flexShrink: 0  // Prevent checkbox from shrinking
+            },
+            onChange: (e) => {
+                console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
+                // Add your checkbox handler here
+            },
+            onClick: (e) => {
+                e.stopPropagation(); // Prevent triggering the div's onClick
+            }
+        }),
+        React.createElement('p', {
+            style: {
+                flexGrow: 1,
+                margin: 0,  // Remove default paragraph margins
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'  // Prevent wrapping, show ellipsis instead
+            }
+        }, fileName),
+        React.createElement('img', {
+            style: {
+                padding: "4px",
+                flexShrink: 0,
+                borderRadius: '5px',
+                transition: 'background-color 0.2s',
+            },
+            src: './img/more_vert_24.svg',
+            alt: '',
+            onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = '#8e8e8e';
+            },
+            onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            },
+            onClick: (e) => {
+                // Prevent the div click when clicking the checkbox
+                if (e.target.type !== 'checkbox') {
+                    console.log(`Clicked on ${fileName}`);
+                }
+            }
+        })
+    );
+}
+
 
 // Make available globally
 window.TempHome = TempHome;

@@ -1,11 +1,11 @@
 (function() {
     const { useState } = React;
 
-    const Sidebar = ({ 
-        sidebarCollapsed, 
-        setSidebarCollapsed, 
-        username, 
-        onLogout, 
+    const Sidebar = ({
+        sidebarCollapsed,
+        setSidebarCollapsed,
+        username,
+        onLogout,
         onProfileRoute,
         userMenuOpen,
         setUserMenuOpen
@@ -26,48 +26,69 @@
             setUserMenuOpen(!userMenuOpen);
         };
 
-    return React.createElement('aside', { 
+    return React.createElement('aside', {
         id: 'sidebar',
-        className: 'side-bar', 
+        className: 'side-bar',
         'aria-label': 'Sidebar navigation'
     },
         React.createElement('nav', null,
             // Icon at top
-            React.createElement('button', {
-                id: 'sidebar-icon',
-                style: { 
-                    background: 'none', 
-                    border: 'none', 
-                    padding: 0, 
-                    cursor: 'pointer',
-                    marginBottom: '20px'
-                },
-                onClick: () => window.location.href = '/home',
-                'aria-label': 'Go to home'
+
+            React.createElement('div', {
+                style: {
+                    display: "flex"
+                }
             },
-                React.createElement('img', { 
-                    className: 'union', 
-                    src: './img/union.svg', 
-                    alt: 'Singularity Icon' 
-                })
+                React.createElement('button', {
+                        id: 'sidebar-icon',
+                        style: {
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            cursor: 'pointer',
+                            marginBottom: '20px'
+                        },
+                        onClick: () => window.location.href = '/home',
+                        'aria-label': 'Go to home'
+                    },
+                    React.createElement('img', {
+                        className: 'union',
+                        src: './img/union.svg',
+                        alt: 'Singularity Icon'
+                    }),
+                ),
+
+                React.createElement('select', {
+                    id: "select-project-drop-down",
+                    style: {
+                        width: "100%",
+                        padding: "5px",
+                        borderRadius: "5px",
+                        border: "1px solid #e4e4e4"
+                    },
+                    onChange: async (e) => {
+                        await fetchProjectFiles(e.target.value)
+                        await fetchProjectReports(e.target.value)
+                    }
+                }),
             ),
 
             // Search bar
-            React.createElement('form', { 
+            React.createElement('form', {
                 id: 'sidebar-search',
-                className: 'search-file-field', 
-                role: 'search', 
+                className: 'search-file-field',
+                role: 'search',
                 'aria-label': 'Search files',
                 style: { marginBottom: '20px' }
             },
-                React.createElement('img', { 
-                    className: 'search', 
-                    src: './img/search-1.svg', 
-                    alt: '' 
+                React.createElement('img', {
+                    className: 'search',
+                    src: './img/search-1.svg',
+                    alt: ''
                 }),
-                React.createElement('label', { 
-                    htmlFor: 'search-files-input', 
-                    className: 'visually-hidden' 
+                React.createElement('label', {
+                    htmlFor: 'search-files-input',
+                    className: 'visually-hidden'
                 }, 'Search files'),
                 React.createElement('input', {
                     type: 'search',
@@ -79,9 +100,9 @@
             ),
 
             // History section with dropdown
-            React.createElement('div', { 
+            React.createElement('div', {
                 id: 'sidebar-history-wrapper',
-                style: { marginBottom: '10px' } 
+                style: { marginBottom: '10px' }
             },
                 React.createElement('button', {
                     id: 'sidebar-history',
@@ -91,23 +112,23 @@
                     'aria-controls': 'history-submenu',
                     onClick: () => setHistoryExpanded(!historyExpanded)
                 },
-                    React.createElement('img', { 
-                        className: 'slash-circle', 
-                        src: './img/slash-circle-1.svg', 
-                        alt: '' 
+                    React.createElement('img', {
+                        className: 'slash-circle',
+                        src: './img/slash-circle-1.svg',
+                        alt: ''
                     }),
-                    React.createElement('span', { 
-                        className: 'text-wrapper-2' 
+                    React.createElement('span', {
+                        className: 'text-wrapper-2'
                     }, 'History'),
-                    React.createElement('span', { 
-                        className: 'submenu', 
-                        'aria-hidden': 'true' 
+                    React.createElement('span', {
+                        className: 'submenu',
+                        'aria-hidden': 'true'
                     },
-                        React.createElement('img', { 
+                        React.createElement('img', {
                             className: 'text-wrapper-3',
                             src: './img/down-chevron-black-16112.svg',
                             alt: '',
-                            style: { 
+                            style: {
                                 transform: historyExpanded ? 'rotate(-90deg)' : 'rotate(90deg)',
                                 transition: 'transform 0.2s',
                                 width: '24px',
@@ -130,9 +151,9 @@
             ),
 
             // Source section with dropdown
-            React.createElement('div', { 
+            React.createElement('div', {
                 id: 'sidebar-source-wrapper',
-                style: { marginBottom: '10px' } 
+                style: { marginBottom: '10px' }
             },
                 React.createElement('button', {
                     id: 'sidebar-source',
@@ -142,23 +163,23 @@
                     'aria-controls': 'source-submenu',
                     onClick: () => setSourceExpanded(!sourceExpanded)
                 },
-                    React.createElement('img', { 
-                        className: 'slash-circle', 
-                        src: './img/slash-circle-1.svg', 
-                        alt: '' 
+                    React.createElement('img', {
+                        className: 'slash-circle',
+                        src: './img/slash-circle-1.svg',
+                        alt: ''
                     }),
-                    React.createElement('span', { 
-                        className: 'text-wrapper-2' 
+                    React.createElement('span', {
+                        className: 'text-wrapper-2'
                     }, 'Source'),
-                    React.createElement('span', { 
-                        className: 'submenu', 
-                        'aria-hidden': 'true' 
+                    React.createElement('span', {
+                        className: 'submenu',
+                        'aria-hidden': 'true'
                     },
-                        React.createElement('img', { 
+                        React.createElement('img', {
                             className: 'text-wrapper-3',
                             src: './img/down-chevron-black-16112.svg',
                             alt: '',
-                            style: { 
+                            style: {
                                 transform: sourceExpanded ? 'rotate(-90deg)' : 'rotate(90deg)',
                                 transition: 'transform 0.2s',
                                 width: '24px',
@@ -168,22 +189,37 @@
                         })
                     )
                 ),
-                sourceExpanded && !sidebarCollapsed && React.createElement('div', {
-                    id: 'source-submenu',
-                    style: {
-                        paddingLeft: '40px',
-                        paddingTop: '10px',
-                        paddingBottom: '10px'
-                    }
-                },
-                    React.createElement('div', { style: { fontSize: '14px', color: '#666' } }, 'No source items yet, you can replace this to show lists')
+                React.createElement('div', {
+                        id: 'source-submenu',
+                        style: {
+                            paddingLeft: '40px',
+                            paddingTop: '10px',
+                            paddingBottom: '10px',
+                            display: sourceExpanded && !sidebarCollapsed ? 'block' : 'none'  // Hide instead of not creating
+                        }
+                    },
+                    React.createElement('div', {
+                        id: "div-project-source-list",
+                        style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "5px"
+                        }
+                    }),
+                    React.createElement('p', {
+                        id: "p-label-source-no-entry",
+                        style: {
+                            fontSize: '14px',
+                            color: '#666'
+                        }
+                        }, 'No source yet.')
                 )
             ),
 
             // Requirements List section with dropdown
-            React.createElement('div', { 
+            React.createElement('div', {
                 id: 'sidebar-requirements-wrapper',
-                style: { marginBottom: '10px' } 
+                style: { marginBottom: '10px' }
             },
                 React.createElement('button', {
                     id: 'sidebar-requirements',
@@ -193,23 +229,23 @@
                     'aria-controls': 'requirements-submenu',
                     onClick: () => setRequirementsExpanded(!requirementsExpanded)
                 },
-                    React.createElement('img', { 
-                        className: 'slash-circle', 
-                        src: './img/slash-circle-1.svg', 
-                        alt: '' 
+                    React.createElement('img', {
+                        className: 'slash-circle',
+                        src: './img/slash-circle-1.svg',
+                        alt: ''
                     }),
-                    React.createElement('span', { 
-                        className: 'text-wrapper-2' 
+                    React.createElement('span', {
+                        className: 'text-wrapper-2'
                     }, 'Requirements List'),
-                    React.createElement('span', { 
-                        className: 'submenu', 
-                        'aria-hidden': 'true' 
+                    React.createElement('span', {
+                        className: 'submenu',
+                        'aria-hidden': 'true'
                     },
-                        React.createElement('img', { 
+                        React.createElement('img', {
                             className: 'text-wrapper-3',
                             src: './img/down-chevron-black-16112.svg',
                             alt: '',
-                            style: { 
+                            style: {
                                 transform: requirementsExpanded ? 'rotate(-90deg)' : 'rotate(90deg)',
                                 transition: 'transform 0.2s',
                                 width: '24px',
@@ -227,21 +263,27 @@
                         paddingBottom: '10px'
                     }
                 },
-                    React.createElement('div', { style: { fontSize: '14px', color: '#666' } }, 'No requirements yet, you can replace this to show lists')
+                    React.createElement('p', {
+                        style: {
+                            fontSize: '14px',
+                            color: '#666'
+                        }
+                        },
+                        'No requirements yet, you can replace this to show lists')
                 )
             ),
 
             // Spacer to push username and toggle to bottom
-            React.createElement('div', { 
-                style: { 
+            React.createElement('div', {
+                style: {
                     flex: 1,
                     minHeight: '20px'
-                } 
+                }
             }),
 
             // Horizontal divider
-            React.createElement('div', { 
-                className: 'horizontal-inset', 
+            React.createElement('div', {
+                className: 'horizontal-inset',
                 role: 'separator',
                 style: { marginBottom: '20px' }
             },
@@ -249,9 +291,9 @@
             ),
 
             // Username section
-            React.createElement('div', { 
+            React.createElement('div', {
                 id: 'sidebar-username',
-                style: { 
+                style: {
                     width: '100%',
                     marginBottom: '20px',
                     position: 'relative',
@@ -260,11 +302,11 @@
                 onClick: toggleUserMenu
             },
                 // Expanded view: show username with icon
-                !sidebarCollapsed && React.createElement('a', { 
+                !sidebarCollapsed && React.createElement('a', {
                     href: '#',
                     className: 'username-display',
-                    style: { 
-                        cursor: 'pointer', 
+                    style: {
+                        cursor: 'pointer',
                         position: 'relative',
                         display: 'flex',
                         alignItems: 'center',
@@ -275,16 +317,16 @@
                     },
                     onClick: (e) => e.preventDefault()
                 },
-                    React.createElement('img', { 
-                        className: 'user', 
-                        src: './img/user.svg', 
-                        alt: 'User', 
-                        style: { width: '22px', height: '22px' } 
+                    React.createElement('img', {
+                        className: 'user',
+                        src: './img/user.svg',
+                        alt: 'User',
+                        style: { width: '22px', height: '22px' }
                     }),
-                    React.createElement('span', { 
-                        className: 'text-wrapper-6' 
+                    React.createElement('span', {
+                        className: 'text-wrapper-6'
                     }, username),
-                    
+
                     // User menu dropdown - expanded
                     userMenuOpen && React.createElement('div', {
                         style: {
@@ -359,12 +401,12 @@
                         margin: '50px auto'
                     }
                 },
-                    React.createElement('img', { 
-                        src: './img/user.svg', 
-                        alt: 'User', 
-                        style: { width: '22px', height: '22px' } 
+                    React.createElement('img', {
+                        src: './img/user.svg',
+                        alt: 'User',
+                        style: { width: '22px', height: '22px' }
                     }),
-                    
+
                     // User menu dropdown - collapsed (moved outside sidebar)
                     sidebarCollapsed && userMenuOpen && React.createElement('div', {
                         style: {
