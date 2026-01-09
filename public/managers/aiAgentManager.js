@@ -105,6 +105,12 @@ router.post('/agent/chat', async (req, res) => {
             }
 
             await aiDB.saveConversationResponse(chatSeq, conversationID, response);
+
+            if (await aiDB.getChatThreadName(projectID, chatID) == null) {
+                let threadName = await agent.createChatName(JSON.stringify(await aiDB.fetchChatThread(projectID, chatID)))
+                await aiDB.renameChatThread(projectID, chatID, threadName)
+            }
+
             return res.status(200).json({
                 success: true,
                 chatID: chatID,

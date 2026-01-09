@@ -147,6 +147,44 @@ async function getChatSummary(conversationHistory) {
     }
 }
 
+async function createChatName(conversationHistory) {
+
+    if (conversationHistory == null) {
+        console.error("No chatHistory is given for function createChatName")
+        return
+    }
+
+    try {
+        const messages = [
+            { role: 'system', content: system_prompt },
+            {
+                role: 'user',
+                content:
+                    'Analyze the following chat thread and give a short chat name (at most 8 words) for user to identify:\n\n' +
+                    conversationHistory,
+            },
+        ];
+
+        const completion = await client.chat.completions.create({
+            model: 'grok-4-1-fast-non-reasoning',
+            messages,
+            temperature: 0.2,
+            max_tokens: 1500,
+        });
+
+        const responseMessage = completion.choices[0].message;
+        console.log('Message Respond: ' + responseMessage.content);
+        return responseMessage.content;
+    } catch (error) {
+        console.error('Error:', error.message);
+        if (error.response) {
+            console.error('Status:', error.response.status);
+            console.error('Data:', error.response.data);
+        }
+        throw error;
+    }
+}
+
 function readFile(filePath) {
     try {
         const content = fs.readFileSync(filePath, 'utf-8');
@@ -162,57 +200,10 @@ function readFile(filePath) {
     }
 }
 
-
-async function test() {
-    // const userInput = `
-    //     Can you summarize all the functional and non-functional requirements of the Food Delivery app, with the name requirementsGathering.txt, then update to my software requirements and user stories?
-    // `;
-    //
-    // const data = {
-    //     projectID: "a3548cc9-8756-424e-b05d-e11dc34be463",
-    //     chatID: "55d35d9e-85c1-4ea4-9b63-c9def448bda1",
-    //     requestMessage: userInput,
-    //     attachedDocumentIDs: ["f47ac10b-58cc-4372-a567-0e02b2c3d479"]
-    // };
-    //
-    // let response = await getResponse(data, [])
-    //
-    // let {conversationID, chatSeq} = await aiDB.saveConversationRequest(data);
-    // console.log(`Data returned: conversationID: ${conversationID}, chatSeq: ${chatSeq}`);
-    // console.log(`data to pass in: ${data}`)
-    // if (data.attachedDocumentIDs && data.attachedDocumentIDs.length > 0) {
-    //     await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
-    // }
-    //
-    // await aiDB.saveConversationResponse(chatSeq, conversationID, response);
-    //
-    // console.log(await aiDB.getConversationRecall(data.projectID, data.chatID))
-
-    // let result = await aiDB.fetchChatThread("a3548cc9-8756-424e-b05d-e11dc34be463", "55d35d9e-85c1-4ea4-9b63-c9def448bda1")
-    // console.log(JSON.stringify(result));
-
-    // const filePath = "../tests/sample-conversation-json.rtf";
-    //
-    // // Check if file exists
-    // if (!fs.existsSync(filePath)) {
-    //     console.error(`Error: File '${filePath}' not found.`);
-    //     return;
-    // }
-    //
-    // // Read the file
-    // console.log("\nReading file...");
-    // const chatContent = readFile(filePath);
-    // console.log(`File read successfully! (${chatContent.length} characters)\n`);
-    //
-    // console.log(`Response: ${await getChatSummary(chatContent)} END___`)
-
-}
-
-test()
-
 module.exports = {
     getResponse,
-    getChatSummary
+    getChatSummary,
+    createChatName
 }
 
 

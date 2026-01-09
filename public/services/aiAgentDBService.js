@@ -52,7 +52,7 @@ async function createNewChatThread(projectID) {
 
 async function renameChatThread(projectID, chatID, newChatThreadName) {
     const sql = `UPDATE chat SET threadName = ? WHERE chatID = ? AND projectID = ?`
-    const param = [newChatThreadName, projectID, chatID]
+    const param = [newChatThreadName, chatID, projectID]
 
     try {
         await dbRun(sql, param);
@@ -72,6 +72,26 @@ async function deleteChatThread(projectID, chatID) {
     } catch (error) {
         throw error;
     }
+}
+
+async function getChatThreadName(projectID, chatID) {
+    const sql = `SELECT threadName FROM chat WHERE projectID = ? AND chatID = ?`
+    const param = [projectID, chatID]
+
+    return new Promise((resolve, reject) => {
+        db.get(sql, param, (err, row) => {
+            if (err) {
+                console.error('Error in getChatThreadName:', err);
+                return reject(err);
+            }
+            if (!row) {
+                console.log('No chat thread found for projectID:', projectID, 'chatID:', chatID);
+                return resolve(null);
+            }
+            console.log('Result:', row);
+            resolve(row.threadName);
+        });
+    });
 }
 
 async function saveConversationRequest(data) {
@@ -605,5 +625,6 @@ module.exports = {
     updateProjectUserStories,
     updateProjectRequirementSourceRef,
     updateProjectRequirementStoryRef,
-    updateUserStorySourceRef
+    updateUserStorySourceRef,
+    getChatThreadName
 }
