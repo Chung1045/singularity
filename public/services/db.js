@@ -42,6 +42,69 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const dbModel = require('./dbModel');
 
+// Helper function to check and add missing columns
+async function migrateDatabase(db) {
+    return new Promise((resolve, reject) => {
+        db.all("PRAGMA table_info(user)", [], (err, columns) => {
+            if (err) {
+                console.error('❌ Error checking table schema:', err);
+                return reject(err);
+            }
+
+            if (!columns || columns.length === 0) {
+                // Table doesn't exist yet, no migration needed
+                return resolve();
+            }
+
+            const hasUserAvatarPath = columns.some(col => col.name === 'userAvatarPath');
+            const hasGoogleAvatarUrl = columns.some(col => col.name === 'googleAvatarUrl');
+
+            const operations = [];
+
+            if (!hasUserAvatarPath) {
+                console.log('⚠️  Adding missing column: userAvatarPath');
+                operations.push(new Promise((res, rej) => {
+                    db.run('ALTER TABLE user ADD COLUMN userAvatarPath TEXT', (err) => {
+                        if (err) {
+                            console.error('❌ Error adding userAvatarPath:', err);
+                            rej(err);
+                        } else {
+                            console.log('✅ Added userAvatarPath column');
+                            res();
+                        }
+                    });
+                }));
+            }
+
+            if (!hasGoogleAvatarUrl) {
+                console.log('⚠️  Adding missing column: googleAvatarUrl');
+                operations.push(new Promise((res, rej) => {
+                    db.run('ALTER TABLE user ADD COLUMN googleAvatarUrl TEXT', (err) => {
+                        if (err) {
+                            console.error('❌ Error adding googleAvatarUrl:', err);
+                            rej(err);
+                        } else {
+                            console.log('✅ Added googleAvatarUrl column');
+                            res();
+                        }
+                    });
+                }));
+            }
+
+            if (operations.length === 0) {
+                return resolve();
+            }
+
+            Promise.all(operations)
+                .then(() => {
+                    console.log('✅ Database migration completed');
+                    resolve();
+                })
+                .catch(reject);
+        });
+    });
+}
+
 // Create or open a database file
 const dbPath = path.resolve(__dirname, 'database.db');
 const db = new sqlite3.Database(dbPath, async (err) => {
@@ -72,6 +135,9 @@ const db = new sqlite3.Database(dbPath, async (err) => {
             await db.exec(dbModel.GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA());
             await db.exec(dbModel.PASSKEYS_SCHEMA());
             console.log('All tables created successfully.');
+            
+            // Run automatic migration to add any missing columns
+            await migrateDatabase(db);
         } catch (createErr) {
             console.error('Error creating tables:', createErr.message);
         }
