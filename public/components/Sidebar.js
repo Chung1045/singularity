@@ -99,6 +99,41 @@
                 })
             ),
 
+            // Project name display
+            React.createElement('div', {
+                id: 'sidebar-project-name',
+                className: 'project-name-wrapper',
+                title: 'Project Name' // Tooltip
+            },
+                // Folder icon (visible in collapsed)
+                React.createElement('span', {
+                    className: 'project-icon',
+                    
+                }, 
+                React.createElement('img', { 
+                    id: 'sidebar-ProjectFolderName-img',
+                    className: 'folder-svgrepo-com', 
+                    src: './img/folder-svgrepo-com.svg',
+                    alt: 'Project Folder Icon',
+                    style: { 
+                        // marginTop: '10px',
+                        width: '20px',
+                        height: '20px',
+                        // marginLeft: '14.5px',
+                        aspectRatio: 1
+                    }
+                })
+            ),
+                // First letter badge (visible in collapsed)
+                React.createElement('span', {
+                    className: 'project-letter'
+                }, 'P'),
+                // Full project name text (hidden in collapsed)
+                React.createElement('span', {
+                    className: 'project-name-text'
+                }, 'Project Name')
+            ),
+
             // Search bar
             React.createElement('form', { 
                 id: 'sidebar-search',
@@ -126,11 +161,16 @@
                 })
             ),
 
-            // History section with dropdown
-            React.createElement('div', { 
-                id: 'sidebar-history-wrapper',
-                style: { marginBottom: '10px' } 
+            // Scrollable wrapper for the three sections
+            React.createElement('div', {
+                className: 'sidebar-scrollable-content',
+                id: 'sidebar-scrollable-wrapper'
             },
+                // History section with dropdown
+                React.createElement('div', { 
+                    id: 'sidebar-history-wrapper',
+                    style: { marginBottom: '10px' } 
+                },
                 React.createElement('button', {
                     id: 'sidebar-history',
                     className: 'history',
@@ -174,6 +214,9 @@
                     }
                 },
                     React.createElement('div', { style: { fontSize: '14px', color: '#666' } }, 'No history items yet, you can replace this to show lists')
+                    
+                
+                
                 )
             ),
 
@@ -275,17 +318,19 @@
                         paddingBottom: '10px'
                     }
                 },
+                    
                     React.createElement('div', { style: { fontSize: '14px', color: '#666' } }, 'No requirements yet, you can replace this to show lists')
+                )
                 )
             ),
 
             // Spacer to push username and toggle to bottom
-            React.createElement('div', { 
-                style: { 
-                    flex: 1,
-                    minHeight: '20px'
-                } 
-            }),
+            // React.createElement('div', { 
+            //     style: { 
+            //         flex: 1,
+            //         minHeight: '20px'
+            //     } 
+            // }),
 
             // Horizontal divider
             React.createElement('div', { 
@@ -409,7 +454,7 @@
                         width: '48px',
                         height: '48px',
                         background: '#ffffff',
-                        padding: '5px 5px 2px 10px',
+                        padding: '5px 5px 10px 6px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
