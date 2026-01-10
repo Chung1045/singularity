@@ -138,15 +138,30 @@
                         })
                     )
                 ),
-                historyExpanded && !sidebarCollapsed && React.createElement('div', {
-                    id: 'history-submenu',
-                    style: {
-                        paddingLeft: '40px',
-                        paddingTop: '10px',
-                        paddingBottom: '10px'
-                    }
-                },
-                    React.createElement('div', { style: { fontSize: '14px', color: '#666' } }, 'No history items yet, you can replace this to show lists')
+                React.createElement('div', {
+                        id: 'div-chat-history-submenu',
+                        style: {
+                            paddingLeft: '40px',
+                            paddingTop: '10px',
+                            paddingBottom: '10px',
+                            display: historyExpanded && !sidebarCollapsed ? 'block' : 'none'
+                        }
+                    },
+                    React.createElement('div', {
+                        id: "div-chat-history-list",
+                        style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "5px"
+                        }
+                    }),
+                    React.createElement('p', {
+                        id: "p-label-chat-history-no-entry",
+                        style: {
+                            fontSize: '14px',
+                            color: '#666'
+                        }
+                    }, 'Chat history is empty.')
                 )
             ),
 

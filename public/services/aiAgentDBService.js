@@ -195,6 +195,32 @@ async function conversationEdit(chatID, chatSeq, conversationID, newConversation
 }
 
 /**
+ * Fetches all chatID and chat threadName in the project
+ * @param {string} projectID - UUID of the project
+ * @returns {Promise<Array<{chatID: string, threadName: string}>>} Array of chat objects with chatID and threadName
+ */
+async function fetchProjectChats(projectID) {
+    console.log("Db fetchProjects is triggered")
+    const sql = `SELECT chatID, threadName FROM chat WHERE projectID = ?`
+    const param = [projectID]
+
+    return new Promise((resolve, reject) => {
+        db.all(sql, param, (err, rows) => {
+            if (err) {
+                console.error('Error in fetchProjectChats:', err);
+                return reject(err);
+            }
+            if (!rows || rows.length === 0) {
+                console.log('No chats found for projectID:', projectID);
+                return resolve([]);
+            }
+            console.log('Chats found:', rows);
+            resolve(rows);
+        });
+    });
+}
+
+/**
  * Fetches complete chat thread with all conversations, responses, and document references
  * @param {string} projectID - UUID of the project
  * @param {string} chatID - UUID of the chat thread
@@ -612,6 +638,7 @@ module.exports = {
     deleteChatThread,
     deleteConversation,
     fetchChatThread,
+    fetchProjectChats,
     getProjectRequirements,
     getRequirementsSource,
     getProjectUserStories,

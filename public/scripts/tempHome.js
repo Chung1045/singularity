@@ -344,8 +344,29 @@ async function fetchProjects() {
         let defaultProjectID = data.projects[0]?.projectID;
 
         if (defaultProjectID) {
-            await fetchProjectFiles(defaultProjectID)
-            await fetchProjectReports(defaultProjectID)
+            try {
+                console.log("1. Starting fetchProjectFiles")
+                await fetchProjectFiles(defaultProjectID)
+                console.log("1. ✓ fetchProjectFiles completed")
+            } catch (err) {
+                console.error("1. ✗ fetchProjectFiles failed:", err)
+            }
+
+            try {
+                console.log("2. Starting fetchProjectReports")
+                await fetchProjectReports(defaultProjectID)
+                console.log("2. ✓ fetchProjectReports completed")
+            } catch (err) {
+                console.error("2. ✗ fetchProjectReports failed:", err)
+            }
+
+            try {
+                console.log("3. Starting fetchProjectChats")
+                await fetchProjectChats(defaultProjectID)
+                console.log("3. ✓ fetchProjectChats completed")
+            } catch (err) {
+                console.error("3. ✗ fetchProjectChats failed:", err)
+            }
         }
     }
 }
@@ -418,10 +439,63 @@ async function fetchProjectReports(projectID) {
         let data = await response.json()
         console.log(`Response Data: ${JSON.stringify(data)}`)
         const reportContainer = document.getElementById("div-project-report-list")
-        for (report of data.reports) {
+        for (let report of data.reports) {
             const reportEntry = document.createElement('p');
             reportEntry.innerHTML = `${report.reportName}`
             reportContainer.append(reportEntry);
+        }
+    }
+}
+
+async function fetchProjectChats(projectID) {
+    console.log("ProjectID:", projectID)
+    const chatHistoryContainer = document.getElementById("div-chat-history-list");
+    chatHistoryContainer.innerHTML = '';
+
+    let data = null;
+
+    try {
+        const response = await fetch('/api/agent/all-chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                projectID: projectID
+            })
+        });
+
+        console.log("Response status:", response.status)
+        console.log("Response ok:", response.ok)
+
+        if (response.ok) {
+            data = await response.json()
+
+            if (data.chats) {
+                console.log("Number of chats:", data.chats.length)
+
+                for (let chat of data.chats) {
+                    const chatHistoryElement = createChatHistoryItem(chat.threadName, chat.chatID)
+
+                    const wrapper = document.createElement('div');
+                    chatHistoryContainer.appendChild(wrapper);
+
+                    const root = ReactDOM.createRoot(wrapper);
+                    root.render(chatHistoryElement);
+                }
+            }
+        } else {
+            console.error("Response not OK:", response.status, response.statusText)
+            const errorText = await response.text()
+            console.error("Error response:", errorText)
+        }
+
+    } catch (error) {
+        console.error("Error:", error)
+    } finally {
+        const noChatHistoryLabel = document.getElementById("p-label-chat-history-no-entry")
+        if (noChatHistoryLabel) {
+            noChatHistoryLabel.style.display = (data && data.chats && data.chats.length > 0) ? "none" : "block"
         }
     }
 }
@@ -496,6 +570,66 @@ function createFileItem(fileName, documentID) {
                 // Prevent the div click when clicking the checkbox
                 if (e.target.type !== 'checkbox') {
                     console.log(`Clicked on ${fileName}`);
+                }
+            }
+        })
+    );
+}
+
+function createChatHistoryItem(chatThreadName, chatID) {
+    return React.createElement('div', {
+            className: 'sidebar-items',
+            'data-chat-id': chatID,
+            style: {
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderRadius: '5px',
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            },
+            onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+            },
+            onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            },
+            onClick: (e) => {
+                // Prevent the div click when clicking the checkbox
+                if (e.target.type !== 'checkbox') {
+                    console.log(`Clicked on ${chatThreadName}`);
+                }
+            }
+        },
+        React.createElement('p', {
+            style: {
+                flexGrow: 1,
+                margin: 0,  // Remove default paragraph margins
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'  // Prevent wrapping, show ellipsis instead
+            }
+        }, chatThreadName),
+        React.createElement('img', {
+            style: {
+                padding: "4px",
+                flexShrink: 0,
+                borderRadius: '5px',
+                transition: 'background-color 0.2s',
+            },
+            src: './img/more_vert_24.svg',
+            alt: '',
+            onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = '#8e8e8e';
+            },
+            onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            },
+            onClick: (e) => {
+                // Prevent the div click when clicking the checkbox
+                if (e.target.type !== 'checkbox') {
+                    console.log(`Clicked on ${chatThreadName}`);
                 }
             }
         })

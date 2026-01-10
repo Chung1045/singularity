@@ -9,6 +9,7 @@ const aiDB = require("../services/aiAgentDBService");
 const agent = require("../services/aiAgentService");
 const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
 const docGen = require("../services/docGenerationService");
+const {apiAuthUser} = require("../services/accountDBService");
 
 router.use(dbService.apiAuthUser);
 
@@ -129,6 +130,27 @@ router.post('/agent/chat', async (req, res) => {
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
 
+});
+
+router.post('/agent/all-chat', async (req, res) => {
+
+    const { projectID } = req.body;
+
+    if (!projectID) {
+        return res.status(400).json({success: false, message: `Missing required fields`})
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    try {
+        let response = await aiDB.fetchProjectChats(projectID)
+        return res.status(200).json({success: true, chats: response})
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ success: false, message: `Internal server error, unable to fetch all chat.` });
+    }
 });
 
 /** Chat fetch Request Body
