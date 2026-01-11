@@ -533,7 +533,7 @@ router.post("/project/report/download", async (req, res) => {
     }
 
     try {
-        const fileName = await fss.queryReportname(projectID, reportID) + `.docx`;
+        const fileName = await fss.queryReportName(projectID, reportID) + `.docx`;
 
         // Then get the file stream from MinIO
         const stream = await fss.downloadReport(projectID, reportID);

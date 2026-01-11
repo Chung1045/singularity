@@ -406,6 +406,7 @@ async function listReportRecord(projectID) {
 async function downloadReport(projectID, reportID){
     try {
         const objectPath = `project/${projectID}/reports/${reportID}`;
+        console.log(`Attempting to fetch ${objectPath}`)
         return await minioClient.getObject(bucket, objectPath);
     } catch (err) {
         console.error("Download error:", err);

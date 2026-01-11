@@ -339,12 +339,6 @@ async function fetchProjectReports(projectID) {
     if (response.ok) {
         let data = await response.json()
         console.log(`Response Data: ${JSON.stringify(data)}`)
-        const reportContainer = document.getElementById("div-project-report-list")
-        for (let report of data.reports) {
-            const reportEntry = document.createElement('p');
-            reportEntry.innerHTML = `${report.reportName}`
-            reportContainer.append(reportEntry);
-        }
     }
 }
 
@@ -551,6 +545,59 @@ function createChatHistoryItem(chatThreadName, chatID) {
     );
 }
 
+function createReportItem(reportName, reportID) {
+    return React.createElement('div', {
+            className: 'sidebar-items report-item',
+            'data-report-id': reportID,
+            style: {
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderRadius: '5px',
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            },
+            onMouseEnter: (e) => {
+            },
+            onMouseLeave: (e) => {
+            },
+            onClick: (e) => {
+            }
+        },
+        React.createElement('p', {
+            style: {
+                flexGrow: 1,
+                margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+            }
+        }, reportName),
+        React.createElement('img', {
+            style: {
+                padding: "4px",
+                flexShrink: 0,
+                borderRadius: '5px',
+                transition: 'background-color 0.2s',
+            },
+            src: './img/more_vert_24.svg',
+            alt: '',
+            onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = '#8e8e8e';
+            },
+            onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            },
+            onClick: (e) => {
+                e.stopPropagation(); // Prevent the div's onClick from firing
+                console.log(`Menu clicked for ${reportName}`);
+                // Add your menu logic here
+            }
+        })
+    );
+}
+
 function getSelectedSource() {
     let selectedSource = [];
     const sourceElements = document.querySelectorAll(".sidebar-items.source-item"); // More specific selector
@@ -588,6 +635,106 @@ function submitConversationRequest() {
     console.log(data)
 }
 
+async function generateUserStoryReport(projectID){
+    // your logic here
+    const response = await fetch('/api/agent/document-generation/user-stories', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            projectID: projectID
+        })
+    });
+
+    if (response.ok) {
+        await fetchProjectReports()
+    } else {
+
+    }
+}
+
+async function generateRequirementsReport(projectID){
+    // your logic here
+    const response = await fetch('/api/agent/document-generation/requirements', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            projectID: projectID
+        })
+    });
+
+    if (response.ok) {
+        await fetchProjectReports()
+    } else {
+
+    }
+}
+
+async function downloadReport(projectID, reportID) {
+
+    try {
+        const response = await fetch('/api/project/report/download', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                projectID: projectID,
+                reportID: reportID
+            })
+        });
+
+        if (response.ok) {
+            // Get the filename from the Content-Disposition header
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'report.docx';
+
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+
+            const blob = await response.blob();
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+        } else {
+            const errorData = await response.json();
+            console.error('Download failed:', errorData.message);
+        }
+    } catch (error) {
+        console.error('Error downloading report:', error);
+    }
+}
+
+function removeReport(reportID){
+    // your logic here
+}
+
+function renameSourceDocument(documentID, newDocumentName) {
+    // your logic here
+}
+
+function downloadSourceDocument(documentID) {
+    // your logic here
+}
+
+function deleteSourceDocument(documentID) {
+    // your logic here
+}
 
 // Make available globally
 window.TempHome = TempHome;
