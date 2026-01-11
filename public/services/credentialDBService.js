@@ -1,5 +1,6 @@
 const db = require("./db")
 const uuid = require("uuid-v4")
+const fss = require("./fsServices")
 
 // Import findUserByUsername for use in insertGoogleOAuthUserAccount
 const { findUserByUsername } = require("./accountDBService")
@@ -77,7 +78,47 @@ async function insertGoogleOAuthUserAccount(profile) {
     console.log(`Generated UID: ${uid}`);
     console.log(`========================================\n`);
 
-    // Insert OAuth mapping first
+    let baseUsername = `${firstName}_${lastName}`
+        .replace(/\s+/g, "_")
+        .toLowerCase();
+    if (baseUsername === "_" || !baseUsername.trim()) baseUsername = "user";
+
+    let username = baseUsername;
+    let attempt  = 0;
+
+    while (!await findUserByUsername(username)) {
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        username = `${baseUsername}_${randomSuffix}`;
+        attempt++;
+        if (attempt > 50) {
+            throw new Error("Error (Google Oauth Register) Failed to generate a unique username after 50 attempts");
+        }
+    }
+
+    const sqlUser = `
+        INSERT INTO user (uid, firstName, lastName, userType, userEmail, userName)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const paramsUser = [uid, firstName, lastName, userType, email, username];
+
+    try {
+        await new Promise((resolve, reject) => {
+            db.run(sqlUser, paramsUser, function(err) {
+                if (err) {
+                    console.error(`Error code: ${err.code}`);
+                    if (err.code === "SQLITE_CONSTRAINT") {
+                        console.error("Error (Google Oauth Register) User info insert - Constraint violation - possible duplicate uid, userName, or userEmail");
+                    }
+                    return reject(err);
+                }
+                resolve(this);
+            });
+        });
+    } catch (err) {
+        console.error(`Error (Google Oauth Register) - Error occurred, abort account registration`)
+        throw err;
+    }
+
     try {
         await new Promise((resolve, reject) => {
             db.run(
@@ -85,95 +126,39 @@ async function insertGoogleOAuthUserAccount(profile) {
                 [profile.id, uid],
                 function(err) {
                     if (err) return reject(err);
-                    console.log(`✅ Step 1: OAuth identity inserted. Changes: ${this.changes}`);
                     resolve(this);
                 }
             );
         });
     } catch (err) {
-        console.log(`⚠️ Step 1: OAuth insert error: ${err.code}`);
-        if (err.code === "SQLITE_CONSTRAINT") {
-            const existing = await new Promise((resolve, reject) => {
-                db.get(
-                    `SELECT uid FROM googleOauth_identity WHERE userGoogleId = ?`,
-                    [profile.id],
-                    (err, row) => {
-                        if (err) return reject(err);
-                        resolve(row);
-                    }
-                );
-            });
-            if (existing) {
-                console.log(`✅ Returning existing user: ${existing.uid}`);
-                return { uid: existing.uid, reused: true };
+        console.error(`Error (Google Oauth Register) OAuth insert error: ${err.message}`);
+        throw err;
+    }
+
+    if (profile.photos?.[0]?.value) {
+        try {
+            const response = await fetch(profile.photos[0].value);
+
+            if (!response.ok) {
+                console.error(`Error (Google Oauth Register) Unable to fetch Google Avatar: ${response.status}`);
+            } else {
+                const arrayBuffer = await response.arrayBuffer();
+                const imageBuffer = Buffer.from(arrayBuffer);
+
+                const fileObj = {
+                    buffer: imageBuffer,
+                    mimetype: response.headers.get('content-type') || 'image/jpeg',
+                    size: imageBuffer.length
+                };
+
+                await fss.updateProfilePic(uid, fileObj);
             }
-        }
-        throw err;
-    }
-
-    // Build username
-    let baseUsername = `${firstName}_${lastName}`
-        .replace(/\s+/g, "_")
-        .toLowerCase();
-    if (baseUsername === "_" || !baseUsername.trim()) baseUsername = "user";
-
-    console.log(`\n🔍 Step 2: Finding unique username (base: "${baseUsername}")`);
-
-    let username = baseUsername;
-    let attempt  = 0;
-
-    while (await findUserByUsername(username)) {
-        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-        username = `${baseUsername}_${randomSuffix}`;
-        attempt++;
-        if (attempt > 50) {
-            throw new Error("Failed to generate a unique username after 50 attempts");
+        } catch (e) {
+            console.error(`WARNING (Google Oauth Register) Failed to save Google avatar (non-critical):`, e.message);
         }
     }
 
-    console.log(`✅ Step 2 complete: Final username = "${username}" (attempts: ${attempt})\n`);
-
-    // Get Google profile picture URL
-    const googleAvatarUrl = profile.photos?.[0]?.value || null;
-    console.log(`🖼️ Google Avatar URL: ${googleAvatarUrl || 'None'}`);
-
-    // Insert user
-    const sqlUser = `
-        INSERT INTO user (uid, firstName, lastName, userType, userEmail, userName, googleAvatarUrl)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    const paramsUser = [uid, firstName, lastName, userType, email, username, googleAvatarUrl];
-
-    console.log(`📝 Step 3: Inserting into user table...`);
-    console.log(`   uid: ${uid}`);
-    console.log(`   firstName: ${firstName}`);
-    console.log(`   lastName: ${lastName}`);
-    console.log(`   userType: ${userType}`);
-    console.log(`   userEmail: ${email}`);
-    console.log(`   userName: ${username}`);
-    console.log(`   googleAvatarUrl: ${googleAvatarUrl}`);
-
-    try {
-        await new Promise((resolve, reject) => {
-            db.run(sqlUser, paramsUser, function(err) {
-                if (err) {
-                    console.error(`\n❌❌❌ Step 3 FAILED:`, err.message);
-                    console.error(`Error code: ${err.code}`);
-                    if (err.code === "SQLITE_CONSTRAINT") {
-                        console.error("Constraint violation - possible duplicate uid, userName, or userEmail");
-                    }
-                    return reject(err);
-                }
-                console.log(`✅ Step 3 complete: User inserted. Changes: ${this.changes}`);
-                resolve(this);
-            });
-        });
-
-        console.log(`\n✅✅✅ SUCCESS: New user created: ${username}\n`);
-        return { uid, userName: username };
-    } catch (err) {
-        throw err;
-    }
+    return { uid, userName: username };
 }
 
 async function savePasskey(data) {

@@ -15,6 +15,9 @@
         const [sourceExpanded, setSourceExpanded] = useState(false);
         const [requirementsExpanded, setRequirementsExpanded] = useState(false);
 
+        // Add state for avatar URL
+        const [avatarUrl, setAvatarUrl] = useState('./img/user.svg');
+
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;
             setSidebarCollapsed(newState);
@@ -27,50 +30,34 @@
             setUserMenuOpen(!userMenuOpen);
         };
 
-        // State to track if avatar failed to load
-        const [avatarError, setAvatarError] = React.useState(false);
-        const [googleAvatarError, setGoogleAvatarError] = React.useState(false);
-
-        // Determine avatar URL: prioritize uploaded avatar, then Google avatar, then default
-        // If uploaded avatar fails to load, fall back to Google avatar (if available) before using default
-        // If Google avatar also fails, fall back to default
-        const getAvatarUrl = () => {
-            if (avatarError) {
-                // If uploaded avatar failed and Google avatar exists and hasn't failed, use Google avatar
-                if (userInfo?.googleAvatarUrl && !googleAvatarError) {
-                    return userInfo.googleAvatarUrl;
-                }
-                return './img/user.svg';
-            }
-            if (userInfo?.userAvatarPath) {
-                return userInfo.userAvatarPath;
-            }
-            if (userInfo?.googleAvatarUrl && !googleAvatarError) {
-                return userInfo.googleAvatarUrl;
-            }
-            return './img/user.svg';
-        };
-
-        const avatarUrl = getAvatarUrl();
-
-        // Reset avatar error when userInfo changes
+        // Fetch avatar URL on component mount
         React.useEffect(() => {
-            setAvatarError(false);
-            setGoogleAvatarError(false);
-        }, [userInfo?.userAvatarPath, userInfo?.googleAvatarUrl]);
+            async function fetchAvatar() {
+                try {
+                    let response = await fetch('/api/profile-pic/fetch', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    });
 
-        const handleAvatarError = () => {
-            const currentUrl = getAvatarUrl();
-            // If currently showing uploaded avatar, mark it as failed
-            if (currentUrl === userInfo?.userAvatarPath) {
-                setAvatarError(true);
+                    let profileImgData = await response.json();
+
+                    if (profileImgData.success && profileImgData.data) {
+                        const imageData = profileImgData.data[0]?.image;
+                        if (imageData) {
+                            setAvatarUrl(imageData);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching avatar:', error);
+                    // Keep default avatar on error
+                }
             }
-            // If currently showing Google avatar, mark it as failed too
-            else if (currentUrl === userInfo?.googleAvatarUrl) {
-                setGoogleAvatarError(true);
-                setAvatarError(true); // Trigger re-render to use default
-            }
-        };
+
+            fetchAvatar();
+        }, []); // Empty dependency array means this runs once on mount
 
         return React.createElement('aside', {
                 id: 'sidebar',
@@ -423,7 +410,6 @@
                             className: 'user',
                             src: avatarUrl,
                             alt: 'User',
-                            onError: handleAvatarError,
                             style: {
                                 width: '22px',
                                 height: '22px',
@@ -521,7 +507,6 @@
                         React.createElement('img', {
                             src: avatarUrl,
                             alt: 'User',
-                            onError: handleAvatarError,
                             style: {
                                 width: '22px',
                                 height: '22px',

@@ -55,7 +55,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved !== null ? JSON.parse(saved) : true;
     });
-    
+
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
@@ -86,7 +86,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     const handleAvatarError = () => {
         console.log('⚠️ Avatar image failed to load, checking for fallback options');
         const currentUrl = avatarUrl;
-        
+
         // If currently showing uploaded avatar, try Google avatar next
         if (currentUrl === userInfo?.userAvatarPath) {
             setAvatarError(true);
@@ -110,6 +110,10 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     }, [userInfo]);
 
     console.log("Inside TempUserProfile component – userInfo:", userInfo);
+
+    window.onload = async function () {
+        await fetchProfilePics()
+    }
 
     const showAlert = (title, message) => {
         setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null });
@@ -137,6 +141,33 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         }
     };
 
+    async function fetchProfilePics(){
+        let response = await fetch('/api/profile-pic/fetch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({})
+        });
+
+        let profileImgData = await response.json();
+
+        console.log('Full response:', profileImgData);
+
+        if (profileImgData.success) {
+            console.log('Data:', profileImgData.data);
+
+            const imageData = profileImgData.data[0]?.image;
+
+            if (imageData) {
+                document.getElementById('profile-avatar-image').src = imageData;
+
+            } else {
+                document.getElementById('profile-avatar-image').src = '';
+            }
+        }
+    }
+
     const handleAvatarUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -157,7 +188,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         setUploadingAvatar(true);
 
         const formData = new FormData();
-        formData.append('profilePicture', file);
+        formData.append('file', file);  // Changed from 'profilePicture' to 'file'
 
         console.log('🔄 Starting avatar upload...', {
             fileName: file.name,
@@ -166,10 +197,10 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         });
 
         try {
-            const response = await fetch('/api/upload-profile-picture', {
+            const response = await fetch('/api/profile-pic/replace', {  // Updated endpoint
                 method: 'POST',
                 headers: {
-                    'X-CSRF-Token': csrfToken
+                    'CSRF-Token': csrfToken  // Changed from 'X-CSRF-Token' to 'CSRF-Token'
                 },
                 body: formData
             });
@@ -187,12 +218,13 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
             console.log('📦 Response data:', data);
 
             if (data.success) {
-                setAvatarUrl(data.avatarUrl);
+                await fetchProfilePics();
                 showAlert('Success', 'Profile picture updated successfully!');
-                // Force reload avatar in sidebar
-                if (userInfo) {
-                    userInfo.userAvatarPath = data.avatarUrl;
-                }
+
+                // Reload the page to show updated avatar
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             } else {
                 console.error('❌ Upload failed:', data.message);
                 showAlert('Upload Failed', data.message || 'Failed to upload profile picture');
@@ -229,17 +261,15 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     if (userInfo?.hasPasskey) {
         return 'Passkey';
     }
-    
+
     // Priority 2: Check if user type is Google OAuth
     if (userInfo?.userType === 'google') {
         return 'Google Sign-In';
     }
-    
+
     // Priority 3: Default to Email login
     return 'Email login';
 };
-
-
 
     const logout = async () => {
         $.ajax({
@@ -281,11 +311,11 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     };
 
     const username = userInfo?.userName || userInfo?.email || 'User';
-    const displayName = userInfo?.firstName && userInfo?.lastName 
-        ? `${userInfo.firstName} ${userInfo.lastName}` 
+    const displayName = userInfo?.firstName && userInfo?.lastName
+        ? `${userInfo.firstName} ${userInfo.lastName}`
         : userInfo?.userName || 'User';
 
-    return React.createElement('div', { 
+    return React.createElement('div', {
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false),
         style: {
@@ -295,7 +325,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
             overflow: 'hidden'
         }
     },
-        React.createElement('div', { 
+        React.createElement('div', {
             className: 'group',
             style: {
                 display: 'flex',
@@ -304,7 +334,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
             }
         },
 
-        
+
             // Sidebar Component
             React.createElement(window.Sidebar, {
                 sidebarCollapsed: sidebarCollapsed,
@@ -343,8 +373,8 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     transition: 'width 220ms ease'
                 }
             },
-               
-            
+
+
                 // Header
                 React.createElement('div', {
                     style: {
@@ -401,13 +431,12 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         },
                             React.createElement('img', {
                                 id: 'profile-avatar-image',
-                                src: avatarUrl,
+                                src: './img/user.svg',
                                 alt: 'User',
                                 onError: handleAvatarError,
                                 style: {
-                                    width: avatarUrl.includes('size-48.svg') ? '48px' : '100%',
-                                    height: avatarUrl.includes('size-48.svg') ? '48px' : '100%',
-                                    objectFit: 'cover'
+                                    objectFit: 'cover',
+                                    width: '100%'
                                 }
                             })
                         ),
@@ -672,7 +701,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     borderTop: '1px solid #000000ff',
                                     width: '100%'
                                 }
-                            }), 
+                            }),
 
                             // Email
                             React.createElement('div', {

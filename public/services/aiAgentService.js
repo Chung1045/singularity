@@ -43,7 +43,7 @@ async function getResponse(data, conversationSummary) {
         let completion = await client.chat.completions.create({
             model: 'grok-4-1-fast-non-reasoning',
             messages: messages,
-            tools: tools,  // Pass your tools here
+            tools: tools,
             tool_choice: "auto",  // Let the AI decide when to use tools
             temperature: 0.7,
             max_tokens: 1500,
