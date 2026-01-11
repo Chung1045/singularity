@@ -67,6 +67,13 @@ if (process.env.ENABLE_USER_CHECKING === 'true') {
     console.warn(`${red}${bold}To enforce User and CSRF checking, set the value of ENABLE_USER_CHECKING environment variable to 'true'${reset}`);
     console.warn(`${red}${bold}${"=".repeat(70)}${reset}\n`);
 
+    console.warn(`${yellow}Waiting 15 seconds before starting server...${reset}`);
+
+    const start = Date.now();
+    while (Date.now() - start < 15000) {}
+
+    console.warn(`${yellow}Proceeding with server startup...${reset}\n`);
+
     app.use((req, res, next) => {
         req.csrfToken = () => 'disabled';
         next();

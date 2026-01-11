@@ -64,7 +64,8 @@
                         width: "100%",
                         padding: "5px",
                         borderRadius: "5px",
-                        border: "1px solid #e4e4e4"
+                        border: "1px solid #e4e4e4",
+                        display: !sidebarCollapsed ? 'block' : 'none'
                     },
                     onChange: async (e) => {
                         await fetchProjectFiles(e.target.value)
@@ -210,7 +211,7 @@
                             paddingLeft: '40px',
                             paddingTop: '10px',
                             paddingBottom: '10px',
-                            display: sourceExpanded && !sidebarCollapsed ? 'block' : 'none'  // Hide instead of not creating
+                            display: sourceExpanded && !sidebarCollapsed ? 'block' : 'none'
                         }
                     },
                     React.createElement('div', {
@@ -234,7 +235,10 @@
             // Requirements List section with dropdown
             React.createElement('div', {
                 id: 'sidebar-requirements-wrapper',
-                style: { marginBottom: '10px' }
+                style: {
+                    marginBottom: '10px',
+                    display: 'none'
+                }
             },
                 React.createElement('button', {
                     id: 'sidebar-requirements',

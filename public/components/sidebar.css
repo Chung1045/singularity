@@ -2,6 +2,11 @@
   padding: 5px;
 }
 
+.chat-history-item.selected {
+  background-color: #e0e0e0 !important;
+  font-weight: 500;
+}
+
 /* SIDEBAR STYLES */
 
 /* MAIN FLEX LAYOUT */

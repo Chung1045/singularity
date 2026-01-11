@@ -232,7 +232,11 @@ const TempHome = ({ csrfToken, userInfo }) => {
                             React.createElement('h1', { className: 'text-wrapper' }, 'Singularity')
                         )
                     ),
-                    React.createElement('form', { className: 'input-field', role: 'search', 'aria-label': 'Main search' },
+                    React.createElement('form', { className: 'input-field', role: 'search', 'aria-label': 'Main search',
+                        onSubmit: (e) => {
+                            e.preventDefault();
+                        }
+                        },
                         React.createElement('button', {
                             type: 'button',
                             className: 'input-field-button',
@@ -242,10 +246,10 @@ const TempHome = ({ csrfToken, userInfo }) => {
                             React.createElement('img', { className: 'vector', src: './img/vector-2.svg', alt: '' })
 
                         ),
-                        React.createElement('label', { htmlFor: 'main-search-input', className: 'visually-hidden' }, 'Search'),
+                        React.createElement('label', { htmlFor: 'main-message-input', className: 'visually-hidden' }, 'Search'),
                         React.createElement('input', {
                             type: 'text',
-                            id: 'main-search-input',
+                            id: 'main-message-input',
                             className: 'div',
                             placeholder: "What's on your mind?",
                             'aria-label': "What's on your mind?"
@@ -253,7 +257,8 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         React.createElement('button', {
                             type: 'submit',
                             className: 'input-field-button',
-                            'aria-label': 'Submit search'
+                            'aria-label': 'Submit search',
+                            onClick: submitConversationRequest,
                         },
                             // React.createElement('img', { className: 'img', src: 'https://c.animaapp.com/W03AeLaz/img/vector-3.svg', alt: '' })
                             React.createElement('img', { className: 'img', src: './img/vector-3.svg', alt: '' })
@@ -503,7 +508,7 @@ async function fetchProjectChats(projectID) {
 // Create a function that returns a React element for a file item
 function createFileItem(fileName, documentID) {
     return React.createElement('div', {
-            className: 'sidebar-items',
+            className: 'sidebar-items source-item',
             'data-document-id': documentID,
             style: {
                 padding: '8px 12px',
@@ -536,6 +541,7 @@ function createFileItem(fileName, documentID) {
             },
             onChange: (e) => {
                 console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
+                getSelectedSource()
                 // Add your checkbox handler here
             },
             onClick: (e) => {
@@ -578,7 +584,7 @@ function createFileItem(fileName, documentID) {
 
 function createChatHistoryItem(chatThreadName, chatID) {
     return React.createElement('div', {
-            className: 'sidebar-items',
+            className: 'sidebar-items chat-history-item',
             'data-chat-id': chatID,
             style: {
                 padding: '8px 12px',
@@ -590,25 +596,39 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 gap: '8px'
             },
             onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
+                if (!e.currentTarget.classList.contains('selected')) {
+                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                }
             },
             onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
+                if (!e.currentTarget.classList.contains('selected')) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                }
             },
             onClick: (e) => {
-                // Prevent the div click when clicking the checkbox
-                if (e.target.type !== 'checkbox') {
-                    console.log(`Clicked on ${chatThreadName}`);
+                if (e.target.tagName !== 'IMG') { // Don't select when clicking the menu icon
+                    // Deselect all chat history items
+                    const allChatItems = document.querySelectorAll('.chat-history-item');
+                    allChatItems.forEach(item => {
+                        item.classList.remove('selected');
+                        item.style.backgroundColor = 'transparent';
+                    });
+
+                    // Select this item
+                    e.currentTarget.classList.add('selected');
+                    e.currentTarget.style.backgroundColor = '#e0e0e0'; // Selected color
+
+                    console.log(`Selected chat: ${chatThreadName}, ID: ${chatID}`);
                 }
             }
         },
         React.createElement('p', {
             style: {
                 flexGrow: 1,
-                margin: 0,  // Remove default paragraph margins
+                margin: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'  // Prevent wrapping, show ellipsis instead
+                whiteSpace: 'nowrap'
             }
         }, chatThreadName),
         React.createElement('img', {
@@ -627,13 +647,48 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 e.currentTarget.style.backgroundColor = 'transparent';
             },
             onClick: (e) => {
-                // Prevent the div click when clicking the checkbox
-                if (e.target.type !== 'checkbox') {
-                    console.log(`Clicked on ${chatThreadName}`);
-                }
+                e.stopPropagation(); // Prevent the div's onClick from firing
+                console.log(`Menu clicked for ${chatThreadName}`);
+                // Add your menu logic here
             }
         })
     );
+}
+
+function getSelectedSource() {
+    let selectedSource = [];
+    const sourceElements = document.getElementsByClassName("sidebar-items"); // Changed class name
+
+    for (let sourceElement of sourceElements) {
+        const checkbox = sourceElement.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.checked) {
+            selectedSource.push(sourceElement.dataset.documentId); // Changed append to push, and get dataset
+        }
+    }
+
+    return selectedSource;
+}
+
+function submitConversationRequest(){
+    let selectedSource = getSelectedSource();
+    let userMessage = document.getElementById("main-message-input").value; // Fixed ID
+
+    // Get selected chat history item
+    let selectedChatItem = document.querySelector('.chat-history-item.selected');
+    let chatID = selectedChatItem ? selectedChatItem.dataset.chatId : ''; // Fixed selector and dataset
+
+    // Get selected project
+    let projectDropdown = document.getElementById("select-project-drop-down");
+    let projectID = projectDropdown ? projectDropdown.value : ''; // Fixed - get the value
+
+    let data = {
+        projectID: projectID,
+        chatID: chatID,
+        message: userMessage,
+        attachedDocumentIDs: selectedSource,
+    }
+
+    console.log(data)
 }
 
 
