@@ -132,6 +132,47 @@ router.post('/agent/chat', async (req, res) => {
 
 });
 
+router.post('/agent/chat/stream', async (req, res) => {
+    let chatData = req.body;
+    const requestMessage = chatData.message;
+
+    const data = {
+        requestMessage: requestMessage,
+    };
+
+    if (!requestMessage){
+        return res.status(500).json({message: "Missing field"})
+    }
+
+    // Set SSE headers
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    try {
+        // Collect full response for DB save while streaming
+        let fullResponse = '';
+
+        // Stream chunks and accumulate full content
+        for await (const chunk of agent.getStreamingResponse(data)) {
+            fullResponse += chunk;
+            res.write(`data: ${chunk}\n\n`); // SSE format
+        }
+
+        res.write('data: [DONE]\n\n'); // Signal stream end
+
+    } catch (error) {
+        console.error(`Streaming error: ${error}`);
+        res.write(`data: ${JSON.stringify({error: 'Stream failed'})}\n\n`);
+        res.end();
+    }
+});
+
+
 router.post('/agent/all-chat', async (req, res) => {
 
     const { projectID } = req.body;
