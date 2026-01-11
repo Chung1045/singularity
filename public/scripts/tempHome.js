@@ -1,65 +1,20 @@
-// const { useState } = React;
+const {useState} = React;
 
-// const TempHome = ({csrfToken,userInfo}) => {
-// console.log("Inside TempHome component – userInfo:", userInfo);
-
-
-//     const logout = async () => {
-//         $.ajax({
-//             url: '/api/logout',
-//             method: 'POST',
-//             headers: { 'CSRF-Token': csrfToken },
-//             data: JSON.stringify({}),
-//             contentType: 'application/json',
-//             success: function(response) {
-//                 alert("Logout response: " + JSON.stringify(response));
-//                 window.location = "/login";
-//             },
-//             error: function(xhr) {
-//                 const errorMessage = xhr.responseJSON?.message || "An error occurred. Please try again.";
-//                 alert(errorMessage);
-//             }
-//         });
-//     };
-
-//     function handleProfileRoute() {
-//         window.location.href = "/profile"
-//     }
-
-//     return React.createElement('div', { className: 'flex flex-col gap-2.5 p-4 max-w-md mx-auto mt-8' },
-//         // React.createElement('h2', {}, "Hello"),
-//        React.createElement('h1', { },
-//             `Hello, ${userInfo.userName}`  // ← This will show "Hello, loggedinusername"
-//         ),
-//         React.createElement('p', {}, "You have logged in"),
-//         React.createElement('input', { type: 'hidden', name: '_csrf', value: csrfToken }),
-//         React.createElement('button', {
-//             id: 'btn-logout',
-//             onClick: logout,
-//             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
-//         }, 'Logout'),
-//         React.createElement('button', {
-//             id: 'btn-passkeyRegister',
-//             onClick: handleProfileRoute,
-//             className: 'w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
-//         }, 'Manage Profile')
-//     );
-// };
-
-// // Make available globally
-// window.TempHome = TempHome;
-
-const { useState } = React;
-
-const TempHome = ({ csrfToken, userInfo }) => {
-    // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+const TempHome = ({csrfToken, userInfo}) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved !== null ? JSON.parse(saved) : true;
+        const saved = localStorage.getItem('sidebarCollapsed');
+        return saved !== null ? JSON.parse(saved) : true;
     });
 
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'confirm',
+        onConfirm: null,
+        onCancel: null
+    });
 
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -74,34 +29,34 @@ const TempHome = ({ csrfToken, userInfo }) => {
     console.log("Inside TempHome component – userInfo:", userInfo);
 
     const showAlert = (title, message) => {
-        setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null });
+        setModal({isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null});
     };
 
     const closeModal = () => {
-        setModal({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+        setModal({isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null});
     };
 
     const logout = async () => {
 
         if (!csrfToken) {
-        console.error('CSRF token not available');
-        showAlert('Error', 'Security token missing. Please refresh the page.');
-        return;
-    }
+            console.error('CSRF token not available');
+            showAlert('Error', 'Security token missing. Please refresh the page.');
+            return;
+        }
 
         $.ajax({
             url: '/api/logout',
             method: 'POST',
-            headers: { 'CSRF-Token': csrfToken },
+            headers: {'CSRF-Token': csrfToken},
             data: JSON.stringify({}),
             contentType: 'application/json',
-            success: function(response) {
+            success: function (response) {
                 showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
                 setTimeout(() => {
                     window.location = "/login";
                 }, 3000);
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 const errorMessage = xhr.responseJSON?.message || "An error occurred. Please try again.";
                 showAlert('Error', errorMessage);
             }
@@ -112,18 +67,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
         window.location.href = "/profile";
     }
 
-    // const toggleSidebar = () => {
-    //     setSidebarCollapsed(!sidebarCollapsed);
-    //     setUserMenuOpen(false); // Close menu when sidebar toggles
-    // };
-
     const username = userInfo?.userName || userInfo?.email || 'User';
 
     return React.createElement('div', {
-        className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
-        onClick: () => setUserMenuOpen(false) // Close menu when clicking outside
-    },
-        React.createElement('div', { className: 'group' },
+            className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
+            onClick: () => setUserMenuOpen(false) // Close menu when clicking outside
+        },
+        React.createElement('div', {className: 'group'},
             // Sidebar Component
             React.createElement(window.Sidebar, {
                 sidebarCollapsed: sidebarCollapsed,
@@ -138,39 +88,39 @@ const TempHome = ({ csrfToken, userInfo }) => {
 
             // Custom Modal
             modal.isOpen && React.createElement('div', {
-                style: {
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 10001,
-                    padding: '20px'
-                },
-                onClick: (e) => {
-                    if (e.target === e.currentTarget && modal.type === 'alert') {
-                        closeModal();
-                    }
-                }
-            },
-                React.createElement('div', {
                     style: {
-                        backgroundColor: '#ffffff',
-                        borderRadius: '15px',
-                        padding: isMobile ? '25px' : '30px',
-                        maxWidth: isMobile ? '90%' : '500px',
-                        width: '100%',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: '20px'
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10001,
+                        padding: '20px'
                     },
-                    onClick: (e) => e.stopPropagation()
+                    onClick: (e) => {
+                        if (e.target === e.currentTarget && modal.type === 'alert') {
+                            closeModal();
+                        }
+                    }
                 },
+                React.createElement('div', {
+                        style: {
+                            backgroundColor: '#ffffff',
+                            borderRadius: '15px',
+                            padding: isMobile ? '25px' : '30px',
+                            maxWidth: isMobile ? '90%' : '500px',
+                            width: '100%',
+                            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '20px'
+                        },
+                        onClick: (e) => e.stopPropagation()
+                    },
                     React.createElement('div', {
                         style: {
                             fontFamily: 'Urbanist, Helvetica',
@@ -190,13 +140,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         }
                     }, modal.message),
                     React.createElement('div', {
-                        style: {
-                            display: 'flex',
-                            gap: '10px',
-                            justifyContent: 'flex-end',
-                            marginTop: '10px'
-                        }
-                    },
+                            style: {
+                                display: 'flex',
+                                gap: '10px',
+                                justifyContent: 'flex-end',
+                                marginTop: '10px'
+                            }
+                        },
                         React.createElement('button', {
                             style: {
                                 padding: isMobile ? '10px 20px' : '12px 24px',
@@ -219,9 +169,9 @@ const TempHome = ({ csrfToken, userInfo }) => {
             ),
 
             // Main content
-            React.createElement('main', { className: 'right-container' },
-                React.createElement('section', { className: 'main-screen' },
-                    React.createElement('header', { className: 'main-screen-title' },
+            React.createElement('main', {className: 'right-container'},
+                React.createElement('section', {className: 'main-screen'},
+                    React.createElement('header', {className: 'main-screen-title'},
                         React.createElement('img', {
                             className: 'bouncy-logo',
                             // src: 'https://c.animaapp.com/W03AeLaz/img/bouncy-logo-animation.svg',
@@ -229,25 +179,28 @@ const TempHome = ({ csrfToken, userInfo }) => {
 
                             alt: 'Singularity Logo'
                         }),
-                        React.createElement('div', { className: 'logo-text' },
-                            React.createElement('h1', { className: 'text-wrapper' }, 'Singularity')
+                        React.createElement('div', {className: 'logo-text'},
+                            React.createElement('h1', {className: 'text-wrapper'}, 'Singularity')
                         )
                     ),
-                    React.createElement('form', { className: 'input-field', role: 'search', 'aria-label': 'Main search',
-                        onSubmit: (e) => {
-                            e.preventDefault();
-                        }
+                    React.createElement('form', {
+                            className: 'input-field', role: 'search', 'aria-label': 'Main search',
+                            onSubmit: (e) => {
+                                e.preventDefault();
+                            }
                         },
                         React.createElement('button', {
-                            type: 'button',
-                            className: 'input-field-button',
-                            'aria-label': 'Add new item'
-                        },
+                                type: 'button',
+                                className: 'input-field-button',
+                                'aria-label': 'Add new item'
+                            },
                             // React.createElement('img', { className: 'vector', src: 'https://c.animaapp.com/W03AeLaz/img/vector-2.svg', alt: '' })
-                            React.createElement('img', { className: 'vector', src: './img/vector-2.svg', alt: '' })
-
+                            React.createElement('img', {className: 'vector', src: './img/vector-2.svg', alt: ''})
                         ),
-                        React.createElement('label', { htmlFor: 'main-message-input', className: 'visually-hidden' }, 'Search'),
+                        React.createElement('label', {
+                            htmlFor: 'main-message-input',
+                            className: 'visually-hidden'
+                        }, 'Search'),
                         React.createElement('input', {
                             type: 'text',
                             id: 'main-message-input',
@@ -256,81 +209,23 @@ const TempHome = ({ csrfToken, userInfo }) => {
                             'aria-label': "What's on your mind?"
                         }),
                         React.createElement('button', {
-                            type: 'submit',
-                            className: 'input-field-button',
-                            'aria-label': 'Submit search',
-                            onClick: submitConversationRequest,
-                        },
+                                type: 'submit',
+                                className: 'input-field-button',
+                                'aria-label': 'Submit search',
+                                onClick: submitConversationRequest,
+                            },
                             // React.createElement('img', { className: 'img', src: 'https://c.animaapp.com/W03AeLaz/img/vector-3.svg', alt: '' })
-                            React.createElement('img', { className: 'img', src: './img/vector-3.svg', alt: '' })
-
+                            React.createElement('img', {className: 'img', src: './img/vector-3.svg', alt: ''})
                         )
                     )
                 )
             )
         )
     );
-    };
+};
 
-window.onload = async function() {
+window.onload = async function () {
     await fetchProjects()
-}
-
-function testProjectInfoView() {
-    return React.createElement('div', {
-            id: "div-test-project-container",
-            style: {
-                backgroundColor: "snow",
-                outline: "1px solid black",
-                borderRadius: "5px",
-                flexGrow: 1, // Keep this to fill remaining space
-                overflow: "auto", // Add scrolling for content
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px"
-            }
-        },
-        React.createElement('h3', {
-            id: "p-test-project-container-label",
-            style: { margin: 0, fontSize: "14px" }
-        }, "Test Project Container"),
-        React.createElement('select', {
-            id: "select-project-drop-down",
-            style: {
-                padding: "5px",
-                borderRadius: "5px",
-                border: "1px solid #e4e4e4"
-            },
-            onChange: async (e) => {
-                await fetchProjectFiles(e.target.value)
-                await fetchProjectReports(e.target.value)
-            }
-        }),
-        React.createElement('h3', {
-            id: "p-project-source-list-label",
-            style: { margin: 0, fontSize: "14px" }
-        }, "Sources"),
-        React.createElement('div', {
-            id: "div-project-source-list",
-            style: {
-                display: "flex",
-                flexDirection: "column",
-                gap: "5px"
-            }
-        }),
-        React.createElement('h3', {
-            id: "p-project-report-list-label",
-            style: { margin: 0, fontSize: "14px" }
-        }, "Reports"),
-        React.createElement('div', {
-            id: "div-project-report-list",
-            style: {
-                display: "flex",
-                flexDirection: "column",
-                gap: "5px"
-            }
-        })
-    )
 }
 
 async function fetchProjects() {
@@ -658,19 +553,20 @@ function createChatHistoryItem(chatThreadName, chatID) {
 
 function getSelectedSource() {
     let selectedSource = [];
-    const sourceElements = document.getElementsByClassName("sidebar-items"); // Changed class name
+    const sourceElements = document.querySelectorAll(".sidebar-items.source-item"); // More specific selector
 
     for (let sourceElement of sourceElements) {
         const checkbox = sourceElement.querySelector('input[type="checkbox"]');
         if (checkbox && checkbox.checked) {
-            selectedSource.push(sourceElement.dataset.documentId); // Changed append to push, and get dataset
+            selectedSource.push(sourceElement.dataset.documentId);
         }
     }
 
+    console.log("Selected sources:", selectedSource);
     return selectedSource;
 }
 
-function submitConversationRequest(){
+function submitConversationRequest() {
     let selectedSource = getSelectedSource();
     let userMessage = document.getElementById("main-message-input").value; // Fixed ID
 
