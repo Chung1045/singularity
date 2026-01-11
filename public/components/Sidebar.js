@@ -182,7 +182,7 @@
                     })
                 ),
 
-                // Scrollable wrapper for the three sections
+// Scrollable wrapper for the three sections
                 React.createElement('div', {
                         className: 'sidebar-scrollable-content',
                         id: 'sidebar-scrollable-wrapper'
@@ -361,306 +361,299 @@
                                 })
                             )
                         ),
-                        requirementsExpanded && !sidebarCollapsed && React.createElement('div', {
+                        React.createElement('div', {
                                 id: 'requirements-submenu',
                                 style: {
                                     paddingLeft: '40px',
                                     paddingTop: '10px',
-                                    paddingBottom: '10px'
+                                    paddingBottom: '10px',
+                                    display: requirementsExpanded && !sidebarCollapsed ? 'block' : 'none'
                                 }
                             },
                             React.createElement('p', {
-                                    style: {
-                                        fontSize: '14px',
-                                        color: '#666'
-                                    }
-                                },
-                                'No requirements yet, you can replace this to show lists')
+                                style: {
+                                    fontSize: '14px',
+                                    color: '#666'
+                                }
+                            }, 'No requirements yet, you can replace this to show lists')
                         )
-                    ),
+                    )
+                ),
 
-                    // Spacer to push username and toggle to bottom
-                    React.createElement('div', {
+                // Horizontal divider
+                React.createElement('div', {
+                        id: 'sidebar-divider-for-username-and-toggle',
+                        className: 'horizontal-inset',
+                        role: 'separator',
+                        style: {marginBottom: '20px'}
+                    },
+                    React.createElement('hr', null)
+                ),
+
+                // Username section
+                React.createElement('div', {
+                        id: 'sidebar-username',
                         style: {
-                            flex: 1,
-                            minHeight: '20px'
-                        }
-                    }),
-
-                    // Horizontal divider
-                    React.createElement('div', {
-                            id: 'sidebar-divider-for-username-and-toggle',
-                            className: 'horizontal-inset',
-                            role: 'separator',
-                            style: {marginBottom: '20px'}
+                            width: '100%',
+                            marginBottom: '20px',
+                            position: 'relative',
+                            margin: '20px 0'
                         },
-                        React.createElement('hr', null)
-                    ),
-
-                    // Username section
-                    React.createElement('div', {
-                            id: 'sidebar-username',
+                        onClick: toggleUserMenu
+                    },
+                    // Expanded view: show username with icon
+                    !sidebarCollapsed && React.createElement('a', {
+                            id: 'sidebar-user-avatar-expanded',
+                            href: '#',
+                            className: 'username-display',
                             style: {
-                                width: '100%',
-                                marginBottom: '20px',
+                                cursor: 'pointer',
                                 position: 'relative',
-                                margin: '20px 0'
+                                display: 'flex',
+                                alignItems: 'center',
+                                textDecoration: 'none',
+                                width: 'auto',
+                                padding: '0px',
+                                margin: '20px 20px 0 0'
                             },
-                            onClick: toggleUserMenu
-                        },
-                        // Expanded view: show username with icon
-                        !sidebarCollapsed && React.createElement('a', {
-                                id: 'sidebar-user-avatar-expanded',
-                                href: '#',
-                                className: 'username-display',
-                                style: {
-                                    cursor: 'pointer',
-                                    position: 'relative',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    textDecoration: 'none',
-                                    width: 'auto',
-                                    padding: '0px',
-                                    margin: '20px 20px 0 0'
-                                },
-                                onClick: (e) => e.preventDefault()
-                            },
-                            React.createElement('img', {
-                                id: 'sidebar-user-avatar-img',
-                                className: 'user',
-                                src: avatarUrl,
-                                alt: 'User',
-                                onError: handleAvatarError,
-                                style: {
-                                    width: '22px',
-                                    height: '22px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover'
-                                }
-                            }),
-                            React.createElement('span', {
-                                className: 'text-wrapper-6'
-                            }, username),
-
-                            // User menu dropdown - expanded
-                            userMenuOpen && React.createElement('div', {
-                                    id: 'sidebar-user-menu-expanded',
-                                    style: {
-                                        position: 'absolute',
-                                        bottom: '100%',
-                                        left: '0',
-                                        marginBottom: '10px',
-                                        backgroundColor: '#eeeeee',
-                                        border: '1px solid #e4e4e4',
-                                        borderRadius: '10px',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                        zIndex: 3,
-                                        minWidth: '234px',
-                                        padding: '10px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '25px'
-                                    }
-                                },
-                                React.createElement('button', {
-                                    id: 'btn-profile-expanded',
-                                    style: {
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '0',
-                                        border: 'none',
-                                        backgroundColor: 'transparent',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: '400',
-                                        color: '#1c1d21',
-                                        transition: 'background-color 0.2s'
-                                    },
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        onProfileRoute();
-                                    }
-                                }, 'Profile'),
-                                React.createElement('button', {
-                                    id: 'btn-logout-expanded',
-                                    style: {
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '0',
-                                        border: 'none',
-                                        backgroundColor: 'transparent',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontFamily: 'Urbanist-SemiBold, Helvetica',
-                                        fontWeight: '600',
-                                        color: '#b62e2e',
-                                        transition: 'background-color 0.2s'
-                                    },
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        onLogout();
-                                    }
-                                }, 'Log Out')
-                            )
-                        ),
-
-                        // Collapsed view: show icon only
-                        sidebarCollapsed && React.createElement('button', {
-                                id: 'sidebar-user-avatar-collapsed',
-                                style: {
-                                    position: 'relative',
-                                    width: '48px',
-                                    height: '48px',
-                                    background: '#ffffff',
-                                    padding: '5px 5px 10px 6px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 220ms ease',
-                                    margin: '0 auto'
-                                }
-                            },
-                            React.createElement('img', {
-                                src: avatarUrl,
-                                alt: 'User',
-                                onError: handleAvatarError,
-                                style: {
-                                    width: '22px',
-                                    height: '22px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover'
-                                }
-                            }),
-
-                            // User menu dropdown - collapsed (moved outside sidebar)
-                            sidebarCollapsed && userMenuOpen && React.createElement('div', {
-                                    id: 'sidebar-user-menu-collapsed',
-                                    style: {
-                                        position: 'fixed',
-                                        bottom: 'calc(50px + 30px + 20px)',
-                                        left: '35px',
-                                        backgroundColor: '#eeeeee',
-                                        border: '1px solid #e4e4e4',
-                                        borderRadius: '10px',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                        zIndex: 9999,
-                                        minWidth: '160px',
-                                        padding: '12px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '0'
-                                    }
-                                },
-                                // Username and email section
-                                React.createElement('div', {
-                                        id: 'sidebar-username-collapsed',
-                                        style: {
-                                            borderBottom: '1px solid #d0d0d0',
-                                            marginBottom: '8px',
-                                            textAlign: 'left'
-                                        }
-                                    },
-                                    // Row 1: Username
-                                    React.createElement('div', {
-                                        id: 'sidebar-username-text-collapsed',
-                                        style: {
-
-                                            fontSize: '14px',
-                                            fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: '600',
-                                            color: '#1c1d21',
-                                            // padding: '8px 0'
-                                        }
-                                    }, username),
-                                    // Row 2: Email
-                                    React.createElement('div', {
-                                        id: 'sidebar-useremail-text-collapsed',
-                                        style: {
-
-                                            fontSize: '12px',
-                                            fontFamily: 'SF Pro-Regular, Helvetica',
-                                            fontWeight: '400',
-                                            color: '#666666',
-                                            wordBreak: 'break-word',
-                                            padding: '8px 0'
-                                        }
-                                    }, userInfo?.userEmail || userInfo?.email || '')
-                                ),
-                                // Row 3: Profile button
-                                React.createElement('button', {
-                                    id: 'btn-profile-collapsed',
-                                    style: {
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: '8px 0',
-                                        border: 'none',
-                                        backgroundColor: 'transparent',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: '400',
-                                        color: '#1c1d21',
-                                        transition: 'background-color 0.2s'
-                                    },
-                                    onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
-                                    onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        onProfileRoute();
-                                    }
-                                }, 'Profile'),
-                                // Row 4: Logout button
-                                React.createElement('button', {
-                                    id: 'btn-logout-collapsed',
-                                    style: {
-                                        display: 'block',
-                                        width: '100%',
-                                        // padding: '8px 0',
-                                        border: 'none',
-                                        backgroundColor: 'transparent',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontFamily: 'Urbanist-SemiBold, Helvetica',
-                                        fontWeight: '600',
-                                        color: '#b62e2e',
-                                        transition: 'background-color 0.2s'
-                                    },
-                                    onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
-                                    onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        onLogout();
-                                    }
-                                }, 'Log Out')
-                            )
-                        )
-                    ),
-
-                    // Toggle button at bottom
-                    React.createElement('button', {
-                            id: 'sidebar-toggle',
-                            className: 'trigger',
-                            type: 'button',
-                            'aria-label': 'Toggle sidebar',
-                            'aria-expanded': !sidebarCollapsed,
-                            onClick: toggleSidebar,
-                            style: {marginBottom: '20px'}
+                            onClick: (e) => e.preventDefault()
                         },
                         React.createElement('img', {
-                            src: './img/double-arrow-right-svgrepo-com.svg',
-                            alt: 'Toggle sidebar',
-                            style: {width: '24px', height: '24px'}
-                        })
+                            id: 'sidebar-user-avatar-img',
+                            className: 'user',
+                            src: avatarUrl,
+                            alt: 'User',
+                            onError: handleAvatarError,
+                            style: {
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                objectFit: 'cover'
+                            }
+                        }),
+                        React.createElement('span', {
+                            className: 'text-wrapper-6'
+                        }, username),
+
+                        // User menu dropdown - expanded
+                        userMenuOpen && React.createElement('div', {
+                                id: 'sidebar-user-menu-expanded',
+                                style: {
+                                    position: 'absolute',
+                                    bottom: '100%',
+                                    left: '0',
+                                    marginBottom: '10px',
+                                    backgroundColor: '#eeeeee',
+                                    border: '1px solid #e4e4e4',
+                                    borderRadius: '10px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                    zIndex: 3,
+                                    minWidth: '234px',
+                                    padding: '10px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '25px'
+                                }
+                            },
+                            React.createElement('button', {
+                                id: 'btn-profile-expanded',
+                                style: {
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '0',
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontFamily: 'SF Pro-Semibold, Helvetica',
+                                    fontWeight: '400',
+                                    color: '#1c1d21',
+                                    transition: 'background-color 0.2s'
+                                },
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    onProfileRoute();
+                                }
+                            }, 'Profile'),
+                            React.createElement('button', {
+                                id: 'btn-logout-expanded',
+                                style: {
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '0',
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontFamily: 'Urbanist-SemiBold, Helvetica',
+                                    fontWeight: '600',
+                                    color: '#b62e2e',
+                                    transition: 'background-color 0.2s'
+                                },
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    onLogout();
+                                }
+                            }, 'Log Out')
+                        )
+                    ),
+
+                    // Collapsed view: show icon only
+                    sidebarCollapsed && React.createElement('button', {
+                            id: 'sidebar-user-avatar-collapsed',
+                            style: {
+                                position: 'relative',
+                                width: '48px',
+                                height: '48px',
+                                bottom: '40px',
+                                background: '#ffffff',
+                                padding: '5px 5px 10px 6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 220ms ease',
+                                margin: '0 auto'
+                            }
+                        },
+                        React.createElement('img', {
+                            src: avatarUrl,
+                            alt: 'User',
+                            onError: handleAvatarError,
+                            style: {
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                objectFit: 'cover'
+                            }
+                        }),
+
+                        // User menu dropdown - collapsed (moved outside sidebar)
+                        sidebarCollapsed && userMenuOpen && React.createElement('div', {
+                                id: 'sidebar-user-menu-collapsed',
+                                style: {
+                                    position: 'fixed',
+                                    bottom: 'calc(50px + 30px + 20px)',
+                                    left: '35px',
+                                    backgroundColor: '#eeeeee',
+                                    border: '1px solid #e4e4e4',
+                                    borderRadius: '10px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                    zIndex: 9999,
+                                    minWidth: '160px',
+                                    padding: '12px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0'
+                                }
+                            },
+                            // Username and email section
+                            React.createElement('div', {
+                                    id: 'sidebar-username-collapsed',
+                                    style: {
+                                        borderBottom: '1px solid #d0d0d0',
+                                        marginBottom: '8px',
+                                        textAlign: 'left'
+                                    }
+                                },
+                                // Row 1: Username
+                                React.createElement('div', {
+                                    id: 'sidebar-username-text-collapsed',
+                                    style: {
+
+                                        fontSize: '14px',
+                                        fontFamily: 'SF Pro-Semibold, Helvetica',
+                                        fontWeight: '600',
+                                        color: '#1c1d21',
+                                        // padding: '8px 0'
+                                    }
+                                }, username),
+                                // Row 2: Email
+                                React.createElement('div', {
+                                    id: 'sidebar-useremail-text-collapsed',
+                                    style: {
+
+                                        fontSize: '12px',
+                                        fontFamily: 'SF Pro-Regular, Helvetica',
+                                        fontWeight: '400',
+                                        color: '#666666',
+                                        wordBreak: 'break-word',
+                                        padding: '8px 0'
+                                    }
+                                }, userInfo?.userEmail || userInfo?.email || '')
+                            ),
+                            // Row 3: Profile button
+                            React.createElement('button', {
+                                id: 'btn-profile-collapsed',
+                                style: {
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '8px 0',
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontFamily: 'SF Pro-Semibold, Helvetica',
+                                    fontWeight: '400',
+                                    color: '#1c1d21',
+                                    transition: 'background-color 0.2s'
+                                },
+                                onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
+                                onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    onProfileRoute();
+                                }
+                            }, 'Profile'),
+                            // Row 4: Logout button
+                            React.createElement('button', {
+                                id: 'btn-logout-collapsed',
+                                style: {
+                                    display: 'block',
+                                    width: '100%',
+                                    // padding: '8px 0',
+                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontFamily: 'Urbanist-SemiBold, Helvetica',
+                                    fontWeight: '600',
+                                    color: '#b62e2e',
+                                    transition: 'background-color 0.2s'
+                                },
+                                onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
+                                onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    onLogout();
+                                }
+                            }, 'Log Out')
+                        )
                     )
+                ),
+
+                // Toggle button at bottom
+                React.createElement('button', {
+                        id: 'sidebar-toggle',
+                        className: 'trigger',
+                        type: 'button',
+                        'aria-label': 'Toggle sidebar',
+                        'aria-expanded': !sidebarCollapsed,
+                        onClick: toggleSidebar,
+                        style: {marginBottom: '20px'}
+                    },
+                    React.createElement('img', {
+                        src: './img/double-arrow-right-svgrepo-com.svg',
+                        alt: 'Toggle sidebar',
+                        style: {width: '24px', height: '24px'}
+                    })
                 )
             )
-        )
+        );
     };
 
     // Make available globally
