@@ -367,7 +367,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
                 userMenuOpen: userMenuOpen,
-                setUserMenuOpen: setUserMenuOpen
+                setUserMenuOpen: setUserMenuOpen,
+                userInfo: userInfo
             }),
 
             // MODIFIED: Main content area with new design

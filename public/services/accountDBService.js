@@ -109,14 +109,20 @@ async function findUserIDByPasskeyID(passkeyID) {
 
 async function getUserInfo(userID) {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType
-                FROM user
-                WHERE uid = ?`, [userID], (err, row) => {
+        // OLD: db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`, [userID], (err, row) => {
+        // NEW: Added more detailed logging and avatar fields
+        const query = `SELECT uid, firstName, lastName, userEmail, userName, userType, userAvatarPath, googleAvatarUrl FROM user WHERE uid = ?`;
+        console.log(`🔍 getUserInfo: Querying for uid="${userID}"`);
+        db.get(query, [userID], (err, row) => {
             if (err) {
-                console.error('Error in getting user information:', err);
+                console.error('❌ Error in getting user information:', err);
                 return reject(err);
             }
-            console.log(`Query for user info uid ${userID}"):`, row || 'NOT FOUND');
+            if (!row) {
+                console.error(`❌ getUserInfo: NO USER FOUND for uid="${userID}"`);
+            } else {
+                console.log(`✅ getUserInfo result:`, row);
+            }
             resolve(row);
         });
     });
@@ -314,6 +320,22 @@ async function testConnection() {
     });
 }
 
+async function updateUserAvatar(userID, avatarPath) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `UPDATE user SET userAvatarPath = ? WHERE uid = ?`,
+            [avatarPath, userID],
+            function(err) {
+                if (err) {
+                    console.error('Error updating user avatar:', err);
+                    return reject(err);
+                }
+                console.log(`✅ Updated avatar for user ${userID}`);
+                resolve({ changes: this.changes });
+            }
+        );
+    });
+}
 
 module.exports = {
     isGoogleOAuthUserExist,
@@ -334,3 +356,4 @@ module.exports = {
     apiAuthUser,
     testConnection
 }
+

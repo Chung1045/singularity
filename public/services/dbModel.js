@@ -1,13 +1,13 @@
 const USER_TABLE_SCHEMA = () => `
-    CREATE TABLE IF NOT EXISTS user
-    (
-        uid            TEXT PRIMARY KEY NOT NULL UNIQUE,
-        firstName      TEXT             NOT NULL,
-        lastName       TEXT             NOT NULL,
-        userType       TEXT             NOT NULL,
-        userEmail      TEXT             NOT NULL,
-        userName       TEXT             NOT NULL UNIQUE,
-        userAvatarPath TEXT
+    CREATE TABLE IF NOT EXISTS user (
+                                        uid TEXT PRIMARY KEY UNIQUE,
+                                        firstName TEXT,
+                                        lastName TEXT,
+                                        userType TEXT,
+                                        userEmail TEXT,
+                                        userName TEXT UNIQUE,
+                                        userAvatarPath TEXT,
+                                        googleAvatarUrl TEXT
     );
 `;
 
