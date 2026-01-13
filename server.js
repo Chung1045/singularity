@@ -82,6 +82,20 @@ if (process.env.ENABLE_USER_CHECKING === 'true') {
 
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/public/views');
+
+// Add cache control for static files in development
+if (process.env.NODE_ENV !== 'production') {
+    app.use((req, res, next) => {
+        // Disable caching for JS, CSS, and other static files in development
+        if (req.url.match(/\.(js|css|json)$/)) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+        next();
+    });
+}
+
 app.use(express.static('public'));
 
 app.use("/api", accountManagerRouter);

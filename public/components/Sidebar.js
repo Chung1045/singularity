@@ -18,6 +18,130 @@
         // Add state for avatar URL
         const [avatarUrl, setAvatarUrl] = useState('./img/user.svg');
 
+        // Add state for create project modal
+        const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+        const [newProjectName, setNewProjectName] = useState('');
+        const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+        const [successMessage, setSuccessMessage] = useState('');
+        const [showErrorNotification, setShowErrorNotification] = useState(false);
+        const [errorMessage, setErrorMessage] = useState('');
+
+        // Add state for selected project (persisted in localStorage)
+        const [selectedProjectID, setSelectedProjectID] = useState(() => {
+            return localStorage.getItem('selectedProjectID') || null;
+        });
+
+        // Fetch projects from API and populate dropdown
+        const fetchProjects = React.useCallback(async () => {
+            console.log("Fetching projects...");
+            try {
+                const response = await fetch('/api/project/list', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`Project Data: ${JSON.stringify(data)}`);
+
+                    if (data.projects && data.projects.length > 0) {
+                        populateProjectDropdown(data.projects);
+
+                        // Return the project ID to use (saved or first)
+                        const savedProjectID = localStorage.getItem('selectedProjectID');
+                        const projectExists = data.projects.some(p => p.projectID === savedProjectID);
+                        const defaultProjectID = (savedProjectID && projectExists)
+                            ? savedProjectID
+                            : data.projects[0]?.projectID;
+
+                        return defaultProjectID;
+                    } else {
+                        console.warn("No projects found");
+                        populateProjectDropdown([]);
+                        return null;
+                    }
+                } else {
+                    console.error("Failed to fetch projects:", response.status);
+                    return null;
+                }
+            } catch (error) {
+                console.error("Error fetching projects:", error);
+                return null;
+            }
+        }, []);
+
+        // Populate the project dropdown with projects
+        const populateProjectDropdown = React.useCallback((projects) => {
+            const dropdown = document.getElementById('select-project-drop-down');
+
+            if (!dropdown) {
+                console.warn("Project dropdown not found in DOM");
+                return;
+            }
+
+            if (!projects || projects.length === 0) {
+                dropdown.innerHTML = '<option value="">No projects available</option>';
+                return;
+            }
+
+            const savedProjectID = localStorage.getItem('selectedProjectID');
+            const projectExists = projects.some(p => p.projectID === savedProjectID);
+            const selectedID = (savedProjectID && projectExists) ? savedProjectID : projects[0]?.projectID;
+
+            const options = projects.map((project) =>
+                `<option value="${project.projectID}" ${project.projectID === selectedID ? 'selected' : ''}>${project.projectName}</option>`
+            ).join('');
+
+            dropdown.innerHTML = options;
+
+            // Update state and trigger change event if we have a selected project
+            if (selectedID) {
+                setSelectedProjectID(selectedID);
+                dropdown.value = selectedID;
+                dropdown.dispatchEvent(new Event('change'));
+            }
+        }, []);
+
+        // Load projects when component mounts and restore selected project
+        React.useEffect(() => {
+            const loadProjectsAndHistory = async () => {
+                const projectID = await fetchProjects();
+
+                // Wait a bit to ensure DOM is fully rendered
+                setTimeout(async () => {
+                    // If we have a project ID and fetchProjectChats is available, load the chat history
+                    if (projectID && typeof window.fetchProjectChats === 'function') {
+                        console.log('Loading chat history for project:', projectID);
+                        await window.fetchProjectChats(projectID);
+                    }
+
+                    // Also load files and reports if available
+                    if (projectID && typeof window.fetchProjectFiles === 'function') {
+                        console.log('Loading files for project:', projectID);
+                        await window.fetchProjectFiles(projectID);
+                    }
+
+                    if (projectID && typeof window.fetchProjectReports === 'function') {
+                        console.log('Loading reports for project:', projectID);
+                        await window.fetchProjectReports(projectID);
+                    }
+                }, 100);
+            };
+
+            loadProjectsAndHistory();
+        }, [fetchProjects]);
+
+        // Make fetchProjects available globally for create project button
+        React.useEffect(() => {
+            window.fetchProjects = fetchProjects;
+            return () => {
+                delete window.fetchProjects;
+            };
+        }, [fetchProjects]);
+
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;
             setSidebarCollapsed(newState);
@@ -28,6 +152,67 @@
         const toggleUserMenu = (e) => {
             e.stopPropagation();
             setUserMenuOpen(!userMenuOpen);
+        };
+
+        const showError = (message) => {
+            setErrorMessage(message);
+            setShowErrorNotification(true);
+            setTimeout(() => {
+                setShowErrorNotification(false);
+            }, 3000);
+        };
+
+        const showSuccess = (message) => {
+            setSuccessMessage(message);
+            setShowSuccessNotification(true);
+            setTimeout(() => {
+                setShowSuccessNotification(false);
+            }, 3000);
+        };
+
+        const handleCreateProject = async () => {
+            if (!newProjectName.trim()) {
+                showError('Please enter a project name');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/project/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        projectName: newProjectName.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Close modal and reset
+                    setShowCreateProjectModal(false);
+                    setNewProjectName('');
+
+                    // Show success notification
+                    showSuccess('Project created successfully!');
+
+                    // Refresh the project list
+                    if (typeof fetchProjects === 'function') {
+                        await fetchProjects();
+                    }
+                } else {
+                    showError(data.message || 'Failed to create project');
+                }
+            } catch (error) {
+                console.error('Error creating project:', error);
+                showError('Error creating project');
+            }
+        };
+
+        const handleSkipCreateProject = () => {
+            setShowCreateProjectModal(false);
+            setNewProjectName('');
         };
 
         // Fetch avatar URL on component mount
@@ -89,57 +274,100 @@
                             src: './img/union.svg',
                             alt: 'Singularity Icon'
                         }),
-                    ),
+                    )
+                ),
 
+                // Project dropdown and create button container
+                React.createElement('div', {
+                    style: {
+                        display: !sidebarCollapsed ? 'flex' : 'none',
+                        alignItems: 'center',
+                        gap: '10px',
+                        marginLeft: '21px',
+                        marginRight: '21px',
+                        marginBottom: '15px'
+                    }
+                },
+                    // Project dropdown
                     React.createElement('select', {
                         id: "select-project-drop-down",
                         style: {
-                            width: "100%",
-                            padding: "5px",
-                            borderRadius: "5px",
-                            border: "1px solid #e4e4e4",
-                            display: !sidebarCollapsed ? 'block' : 'none'
+                            position: 'relative',
+                            flex: '1',
+                            padding: '10px 14px',
+                            borderRadius: '10px',
+                            border: '1.67px solid #e4e4e4',
+                            cursor: 'pointer',
+                            transition: 'all 220ms ease',
+                            fontFamily: 'Inter, Helvetica',
+                            fontWeight: '600',
+                            fontSize: '14px',
+                            color: '#1c1d21',
+                            backgroundColor: 'transparent'
                         },
                         onChange: async (e) => {
-                            await fetchProjectFiles(e.target.value)
-                            await fetchProjectReports(e.target.value)
-                        }
-                    })
-                ),
+                            const projectID = e.target.value;
+                            console.log('Project dropdown changed to:', projectID);
 
-                // Project name display
-                React.createElement('div', {
-                        id: 'sidebar-project-name',
-                        className: 'project-name-wrapper',
-                        title: 'Project Name' // Tooltip
-                    },
-                    // Folder icon (visible in collapsed)
-                    React.createElement('span', {
-                            className: 'project-icon',
+                            // Save selected project to localStorage and state
+                            localStorage.setItem('selectedProjectID', projectID);
+                            setSelectedProjectID(projectID);
 
+                            // Only call these functions if they exist (Home page specific)
+                            if (typeof fetchProjectFiles === 'function') {
+                                console.log('Calling fetchProjectFiles...');
+                                await fetchProjectFiles(projectID);
+                            } else {
+                                console.log('fetchProjectFiles not available on this page');
+                            }
+                            if (typeof fetchProjectReports === 'function') {
+                                console.log('Calling fetchProjectReports...');
+                                await fetchProjectReports(projectID);
+                            } else {
+                                console.log('fetchProjectReports not available on this page');
+                            }
+                            if (typeof fetchProjectChats === 'function') {
+                                console.log('Calling fetchProjectChats...');
+                                await fetchProjectChats(projectID);
+                            } else {
+                                console.log('fetchProjectChats not available on this page');
+                            }
                         },
+                        onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                        onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
+                    }),
+
+                    // Create project button
+                    React.createElement('button', {
+                        id: 'btn-create-project',
+                        type: 'button',
+                        'aria-label': 'Create new project',
+                        onClick: () => setShowCreateProjectModal(true),
+                        style: {
+                            padding: '10px',
+                            borderRadius: '10px',
+                            border: '1.67px solid #e4e4e4',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 220ms ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '40px',
+                            height: '40px'
+                        },
+                        onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                        onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
+                    },
                         React.createElement('img', {
-                            id: 'sidebar-ProjectFolderName-img',
-                            className: 'folder-svgrepo-com',
-                            src: './img/folder-svgrepo-com.svg',
-                            alt: 'Project Folder Icon',
+                            src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                            alt: 'Create project',
                             style: {
-                                // marginTop: '10px',
                                 width: '20px',
-                                height: '20px',
-                                // marginLeft: '14.5px',
-                                aspectRatio: 1
+                                height: '20px'
                             }
                         })
-                    ),
-                    // First letter badge (visible in collapsed)
-                    React.createElement('span', {
-                        className: 'project-letter'
-                    }, 'P'),
-                    // Full project name text (hidden in collapsed)
-                    React.createElement('span', {
-                        className: 'project-name-text'
-                    }, 'Project Name')
+                    )
                 ),
 
                 // Search bar
@@ -311,7 +539,7 @@
                             id: 'sidebar-requirements-wrapper',
                             style: {
                                 marginBottom: '10px',
-                                display: 'none'
+                                // display: 'none'
                             }
                         },
                         React.createElement('button', {
@@ -637,6 +865,194 @@
                         style: {width: '24px', height: '24px'}
                     })
                 )
+            ),
+
+            // Create Project Modal
+            showCreateProjectModal && React.createElement('div', {
+                id: 'create-new-project-modal',
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000
+                },
+                onClick: handleSkipCreateProject
+            },
+                React.createElement('div', {
+                    style: {
+                        backgroundColor: '#ffffff',
+                        borderRadius: '15px',
+                        padding: '30px',
+                        minWidth: '400px',
+                        maxWidth: '500px',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+                    },
+                    onClick: (e) => e.stopPropagation()
+                },
+                    // Modal Header
+                    React.createElement('h2', {
+                        style: {
+                            margin: '0 0 10px 0',
+                            fontSize: '24px',
+                            fontFamily: 'Inter, Helvetica',
+                            fontWeight: '600',
+                            color: '#1c1d21'
+                        }
+                    }, 'Create New Project'),
+
+                    // Modal Description
+                    React.createElement('p', {
+                        style: {
+                            margin: '0 0 20px 0',
+                            fontSize: '14px',
+                            fontFamily: 'Inter, Helvetica',
+                            color: '#666666'
+                        }
+                    }, 'Enter a name for your new project or skip to create it later.'),
+
+                    // Input Field
+                    React.createElement('input', {
+                        type: 'text',
+                        placeholder: 'Project Name',
+                        value: newProjectName,
+                        onChange: (e) => setNewProjectName(e.target.value),
+                        onKeyPress: (e) => {
+                            if (e.key === 'Enter') {
+                                handleCreateProject();
+                            }
+                        },
+                        style: {
+                            width: '100%',
+                            padding: '12px 14px',
+                            marginBottom: '20px',
+                            borderRadius: '10px',
+                            border: '1.67px solid #e4e4e4',
+                            fontSize: '14px',
+                            fontFamily: 'Inter, Helvetica',
+                            boxSizing: 'border-box',
+                            outline: 'none'
+                        }
+                    }),
+
+                    // Button Container
+                    React.createElement('div', {
+                        style: {
+                            display: 'flex',
+                            gap: '10px',
+                            justifyContent: 'flex-end'
+                        }
+                    },
+                        // Skip Button
+                        React.createElement('button', {
+                            onClick: handleSkipCreateProject,
+                            style: {
+                                padding: '10px 20px',
+                                borderRadius: '8px',
+                                border: '1.67px solid #e4e4e4',
+                                backgroundColor: 'transparent',
+                                color: '#666666',
+                                fontSize: '14px',
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
+                        }, 'Skip'),
+
+                        // Create Button
+                        React.createElement('button', {
+                            onClick: handleCreateProject,
+                            style: {
+                                padding: '10px 20px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                backgroundColor: '#1c1d21',
+                                color: '#ffffff',
+                                fontSize: '14px',
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#2c2d31',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = '#1c1d21'
+                        }, 'Create Project')
+                    )
+                )
+            ),
+
+            // Success Notification
+            showSuccessNotification && React.createElement('div', {
+                style: {
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    backgroundColor: '#4CAF50',
+                    color: '#ffffff',
+                    padding: '16px 24px',
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    zIndex: 10001,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    fontFamily: 'Inter, Helvetica',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    animation: 'slideInRight 0.3s ease-out'
+                }
+            },
+                // Success icon (checkmark)
+                React.createElement('span', {
+                    style: {
+                        fontSize: '20px',
+                        fontWeight: 'bold'
+                    }
+                }, '✓'),
+
+                // Success message
+                React.createElement('span', null, successMessage)
+            ),
+
+            // Error Notification
+            showErrorNotification && React.createElement('div', {
+                style: {
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    backgroundColor: '#f44336',
+                    color: '#ffffff',
+                    padding: '16px 24px',
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    zIndex: 10001,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    fontFamily: 'Inter, Helvetica',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    animation: 'slideInRight 0.3s ease-out'
+                }
+            },
+                // Error icon (X)
+                React.createElement('span', {
+                    style: {
+                        fontSize: '20px',
+                        fontWeight: 'bold'
+                    }
+                }, '✕'),
+
+                // Error message
+                React.createElement('span', null, errorMessage)
             )
         );
     };

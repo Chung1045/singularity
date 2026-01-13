@@ -53,7 +53,7 @@ router.post('/agent/chat', async (req, res) => {
             return res.status(400).json({success: false, message: `Missing required fields`})
         }
 
-        if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
             return res.status(403).json({successful: false, message: "Unauthorized"});
         }
 
@@ -88,18 +88,73 @@ router.post('/agent/chat', async (req, res) => {
             console.log(`Memory: \n ${conversationSummary}`)
         }
 
-        try {
-            response = await agent.getResponse(data, conversationSummary)
-        } catch (error) {
-            console.error(`Unable to generate response: ${error}`)
-            return res.status(500).json({
-                success: false,
-                message: `Internal server error, unable to generate response.`
-            })
-        }
+        // Check if client wants streaming
+        const acceptHeader = req.headers.accept || '';
+        const wantsStream = acceptHeader.includes('text/event-stream');
 
-        try {
-            let {conversationID, chatSeq} = await aiDB.saveConversationRequest(data);
+        if (wantsStream) {
+            // Set up SSE headers for streaming
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no'
+            });
+
+            let fullResponse = '';
+
+            try {
+                // Send chatID immediately
+                res.write(`data: ${JSON.stringify({ type: 'chatID', chatID: chatID })}\n\n`);
+
+                // Stream the response
+                for await (const chunk of agent.getStreamingResponse(data, conversationSummary)) {
+                    fullResponse += chunk;
+                    res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+                }
+
+                // Save to database
+                let {conversationID, chatSeq} = await aiDB.saveConversationRequest(data);
+
+                if (attachedDocumentIDs && attachedDocumentIDs.length > 0) {
+                    await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
+                }
+
+                // Save the complete streamed response
+                await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
+
+                if (await aiDB.getChatThreadName(projectID, chatID) == null) {
+                    let threadName = await agent.createChatName(JSON.stringify(await aiDB.fetchChatThread(projectID, chatID)))
+                    await aiDB.renameChatThread(projectID, chatID, threadName)
+                }
+
+                // Send completion event
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'done', 
+                    chatSeq: chatSeq,
+                    conversationID: conversationID 
+                })}\n\n`);
+                res.end();
+
+            } catch (error) {
+                console.error(`Streaming error: ${error}`);
+                res.write(`data: ${JSON.stringify({ type: 'error', message: 'Stream failed' })}\n\n`);
+                res.end();
+            }
+        } else {
+            // Regular non-streaming response
+            try {
+                response = await agent.getResponse(data, conversationSummary)
+            } catch (error) {
+                console.error(`Unable to generate response: ${error}`)
+                return res.status(500).json({
+                    success: false,
+                    message: `Internal server error, unable to generate response.`
+                })
+            }
+
+            try {
+                let {conversationID, chatSeq} = await aiDB.saveConversationRequest(data);
 
             if (attachedDocumentIDs && attachedDocumentIDs.length > 0) {
                 await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
@@ -112,17 +167,18 @@ router.post('/agent/chat', async (req, res) => {
                 await aiDB.renameChatThread(projectID, chatID, threadName)
             }
 
-            return res.status(200).json({
-                success: true,
-                chatID: chatID,
-                chatSeq: chatSeq,
-                conversationID: conversationID,
-                response: response
-            });
+                return res.status(200).json({
+                    success: true,
+                    chatID: chatID,
+                    chatSeq: chatSeq,
+                    conversationID: conversationID,
+                    response: response
+                });
 
-        } catch (error) {
-            console.error(`Unable to save message: ${error}`);
-            return res.status(500).json({success: false, message: `Internal server error, unable to save message.`});
+            } catch (error) {
+                console.error(`Unable to save message: ${error}`);
+                return res.status(500).json({success: false, message: `Internal server error, unable to save message.`});
+            }
         }
 
     } catch (error) {
@@ -130,6 +186,84 @@ router.post('/agent/chat', async (req, res) => {
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
 
+});
+
+// Get a complete chat thread with all conversations
+router.get('/agent/chat/thread/:chatID', async (req, res) => {
+    try {
+        const chatID = req.params.chatID;
+
+        if (!chatID) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing chatID'
+            });
+        }
+
+        console.log('Fetching chat thread for chatID:', chatID);
+
+        // Get the chat thread data - fetchChatThread returns an object with conversations array
+        const chatThreadData = await aiDB.fetchChatThread(null, chatID);
+
+        console.log('chatThreadData type:', typeof chatThreadData);
+        console.log('chatThreadData:', JSON.stringify(chatThreadData, null, 2));
+
+        if (!chatThreadData) {
+            console.log('No chat thread data returned');
+            return res.status(200).json({
+                success: true,
+                chatID: chatID,
+                conversations: []
+            });
+        }
+
+        if (!chatThreadData.conversations) {
+            console.log('chatThreadData.conversations is missing');
+            return res.status(200).json({
+                success: true,
+                chatID: chatID,
+                conversations: []
+            });
+        }
+
+        if (chatThreadData.conversations.length === 0) {
+            console.log('No conversations in thread');
+            return res.status(200).json({
+                success: true,
+                chatID: chatID,
+                conversations: []
+            });
+        }
+
+        console.log('Number of conversations:', chatThreadData.conversations.length);
+
+        // Format the data for the frontend
+        const conversations = chatThreadData.conversations.map(conv => ({
+            conversationID: conv.conversationID,
+            chatSeq: conv.chatSeq,
+            conversationMessage: conv.message,
+            responseMessage: conv.response ? conv.response.message : null,
+            responseTimeDate: conv.response ? conv.response.timestamp : null,
+            documentIDs: conv.attachedDocuments || []
+        }));
+
+        console.log('Formatted conversations:', conversations.length);
+
+        return res.status(200).json({
+            success: true,
+            chatID: chatID,
+            conversations: conversations
+        });
+
+    } catch (error) {
+        console.error('Error fetching chat thread:', error);
+        console.error('Error stack:', error.stack);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
 });
 
 router.post('/agent/chat/stream', async (req, res) => {
@@ -177,11 +311,16 @@ router.post('/agent/all-chat', async (req, res) => {
 
     const { projectID } = req.body;
 
+    console.log("all-chat request - projectID:", projectID, "userID:", req.userID);
+
     if (!projectID) {
         return res.status(400).json({success: false, message: `Missing required fields`})
     }
 
-    if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+    const isCollaborator = await projectDBService.isProjectCollaborator(projectID, req.userID);
+    console.log("isProjectCollaborator result:", isCollaborator);
+
+    if (!isCollaborator) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 

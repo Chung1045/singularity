@@ -165,11 +165,11 @@ async function isProjectCollaborator(projectID, userID) {
 
         SELECT projectOwnerUid AS uid
         FROM project
-        WHERE projectID = ?
+        WHERE projectID = ? AND projectOwnerUid = ?
 
         LIMIT 1
     `;
-    const param = [projectID, userID, projectID];
+    const param = [projectID, userID, projectID, userID];
 
     return new Promise((resolve, reject) => {
         db.get(query, param, (err, row) => {

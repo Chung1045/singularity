@@ -28,6 +28,19 @@ const TempHome = ({csrfToken, userInfo}) => {
 
     console.log("Inside TempHome component – userInfo:", userInfo);
 
+    // Auto-load chat if navigating from another page with chatID parameter
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const chatID = params.get('chatID');
+
+        if (chatID && typeof window.loadChatThread === 'function') {
+            console.log('Auto-loading chat from URL parameter:', chatID);
+            setTimeout(() => {
+                window.loadChatThread(chatID);
+            }, 500); // Wait for page to fully load
+        }
+    }, []);
+
     const showAlert = (title, message) => {
         setModal({isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null});
     };
@@ -171,22 +184,56 @@ const TempHome = ({csrfToken, userInfo}) => {
             // Main content
             React.createElement('main', {className: 'right-container'},
                 React.createElement('section', {className: 'main-screen'},
-                    React.createElement('header', {className: 'main-screen-title'},
+                    React.createElement('header', {
+                        className: 'main-screen-title'
+                        // Visible by default, hidden when chat starts
+                    },
                         React.createElement('img', {
                             className: 'bouncy-logo',
-                            // src: 'https://c.animaapp.com/W03AeLaz/img/bouncy-logo-animation.svg',
                             src: './img/bouncy-logo-animation.svg',
-
                             alt: 'Singularity Logo'
                         }),
                         React.createElement('div', {className: 'logo-text'},
                             React.createElement('h1', {className: 'text-wrapper'}, 'Singularity')
                         )
                     ),
+                    // Chat interface - hidden by default, shown when user submits first message
+                    React.createElement('div', {
+                        id: 'chat-interface',
+                        className: 'chat-interface',
+                        style: { display: 'none' }
+                    },
+                        React.createElement('div', {
+                            id: 'chat-messages',
+                            className: 'chat-messages'
+                        })
+                    ),
+                    // Suggestion chips - positioned right above input field
+                    React.createElement('div', {
+                        id: 'suggestion-chips',
+                        className: 'suggestion-chips',
+                        style: { display: 'none' } // Hidden until chat starts
+                    },
+                        React.createElement('button', {
+                            className: 'chip',
+                            onClick: () => {
+                                const input = document.getElementById('main-message-input');
+                                if (input) input.value = 'Say Hello';
+                            }
+                        }, 'Say Hello'),
+                        React.createElement('button', {
+                            className: 'chip',
+                            onClick: () => {
+                                const input = document.getElementById('main-message-input');
+                                if (input) input.value = 'Analyze Documents';
+                            }
+                        }, 'Analyze Documents')
+                    ),
                     React.createElement('form', {
                             className: 'input-field', role: 'search', 'aria-label': 'Main search',
                             onSubmit: (e) => {
                                 e.preventDefault();
+                                submitConversationRequest();
                             }
                         },
                         React.createElement('button', {
@@ -194,27 +241,41 @@ const TempHome = ({csrfToken, userInfo}) => {
                                 className: 'input-field-button',
                                 'aria-label': 'Add new item'
                             },
-                            // React.createElement('img', { className: 'vector', src: 'https://c.animaapp.com/W03AeLaz/img/vector-2.svg', alt: '' })
                             React.createElement('img', {className: 'vector', src: './img/vector-2.svg', alt: ''})
                         ),
                         React.createElement('label', {
                             htmlFor: 'main-message-input',
                             className: 'visually-hidden'
                         }, 'Search'),
-                        React.createElement('input', {
-                            type: 'text',
+                        React.createElement('textarea', {
                             id: 'main-message-input',
                             className: 'div',
                             placeholder: "What's on your mind?",
-                            'aria-label': "What's on your mind?"
+                            'aria-label': "What's on your mind?",
+                            rows: 1,
+                            onKeyDown: (e) => {
+                                // Allow Shift+Enter for new line
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    submitConversationRequest();
+                                }
+                                // Shift+Enter will naturally create a new line
+                            },
+                            onInput: (e) => {
+                                // Auto-resize textarea based on content
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                            }
                         }),
                         React.createElement('button', {
                                 type: 'submit',
                                 className: 'input-field-button',
                                 'aria-label': 'Submit search',
-                                onClick: submitConversationRequest,
+                                onClick: (e) => {
+                                    e.preventDefault();
+                                    submitConversationRequest();
+                                }
                             },
-                            // React.createElement('img', { className: 'img', src: 'https://c.animaapp.com/W03AeLaz/img/vector-3.svg', alt: '' })
                             React.createElement('img', {className: 'img', src: './img/vector-3.svg', alt: ''})
                         )
                     )
@@ -224,9 +285,10 @@ const TempHome = ({csrfToken, userInfo}) => {
     );
 };
 
-window.onload = async function () {
-    await fetchProjects()
-}
+// COMMENTED OUT: Sidebar component now handles project initialization
+// window.onload = async function () {
+//     await fetchProjects()
+// }
 
 async function fetchProjects() {
     console.log("fetchProjects is triggered")
@@ -303,23 +365,30 @@ async function fetchProjectFiles(projectID) {
         console.log(`Response Data: ${JSON.stringify(data)}`)
         const sourceContainer = document.getElementById("div-project-source-list");
 
+        if (!sourceContainer) {
+            console.error("Source container not found");
+            return;
+        }
+
         // Clear existing content
         sourceContainer.innerHTML = '';
 
-        for (let file of data.files) {
-            const fileElement = createFileItem(`${file.documentName}.${file.documentExt}`, file.documentID);
+        if (data.files && Array.isArray(data.files)) {
+            for (let file of data.files) {
+                const fileElement = createFileItem(`${file.documentName}.${file.documentExt}`, file.documentID);
 
-            // Create a container div for this React element
-            const wrapper = document.createElement('div');
-            sourceContainer.appendChild(wrapper);
+                // Create a container div for this React element
+                const wrapper = document.createElement('div');
+                sourceContainer.appendChild(wrapper);
 
-            const root = ReactDOM.createRoot(wrapper);
-            root.render(fileElement);
+                const root = ReactDOM.createRoot(wrapper);
+                root.render(fileElement);
+            }
         }
 
         const noSourceLabel = document.getElementById("p-label-source-no-entry")
         if (noSourceLabel) {
-            noSourceLabel.style.display = data.files.length > 0 ? "none" : "block"
+            noSourceLabel.style.display = (data.files && data.files.length > 0) ? "none" : "block"
         }
     }
 }
@@ -344,7 +413,21 @@ async function fetchProjectReports(projectID) {
 
 async function fetchProjectChats(projectID) {
     console.log("ProjectID:", projectID)
-    const chatHistoryContainer = document.getElementById("div-chat-history-list");
+
+    // Wait for DOM element if needed
+    let chatHistoryContainer = document.getElementById("div-chat-history-list");
+
+    if (!chatHistoryContainer) {
+        console.log("Chat history container not found, waiting for DOM...");
+        await new Promise(resolve => setTimeout(resolve, 300));
+        chatHistoryContainer = document.getElementById("div-chat-history-list");
+
+        if (!chatHistoryContainer) {
+            console.error("Chat history container still not found");
+            return;
+        }
+    }
+
     chatHistoryContainer.innerHTML = '';
 
     let data = null;
@@ -378,6 +461,9 @@ async function fetchProjectChats(projectID) {
                     const root = ReactDOM.createRoot(wrapper);
                     root.render(chatHistoryElement);
                 }
+
+                // Do NOT auto-load - user can click on chat history to view
+                // Chat interface only shows when user submits a new message
             }
         } else {
             console.error("Response not OK:", response.status, response.statusText)
@@ -496,7 +582,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 }
             },
             onClick: (e) => {
-                if (e.target.tagName !== 'IMG') { // Don't select when clicking the menu icon
+                if (e.target.tagName !== 'IMG') {
                     // Deselect all chat history items
                     const allChatItems = document.querySelectorAll('.chat-history-item');
                     allChatItems.forEach(item => {
@@ -506,9 +592,12 @@ function createChatHistoryItem(chatThreadName, chatID) {
 
                     // Select this item
                     e.currentTarget.classList.add('selected');
-                    e.currentTarget.style.backgroundColor = '#e0e0e0'; // Selected color
+                    e.currentTarget.style.backgroundColor = '#e0e0e0';
 
                     console.log(`Selected chat: ${chatThreadName}, ID: ${chatID}`);
+
+                    // Load the chat thread
+                    loadChatThread(chatID);
                 }
             }
         },
@@ -600,7 +689,7 @@ function createReportItem(reportName, reportID) {
 
 function getSelectedSource() {
     let selectedSource = [];
-    const sourceElements = document.querySelectorAll(".sidebar-items.source-item"); // More specific selector
+    const sourceElements = document.querySelectorAll(".sidebar-items.source-item");
 
     for (let sourceElement of sourceElements) {
         const checkbox = sourceElement.querySelector('input[type="checkbox"]');
@@ -613,26 +702,282 @@ function getSelectedSource() {
     return selectedSource;
 }
 
-function submitConversationRequest() {
-    let selectedSource = getSelectedSource();
-    let userMessage = document.getElementById("main-message-input").value; // Fixed ID
+async function submitConversationRequest() {
+    const input = document.getElementById("main-message-input");
+    const userMessage = input?.value?.trim();
 
-    // Get selected chat history item
-    let selectedChatItem = document.querySelector('.chat-history-item.selected');
-    let chatID = selectedChatItem ? selectedChatItem.dataset.chatId : ''; // Fixed selector and dataset
+    if (!userMessage) return;
 
-    // Get selected project
-    let projectDropdown = document.getElementById("select-project-drop-down");
-    let projectID = projectDropdown ? projectDropdown.value : ''; // Fixed - get the value
+    // Get project and chat info
+    const projectDropdown = document.getElementById("select-project-drop-down");
+    const projectID = projectDropdown?.value;
 
-    let data = {
-        projectID: projectID,
-        chatID: chatID,
-        message: userMessage,
-        attachedDocumentIDs: selectedSource,
+    if (!projectID) {
+        console.error("No project selected");
+        return;
     }
 
-    console.log(data)
+    const selectedChatItem = document.querySelector('.chat-history-item.selected');
+    const chatID = selectedChatItem?.dataset?.chatId || '';
+
+    const selectedSource = getSelectedSource();
+
+    // Prepare data
+    const data = {
+        projectID,
+        chatID,
+        message: userMessage,
+        attachedDocumentIDs: selectedSource,
+    };
+
+    console.log("Sending message:", data);
+
+    // Show chat interface
+    showChatInterface();
+
+    // Add user message
+    addMessage('user', userMessage);
+
+    // Clear input
+    input.value = '';
+    input.style.height = 'auto';
+
+    // Show typing indicator
+    const typingId = showTypingIndicator();
+
+    // Send request
+    try {
+        await streamChatResponse(data, typingId);
+    } catch (error) {
+        console.error("Error:", error);
+        removeTypingIndicator(typingId);
+        addMessage('ai', 'Sorry, there was an error processing your request.');
+    }
+}
+
+// ==========================================
+// CHAT FUNCTIONS - COMPLETELY REWRITTEN
+// ==========================================
+
+// Show chat interface
+function showChatInterface() {
+    const chatInterface = document.getElementById('chat-interface');
+    const suggestionChips = document.getElementById('suggestion-chips');
+    const mainScreenTitle = document.querySelector('.main-screen-title');
+
+    if (chatInterface) chatInterface.style.display = 'flex'; // Use flex for proper layout
+    if (suggestionChips) suggestionChips.style.display = 'flex'; // Show chips above input
+    if (mainScreenTitle) mainScreenTitle.style.display = 'none';
+}
+
+// Hide chat interface
+function hideChatInterface() {
+    const chatInterface = document.getElementById('chat-interface');
+    const suggestionChips = document.getElementById('suggestion-chips');
+    const mainScreenTitle = document.querySelector('.main-screen-title');
+
+    if (chatInterface) chatInterface.style.display = 'none';
+    if (suggestionChips) suggestionChips.style.display = 'none'; // Hide chips too
+    if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
+}
+
+// Add a message to chat
+function addMessage(role, text) {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (!messagesContainer) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = role === 'user' ? 'message user-message' : 'message ai-message';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = role === 'user'
+        ? '<i class="ri-user-3-line"></i>'
+        : '<i class="ri-openai-fill"></i>';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.textContent = text;
+
+    if (role === 'user') {
+        // User: bubble first, avatar last (appears on right due to flex-direction: row-reverse)
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(bubble);
+    } else {
+        // AI: avatar first, bubble last (normal left-to-right)
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(bubble);
+    }
+
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+// Show typing indicator
+function showTypingIndicator() {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (!messagesContainer) return null;
+
+    const id = 'typing-' + Date.now();
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message ai-message';
+    typingDiv.id = id;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = '<i class="ri-openai-fill"></i>';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble typing-bubble';
+    bubble.innerHTML = `
+        <div class="typing-indicator">
+            <span></span><span></span><span></span>
+        </div>
+    `;
+
+    typingDiv.appendChild(avatar);
+    typingDiv.appendChild(bubble);
+    messagesContainer.appendChild(typingDiv);
+    scrollToBottom();
+
+    return id;
+}
+
+// Remove typing indicator
+function removeTypingIndicator(id) {
+    const typing = document.getElementById(id);
+    if (typing) typing.remove();
+}
+
+// Scroll to bottom
+function scrollToBottom() {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+}
+
+// Stream chat response
+async function streamChatResponse(data, typingId) {
+    const response = await fetch('/api/agent/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Remove typing indicator
+    removeTypingIndicator(typingId);
+
+    // Create AI message container
+    const messagesContainer = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = '<i class="ri-openai-fill"></i>';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(bubble);
+    messagesContainer.appendChild(messageDiv);
+
+    let fullResponse = '';
+    let chatIDReceived = null;
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                try {
+                    const jsonData = JSON.parse(line.slice(6));
+
+                    if (jsonData.type === 'chatID') {
+                        chatIDReceived = jsonData.chatID;
+                        console.log('Chat ID:', chatIDReceived);
+
+                        // Refresh chat history if new chat
+                        if (data.chatID === '') {
+                            await fetchProjectChats(data.projectID);
+                        }
+                    } else if (jsonData.type === 'chunk') {
+                        fullResponse += jsonData.content;
+                        bubble.textContent = fullResponse;
+                        scrollToBottom();
+                    } else if (jsonData.type === 'done') {
+                        console.log('Streaming complete');
+                    } else if (jsonData.type === 'error') {
+                        console.error('Stream error:', jsonData.message);
+                    }
+                } catch (e) {
+                    console.error('Error parsing SSE:', e);
+                }
+            }
+        }
+    }
+}
+
+// Load chat thread
+async function loadChatThread(chatID) {
+    console.log('Loading chat thread:', chatID);
+
+    try {
+        const response = await fetch(`/api/agent/chat/thread/${chatID}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load chat thread');
+        }
+
+        const data = await response.json();
+        console.log('Chat thread data:', data);
+
+        // Clear current chat
+        const messagesContainer = document.getElementById('chat-messages');
+        if (messagesContainer) messagesContainer.innerHTML = '';
+
+        // Show chat interface (hide welcome screen)
+        showChatInterface();
+
+        // Display all conversations
+        const conversations = data.conversations || [];
+
+        // Even if empty, keep chat interface visible (user clicked to view this thread)
+        conversations.forEach(conv => {
+            // Add user message
+            if (conv.conversationMessage) {
+                addMessage('user', conv.conversationMessage);
+            }
+            // Add AI response
+            if (conv.responseMessage) {
+                addMessage('ai', conv.responseMessage);
+            }
+        });
+
+        scrollToBottom();
+
+    } catch (error) {
+        console.error('Error loading chat thread:', error);
+    }
 }
 
 async function generateUserStoryReport(projectID){
@@ -735,6 +1080,11 @@ function downloadSourceDocument(documentID) {
 function deleteSourceDocument(documentID) {
     // your logic here
 }
+
+// Make functions available globally so Sidebar can call them
+window.fetchProjectChats = fetchProjectChats;
+window.fetchProjectFiles = fetchProjectFiles;
+window.fetchProjectReports = fetchProjectReports;
 
 // Make available globally
 window.TempHome = TempHome;
