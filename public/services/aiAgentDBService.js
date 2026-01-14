@@ -39,7 +39,7 @@ async function createNewChatThread(projectID) {
     const params = [
         chatID,
         projectID,
-        ""
+        null  // Set to null so that automatic naming triggers after first response
     ];
 
     try {
@@ -201,7 +201,7 @@ async function conversationEdit(chatID, chatSeq, conversationID, newConversation
  */
 async function fetchProjectChats(projectID) {
     console.log("Db fetchProjects is triggered")
-    const sql = `SELECT chatID, threadName FROM chat WHERE projectID = ?`
+    const sql = `SELECT chatID, projectID, threadName FROM chat WHERE projectID = ?`
     const param = [projectID]
 
     return new Promise((resolve, reject) => {
@@ -215,6 +215,7 @@ async function fetchProjectChats(projectID) {
                 return resolve([]);
             }
             console.log('Chats found:', rows);
+            // rows now include chatID, projectID, and threadName
             resolve(rows);
         });
     });
@@ -222,67 +223,82 @@ async function fetchProjectChats(projectID) {
 
 /**
  * Fetches complete chat thread with all conversations, responses, and document references
- * @param {string} projectID - UUID of the project
+ * @param {string} projectID - UUID of the project (optional, will be fetched from DB if not provided)
  * @param {string} chatID - UUID of the chat thread
- * @returns {Promise<Object>} Chat thread data with nested conversations
+ * @returns {Promise<Object>} Chat thread data with nested conversations and projectID
  */
 async function fetchChatThread(projectID, chatID) {
-    const sql = `
-        SELECT
-            c.conversationID,
-            c.chatSeq,
-            c.chatID,
-            c.conversationMessage,
-            GROUP_CONCAT(DISTINCT cdr.documentID) as documentIDs,
-            r.responseMessage,
-            r.responseTimeDate
-        FROM conversation c
-                 LEFT JOIN conversationDocRef cdr
-                           ON c.conversationID = cdr.conversationID
-                               AND c.chatSeq = cdr.conversationSeq
-                 LEFT JOIN response r
-                           ON c.conversationID = r.conversationID
-                               AND c.chatSeq = r.conversationSeq
-                               AND r.isActive = 1
-        WHERE c.chatID = ?
-        GROUP BY c.conversationID, c.chatSeq
-        ORDER BY c.chatSeq ASC
-    `;
+    // First, get the projectID from the chat table if not provided
+    const chatInfoSql = `SELECT projectID FROM chat WHERE chatID = ?`;
 
     return new Promise((resolve, reject) => {
-        db.all(sql, [chatID], (err, rows) => {
+        db.get(chatInfoSql, [chatID], (err, chatInfo) => {
             if (err) {
-                console.error(`Error fetching chat thread: ${err}`);
+                console.error(`Error fetching chat info: ${err}`);
                 reject(err);
                 return;
             }
 
-            if (!Array.isArray(rows)) {
-                console.error('Expected rows to be an array, got:', typeof rows);
+            // Use the projectID from the database if found, otherwise use the parameter
+            const actualProjectID = chatInfo ? chatInfo.projectID : projectID;
+
+            // Now fetch the conversations
+            const sql = `
+                SELECT
+                    c.conversationID,
+                    c.chatSeq,
+                    c.chatID,
+                    c.conversationMessage,
+                    GROUP_CONCAT(DISTINCT cdr.documentID) as documentIDs,
+                    r.responseMessage,
+                    r.responseTimeDate
+                FROM conversation c
+                         LEFT JOIN conversationDocRef cdr
+                                   ON c.conversationID = cdr.conversationID
+                                       AND c.chatSeq = cdr.conversationSeq
+                         LEFT JOIN response r
+                                   ON c.conversationID = r.conversationID
+                                       AND c.chatSeq = r.conversationSeq
+                                       AND r.isActive = 1
+                WHERE c.chatID = ?
+                GROUP BY c.conversationID, c.chatSeq
+                ORDER BY c.chatSeq ASC
+            `;
+
+            db.all(sql, [chatID], (err, rows) => {
+                if (err) {
+                    console.error(`Error fetching chat thread: ${err}`);
+                    reject(err);
+                    return;
+                }
+
+                if (!Array.isArray(rows)) {
+                    console.error('Expected rows to be an array, got:', typeof rows);
+                    resolve({
+                        chatID: chatID,
+                        projectID: actualProjectID,
+                        conversations: []
+                    });
+                    return;
+                }
+
+                // Transform flat rows into structured JSON
+                const conversations = rows.map(row => ({
+                    conversationID: row.conversationID,
+                    chatSeq: row.chatSeq,
+                    message: row.conversationMessage,
+                    attachedDocuments: row.documentIDs ? row.documentIDs.split(',') : [],
+                    response: row.responseMessage ? {
+                        message: row.responseMessage,
+                        timestamp: row.responseTimeDate
+                    } : null
+                }));
+
                 resolve({
                     chatID: chatID,
-                    projectID: projectID,
-                    conversations: []
+                    projectID: actualProjectID,
+                    conversations: conversations
                 });
-                return;
-            }
-
-            // Transform flat rows into structured JSON
-            const conversations = rows.map(row => ({
-                conversationID: row.conversationID,
-                chatSeq: row.chatSeq,
-                message: row.conversationMessage,
-                attachedDocuments: row.documentIDs ? row.documentIDs.split(',') : [],
-                response: row.responseMessage ? {
-                    message: row.responseMessage,
-                    timestamp: row.responseTimeDate
-                } : null
-            }));
-
-            resolve({
-                chatID: chatID,
-                projectID: projectID,
-                conversations: conversations
             });
         });
     });

@@ -41,6 +41,37 @@ const TempHome = ({csrfToken, userInfo}) => {
         }
     }, []);
 
+    // Restore active chat from localStorage on page load
+    React.useEffect(() => {
+        // Only restore if no URL parameter was provided
+        const params = new URLSearchParams(window.location.search);
+        const urlChatID = params.get('chatID');
+
+        if (!urlChatID) {
+            // Check if user explicitly went back to initial state
+            const wentBackToInitial = localStorage.getItem('wentBackToInitial');
+
+            if (wentBackToInitial === 'true') {
+                // User clicked back button, stay on initial screen
+                console.log('[RESTORE] User went back to initial state, not restoring chat');
+                return;
+            }
+
+            const savedChatID = localStorage.getItem('activeChatID');
+
+            if (savedChatID) {
+                console.log('[RESTORE] Chat restoration pending:', savedChatID);
+                console.log('[RESTORE] Will restore after chat history loads');
+                // Set a flag that restoration is pending
+                window.pendingChatRestoration = savedChatID;
+            } else {
+                console.log('[RESTORE] No saved chat to restore. savedChatID:', savedChatID);
+            }
+        } else {
+            console.log('[RESTORE] URL parameter provided, skipping localStorage restore');
+        }
+    }, []);
+
     const showAlert = (title, message) => {
         setModal({isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null});
     };
@@ -203,6 +234,40 @@ const TempHome = ({csrfToken, userInfo}) => {
                         className: 'chat-interface',
                         style: { display: 'none' }
                     },
+                        // Top bar with chat title and back button
+                        React.createElement('div', {
+                            id: 'chat-top-bar',
+                            className: 'chat-top-bar'
+                        },
+                            React.createElement('button', {
+                                id: 'btn-back-to-initial',
+                                className: 'btn-back-to-initial',
+                                type: 'button',
+                                'aria-label': 'Back to initial screen',
+
+                                onClick: () => {
+                                    if (typeof window.backToInitialScreen === 'function') {
+                                        window.backToInitialScreen();
+                                    }
+                                },       onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                                    onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+
+                                },
+                                React.createElement('img', {
+                                    src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                                    alt: 'Back',
+                                    style: {
+                                        width: '20px',
+                                        height: '20px'
+                                    }
+                                }),
+
+                            ),
+                            React.createElement('h2', {
+                                id: 'chat-title',
+                                className: 'chat-title'
+                            }, 'Untitled Chat')
+                        ),
                         React.createElement('div', {
                             id: 'chat-messages',
                             className: 'chat-messages'
@@ -464,6 +529,46 @@ async function fetchProjectChats(projectID) {
 
                 // Do NOT auto-load - user can click on chat history to view
                 // Chat interface only shows when user submits a new message
+
+                // Check if there's a pending chat restoration
+                if (window.pendingChatRestoration) {
+                    const chatIDToRestore = window.pendingChatRestoration;
+                    const savedProjectID = localStorage.getItem('activeChatProjectID');
+
+                    console.log('[RESTORE] Chat restoration pending:', chatIDToRestore);
+                    console.log('[RESTORE] Saved project ID:', savedProjectID);
+                    console.log('[RESTORE] Current project ID:', projectID);
+
+                    // Validate that the chat belongs to the current project
+                    if (savedProjectID && savedProjectID === projectID) {
+                        // Check if the chat exists in the loaded chat history
+                        const chatExists = data.chats.some(chat => chat.chatID === chatIDToRestore);
+
+                        if (chatExists) {
+                            window.pendingChatRestoration = null; // Clear the flag
+                            console.log('[RESTORE] ✅ Chat belongs to current project. Restoring...');
+
+                            // Small delay to ensure DOM is ready
+                            setTimeout(() => {
+                                if (typeof window.loadChatThread === 'function') {
+                                    window.loadChatThread(chatIDToRestore);
+                                }
+                            }, 100);
+                        } else {
+                            console.log('[RESTORE] ❌ Chat not found in current project chat list. Clearing saved state.');
+                            window.pendingChatRestoration = null;
+                            localStorage.removeItem('activeChatID');
+                            localStorage.removeItem('activeChatProjectID');
+                        }
+                    } else {
+                        console.log('[RESTORE] ❌ Chat belongs to different project. Clearing saved state.');
+                        console.log('[RESTORE] Saved chat was for project:', savedProjectID);
+                        console.log('[RESTORE] Current project:', projectID);
+                        window.pendingChatRestoration = null;
+                        localStorage.removeItem('activeChatID');
+                        localStorage.removeItem('activeChatProjectID');
+                    }
+                }
             }
         } else {
             console.error("Response not OK:", response.status, response.statusText)
@@ -562,6 +667,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
     return React.createElement('div', {
             className: 'sidebar-items chat-history-item',
             'data-chat-id': chatID,
+            'data-thread-name': chatThreadName || 'Untitled Chat', // Store thread name in data attribute
             style: {
                 padding: '8px 12px',
                 cursor: 'pointer',
@@ -594,7 +700,21 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     e.currentTarget.classList.add('selected');
                     e.currentTarget.style.backgroundColor = '#e0e0e0';
 
-                    console.log(`Selected chat: ${chatThreadName}, ID: ${chatID}`);
+                    console.log(`[CLICK] Selected chat: ${chatThreadName}, ID: ${chatID}`);
+                    console.log(`[CLICK] Saving to localStorage: activeChatID = ${chatID}`);
+
+                    // Update URL with chatID
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('chatID', chatID);
+                    window.history.pushState({ chatID }, '', newUrl);
+                    console.log(`[URL] Updated URL to include chatID: ${chatID}`);
+
+                    // Update the top bar title immediately with the thread name from sidebar
+                    const chatTitleElement = document.getElementById('chat-title');
+                    if (chatTitleElement) {
+                        const displayName = (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat';
+                        chatTitleElement.textContent = displayName;
+                    }
 
                     // Load the chat thread
                     loadChatThread(chatID);
@@ -607,9 +727,10 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 margin: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                fontSize: '14px'
             }
-        }, chatThreadName),
+        }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat'),
         React.createElement('img', {
             style: {
                 padding: "4px",
@@ -717,8 +838,9 @@ async function submitConversationRequest() {
         return;
     }
 
+    // Check if there's a current chat selected
     const selectedChatItem = document.querySelector('.chat-history-item.selected');
-    const chatID = selectedChatItem?.dataset?.chatId || '';
+    let chatID = window.currentChatID || selectedChatItem?.dataset?.chatId || '';
 
     const selectedSource = getSelectedSource();
 
@@ -747,7 +869,55 @@ async function submitConversationRequest() {
 
     // Send request
     try {
-        await streamChatResponse(data, typingId);
+        const newChatID = await streamChatResponse(data, typingId);
+
+        // If a new chat was created, update tracking and refresh history
+        if (newChatID && newChatID !== chatID) {
+            window.currentChatID = newChatID;
+            console.log('New chat created with ID:', newChatID);
+
+            // Update URL with the new chatID
+            const currentUrl = new URL(window.location);
+            currentUrl.searchParams.set('chatID', newChatID);
+            window.history.pushState({ chatID: newChatID }, '', currentUrl);
+            console.log(`[URL] Updated URL with new chatID: ${newChatID}`);
+
+            // Persist the new chat ID and project ID to localStorage
+            localStorage.setItem('activeChatID', newChatID);
+            localStorage.setItem('activeChatProjectID', projectID);
+
+            // Clear the "went back to initial" flag since user is now in an active chat
+            localStorage.removeItem('wentBackToInitial');
+
+            // Refresh chat history to show the new chat
+            if (typeof fetchProjectChats === 'function') {
+                await fetchProjectChats(projectID);
+
+                // Select the newly created chat in the sidebar and update title
+                setTimeout(() => {
+                    const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${newChatID}"]`);
+                    if (newChatItem) {
+                        // Deselect all
+                        const allChatItems = document.querySelectorAll('.chat-history-item');
+                        allChatItems.forEach(item => {
+                            item.classList.remove('selected');
+                            item.style.backgroundColor = 'transparent';
+                        });
+
+                        // Select new one
+                        newChatItem.classList.add('selected');
+                        newChatItem.style.backgroundColor = '#e0e0e0';
+
+                        // Update top bar title from the sidebar item
+                        const chatTitleElement = document.getElementById('chat-title');
+                        if (chatTitleElement) {
+                            const threadName = newChatItem.dataset.threadName || 'Untitled Chat';
+                            chatTitleElement.textContent = threadName;
+                        }
+                    }
+                }, 100);
+            }
+        }
     } catch (error) {
         console.error("Error:", error);
         removeTypingIndicator(typingId);
@@ -762,10 +932,12 @@ async function submitConversationRequest() {
 // Show chat interface
 function showChatInterface() {
     const chatInterface = document.getElementById('chat-interface');
+    const chatTopBar = document.getElementById('chat-top-bar');
     const suggestionChips = document.getElementById('suggestion-chips');
     const mainScreenTitle = document.querySelector('.main-screen-title');
 
     if (chatInterface) chatInterface.style.display = 'flex'; // Use flex for proper layout
+    if (chatTopBar) chatTopBar.style.display = 'flex'; // Show top bar
     if (suggestionChips) suggestionChips.style.display = 'flex'; // Show chips above input
     if (mainScreenTitle) mainScreenTitle.style.display = 'none';
 }
@@ -773,10 +945,12 @@ function showChatInterface() {
 // Hide chat interface
 function hideChatInterface() {
     const chatInterface = document.getElementById('chat-interface');
+    const chatTopBar = document.getElementById('chat-top-bar');
     const suggestionChips = document.getElementById('suggestion-chips');
     const mainScreenTitle = document.querySelector('.main-screen-title');
 
     if (chatInterface) chatInterface.style.display = 'none';
+    if (chatTopBar) chatTopBar.style.display = 'none'; // Hide top bar
     if (suggestionChips) suggestionChips.style.display = 'none'; // Hide chips too
     if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
 }
@@ -851,9 +1025,9 @@ function removeTypingIndicator(id) {
 
 // Scroll to bottom
 function scrollToBottom() {
-    const messagesContainer = document.getElementById('chat-messages');
-    if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    const chatInterface = document.getElementById('chat-interface');
+    if (chatInterface) {
+        chatInterface.scrollTop = chatInterface.scrollHeight;
     }
 }
 
@@ -913,8 +1087,9 @@ async function streamChatResponse(data, typingId) {
                         chatIDReceived = jsonData.chatID;
                         console.log('Chat ID:', chatIDReceived);
 
-                        // Refresh chat history if new chat
+                        // Refresh chat history immediately to show "Untitled Chat"
                         if (data.chatID === '') {
+                            console.log('New chat created, refreshing history...');
                             await fetchProjectChats(data.projectID);
                         }
                     } else if (jsonData.type === 'chunk') {
@@ -923,6 +1098,14 @@ async function streamChatResponse(data, typingId) {
                         scrollToBottom();
                     } else if (jsonData.type === 'done') {
                         console.log('Streaming complete');
+
+                        // Refresh chat history again to show generated title
+                        if (chatIDReceived && data.chatID === '') {
+                            console.log('Streaming done, refreshing history to show generated title...');
+                            setTimeout(async () => {
+                                await fetchProjectChats(data.projectID);
+                            }, 500); // Small delay to ensure title is generated
+                        }
                     } else if (jsonData.type === 'error') {
                         console.error('Stream error:', jsonData.message);
                     }
@@ -932,6 +1115,9 @@ async function streamChatResponse(data, typingId) {
             }
         }
     }
+
+    // Return the chatID for tracking
+    return chatIDReceived;
 }
 
 // Load chat thread
@@ -950,6 +1136,61 @@ async function loadChatThread(chatID) {
 
         const data = await response.json();
         console.log('Chat thread data:', data);
+
+        // Track the current chat ID
+        window.currentChatID = chatID;
+
+        // Update URL with chatID (only if not already there)
+        const currentUrl = new URL(window.location);
+        const currentChatIDInURL = currentUrl.searchParams.get('chatID');
+        if (currentChatIDInURL !== chatID) {
+            currentUrl.searchParams.set('chatID', chatID);
+            window.history.pushState({ chatID }, '', currentUrl);
+            console.log(`[URL] Updated URL to include chatID: ${chatID}`);
+        }
+
+        // Get the project ID from the chat data (now returned at top level)
+        const projectID = data.projectID;
+        console.log(`[LOAD] Chat ${chatID} belongs to project: ${projectID}`);
+
+        // Persist the active chat ID AND project ID to localStorage
+        console.log(`[LOAD] Saving to localStorage: activeChatID = ${chatID}, projectID = ${projectID}`);
+        localStorage.setItem('activeChatID', chatID);
+        if (projectID) {
+            localStorage.setItem('activeChatProjectID', projectID);
+        }
+
+        // Clear the "went back to initial" flag since user is now viewing a chat
+        localStorage.removeItem('wentBackToInitial');
+
+        // Find the corresponding chat item in the sidebar and get its title
+        const chatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatID}"]`);
+        if (chatItem) {
+            // Deselect all chat items
+            const allChatItems = document.querySelectorAll('.chat-history-item');
+            allChatItems.forEach(item => {
+                item.classList.remove('selected');
+                item.style.backgroundColor = 'transparent';
+            });
+
+            // Select this item
+            chatItem.classList.add('selected');
+            chatItem.style.backgroundColor = '#e0e0e0';
+
+            // Update top bar title from the sidebar item's data attribute
+            const chatTitleElement = document.getElementById('chat-title');
+            if (chatTitleElement) {
+                const threadName = chatItem.dataset.threadName || 'Untitled Chat';
+                chatTitleElement.textContent = threadName;
+            }
+        } else {
+            // If chat item not found in sidebar (edge case), use API data as fallback
+            const chatTitleElement = document.getElementById('chat-title');
+            if (chatTitleElement) {
+                const title = data.chat?.threadName || data.threadName || 'Untitled Chat';
+                chatTitleElement.textContent = title;
+            }
+        }
 
         // Clear current chat
         const messagesContainer = document.getElementById('chat-messages');
@@ -1081,10 +1322,87 @@ function deleteSourceDocument(documentID) {
     // your logic here
 }
 
+// Back to initial screen function
+function backToInitialScreen() {
+    console.log('Returning to initial screen');
+
+    // Clear current chat ID
+    window.currentChatID = null;
+
+    // Clear persisted chat ID and project ID from localStorage
+    localStorage.removeItem('activeChatID');
+    localStorage.removeItem('activeChatProjectID');
+
+    // Remove chatID from URL
+    const currentUrl = new URL(window.location);
+    if (currentUrl.searchParams.has('chatID')) {
+        currentUrl.searchParams.delete('chatID');
+        window.history.pushState({}, '', currentUrl);
+        console.log('[URL] Removed chatID from URL');
+    }
+
+    // Set flag to indicate user explicitly went back to initial state
+    // This prevents chat restoration on page refresh
+    localStorage.setItem('wentBackToInitial', 'true');
+
+    // Hide chat interface and top bar
+    const chatInterface = document.getElementById('chat-interface');
+    const chatTopBar = document.getElementById('chat-top-bar');
+    const suggestionChips = document.getElementById('suggestion-chips');
+    const mainScreenTitle = document.querySelector('.main-screen-title');
+    const inputField = document.querySelector('.input-field');
+
+    if (chatInterface) {
+        chatInterface.style.display = 'none';
+    }
+
+    if (chatTopBar) {
+        chatTopBar.style.display = 'none';
+    }
+
+    if (suggestionChips) {
+        suggestionChips.style.display = 'none';
+    }
+
+    // Show welcome screen
+    if (mainScreenTitle) {
+        mainScreenTitle.style.display = 'flex';
+    }
+
+    // Reset input field position to center
+    const mainScreen = document.querySelector('.main-screen');
+    if (mainScreen) {
+        mainScreen.classList.remove('chat-mode');
+    }
+
+    // Clear chat messages
+    const messagesContainer = document.getElementById('chat-messages');
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+    }
+
+    // Reset chat title
+    const chatTitle = document.getElementById('chat-title');
+    if (chatTitle) {
+        chatTitle.textContent = 'Untitled Chat';
+    }
+
+    // Deselect all chat history items in sidebar
+    const allChatItems = document.querySelectorAll('.chat-history-item');
+    allChatItems.forEach(item => {
+        item.classList.remove('selected');
+        item.style.backgroundColor = 'transparent';
+    });
+
+    console.log('Returned to initial screen');
+}
+
 // Make functions available globally so Sidebar can call them
 window.fetchProjectChats = fetchProjectChats;
 window.fetchProjectFiles = fetchProjectFiles;
 window.fetchProjectReports = fetchProjectReports;
+window.loadChatThread = loadChatThread;
+window.backToInitialScreen = backToInitialScreen;
 
 // Make available globally
 window.TempHome = TempHome;

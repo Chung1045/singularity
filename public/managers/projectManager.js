@@ -71,13 +71,21 @@ router.post('/project/create', async (req, res) => {
         let successful = await projectDBService.createProject(data)
 
         if (successful) {
-            console.log("Project is created")
+            console.log("Project is created with ID:", data.projectID)
+            // Return the new projectID and projectName so frontend can use it
+            return res.status(200).json({
+                success: true,
+                message: 'successful',
+                projectID: data.projectID,
+                projectName: data.projectName
+            });
+        } else {
+            return res.status(500).json({ success: false, message: 'Failed to create project in database' });
         }
     } catch (error){
         console.log(error)
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
-    return res.status(200).json({ success: true, message: 'successful' });
 });
 
 

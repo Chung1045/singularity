@@ -10,22 +10,124 @@
     width: 100%;
     /*max-width: 1200px;*/
     margin: 0 auto;
-    padding: 20px 20px 0 20px; /* Remove bottom padding to make room for chips */
+    padding: 0;
+    position: relative;
+    overflow-y: auto; /* Allow vertical scrolling on the container */
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
-/* Chat Messages Container - Scrollable */
-.chat-messages {
+/* Hide scrollbar for chat interface but keep functionality */
+.chat-interface::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-interface::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-interface::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.2);
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.chat-interface::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.4);
+}
+
+/* Chat Top Bar - Title and Back Button */
+.chat-top-bar {
+    display: none; /* Hidden by default, shown when chat is active */
+    align-items: center;
+    gap: 20px; /* Increased gap between button and title */
+    padding: 16px 20px;
+    margin: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 0;
+    border-bottom: 2px solid #e1e1e1; /* Solid border with theme primary color */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    top: 0;
+    left: 0; /* Sidebar width (302px) + gap (5px) */
+    right: 0;
+    /*! width: calc(100% - 7px); */ /* Full width minus sidebar and gap */
+    z-index: 100;
+    flex-shrink: 0;
+    transition: left 220ms ease, width 220ms ease; /* Match sidebar transition */
+}
+
+/* When sidebar is collapsed */
+.sidebar-expand.collapsed .chat-top-bar {
+    left: 72px; /* Collapsed sidebar width + gap */
+    width: calc(100% - 72px);
+}
+
+.btn-back-to-initial {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 2px solid #e1e1e1; /* Solid border with theme primary color */
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    /* No transition - no animation */
+}
+
+.btn-back-to-initial:hover {
+    background: rgba(195, 171, 111, 0.1); /* Subtle hover with theme color */
+    /*border-color: rgb(62, 62, 62);*/
+}
+
+.btn-back-to-initial:active {
+    background: rgba(195, 171, 111, 0.2);
+}
+
+.chat-title {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 20px;
+    font-family: 'Inter', Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1c1d21;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Fading scroll overlay for chat messages (bottom only) */
+.chat-interface::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    /*! height: 5px; */
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.3s ease;
+    bottom: 0;
+    /*! background: linear-gradient(to top, rgb(248, 250, 252) 0%, rgba(248, 250, 252, 0.95) 30%, rgba(248, 250, 252, 0.7) 50%, transparent 100% ); */
+}
+
+/* Chat Messages Container - Regular flex container (parent handles scroll) */
+.chat-messages {
+    flex: 0 0 auto; /* Don't grow or shrink, size based on content */
+    overflow: visible; /* Allow content to be visible */
+    padding: 80px 20px 20px 20px; /* Top padding to clear fixed header */
     display: flex;
     flex-direction: column;
     gap: 20px;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    min-height: 0; /* Important for flex child scrolling */
+    position: relative;
+    z-index: 1;
 }
+
+
 
 /* Individual Message */
 .message {
@@ -164,18 +266,24 @@
 .chip {
     padding: 10px 20px;
     border-radius: 20px;
-    border: 1px solid #e0e0e0;
-    background-color: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     color: #1a1a1a;
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .chip:hover {
-    background-color: #f0f0f0;
-    border-color: #1a1a1a;
+    background: rgba(15, 23, 42, 1);
+    color: rgba(248, 250, 252, 1);
+    border-color: rgba(15, 23, 42, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
 }
 
 /* Mobile Responsive */

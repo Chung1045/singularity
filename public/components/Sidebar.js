@@ -11,9 +11,19 @@
                          setUserMenuOpen,
                          userInfo
                      }) => {
-        const [historyExpanded, setHistoryExpanded] = useState(false);
-        const [sourceExpanded, setSourceExpanded] = useState(false);
-        const [requirementsExpanded, setRequirementsExpanded] = useState(false);
+        // Persist sidebar section states in localStorage
+        const [historyExpanded, setHistoryExpanded] = useState(() => {
+            const saved = localStorage.getItem('historyExpanded');
+            return saved !== null ? JSON.parse(saved) : false;
+        });
+        const [sourceExpanded, setSourceExpanded] = useState(() => {
+            const saved = localStorage.getItem('sourceExpanded');
+            return saved !== null ? JSON.parse(saved) : false;
+        });
+        const [requirementsExpanded, setRequirementsExpanded] = useState(() => {
+            const saved = localStorage.getItem('requirementsExpanded');
+            return saved !== null ? JSON.parse(saved) : false;
+        });
 
         // Add state for avatar URL
         const [avatarUrl, setAvatarUrl] = useState('./img/user.svg');
@@ -30,6 +40,9 @@
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
             return localStorage.getItem('selectedProjectID') || null;
         });
+
+        // Add state to track if projects exist
+        const [hasProjects, setHasProjects] = useState(false);
 
         // Fetch projects from API and populate dropdown
         const fetchProjects = React.useCallback(async () => {
@@ -48,6 +61,7 @@
                     console.log(`Project Data: ${JSON.stringify(data)}`);
 
                     if (data.projects && data.projects.length > 0) {
+                        setHasProjects(true);
                         populateProjectDropdown(data.projects);
 
                         // Return the project ID to use (saved or first)
@@ -60,6 +74,7 @@
                         return defaultProjectID;
                     } else {
                         console.warn("No projects found");
+                        setHasProjects(false);
                         populateProjectDropdown([]);
                         return null;
                     }
@@ -110,25 +125,54 @@
             const loadProjectsAndHistory = async () => {
                 const projectID = await fetchProjects();
 
-                // Wait a bit to ensure DOM is fully rendered
-                setTimeout(async () => {
-                    // If we have a project ID and fetchProjectChats is available, load the chat history
-                    if (projectID && typeof window.fetchProjectChats === 'function') {
+                if (!projectID) {
+                    console.log('No project ID available, skipping history load');
+                    return;
+                }
+
+                // Helper function to wait for a function to be defined
+                const waitForFunction = (funcName, maxAttempts = 50, delayMs = 100) => {
+                    return new Promise((resolve) => {
+                        let attempts = 0;
+                        const interval = setInterval(() => {
+                            if (typeof window[funcName] === 'function') {
+                                clearInterval(interval);
+                                resolve(true);
+                            } else if (attempts >= maxAttempts) {
+                                clearInterval(interval);
+                                console.warn(`Function ${funcName} not available after ${maxAttempts * delayMs}ms`);
+                                resolve(false);
+                            }
+                            attempts++;
+                        }, delayMs);
+                    });
+                };
+
+                // Wait for functions to be available and then load data
+                const functionsToWait = ['fetchProjectChats', 'fetchProjectFiles', 'fetchProjectReports'];
+                await Promise.all(functionsToWait.map(func => waitForFunction(func)));
+
+                // Now load the data
+                try {
+                    if (typeof window.fetchProjectChats === 'function') {
                         console.log('Loading chat history for project:', projectID);
                         await window.fetchProjectChats(projectID);
+                    } else {
+                        console.warn('fetchProjectChats not available');
                     }
 
-                    // Also load files and reports if available
-                    if (projectID && typeof window.fetchProjectFiles === 'function') {
+                    if (typeof window.fetchProjectFiles === 'function') {
                         console.log('Loading files for project:', projectID);
                         await window.fetchProjectFiles(projectID);
                     }
 
-                    if (projectID && typeof window.fetchProjectReports === 'function') {
+                    if (typeof window.fetchProjectReports === 'function') {
                         console.log('Loading reports for project:', projectID);
                         await window.fetchProjectReports(projectID);
                     }
-                }, 100);
+                } catch (error) {
+                    console.error('Error loading project data:', error);
+                }
             };
 
             loadProjectsAndHistory();
@@ -190,6 +234,11 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    const newProjectID = data.projectID;
+                    const newProjectName = data.projectName;
+
+                    console.log(`✅ New project created: ${newProjectName} (ID: ${newProjectID})`);
+
                     // Close modal and reset
                     setShowCreateProjectModal(false);
                     setNewProjectName('');
@@ -197,10 +246,111 @@
                     // Show success notification
                     showSuccess('Project created successfully!');
 
-                    // Refresh the project list
+                    // Set hasProjects to true since we just created one
+                    setHasProjects(true);
+
+                    // Clear any active chat state when creating a new project
+                    window.currentChatID = null;
+                    localStorage.removeItem('activeChatID');
+                    localStorage.removeItem('activeChatProjectID');
+                    localStorage.setItem('wentBackToInitial', 'true');
+
+                    // Clear pending restoration flag
+                    window.pendingChatRestoration = null;
+
+                    // Remove chatID from URL
+                    const currentUrl = new URL(window.location);
+                    if (currentUrl.searchParams.has('chatID')) {
+                        currentUrl.searchParams.delete('chatID');
+                        window.history.replaceState({}, '', currentUrl);
+                        console.log('[URL] Removed chatID from URL due to new project creation');
+                    }
+
+                    // Hide chat interface and show welcome screen
+                    if (typeof window.backToInitialScreen === 'function') {
+                        window.backToInitialScreen();
+                    } else {
+                        // Manual fallback if function doesn't exist
+                        const chatInterface = document.getElementById('chat-interface');
+                        const chatTopBar = document.getElementById('chat-top-bar');
+                        if (chatInterface) chatInterface.style.display = 'none';
+                        if (chatTopBar) chatTopBar.style.display = 'none';
+                    }
+
+                    // Save the new project ID to localStorage BEFORE fetching projects
+                    localStorage.setItem('selectedProjectID', newProjectID);
+                    setSelectedProjectID(newProjectID);
+                    console.log(`📌 Auto-selecting new project: ${newProjectID}`);
+
+                    // Set a flag to prevent loading data for the new empty project
+                    window.skipProjectDataLoad = true;
+
+                    // Clear all sidebar lists for the new empty project
+                    // Do this immediately and also after a delay to ensure it takes effect
+                    const clearSidebarLists = () => {
+                        console.log('🧹 Clearing sidebar lists for new empty project...');
+
+                        // Clear chat history (project-based)
+                        const chatHistoryList = document.getElementById('div-chat-history-list');
+                        const noChatLabel = document.getElementById('p-label-chat-history-no-entry');
+
+                        // Clear source files (project-based)
+                        const sourceList = document.getElementById('div-project-source-list');
+                        const noSourceLabel = document.getElementById('p-label-source-no-entry');
+
+                        // Clear requirements list (project-based)
+                        const requirementsList = document.getElementById('div-requirements-list');
+                        const noRequirementsLabel = document.getElementById('p-label-requirements-no-entry');
+
+                        if (chatHistoryList) {
+                            chatHistoryList.innerHTML = '';
+                            console.log('✅ Chat history list cleared');
+                            if (noChatLabel) {
+                                noChatLabel.style.display = 'block';
+                            }
+                        }
+
+                        if (sourceList) {
+                            sourceList.innerHTML = '';
+                            console.log('✅ Source list cleared');
+                            if (noSourceLabel) {
+                                noSourceLabel.style.display = 'block';
+                            }
+                        }
+
+                        if (requirementsList) {
+                            requirementsList.innerHTML = '';
+                            console.log('✅ Requirements list cleared');
+                            if (noRequirementsLabel) {
+                                noRequirementsLabel.style.display = 'block';
+                            }
+                        }
+                    };
+
+                    // Clear immediately
+                    clearSidebarLists();
+
+                    // Clear again after a short delay to ensure it sticks
+                    setTimeout(clearSidebarLists, 50);
+                    setTimeout(clearSidebarLists, 200);
+
+                    // Refresh the project list - this will load the new project and select it
                     if (typeof fetchProjects === 'function') {
                         await fetchProjects();
+
+                        // Ensure the dropdown shows the correct selection
+                        const dropdown = document.getElementById('select-project-drop-down');
+                        if (dropdown) {
+                            dropdown.value = newProjectID;
+                            console.log(`✅ Dropdown set to: ${newProjectID}`);
+                        }
                     }
+
+                    // Clear the skip flag after all clearing operations are complete
+                    setTimeout(() => {
+                        window.skipProjectDataLoad = false;
+                        console.log('✅ Skip flag cleared, project data can load normally now');
+                    }, 300);
                 } else {
                     showError(data.message || 'Failed to create project');
                 }
@@ -284,7 +434,7 @@
                         alignItems: 'center',
                         gap: '10px',
                         marginLeft: '21px',
-                        marginRight: '21px',
+                        marginRight: '25px',
                         marginBottom: '15px'
                     }
                 },
@@ -312,6 +462,75 @@
                             // Save selected project to localStorage and state
                             localStorage.setItem('selectedProjectID', projectID);
                             setSelectedProjectID(projectID);
+
+                            // Clear any active chat state when switching projects
+                            window.currentChatID = null;
+                            localStorage.removeItem('activeChatID');
+                            localStorage.removeItem('activeChatProjectID');
+                            localStorage.setItem('wentBackToInitial', 'true');
+
+                            // Clear pending restoration flag
+                            window.pendingChatRestoration = null;
+
+                            // Remove chatID from URL
+                            const currentUrl = new URL(window.location);
+                            if (currentUrl.searchParams.has('chatID')) {
+                                currentUrl.searchParams.delete('chatID');
+                                window.history.pushState({}, '', currentUrl);
+                                console.log('[URL] Removed chatID from URL due to project switch');
+                            }
+
+                            // Hide chat interface and show welcome screen
+                            if (typeof window.backToInitialScreen === 'function') {
+                                window.backToInitialScreen();
+                            } else {
+                                // Manual fallback if function doesn't exist
+                                const chatInterface = document.getElementById('chat-interface');
+                                const chatTopBar = document.getElementById('chat-top-bar');
+                                if (chatInterface) chatInterface.style.display = 'none';
+                                if (chatTopBar) chatTopBar.style.display = 'none';
+                            }
+
+                            // Check if we should skip loading data (e.g., for newly created empty projects)
+                            if (window.skipProjectDataLoad) {
+                                console.log('⏭️ Skipping project data load for new empty project');
+
+                                // Ensure sidebar lists are cleared (defensive programming)
+                                // Clear chat history (project-based)
+                                const chatHistoryList = document.getElementById('div-chat-history-list');
+                                const noChatLabel = document.getElementById('p-label-chat-history-no-entry');
+
+                                // Clear source files (project-based)
+                                const sourceList = document.getElementById('div-project-source-list');
+                                const noSourceLabel = document.getElementById('p-label-source-no-entry');
+
+                                // Clear requirements list (project-based)
+                                const requirementsList = document.getElementById('div-requirements-list');
+                                const noRequirementsLabel = document.getElementById('p-label-requirements-no-entry');
+
+                                if (chatHistoryList) {
+                                    chatHistoryList.innerHTML = '';
+                                    if (noChatLabel) {
+                                        noChatLabel.style.display = 'block';
+                                    }
+                                }
+
+                                if (sourceList) {
+                                    sourceList.innerHTML = '';
+                                    if (noSourceLabel) {
+                                        noSourceLabel.style.display = 'block';
+                                    }
+                                }
+
+                                if (requirementsList) {
+                                    requirementsList.innerHTML = '';
+                                    if (noRequirementsLabel) {
+                                        noRequirementsLabel.style.display = 'block';
+                                    }
+                                }
+
+                                return;
+                            }
 
                             // Only call these functions if they exist (Home page specific)
                             if (typeof fetchProjectFiles === 'function') {
@@ -370,6 +589,69 @@
                     )
                 ),
 
+                // New Chat Button - Only show when projects exist
+                hasProjects && React.createElement('button', {
+                    id: 'btn-new-chat',
+                    type: 'button',
+                    'aria-label': 'Create new chat',
+                    onClick: () => {
+                        if (typeof window.createNewChat === 'function') {
+                            window.createNewChat();
+                        }
+                    },
+                    style: {
+                        display: !sidebarCollapsed ? 'flex' : 'none',
+                        width: 'calc(100% - 46px)',
+                        padding: '10px 14px',
+                        marginLeft: '21px',
+                        marginRight: '25px',
+                        marginBottom: '15px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: 'rgb(30, 41, 59)',
+                        cursor: 'pointer',
+                        transition: 'all 220ms ease',
+                        fontFamily: 'Inter, Helvetica',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#ffffff',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        position: 'relative',
+                        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.2)'
+                    },
+                    onMouseEnter: (e) => {
+                        // e.target.style.background = 'rgb(51, 65, 85)';
+                        // e.target.style.transform = 'translateY(-1px)';
+                        e.target.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.3)';
+                    },
+                    onMouseLeave: (e) => {
+                        // e.target.style.background = 'rgb(30, 41, 59)';
+                        // e.target.style.transform = 'translateY(0)';
+
+                        e.target.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.2)';
+                    }
+                },
+                    React.createElement('img', {
+                        src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                        alt: '',
+                        style: {
+                            width: '20px',
+                            height: '20px',
+                            position: 'absolute',
+                            left: '14px',
+                            filter: 'brightness(0) invert(1)'
+                        }
+                    }),
+                    React.createElement('span', {
+                        style: {
+                            flex: '1 1 0%',
+                            textAlign: 'center'
+                        }
+                    }, 'New Chat')
+                ),
+
                 // Search bar
                 React.createElement('form', {
                         id: 'sidebar-search',
@@ -413,7 +695,11 @@
                                 type: 'button',
                                 'aria-expanded': historyExpanded,
                                 'aria-controls': 'history-submenu',
-                                onClick: () => setHistoryExpanded(!historyExpanded)
+                                onClick: () => {
+                                    const newState = !historyExpanded;
+                                    setHistoryExpanded(newState);
+                                    localStorage.setItem('historyExpanded', JSON.stringify(newState));
+                                }
                             },
                             React.createElement('img', {
                                 className: 'slash-circle',
@@ -479,7 +765,11 @@
                                 type: 'button',
                                 'aria-expanded': sourceExpanded,
                                 'aria-controls': 'source-submenu',
-                                onClick: () => setSourceExpanded(!sourceExpanded)
+                                onClick: () => {
+                                    const newState = !sourceExpanded;
+                                    setSourceExpanded(newState);
+                                    localStorage.setItem('sourceExpanded', JSON.stringify(newState));
+                                }
                             },
                             React.createElement('img', {
                                 className: 'slash-circle',
@@ -548,7 +838,11 @@
                                 type: 'button',
                                 'aria-expanded': requirementsExpanded,
                                 'aria-controls': 'requirements-submenu',
-                                onClick: () => setRequirementsExpanded(!requirementsExpanded)
+                                onClick: () => {
+                                    const newState = !requirementsExpanded;
+                                    setRequirementsExpanded(newState);
+                                    localStorage.setItem('requirementsExpanded', JSON.stringify(newState));
+                                }
                             },
                             React.createElement('img', {
                                 className: 'slash-circle',
@@ -585,10 +879,20 @@
                                     display: requirementsExpanded && !sidebarCollapsed ? 'block' : 'none'
                                 }
                             },
+                            React.createElement('div', {
+                                id: "div-requirements-list",
+                                style: {
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "5px"
+                                }
+                            }),
                             React.createElement('p', {
+                                id: "p-label-requirements-no-entry",
                                 style: {
                                     fontSize: '14px',
-                                    color: '#666'
+                                    color: '#666',
+                                    display: 'block'
                                 }
                             }, 'No requirements yet, you can replace this to show lists')
                         )

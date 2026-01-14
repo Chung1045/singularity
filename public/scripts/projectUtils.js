@@ -1,4 +1,13 @@
 /**
+ * IMPORTANT: This file must be loaded BEFORE Sidebar.js and page-specific scripts
+ * It provides shared functions for loading project data (chats, files, reports)
+ * across all pages that use the Sidebar component.
+ *
+ * Loading order on each page:
+ * 1. projectUtils.js (THIS FILE - provides global functions)
+ * 2. Sidebar.js (uses the functions provided by this file)
+ * 3. Page-specific script (tempHome.js, tempPasskey.js, etc. - may override functions)
+ *
  * Shared project utility functions for loading project data across all pages
  * This file should be loaded on all pages that use the Sidebar component
  */
@@ -156,9 +165,10 @@ function createChatHistoryItem(threadName, chatID) {
                 margin: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                fontSize: '14px'
             }
-        }, threadName || 'Untitled Chat'),
+        }, (threadName && threadName.trim() !== '') ? threadName : 'Untitled Chat'),
         React.createElement('img', {
             style: {
                 padding: "4px",
@@ -425,6 +435,48 @@ function createReportItem(reportName, reportID) {
 window.fetchProjectChats = fetchProjectChats;
 window.fetchProjectFiles = fetchProjectFiles;
 window.fetchProjectReports = fetchProjectReports;
+
+/**
+ * Create a new chat thread
+ * Works on all pages - on home page clears current chat, on other pages navigates to home
+ */
+window.createNewChat = function() {
+    console.log('Creating new chat...');
+
+    // Check if we're on the home page
+    const isHomePage = window.location.pathname === '/home';
+
+    if (isHomePage) {
+        // On home page - clear selection and show welcome screen
+        const allChatItems = document.querySelectorAll('.chat-history-item');
+        allChatItems.forEach(item => {
+            item.classList.remove('selected');
+            item.style.backgroundColor = 'transparent';
+        });
+
+        // Clear the chat interface
+        const messagesContainer = document.getElementById('chat-messages');
+        if (messagesContainer) messagesContainer.innerHTML = '';
+
+        // Hide chat interface, show welcome screen
+        const chatInterface = document.getElementById('chat-interface');
+        const suggestionChips = document.getElementById('suggestion-chips');
+        const mainScreenTitle = document.querySelector('.main-screen-title');
+
+        if (chatInterface) chatInterface.style.display = 'none';
+        if (suggestionChips) suggestionChips.style.display = 'none';
+        if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
+
+        // Clear current chat ID tracking
+        window.currentChatID = null;
+
+        console.log('New chat created - ready for first message');
+    } else {
+        // On other pages - navigate to home page
+        console.log('Navigating to home page for new chat...');
+        window.location.href = '/home';
+    }
+};
 
 console.log("projectUtils.js loaded - functions available globally");
 

@@ -207,12 +207,14 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
 
         console.log('chatThreadData type:', typeof chatThreadData);
         console.log('chatThreadData:', JSON.stringify(chatThreadData, null, 2));
+        console.log(`✅ Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
 
         if (!chatThreadData) {
             console.log('No chat thread data returned');
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
+                projectID: null,  // ✅ Include projectID even if null
                 conversations: []
             });
         }
@@ -222,6 +224,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
+                projectID: chatThreadData.projectID || null,  // ✅ Include projectID
                 conversations: []
             });
         }
@@ -231,6 +234,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
+                projectID: chatThreadData.projectID || null,  // ✅ Include projectID
                 conversations: []
             });
         }
@@ -252,6 +256,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
         return res.status(200).json({
             success: true,
             chatID: chatID,
+            projectID: chatThreadData.projectID,  // ✅ Include projectID
             conversations: conversations
         });
 
