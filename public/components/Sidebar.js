@@ -1,5 +1,815 @@
 (function () {
     const {useState} = React;
+    
+    // Project Options Button Component
+    const ProjectOptionsButton = ({selectedProjectID, projects, onProjectDeleted, onProjectRenamed}) => {
+        const [menuOpen, setMenuOpen] = useState(false);
+        const menuRef = React.useRef(null);
+        
+        // Close menu when clicking outside
+        React.useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setMenuOpen(false);
+                }
+            };
+            
+            if (menuOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
+            }
+            
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [menuOpen]);
+        
+        const currentProject = projects.find(p => p.projectID === selectedProjectID);
+        
+        const handleRename = async () => {
+            setMenuOpen(false);
+            
+            // Rename modal
+            const newName = await new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10001;
+                    padding: 20px;
+                `;
+
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background-color: #ffffff;
+                    border-radius: 15px;
+                    padding: 30px;
+                    max-width: 500px;
+                    width: 100%;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                `;
+
+                modalContent.innerHTML = `
+                    <div style="
+                        font-family: Urbanist, Helvetica;
+                        font-weight: 700;
+                        font-size: 24px;
+                        color: #000000;
+                        line-height: normal;
+                    ">Rename Project</div>
+                    <div style="
+                        font-family: Inter, Helvetica;
+                        font-weight: 400;
+                        font-size: 16px;
+                        color: #000000;
+                        line-height: 1.5;
+                    ">Enter a new name for "${currentProject?.projectName}":</div>
+                    <input type="text" id="project-rename-input" value="${currentProject?.projectName || ''}" style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 1.67px solid #e4e4e4;
+                        border-radius: 10px;
+                        font-family: Inter, Helvetica;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                    ">
+                    <div style="
+                        display: flex;
+                        gap: 10px;
+                        justify-content: flex-end;
+                        margin-top: 10px;
+                    ">
+                        <button id="cancel-rename-btn" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: 1px solid #e0e0e0;
+                            background-color: #ffffff;
+                            color: #000000;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">Cancel</button>
+                        <button id="save-rename-btn" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: none;
+                            background-color: #000000;
+                            color: #ffffff;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">Save</button>
+                    </div>
+                `;
+
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+
+                const saveBtn = modalContent.querySelector('#save-rename-btn');
+                const cancelBtn = modalContent.querySelector('#cancel-rename-btn');
+                const input = modalContent.querySelector('#project-rename-input');
+
+                saveBtn.addEventListener('mouseenter', () => {
+                    saveBtn.style.backgroundColor = '#333333';
+                });
+                saveBtn.addEventListener('mouseleave', () => {
+                    saveBtn.style.backgroundColor = '#000000';
+                });
+
+                cancelBtn.addEventListener('mouseenter', () => {
+                    cancelBtn.style.backgroundColor = '#f5f5f5';
+                });
+                cancelBtn.addEventListener('mouseleave', () => {
+                    cancelBtn.style.backgroundColor = '#ffffff';
+                });
+
+                saveBtn.addEventListener('click', () => {
+                    const value = input.value.trim();
+                    document.body.removeChild(modal);
+                    resolve(value);
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    resolve(null);
+                });
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                        resolve(null);
+                    }
+                });
+
+                modalContent.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+
+                // Handle Enter key
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const value = input.value.trim();
+                        document.body.removeChild(modal);
+                        resolve(value);
+                    }
+                });
+
+                // Focus input and select text
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 100);
+            });
+
+            if (!newName || newName === currentProject?.projectName) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/project/rename', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        projectID: selectedProjectID,
+                        newProjectName: newName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Show success modal
+                    const successModal = document.createElement('div');
+                    successModal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 10001;
+                        padding: 20px;
+                    `;
+
+                    const successContent = document.createElement('div');
+                    successContent.style.cssText = `
+                        background-color: #ffffff;
+                        border-radius: 15px;
+                        padding: 30px;
+                        max-width: 500px;
+                        width: 100%;
+                        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                    `;
+
+                    successContent.innerHTML = `
+                        <div style="
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 700;
+                            font-size: 24px;
+                            color: #000000;
+                            line-height: normal;
+                        ">Rename Successful</div>
+                        <div style="
+                            font-family: Inter, Helvetica;
+                            font-weight: 400;
+                            font-size: 14px;
+                            color: #000000;
+                            line-height: 1.4;
+                        ">Project renamed successfully.</div>
+                        <div style="
+                            display: flex;
+                            justify-content: flex-end;
+                        ">
+                            <button id="rename-success-ok-btn" style="
+                                padding: 12px 32px;
+                                border-radius: 10px;
+                                border: none;
+                                background-color: #000000;
+                                color: #ffffff;
+                                font-family: Urbanist, Helvetica;
+                                font-weight: 600;
+                                font-size: 16px;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                white-space: nowrap;
+                            ">OK</button>
+                        </div>
+                    `;
+
+                    successModal.appendChild(successContent);
+                    document.body.appendChild(successModal);
+
+                    const okBtn = successContent.querySelector('#rename-success-ok-btn');
+
+                    okBtn.addEventListener('mouseenter', () => {
+                        okBtn.style.backgroundColor = '#333333';
+                    });
+                    okBtn.addEventListener('mouseleave', () => {
+                        okBtn.style.backgroundColor = '#000000';
+                    });
+
+                    const closeAndRefresh = () => {
+                        if (document.body.contains(successModal)) {
+                            document.body.removeChild(successModal);
+                        }
+                        onProjectRenamed();
+                    };
+
+                    okBtn.addEventListener('click', closeAndRefresh);
+
+                    // Auto-close after 3 seconds
+                    setTimeout(closeAndRefresh, 3000);
+                } else {
+                    alert('Failed to rename project: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error renaming project:', error);
+                alert('An error occurred while renaming the project.');
+            }
+        };
+        
+        const handleDelete = async () => {
+            setMenuOpen(false);
+            
+            // First confirmation modal - Warning
+            const firstConfirm = await new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10001;
+                    padding: 20px;
+                `;
+
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background-color: #ffffff;
+                    border-radius: 15px;
+                    padding: 30px;
+                    max-width: 500px;
+                    width: 100%;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                `;
+
+                modalContent.innerHTML = `
+                    <div style="
+                        font-family: Urbanist, Helvetica;
+                        font-weight: 700;
+                        font-size: 24px;
+                        color: #000000;
+                        line-height: normal;
+                    ">Warning</div>
+                    <div style="
+                        font-family: Inter, Helvetica;
+                        font-weight: 400;
+                        font-size: 16px;
+                        color: #000000;
+                        line-height: 1.5;
+                    ">Are you sure you want to delete "${currentProject?.projectName}"?<br><br>
+                    This will permanently delete:<br>
+                    • All chat history<br>
+                    • All uploaded documents<br>
+                    • All requirements and user stories<br>
+                    • All generated reports<br><br>
+                    This action CANNOT be undone!</div>
+                    <div style="
+                        display: flex;
+                        gap: 10px;
+                        justify-content: flex-end;
+                        margin-top: 10px;
+                    ">
+                        <button id="cancel-btn" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: 1px solid #e0e0e0;
+                            background-color: #ffffff;
+                            color: #000000;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">Cancel</button>
+                        <button id="continue-btn" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: none;
+                            background-color: #000000;
+                            color: #ffffff;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">Continue</button>
+                    </div>
+                `;
+
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+
+                const continueBtn = modalContent.querySelector('#continue-btn');
+                const cancelBtn = modalContent.querySelector('#cancel-btn');
+
+                continueBtn.addEventListener('mouseenter', () => {
+                    continueBtn.style.backgroundColor = '#333333';
+                });
+                continueBtn.addEventListener('mouseleave', () => {
+                    continueBtn.style.backgroundColor = '#000000';
+                });
+
+                cancelBtn.addEventListener('mouseenter', () => {
+                    cancelBtn.style.backgroundColor = '#f5f5f5';
+                });
+                cancelBtn.addEventListener('mouseleave', () => {
+                    cancelBtn.style.backgroundColor = '#ffffff';
+                });
+
+                continueBtn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    resolve(true);
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    resolve(false);
+                });
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                        resolve(false);
+                    }
+                });
+
+                modalContent.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            });
+
+            if (!firstConfirm) return;
+
+            // Second confirmation modal - Type project name
+            const secondConfirm = await new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10001;
+                    padding: 20px;
+                `;
+
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background-color: #ffffff;
+                    border-radius: 15px;
+                    padding: 30px;
+                    max-width: 500px;
+                    width: 100%;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                `;
+
+                modalContent.innerHTML = `
+                    <div style="
+                        font-family: Urbanist, Helvetica;
+                        font-weight: 700;
+                        font-size: 24px;
+                        color: #000000;
+                        line-height: normal;
+                    ">Final Confirmation</div>
+                    <div style="
+                        font-family: Inter, Helvetica;
+                        font-weight: 400;
+                        font-size: 16px;
+                        color: #000000;
+                        line-height: 1.5;
+                    ">Type the project name to confirm deletion:<br><br>
+                    <strong>${currentProject?.projectName}</strong></div>
+                    <input type="text" id="project-name-input" placeholder="Type project name here" style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 1.67px solid #e4e4e4;
+                        border-radius: 10px;
+                        font-family: Inter, Helvetica;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                    ">
+                    <div style="
+                        display: flex;
+                        gap: 10px;
+                        justify-content: flex-end;
+                        margin-top: 10px;
+                    ">
+                        <button id="cancel-btn-2" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: 1px solid #e0e0e0;
+                            background-color: #ffffff;
+                            color: #000000;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">Cancel</button>
+                        <button id="delete-btn" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: none;
+                            background-color: #000000;
+                            color: #ffffff;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            opacity: 0.5;
+                            pointer-events: none;
+                        ">Delete</button>
+                    </div>
+                `;
+
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+
+                const deleteBtn = modalContent.querySelector('#delete-btn');
+                const cancelBtn = modalContent.querySelector('#cancel-btn-2');
+                const input = modalContent.querySelector('#project-name-input');
+
+                // Enable delete button only when project name matches
+                input.addEventListener('input', (e) => {
+                    if (e.target.value === currentProject?.projectName) {
+                        deleteBtn.style.opacity = '1';
+                        deleteBtn.style.pointerEvents = 'auto';
+                    } else {
+                        deleteBtn.style.opacity = '0.5';
+                        deleteBtn.style.pointerEvents = 'none';
+                    }
+                });
+
+                deleteBtn.addEventListener('mouseenter', () => {
+                    if (input.value === currentProject?.projectName) {
+                        deleteBtn.style.backgroundColor = '#333333';
+                    }
+                });
+                deleteBtn.addEventListener('mouseleave', () => {
+                    deleteBtn.style.backgroundColor = '#000000';
+                });
+
+                cancelBtn.addEventListener('mouseenter', () => {
+                    cancelBtn.style.backgroundColor = '#f5f5f5';
+                });
+                cancelBtn.addEventListener('mouseleave', () => {
+                    cancelBtn.style.backgroundColor = '#ffffff';
+                });
+
+                deleteBtn.addEventListener('click', () => {
+                    if (input.value === currentProject?.projectName) {
+                        document.body.removeChild(modal);
+                        resolve(true);
+                    }
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    resolve(false);
+                });
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                        resolve(false);
+                    }
+                });
+
+                modalContent.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+
+                // Focus input
+                setTimeout(() => input.focus(), 100);
+            });
+
+            if (!secondConfirm) return;
+
+            try {
+                const response = await fetch('/api/project/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        projectID: selectedProjectID
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Show success modal
+                    const successModal = document.createElement('div');
+                    successModal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 10001;
+                        padding: 20px;
+                    `;
+
+                    const successContent = document.createElement('div');
+                    successContent.style.cssText = `
+                        background-color: #ffffff;
+                        border-radius: 15px;
+                        padding: 30px;
+                        max-width: 500px;
+                        width: 100%;
+                        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                    `;
+
+                    successContent.innerHTML = `
+                        <div style="
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 700;
+                            font-size: 24px;
+                            color: #000000;
+                            line-height: normal;
+                        ">Delete Successful</div>
+                        <div style="
+                            font-family: Inter, Helvetica;
+                            font-weight: 400;
+                            font-size: 14px;
+                            color: #000000;
+                            line-height: 1.4;
+                        ">Project successfully deleted.</div>
+                        <div style="
+                            display: flex;
+                            justify-content: flex-end;
+                        ">
+                            <button id="success-ok-btn" style="
+                                padding: 12px 32px;
+                                border-radius: 10px;
+                                border: none;
+                                background-color: #000000;
+                                color: #ffffff;
+                                font-family: Urbanist, Helvetica;
+                                font-weight: 600;
+                                font-size: 16px;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                white-space: nowrap;
+                            ">OK</button>
+                        </div>
+                    `;
+
+                    successModal.appendChild(successContent);
+                    document.body.appendChild(successModal);
+
+                    const okBtn = successContent.querySelector('#success-ok-btn');
+
+                    okBtn.addEventListener('mouseenter', () => {
+                        okBtn.style.backgroundColor = '#333333';
+                    });
+                    okBtn.addEventListener('mouseleave', () => {
+                        okBtn.style.backgroundColor = '#000000';
+                    });
+
+                    const closeAndReload = () => {
+                        if (document.body.contains(successModal)) {
+                            document.body.removeChild(successModal);
+                        }
+
+                        // Clear localStorage
+                        localStorage.removeItem('selectedProjectID');
+                        localStorage.removeItem('activeChatID');
+                        localStorage.removeItem('activeChatProjectID');
+
+                        // Clear URL parameters (remove chatID)
+                        const currentUrl = new URL(window.location);
+                        currentUrl.searchParams.delete('chatID');
+
+                        // Redirect to clean URL (without chatID)
+                        window.location.href = currentUrl.pathname;
+                    };
+
+                    okBtn.addEventListener('click', closeAndReload);
+
+                    // Auto-reload after 5 seconds
+                    setTimeout(closeAndReload, 5000);
+                } else {
+                    alert('Failed to delete project: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error deleting project:', error);
+                alert('An error occurred while deleting the project.');
+            }
+        };
+        
+        if (!selectedProjectID || !currentProject) {
+            return null;
+        }
+        
+        return React.createElement('div', {
+            ref: menuRef,
+            style: {
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center'
+            }
+        },
+            React.createElement('button', {
+                type: 'button',
+                'aria-label': 'Project options',
+                onClick: (e) => {
+                    e.stopPropagation();
+                    setMenuOpen(!menuOpen);
+                },
+                style: {
+                    padding: '6px',
+                    borderRadius: '5px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background-color 0.2s'
+                },
+                onMouseEnter: (e) => {
+                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                },
+                onMouseLeave: (e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                }
+            },
+                React.createElement('img', {
+                    src: './img/more_vert_24.svg',
+                    alt: 'Options',
+                    style: {
+                        width: '20px',
+                        height: '20px'
+                    }
+                })
+            ),
+            
+            menuOpen && React.createElement('div', {
+                style: {
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '4px',
+                    backgroundColor: '#ffffff',
+                    border: '1.67px solid #e4e4e4',
+                    borderRadius: '11.12px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    minWidth: '140px',
+                    zIndex: 1000,
+                    overflow: 'hidden'
+                }
+            },
+                React.createElement('button', {
+                    style: {
+                        width: '100%',
+                        padding: '12px 14.5px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '13.3px',
+                        color: '#1c1d21',
+                        fontWeight: '400',
+                        fontFamily: '"Inter", Helvetica',
+                        transition: 'background-color 0.2s ease',
+                        borderBottom: '1px solid #f0f0f0'
+                    },
+                    onMouseEnter: (e) => {
+                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                    },
+                    onMouseLeave: (e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        handleRename();
+                    }
+                }, 'Rename'),
+                React.createElement('button', {
+                    style: {
+                        width: '100%',
+                        padding: '12px 14.5px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '13.3px',
+                        color: '#c1281e',
+                        fontWeight: '500',
+                        fontFamily: '"Inter", Helvetica',
+                        transition: 'background-color 0.2s ease'
+                    },
+                    onMouseEnter: (e) => {
+                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                    },
+                    onMouseLeave: (e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        handleDelete();
+                    }
+                }, 'Delete')
+            )
+        );
+    };
 
     const Sidebar = ({
                          sidebarCollapsed,
@@ -44,6 +854,9 @@
         // Add state to track if projects exist
         const [hasProjects, setHasProjects] = useState(false);
 
+        // Add state to store projects array
+        const [projects, setProjects] = useState([]);
+
         // Fetch projects from API and populate dropdown
         const fetchProjects = React.useCallback(async () => {
             console.log("Fetching projects...");
@@ -62,6 +875,7 @@
 
                     if (data.projects && data.projects.length > 0) {
                         setHasProjects(true);
+                        setProjects(data.projects); // Store projects in state
                         populateProjectDropdown(data.projects);
 
                         // Return the project ID to use (saved or first)
@@ -75,6 +889,7 @@
                     } else {
                         console.warn("No projects found");
                         setHasProjects(false);
+                        setProjects([]); // Clear projects array
                         populateProjectDropdown([]);
                         return null;
                     }
@@ -438,25 +1253,35 @@
                         marginBottom: '15px'
                     }
                 },
-                    // Project dropdown
-                    React.createElement('select', {
-                        id: "select-project-drop-down",
+                    // Project selector with options menu
+                    React.createElement('div', {
                         style: {
                             position: 'relative',
                             flex: '1',
-                            padding: '10px 14px',
-                            borderRadius: '10px',
-                            border: '1.67px solid #e4e4e4',
-                            cursor: 'pointer',
-                            transition: 'all 220ms ease',
-                            fontFamily: 'Inter, Helvetica',
-                            fontWeight: '600',
-                            fontSize: '14px',
-                            color: '#1c1d21',
-                            backgroundColor: 'transparent'
-                        },
-                        onChange: async (e) => {
-                            const projectID = e.target.value;
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }
+                    },
+                        // Project dropdown
+                        React.createElement('select', {
+                            id: "select-project-drop-down",
+                            style: {
+                                flex: '1',
+                                padding: '10px 14px',
+                                paddingRight: '10px',
+                                borderRadius: '10px',
+                                border: '1.67px solid #e4e4e4',
+                                cursor: 'pointer',
+                                transition: 'all 220ms ease',
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                color: '#1c1d21',
+                                backgroundColor: 'transparent'
+                            },
+                            onChange: async (e) => {
+                                const projectID = e.target.value;
                             console.log('Project dropdown changed to:', projectID);
 
                             // Save selected project to localStorage and state
@@ -555,6 +1380,19 @@
                         onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
                         onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
                     }),
+
+                    // Project options button (three dots)
+                    hasProjects && React.createElement(ProjectOptionsButton, {
+                        selectedProjectID: selectedProjectID,
+                        projects: projects,
+                        onProjectDeleted: () => {
+                            fetchProjects();
+                        },
+                        onProjectRenamed: () => {
+                            fetchProjects();
+                        }
+                    })
+                ),
 
                     // Create project button
                     React.createElement('button', {

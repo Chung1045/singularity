@@ -160,6 +160,24 @@
     justify-content: flex-start;
 }
 
+/* Message Container - needs relative positioning for button */
+.message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    position: relative; /* For edit button positioning */
+}
+
+.user-message {
+    flex-direction: row-reverse; /* Avatar on right */
+    justify-content: flex-start;
+}
+
+.ai-message {
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
 /* Message Avatar */
 .message-avatar {
     width: 40px;
@@ -173,7 +191,7 @@
 }
 
 .user-message .message-avatar {
-    background-color: #1a1a1a;
+    background-color: #f0f0f0;
     color: #ffffff;
 }
 
@@ -201,6 +219,34 @@
     background-color: transparent;
     color: #1a1a1a;
     border: 1px solid #e0e0e0;
+}
+
+/* Message Edit Button - positioned at bottom of bubble */
+.message-edit-btn {
+    position: absolute;
+    bottom: -30px; /* Inside bubble at bottom */
+    right: 55px; /* Inside bubble at right */
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    font-size: 11px;
+    color: #999;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.message-bubble:hover .message-edit-btn {
+    opacity: 1;
+}
+
+.message-edit-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #666;
 }
 
 /* Typing Indicator */

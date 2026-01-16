@@ -94,26 +94,46 @@ router.post('/project/create', async (req, res) => {
  */
 router.post('/project/delete', async (req, res) => {
     try {
-        console.log("New request /project/delete");
         const { projectID } = req.body;
 
+        console.log(`\n${'═'.repeat(60)}`);
+        console.log(`📨 DELETE PROJECT REQUEST`);
+        console.log(`${'═'.repeat(60)}`);
+        console.log(`   Project ID: ${projectID}`);
+        console.log(`   User ID: ${req.userID}`);
+        console.log(`   Timestamp: ${new Date().toISOString()}`);
+        console.log(`${'═'.repeat(60)}\n`);
+
         if (projectID == null) {
+            console.log(`❌ Validation failed: Project ID is required\n`);
             return res.status(400).json({ success: false, message: "Project ID is required" });
-        } else if (await projectDBService.queryProjectOwner(projectID) !== userID) {
+        }
+
+        const projectOwner = await projectDBService.queryProjectOwner(projectID);
+
+        if (projectOwner !== req.userID) {
+            console.log(`❌ Authorization failed: User ${req.userID} is not the owner of project ${projectID}`);
+            console.log(`   Project owner: ${projectOwner}\n`);
             return res.status(403).json({ successful: false, message: "Unauthorized" });
         }
+
+        console.log(`✓ Authorization passed: User is project owner\n`);
 
         const successful = await projectDBService.deleteProject(projectID);
 
         if (successful) {
-            console.log("Project deleted successfully");
+            console.log(`\n${'═'.repeat(60)}`);
+            console.log(`✅ API RESPONSE: Project deleted successfully`);
+            console.log(`${'═'.repeat(60)}\n`);
             return res.status(200).json({ success: true, message: 'Project deleted successfully' });
         } else {
+            console.log(`\n❌ Deletion failed: Unknown error\n`);
             return res.status(500).json({ success: false, message: 'Failed to delete project' });
         }
 
     } catch (error) {
-        console.log(error);
+        console.error(`\n❌ SERVER ERROR during project deletion:`, error);
+        console.log(`${'═'.repeat(60)}\n`);
         return res.status(500).json({ success: false, message: `Server Error: ${error}` });
     }
 });
@@ -130,7 +150,7 @@ router.post('/project/rename', async (req, res) => {
 
         if (newProjectName == null || projectID == null) {
             return res.status(400).json({ success: false, message: "New Project Name and project ID are required" });
-        } else if (await projectDBService.queryProjectOwner(projectID) !== userID) {
+        } else if (await projectDBService.queryProjectOwner(projectID) !== req.userID) {
             return res.status(403).json({ successful: false, message: "Unauthorized" });
         }
 

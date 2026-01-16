@@ -52,26 +52,144 @@ async function createProject(data) {
 }
 
 async function deleteProject(projectID) {
-    try {
-        // First delete the files from MinIO
-        await fss.deleteProjectFolder(projectID);
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🗑️  DELETING PROJECT: ${projectID}`);
+    console.log(`${'='.repeat(60)}\n`);
 
-        // Then delete the database record
+    try {
+        // Get project details before deletion
+        const projectInfo = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM project WHERE projectID = ?', [projectID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        if (projectInfo) {
+            console.log(`📋 Project Info:`);
+            console.log(`   - Name: ${projectInfo.projectName}`);
+            console.log(`   - Owner: ${projectInfo.projectOwnerUid}`);
+            console.log(`   - Created: ${projectInfo.dateCreate}\n`);
+        }
+
+        // Count related data before deletion
+        const counts = await Promise.all([
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM chat WHERE projectID = ?', [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ table: 'chat', count: row.count });
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM documents WHERE projectID = ?', [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ table: 'documents', count: row.count });
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM userStories WHERE projectID = ?', [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ table: 'userStories', count: row.count });
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM requirements WHERE projectID = ?', [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ table: 'requirements', count: row.count });
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM reports WHERE projectID = ?', [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ table: 'reports', count: row.count });
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM projectShare WHERE projectID = ?', [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ table: 'projectShare', count: row.count });
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM notification WHERE projectID = ?', [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ table: 'notification', count: row.count });
+                });
+            })
+        ]);
+
+        console.log(`📊 Database Records to Delete (CASCADE):`);
+        counts.forEach(({ table, count }) => {
+            if (count > 0) {
+                console.log(`   ✓ ${table}: ${count} record(s)`);
+            }
+        });
+
+        // Get conversation count (related to chats)
+        const chatCount = counts.find(c => c.table === 'chat')?.count || 0;
+        if (chatCount > 0) {
+            const conversationCount = await new Promise((resolve, reject) => {
+                db.get(`
+                    SELECT COUNT(*) as count 
+                    FROM conversation 
+                    WHERE chatID IN (SELECT chatID FROM chat WHERE projectID = ?)
+                `, [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row.count);
+                });
+            });
+
+            const responseCount = await new Promise((resolve, reject) => {
+                db.get(`
+                    SELECT COUNT(*) as count 
+                    FROM response 
+                    WHERE conversationID IN (
+                        SELECT conversationID FROM conversation 
+                        WHERE chatID IN (SELECT chatID FROM chat WHERE projectID = ?)
+                    )
+                `, [projectID], (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row.count);
+                });
+            });
+
+            if (conversationCount > 0) {
+                console.log(`   ✓ conversation: ${conversationCount} record(s)`);
+            }
+            if (responseCount > 0) {
+                console.log(`   ✓ response: ${responseCount} record(s)`);
+            }
+        }
+
+        console.log();
+
+        // First delete the files from MinIO
+        console.log(`🗄️  Deleting files from MinIO...`);
+        await fss.deleteProjectFolder(projectID);
+        console.log(`   ✓ MinIO files deleted\n`);
+
+        // Then delete the database record (CASCADE will handle related records)
+        console.log(`💾 Deleting from database...`);
         const query = `DELETE FROM project WHERE projectID = ?`;
 
         return new Promise((resolve, reject) => {
             db.run(query, [projectID], function (err) {
                 if (err) {
-                    console.error('Error deleting Project from database:', err);
-                    return reject(err); // Reject with the actual error
+                    console.error('❌ Error deleting Project from database:', err);
+                    return reject(err);
                 }
-                console.log(`Project ${projectID} deleted successfully`);
+                console.log(`   ✓ Project record deleted`);
+                console.log(`   ✓ All related records deleted via CASCADE\n`);
+                console.log(`${'='.repeat(60)}`);
+                console.log(`✅ PROJECT DELETION COMPLETE`);
+                console.log(`${'='.repeat(60)}\n`);
                 resolve(true);
             });
         });
     } catch (err) {
-        console.error('Error deleting project:', err);
-        throw err; // Re-throw the error so the caller knows it failed
+        console.error(`❌ Error deleting project:`, err);
+        console.log(`${'='.repeat(60)}\n`);
+        throw err;
     }
 }
 

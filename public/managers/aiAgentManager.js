@@ -514,6 +514,7 @@ router.post('/agent/conversation-edit', async(req, res) => {
     const conversationID = chatData.conversationID;
     const message = chatData.message;
     const attachedDocumentIDs = chatData.attachedDocumentIDs;
+    const userID = req.userID; // Get userID from auth middleware
 
     if (!projectID || !chatID || !conversationID || !chatSeq || !message) {
         return res.status(400).json({success: false, message: `Missing required fields`})
@@ -549,7 +550,7 @@ router.post('/agent/conversation-edit', async(req, res) => {
                 await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
             }
 
-            await aiDB.saveConversationResponse(chatSeq, conversationID, chatID, response);
+            await aiDB.saveConversationResponse(chatSeq, conversationID, response);
             return res.status(200).json({
                 success: true,
                 conversationID: conversationID,

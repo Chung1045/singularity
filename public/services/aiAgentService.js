@@ -41,7 +41,8 @@ async function getResponse(data, conversationSummary) {
         ];
 
         let completion = await client.chat.completions.create({
-            model: 'grok-4-1-fast-non-reasoning',
+            // model: 'grok-4-1-fast-non-reasoning', //swap due to excessive token spending
+            model: 'grok-4-1-fast-reasoning',
             messages: messages,
             tools: tools,
             tool_choice: "auto",  // Let the AI decide when to use tools
@@ -87,7 +88,9 @@ async function getResponse(data, conversationSummary) {
 
             // Get AI's next response with tool results
             completion = await client.chat.completions.create({
-                model: 'grok-4-1-fast-non-reasoning',
+                // model: 'grok-4-1-fast-non-reasoning',
+                model: 'grok-4-1-fast-reasoning',
+
                 messages: messages,
                 tools: tools,
                 tool_choice: "auto",
@@ -116,7 +119,9 @@ async function* getStreamingResponse(data, conversationSummary) {
     ];
 
     const stream = await client.chat.completions.create({
-        model: 'grok-4-1-fast-non-reasoning',
+        // model: 'grok-4-1-fast-non-reasoning',
+        model: 'grok-4-1-fast-reasoning',
+
         messages: messages,
         tools: tools,
         tool_choice: "auto",
@@ -184,7 +189,8 @@ async function* getStreamingResponse(data, conversationSummary) {
 
         // Final non-streaming call after tools
         const completion = await client.chat.completions.create({
-            model: 'grok-4-1-fast-non-reasoning',
+            // model: 'grok-4-1-fast-non-reasoning',
+            model: 'grok-4-1-fast-reasoning',
             messages: messages,
             tools: tools,
             tool_choice: "auto",
@@ -219,7 +225,8 @@ async function getChatSummary(conversationHistory) {
         ];
 
         const completion = await client.chat.completions.create({
-            model: 'grok-4-1-fast-non-reasoning',
+            // model: 'grok-4-1-fast-non-reasoning',
+            model: 'grok-4-1-fast-reasoning',
             messages,
             temperature: 0.2,
             max_tokens: 1500,
@@ -257,7 +264,8 @@ async function createChatName(conversationHistory) {
         ];
 
         const completion = await client.chat.completions.create({
-            model: 'grok-4-1-fast-non-reasoning',
+            // model: 'grok-4-1-fast-non-reasoning',
+            model: 'grok-4-1-fast-reasoning',
             messages,
             temperature: 0.2,
             max_tokens: 1500,

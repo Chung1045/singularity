@@ -137,18 +137,35 @@ const USERSTORIES_SCHEMA = () => `
     );
 `
 
+// OLD - Had foreign key mismatch issues:
+// const USERSTORIES_SOURCE_SCHEMA = () => `
+//     CREATE TABLE IF NOT EXISTS userStorySource
+//     (
+//         refID      TEXT PRIMARY KEY NOT NULL UNIQUE,
+//         storyID    INTEGER          NOT NULL,  -- WRONG: Should be TEXT to match userStories
+//         projectID  TEXT NOT NULL,
+//         documentID TEXT             NOT NULL,
+//         remarks    TEXT,
+//         location TEXT,
+//         FOREIGN KEY (storyID) REFERENCES userStories ON DELETE CASCADE,  -- Missing column name
+//         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
+//         FOREIGN KEY (documentID) REFERENCES documents  -- Missing column name and ON DELETE
+//     )
+// `
+
+// FIXED - Corrected data types and foreign key references:
 const USERSTORIES_SOURCE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS userStorySource
     (
         refID      TEXT PRIMARY KEY NOT NULL UNIQUE,
-        storyID    INTEGER          NOT NULL,
-        projectID  TEXT NOT NULL,
+        storyID    TEXT             NOT NULL,
+        projectID  TEXT             NOT NULL,
         documentID TEXT             NOT NULL,
         remarks    TEXT,
-        location TEXT,
-        FOREIGN KEY (storyID) REFERENCES userStories ON DELETE CASCADE,
+        location   TEXT,
+        FOREIGN KEY (storyID) REFERENCES userStories (storyID) ON DELETE CASCADE,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
-        FOREIGN KEY (documentID) REFERENCES documents
+        FOREIGN KEY (documentID) REFERENCES documents (documentID) ON DELETE CASCADE
     )
 `
 
@@ -166,6 +183,20 @@ const REQUIREMENTS_SCHEMA = () => `
     );
 `
 
+// OLD - Missing ON DELETE CASCADE on storyID foreign key:
+// const REQUIREMENTS_STORY_REF_SCHEMA = () => `
+//     CREATE TABLE IF NOT EXISTS requirementsStoryRef
+//     (
+//         refID          TEXT PRIMARY KEY NOT NULL UNIQUE,
+//         requirementsID TEXT             NOT NULL,
+//         projectID      TEXT             NOT NULL,
+//         storyID        TEXT             NOT NULL,
+//         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
+//         FOREIGN KEY (storyID) REFERENCES userStories (storyID)  -- Missing ON DELETE CASCADE
+//     )
+// `
+
+// FIXED - Added ON DELETE CASCADE:
 const REQUIREMENTS_STORY_REF_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS requirementsStoryRef
     (
@@ -174,10 +205,27 @@ const REQUIREMENTS_STORY_REF_SCHEMA = () => `
         projectID      TEXT             NOT NULL,
         storyID        TEXT             NOT NULL,
         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
-        FOREIGN KEY (storyID) REFERENCES userStories (storyID)
+        FOREIGN KEY (storyID) REFERENCES userStories (storyID) ON DELETE CASCADE
     )
 `
 
+// OLD - Missing column name and ON DELETE CASCADE on documentID foreign key:
+// const REQUIREMENTS_SOURCE_SCHEMA = () => `
+//     CREATE TABLE IF NOT EXISTS requirementsSource
+//     (
+//         refID          TEXT PRIMARY KEY NOT NULL UNIQUE,
+//         requirementsID TEXT             NOT NULL,
+//         projectID      TEXT             NOT NULL,
+//         documentID     TEXT             NOT NULL,
+//         remarks        TEXT,
+//         location       TEXT,
+//         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
+//         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
+//         FOREIGN KEY (documentID) REFERENCES documents (documentID)  -- Missing ON DELETE CASCADE
+//     )
+// `
+
+// FIXED - Added ON DELETE CASCADE:
 const REQUIREMENTS_SOURCE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS requirementsSource
     (
@@ -189,7 +237,7 @@ const REQUIREMENTS_SOURCE_SCHEMA = () => `
         location       TEXT,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
-        FOREIGN KEY (documentID) REFERENCES documents (documentID)
+        FOREIGN KEY (documentID) REFERENCES documents (documentID) ON DELETE CASCADE
     )
 `
 
@@ -218,7 +266,21 @@ const CHAT_SCHEMA = () => `
     );
 `
 
-// Rename conversationID to chatID
+// OLD - Missing column name in foreign key reference:
+// // Rename conversationID to chatID
+// const CONVERSATION_SCHEMA = () => `
+//     CREATE TABLE IF NOT EXISTS conversation
+//     (
+//         conversationID      TEXT    NOT NULL UNIQUE,
+//         chatSeq             INTEGER NOT NULL,
+//         chatID              TEXT    NOT NULL,
+//         conversationMessage TEXT    NOT NULL,
+//         PRIMARY KEY (conversationID, chatSeq),
+//         FOREIGN KEY (chatID) REFERENCES chat ON DELETE CASCADE  -- Missing column name
+//     );
+// `
+
+// FIXED - Added column name (chatID):
 const CONVERSATION_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS conversation
     (
@@ -227,10 +289,25 @@ const CONVERSATION_SCHEMA = () => `
         chatID              TEXT    NOT NULL,
         conversationMessage TEXT    NOT NULL,
         PRIMARY KEY (conversationID, chatSeq),
-        FOREIGN KEY (chatID) REFERENCES chat ON DELETE CASCADE
+        FOREIGN KEY (chatID) REFERENCES chat (chatID) ON DELETE CASCADE
     );
 `
 
+// OLD - Missing column names in composite foreign key and missing ON DELETE CASCADE:
+// const CONVERSATION_DOC_REF_SCHEMA = () => `
+//     CREATE TABLE IF NOT EXISTS conversationDocRef
+//     (
+//         refID           TEXT PRIMARY KEY NOT NULL UNIQUE,
+//         conversationID  TEXT             NOT NULL,
+//         conversationSeq INTEGER          NOT NULL,
+//         documentID      TEXT             NOT NULL,
+//         remarks         TEXT,
+//         FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation ON DELETE CASCADE,  -- Missing column names
+//         FOREIGN KEY (documentID) REFERENCES documents  -- Missing column name and ON DELETE CASCADE
+//     )
+// `
+
+// FIXED - Added column names and ON DELETE CASCADE:
 const CONVERSATION_DOC_REF_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS conversationDocRef
     (
@@ -239,11 +316,27 @@ const CONVERSATION_DOC_REF_SCHEMA = () => `
         conversationSeq INTEGER          NOT NULL,
         documentID      TEXT             NOT NULL,
         remarks         TEXT,
-        FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation ON DELETE CASCADE,
-        FOREIGN KEY (documentID) REFERENCES documents
+        FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation (conversationID, chatSeq) ON DELETE CASCADE,
+        FOREIGN KEY (documentID) REFERENCES documents (documentID) ON DELETE CASCADE
     )
 `
 
+// OLD - Missing column names in composite foreign key reference:
+// const RESPONSE_SCHEMA = () => `
+//     CREATE TABLE IF NOT EXISTS response
+//     (
+//         responseID       TEXT PRIMARY KEY NOT NULL UNIQUE,
+//         responseSeq      INTEGER          NOT NULL,
+//         conversationID   TEXT             NOT NULL,
+//         conversationSeq  INTEGER          NOT NULL,
+//         responseMessage  TEXT             NOT NULL,
+//         responseTimeDate TEXT             NOT NULL,
+//         isActive         INTEGER          NOT NULL,
+//         FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation ON DELETE CASCADE  -- Missing column names
+//     );
+// `
+
+// FIXED - Added column names (conversationID, chatSeq):
 const RESPONSE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS response
     (
@@ -254,7 +347,7 @@ const RESPONSE_SCHEMA = () => `
         responseMessage  TEXT             NOT NULL,
         responseTimeDate TEXT             NOT NULL,
         isActive         INTEGER          NOT NULL,
-        FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation ON DELETE CASCADE
+        FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation (conversationID, chatSeq) ON DELETE CASCADE
     );
 `
 

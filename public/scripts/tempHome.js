@@ -18,10 +18,44 @@ const TempHome = ({csrfToken, userInfo}) => {
 
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+    // Add state for user avatar
+    const [userAvatarUrl, setUserAvatarUrl] = useState('./img/user.svg');
+
     React.useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Fetch user avatar on component mount
+    React.useEffect(() => {
+        async function fetchAvatar() {
+            try {
+                const response = await fetch('/api/profile-pic/fetch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const profileImgData = await response.json();
+
+                if (profileImgData.success && profileImgData.data) {
+                    const imageData = profileImgData.data[0]?.image;
+                    if (imageData) {
+                        setUserAvatarUrl(imageData);
+                        // Make it globally available for chat functions
+                        window.userAvatarUrl = imageData;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching avatar:', error);
+                // Keep default avatar on error
+            }
+        }
+
+        fetchAvatar();
     }, []);
 
     const isMobile = windowWidth <= 480;
@@ -663,96 +697,450 @@ function createFileItem(fileName, documentID) {
     );
 }
 
+// Old implementation commented out - replaced with new implementation below
+// function createChatHistoryItem(chatThreadName, chatID) {
+//     return React.createElement('div', {
+//         ...existing code...
+//     });
+// }
+
 function createChatHistoryItem(chatThreadName, chatID) {
-    return React.createElement('div', {
-            className: 'sidebar-items chat-history-item',
-            'data-chat-id': chatID,
-            'data-thread-name': chatThreadName || 'Untitled Chat', // Store thread name in data attribute
-            style: {
-                padding: '8px 12px',
-                cursor: 'pointer',
-                borderRadius: '5px',
-                transition: 'background-color 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-            },
-            onMouseEnter: (e) => {
-                if (!e.currentTarget.classList.contains('selected')) {
-                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+    const ChatHistoryItemComponent = () => {
+        const [menuOpen, setMenuOpen] = React.useState(false);
+        const menuRef = React.useRef(null);
+
+        // Close menu when clicking outside
+        React.useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setMenuOpen(false);
                 }
-            },
-            onMouseLeave: (e) => {
-                if (!e.currentTarget.classList.contains('selected')) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                }
-            },
-            onClick: (e) => {
-                if (e.target.tagName !== 'IMG') {
-                    // Deselect all chat history items
-                    const allChatItems = document.querySelectorAll('.chat-history-item');
-                    allChatItems.forEach(item => {
-                        item.classList.remove('selected');
-                        item.style.backgroundColor = 'transparent';
+            };
+
+            if (menuOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
+            }
+
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [menuOpen]);
+
+        const handleDelete = async () => {
+            setMenuOpen(false);
+
+            // Show confirmation modal
+            const confirmDelete = await new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10001;
+                    padding: 20px;
+                `;
+
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background-color: #ffffff;
+                    border-radius: 15px;
+                    padding: 30px;
+                    max-width: 500px;
+                    width: 100%;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                `;
+
+                modalContent.innerHTML = `
+                    <div style="
+                        font-family: Urbanist, Helvetica;
+                        font-weight: 700;
+                        font-size: 24px;
+                        color: #000000;
+                        line-height: normal;
+                    ">Warning</div>
+                    <div style="
+                        font-family: Inter, Helvetica;
+                        font-weight: 400;
+                        font-size: 16px;
+                        color: #000000;
+                        line-height: 1.5;
+                    ">Are you sure you want to delete this chat? This cannot be reversed!</div>
+                    <div style="
+                        display: flex;
+                        gap: 10px;
+                        justify-content: flex-end;
+                        margin-top: 10px;
+                    ">
+                        <button id="cancel-btn" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: 1px solid #e0e0e0;
+                            background-color: #ffffff;
+                            color: #000000;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">Cancel</button>
+                        <button id="delete-btn" style="
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            border: none;
+                            background-color: #000000;
+                            color: #ffffff;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">Delete</button>
+                    </div>
+                `;
+
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+
+                const deleteBtn = modalContent.querySelector('#delete-btn');
+                const cancelBtn = modalContent.querySelector('#cancel-btn');
+
+                deleteBtn.addEventListener('mouseenter', () => {
+                    deleteBtn.style.backgroundColor = '#333333';
+                });
+                deleteBtn.addEventListener('mouseleave', () => {
+                    deleteBtn.style.backgroundColor = '#000000';
+                });
+
+                cancelBtn.addEventListener('mouseenter', () => {
+                    cancelBtn.style.backgroundColor = '#f5f5f5';
+                });
+                cancelBtn.addEventListener('mouseleave', () => {
+                    cancelBtn.style.backgroundColor = '#ffffff';
+                });
+
+                deleteBtn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    resolve(true);
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    resolve(false);
+                });
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                        resolve(false);
+                    }
+                });
+
+                // Stop propagation on modal content
+                modalContent.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            });
+
+            if (!confirmDelete) return;
+
+            // Get projectID from localStorage
+            const projectID = localStorage.getItem('selectedProjectID');
+
+            if (!projectID) {
+                console.error('No project selected');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/agent/chat-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        projectID: projectID,
+                        chatID: chatID
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Show success message
+                    const successModal = document.createElement('div');
+                    successModal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 10001;
+                        padding: 20px;
+                    `;
+
+                    const successContent = document.createElement('div');
+                    successContent.style.cssText = `
+                        background-color: #ffffff;
+                        border-radius: 15px;
+                        padding: 30px;
+                        max-width: 500px;
+                        width: 100%;
+                        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                        display: grid;
+                        grid-template-columns: 1fr auto;
+                        gap: 20px;
+                        align-items: start;
+                    `;
+
+                    successContent.innerHTML = `
+                        <div style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                            grid-column: 1;
+                        ">
+                            <div style="
+                                font-family: Urbanist, Helvetica;
+                                font-weight: 700;
+                                font-size: 24px;
+                                color: #000000;
+                                line-height: normal;
+                            ">Delete Successful</div>
+                            <div style="
+                                font-family: Inter, Helvetica;
+                                font-weight: 400;
+                                font-size: 16px;
+                                color: #000000;
+                                line-height: 1.4;
+                            ">Chat history successfully deleted.</div>
+                        </div>
+                        <button id="success-ok-btn" style="
+                            padding: 12px 32px;
+                            border-radius: 10px;
+                            border: none;
+                            background-color: #000000;
+                            color: #ffffff;
+                            font-family: Urbanist, Helvetica;
+                            font-weight: 600;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            white-space: nowrap;
+                            grid-column: 2;
+                            grid-row: 1;
+                        ">OK</button>
+                    `;
+
+                    successModal.appendChild(successContent);
+                    document.body.appendChild(successModal);
+
+                    successContent.addEventListener('click', (e) => {
+                        e.stopPropagation();
                     });
 
-                    // Select this item
-                    e.currentTarget.classList.add('selected');
-                    e.currentTarget.style.backgroundColor = '#e0e0e0';
+                    const okBtn = successContent.querySelector('#success-ok-btn');
 
-                    console.log(`[CLICK] Selected chat: ${chatThreadName}, ID: ${chatID}`);
-                    console.log(`[CLICK] Saving to localStorage: activeChatID = ${chatID}`);
+                    okBtn.addEventListener('mouseenter', () => {
+                        okBtn.style.backgroundColor = '#333333';
+                    });
+                    okBtn.addEventListener('mouseleave', () => {
+                        okBtn.style.backgroundColor = '#000000';
+                    });
 
-                    // Update URL with chatID
-                    const newUrl = new URL(window.location);
-                    newUrl.searchParams.set('chatID', chatID);
-                    window.history.pushState({ chatID }, '', newUrl);
-                    console.log(`[URL] Updated URL to include chatID: ${chatID}`);
+                    const closeSuccessModal = () => {
+                        if (document.body.contains(successModal)) {
+                            document.body.removeChild(successModal);
+                        }
+                    };
 
-                    // Update the top bar title immediately with the thread name from sidebar
-                    const chatTitleElement = document.getElementById('chat-title');
-                    if (chatTitleElement) {
-                        const displayName = (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat';
-                        chatTitleElement.textContent = displayName;
+                    okBtn.addEventListener('click', closeSuccessModal);
+
+                    // Auto close after 5 seconds (generous wait time)
+                    setTimeout(closeSuccessModal, 5000);
+
+                    // Refresh chat history
+                    if (typeof window.fetchProjectChats === 'function') {
+                        await window.fetchProjectChats(projectID);
                     }
 
-                    // Load the chat thread
-                    loadChatThread(chatID);
+                    // If the deleted chat was active, clear it
+                    if (window.currentChatID === chatID) {
+                        window.currentChatID = null;
+                        localStorage.removeItem('activeChatID');
+                        localStorage.removeItem('activeChatProjectID');
+
+                        // Go back to initial screen
+                        if (typeof window.backToInitialScreen === 'function') {
+                            window.backToInitialScreen();
+                        }
+
+                        // Remove chatID from URL
+                        const currentUrl = new URL(window.location);
+                        if (currentUrl.searchParams.has('chatID')) {
+                            currentUrl.searchParams.delete('chatID');
+                            window.history.replaceState({}, '', currentUrl);
+                        }
+                    }
+                } else {
+                    console.error('Failed to delete chat:', data.message);
+                    alert('Failed to delete chat. Please try again.');
                 }
+            } catch (error) {
+                console.error('Error deleting chat:', error);
+                alert('An error occurred while deleting the chat.');
             }
-        },
-        React.createElement('p', {
-            style: {
-                flexGrow: 1,
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontSize: '14px'
-            }
-        }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat'),
-        React.createElement('img', {
-            style: {
-                padding: "4px",
-                flexShrink: 0,
-                borderRadius: '5px',
-                transition: 'background-color 0.2s',
+        };
+
+        return React.createElement('div', {
+                className: 'sidebar-items chat-history-item',
+                'data-chat-id': chatID,
+                'data-thread-name': chatThreadName || 'Untitled Chat',
+                style: {
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    borderRadius: '5px',
+                    transition: 'background-color 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    position: 'relative'
+                },
+                onMouseEnter: (e) => {
+                    if (!e.currentTarget.classList.contains('selected')) {
+                        e.currentTarget.style.backgroundColor = '#f0f0f0';
+                    }
+                },
+                onMouseLeave: (e) => {
+                    if (!e.currentTarget.classList.contains('selected')) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                },
+                onClick: (e) => {
+                    if (e.target.tagName !== 'IMG' && !e.target.closest('.chat-menu')) {
+                        const allChatItems = document.querySelectorAll('.chat-history-item');
+                        allChatItems.forEach(item => {
+                            item.classList.remove('selected');
+                            item.style.backgroundColor = 'transparent';
+                        });
+
+                        e.currentTarget.classList.add('selected');
+                        e.currentTarget.style.backgroundColor = '#e0e0e0';
+
+                        console.log(`[CLICK] Selected chat: ${chatThreadName}, ID: ${chatID}`);
+
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('chatID', chatID);
+                        window.history.pushState({ chatID }, '', newUrl);
+
+                        const chatTitleElement = document.getElementById('chat-title');
+                        if (chatTitleElement) {
+                            const displayName = (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat';
+                            chatTitleElement.textContent = displayName;
+                        }
+
+                        loadChatThread(chatID);
+                    }
+                }
             },
-            src: './img/more_vert_24.svg',
-            alt: '',
-            onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#8e8e8e';
+            React.createElement('p', {
+                style: {
+                    flexGrow: 1,
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '14px'
+                }
+            }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat'),
+            React.createElement('div', {
+                ref: menuRef,
+                className: 'chat-menu',
+                style: {
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center'
+                }
             },
-            onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            },
-            onClick: (e) => {
-                e.stopPropagation(); // Prevent the div's onClick from firing
-                console.log(`Menu clicked for ${chatThreadName}`);
-                // Add your menu logic here
-            }
-        })
-    );
+                React.createElement('img', {
+                    style: {
+                        padding: "4px",
+                        flexShrink: 0,
+                        borderRadius: '5px',
+                        transition: 'background-color 0.2s',
+                        cursor: 'pointer'
+                    },
+                    src: './img/more_vert_24.svg',
+                    alt: '',
+                    onMouseEnter: (e) => {
+                        e.currentTarget.style.backgroundColor = '#8e8e8e';
+                    },
+                    onMouseLeave: (e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    }
+                }),
+                menuOpen && React.createElement('div', {
+                    style: {
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '4px',
+                        backgroundColor: '#ffffff',
+                        border: '1.67px solid #e4e4e4',
+                        borderRadius: '11.12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        minWidth: '120px',
+                        zIndex: 1000,
+                        overflow: 'hidden'
+                    }
+                },
+                    React.createElement('button', {
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#c1281e',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        },
+                        onMouseLeave: (e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        },
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            handleDelete();
+                        }
+                    }, 'Delete')
+                )
+            )
+        );
+    };
+
+    return React.createElement(ChatHistoryItemComponent);
 }
 
 function createReportItem(reportName, reportID) {
@@ -838,6 +1226,86 @@ async function submitConversationRequest() {
         return;
     }
 
+    // Check if we're in edit mode
+    if (window.editingMessage) {
+        const { conversationID, chatSeq, originalText } = window.editingMessage;
+
+        // Check if message actually changed
+        if (userMessage === originalText) {
+            console.log('Message unchanged, canceling edit');
+            cancelEditMode();
+            input.value = '';
+            return;
+        }
+
+        console.log('Editing conversation:', { conversationID, chatSeq });
+
+        // Get selected source documents
+        const selectedSource = getSelectedSource();
+
+        // Clear input immediately
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Remove the old message and subsequent messages from UI
+        removeMessagesFromSeq(chatSeq);
+
+        // Add the edited user message
+        addMessage('user', userMessage, conversationID, chatSeq);
+
+        // Show typing indicator
+        const typingId = showTypingIndicator();
+
+        try {
+            const response = await fetch('/api/agent/conversation-edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    projectID: projectID,
+                    chatID: window.currentChatID,
+                    chatSeq: chatSeq,
+                    conversationID: conversationID,
+                    message: userMessage,
+                    attachedDocumentIDs: selectedSource
+                })
+            });
+
+            // Remove typing indicator
+            removeTypingIndicator(typingId);
+
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Server returned non-JSON response:', text);
+                addMessage('ai', 'Sorry, there was an error editing your message. Please check the console for details.');
+                return;
+            }
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Add AI response
+                addMessage('ai', data.response);
+                console.log('Message edited successfully');
+            } else {
+                addMessage('ai', 'Sorry, there was an error editing your message.');
+                console.error('Edit failed:', data.message);
+            }
+        } catch (error) {
+            removeTypingIndicator(typingId);
+            addMessage('ai', 'Sorry, there was an error editing your message.');
+            console.error('Error editing message:', error);
+        } finally {
+            // Clear edit mode
+            cancelEditMode();
+        }
+
+        return;
+    }
+
     // Check if there's a current chat selected
     const selectedChatItem = document.querySelector('.chat-history-item.selected');
     let chatID = window.currentChatID || selectedChatItem?.dataset?.chatId || '';
@@ -869,7 +1337,28 @@ async function submitConversationRequest() {
 
     // Send request
     try {
-        const newChatID = await streamChatResponse(data, typingId);
+        const result = await streamChatResponse(data, typingId);
+        const newChatID = result?.chatID || result; // Handle both old and new return formats
+        const conversationID = result?.conversationID;
+        const chatSeq = result?.chatSeq;
+
+        // Update the user message with conversation data for edit functionality
+        if (conversationID && chatSeq) {
+            const userMessages = document.querySelectorAll('.user-message');
+            const lastUserMessage = userMessages[userMessages.length - 1];
+            if (lastUserMessage) {
+                lastUserMessage.dataset.conversationId = conversationID;
+                lastUserMessage.dataset.chatSeq = chatSeq;
+                console.log('✅ Updated user message with conversation data:', { conversationID, chatSeq });
+
+                // Update the existing edit button with the real click handler
+                const editBtn = lastUserMessage.querySelector('.message-edit-btn');
+                if (editBtn) {
+                    editBtn.onclick = () => handleEditMessage(userMessage, conversationID, chatSeq);
+                    console.log('✅ Edit button click handler updated with conversation data');
+                }
+            }
+        }
 
         // If a new chat was created, update tracking and refresh history
         if (newChatID && newChatID !== chatID) {
@@ -956,22 +1445,56 @@ function hideChatInterface() {
 }
 
 // Add a message to chat
-function addMessage(role, text) {
+function addMessage(role, text, conversationID = null, chatSeq = null) {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
 
     const messageDiv = document.createElement('div');
     messageDiv.className = role === 'user' ? 'message user-message' : 'message ai-message';
 
+    // Store conversation data for editing
+    if (conversationID) {
+        messageDiv.dataset.conversationId = conversationID;
+    }
+    if (chatSeq) {
+        messageDiv.dataset.chatSeq = chatSeq;
+    }
+
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.innerHTML = role === 'user'
-        ? '<i class="ri-user-3-line"></i>'
-        : '<i class="ri-openai-fill"></i>';
+
+    // Use profile picture for user, Union.svg for AI
+    if (role === 'user') {
+        const avatarUrl = window.userAvatarUrl || './img/user.svg';
+        avatar.innerHTML = `<img src="${avatarUrl}" alt="User" style="width: 80%; height: 80%; object-fit: cover; border-radius: 50%;">`;
+    } else {
+        avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
+    }
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
-    bubble.textContent = text;
+
+    // Create text node for message
+    const textNode = document.createTextNode(text);
+    bubble.appendChild(textNode);
+
+    // Add edit button to EVERY user message (inside the bubble)
+    if (role === 'user') {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'message-edit-btn';
+        editBtn.innerHTML = 'Edit';
+        editBtn.title = 'Edit message';
+
+        if (conversationID && chatSeq) {
+            editBtn.onclick = () => handleEditMessage(text, conversationID, chatSeq);
+            console.log('✏️ Edit button added with data:', { conversationID, chatSeq });
+        } else {
+            editBtn.onclick = () => alert('This message cannot be edited yet. Please wait for the message to finish sending.');
+            console.log('⚠️ Edit button added without data (will be updated later)');
+        }
+
+        bubble.appendChild(editBtn); // Add button inside bubble
+    }
 
     if (role === 'user') {
         // User: bubble first, avatar last (appears on right due to flex-direction: row-reverse)
@@ -987,6 +1510,71 @@ function addMessage(role, text) {
     scrollToBottom();
 }
 
+// Handle editing a message
+function handleEditMessage(text, conversationID, chatSeq) {
+    const inputField = document.getElementById('message-input');
+    if (!inputField) {
+        // Try alternative input field ID
+        const altInput = document.getElementById('main-message-input');
+        if (altInput) {
+            altInput.value = text;
+            altInput.focus();
+        } else {
+            return;
+        }
+    } else {
+        inputField.value = text;
+        inputField.focus();
+    }
+
+    // Store editing state globally
+    window.editingMessage = {
+        conversationID: conversationID,
+        chatSeq: chatSeq,
+        originalText: text
+    };
+
+    // Update send button to show it's editing mode
+    const sendBtn = document.querySelector('.btn-send') || document.getElementById('btn-send-message');
+    if (sendBtn) {
+        sendBtn.style.backgroundColor = '#ff9800'; // Orange to indicate edit mode
+        sendBtn.title = 'Send edited message';
+    }
+
+    console.log('Editing message:', { conversationID, chatSeq });
+}
+
+// Cancel edit mode
+function cancelEditMode() {
+    window.editingMessage = null;
+
+    // Reset send button appearance
+    const sendBtn = document.querySelector('.btn-send') || document.getElementById('btn-send-message');
+    if (sendBtn) {
+        sendBtn.style.backgroundColor = ''; // Reset to default
+        sendBtn.title = 'Send message';
+    }
+}
+
+// Remove messages from a specific sequence onwards
+function removeMessagesFromSeq(chatSeq) {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (!messagesContainer) return;
+
+    const allMessages = messagesContainer.querySelectorAll('.message');
+    let shouldRemove = false;
+
+    allMessages.forEach(message => {
+        const msgSeq = parseInt(message.dataset.chatSeq);
+        if (msgSeq >= chatSeq) {
+            shouldRemove = true;
+        }
+        if (shouldRemove) {
+            message.remove();
+        }
+    });
+}
+
 // Show typing indicator
 function showTypingIndicator() {
     const messagesContainer = document.getElementById('chat-messages');
@@ -999,7 +1587,7 @@ function showTypingIndicator() {
 
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.innerHTML = '<i class="ri-openai-fill"></i>';
+    avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble typing-bubble';
@@ -1056,7 +1644,7 @@ async function streamChatResponse(data, typingId) {
 
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.innerHTML = '<i class="ri-openai-fill"></i>';
+    avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -1067,6 +1655,8 @@ async function streamChatResponse(data, typingId) {
 
     let fullResponse = '';
     let chatIDReceived = null;
+    let conversationIDReceived = null;
+    let chatSeqReceived = null;
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -1099,6 +1689,13 @@ async function streamChatResponse(data, typingId) {
                     } else if (jsonData.type === 'done') {
                         console.log('Streaming complete');
 
+                        // Capture conversation data from done event
+                        if (jsonData.conversationID && jsonData.chatSeq) {
+                            conversationIDReceived = jsonData.conversationID;
+                            chatSeqReceived = jsonData.chatSeq;
+                            console.log('📥 Received conversation data:', { conversationID: conversationIDReceived, chatSeq: chatSeqReceived });
+                        }
+
                         // Refresh chat history again to show generated title
                         if (chatIDReceived && data.chatID === '') {
                             console.log('Streaming done, refreshing history to show generated title...');
@@ -1116,8 +1713,12 @@ async function streamChatResponse(data, typingId) {
         }
     }
 
-    // Return the chatID for tracking
-    return chatIDReceived;
+    // Return the chatID and conversation data for tracking
+    return {
+        chatID: chatIDReceived,
+        conversationID: conversationIDReceived,
+        chatSeq: chatSeqReceived
+    };
 }
 
 // Load chat thread
@@ -1131,7 +1732,26 @@ async function loadChatThread(chatID) {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to load chat thread');
+            // Chat doesn't exist (project was deleted or chat was removed)
+            console.warn(`Chat ${chatID} not found (status: ${response.status})`);
+
+            // Clear URL parameters
+            const currentUrl = new URL(window.location);
+            currentUrl.searchParams.delete('chatID');
+
+            // Clear localStorage
+            localStorage.removeItem('activeChatID');
+            localStorage.removeItem('activeChatProjectID');
+
+            // Redirect to clean URL
+            window.history.replaceState({}, '', currentUrl.pathname);
+
+            // Show initial screen
+            if (typeof window.backToInitialScreen === 'function') {
+                window.backToInitialScreen();
+            }
+
+            return;
         }
 
         const data = await response.json();
@@ -1204,11 +1824,11 @@ async function loadChatThread(chatID) {
 
         // Even if empty, keep chat interface visible (user clicked to view this thread)
         conversations.forEach(conv => {
-            // Add user message
+            // Add user message with conversation data for editing
             if (conv.conversationMessage) {
-                addMessage('user', conv.conversationMessage);
+                addMessage('user', conv.conversationMessage, conv.conversationID, conv.chatSeq);
             }
-            // Add AI response
+            // Add AI response (no edit button for AI)
             if (conv.responseMessage) {
                 addMessage('ai', conv.responseMessage);
             }

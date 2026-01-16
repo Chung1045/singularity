@@ -70,15 +70,45 @@ async function deleteProjectFolder(projectID) {
 
     return new Promise((resolve, reject) => {
         stream.on("data", obj => objectsToDelete.push(obj.name));
-        stream.on("error", err => reject(err));
+        stream.on("error", err => {
+            console.error(`   ❌ Error listing MinIO objects:`, err);
+            reject(err);
+        });
         stream.on("end", async () => {
             try {
                 if (objectsToDelete.length > 0) {
+                    console.log(`   📁 Found ${objectsToDelete.length} file(s) in MinIO:`);
+
+                    // Group files by type for cleaner output
+                    const filesByType = {};
+                    objectsToDelete.forEach(fileName => {
+                        const parts = fileName.split('/');
+                        const folder = parts.length > 2 ? parts[1] : 'root';
+                        if (!filesByType[folder]) {
+                            filesByType[folder] = [];
+                        }
+                        filesByType[folder].push(parts[parts.length - 1]);
+                    });
+
+                    // Log grouped files
+                    Object.keys(filesByType).forEach(folder => {
+                        console.log(`      - ${folder}/: ${filesByType[folder].length} file(s)`);
+                        if (filesByType[folder].length <= 5) {
+                            // Show individual files if 5 or fewer
+                            filesByType[folder].forEach(file => {
+                                console.log(`         • ${file}`);
+                            });
+                        }
+                    });
+
                     await minioClient.removeObjects(bucket, objectsToDelete);
-                    console.log(`Deleted ${objectsToDelete.length} object(s) in folder: ${path}`);
+                    console.log(`   ✓ Successfully deleted ${objectsToDelete.length} file(s) from MinIO`);
+                } else {
+                    console.log(`   ℹ️  No files found in MinIO path: ${path}`);
                 }
                 resolve();
             } catch (err) {
+                console.error(`   ❌ Error deleting MinIO objects:`, err);
                 reject(err);
             }
         });
