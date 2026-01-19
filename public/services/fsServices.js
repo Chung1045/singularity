@@ -3,6 +3,8 @@ const fs = require("fs").promises;
 const path = require("path");
 const db = require("./db")
 const uuid = require("uuid-v4");
+const pdfParse = require('pdf-parse');
+const {PDFParse} = require("pdf-parse");
 
 const FSS_REPORT_USERSTORIES = "userStories";
 const FSS_REPORT_REQUIREMENTS = "requirements";
@@ -261,6 +263,11 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
     try {
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
+
+        if (documentExt === ".pdf" || ".docx" || ".mp3" || ".m4a" || ".mp4") {
+            await createAliasFile(projectID, documentID, documentExt)
+        }
+
         return { successful: true };
     } catch (err) {
         console.error("Database insert error:", err);
@@ -523,6 +530,101 @@ async function deleteReportRecord(projectID, reportID) {
         };
     }
 }
+
+async function extractPDFFromStream(buffer) {
+    const parser = new PDFParse({ data: buffer });
+
+    try {
+        const result = await parser.getText();
+        console.log(`Parsed data: ${result.text}`);
+        return result.text;
+    } finally {
+        await parser.destroy();
+    }
+}
+
+async function extractDOCXFromStream(buffer) {
+    const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'docx-'));
+    const docxFilename = crypto.randomUUID() + '.docx';
+    const pdfFilename = crypto.randomUUID() + '.pdf';
+    const inputPath = path.join(tempDir, docxFilename);
+    const outputPath = path.join(tempDir, pdfFilename);
+
+    try {
+        await fs.writeFile(inputPath, buffer);
+
+        await new Promise((resolve, reject) => {
+            docx_pdf(inputPath, outputPath, (err, result) => {
+                if (err) reject(err);
+                else resolve(result);
+            });
+        });
+
+        const pdfBuffer = await fs.readFile(outputPath);
+
+        // Extract text from converted PDF
+        const parser = new PDFParse({ data: pdfBuffer });
+        const result = await parser.getText();
+        await parser.destroy();
+
+        return result.text;
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
+}
+
+async function createAliasFile(projectID, documentID, documentExt) {
+    // Download the file
+    const stream = await downloadProjectFile(projectID, documentID);
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    // Extract text based on document type
+    let extractedText = "";
+
+    switch (documentExt.toLowerCase()) {
+        case ".docx":
+            extractedText = await extractDOCXFromStream(buffer);
+            break;
+        case ".pdf":
+            extractedText = await extractPDFFromStream(buffer);
+            break;
+        default:
+            throw new Error(`Unsupported document type: ${documentExt}`);
+    }
+
+    // Generate alias ID and path
+    const aliasID = uuid();
+    const textPath = `project/${projectID}/alias/${aliasID}.txt`;
+
+    // Save extracted text to MinIO
+    const textBuffer = Buffer.from(extractedText, 'utf-8');
+    await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
+        'Content-Type': 'text/plain; charset=utf-8'
+    });
+
+    console.log(`Saved extracted text to: ${textPath}`);
+
+    // Update database with alias ID
+    const sql = `UPDATE documents
+                 SET documentAlias = ?
+                 WHERE projectID = ?
+                   AND documentID = ?`;
+
+    await db.run(sql, [aliasID, projectID, documentID]);
+
+    console.log(`Updated database: documentID=${documentID}, aliasID=${aliasID}`);
+
+    return {
+        aliasID: aliasID,
+        minioPath: textPath,
+        textLength: extractedText.length
+    };
+}
+
 
 async function testConnection() {
     return await minioClient.bucketExists(process.env.MINIO_BUCKET);

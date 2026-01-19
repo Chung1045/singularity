@@ -1,13 +1,14 @@
 const USER_TABLE_SCHEMA = () => `
-    CREATE TABLE IF NOT EXISTS user (
-                                        uid TEXT PRIMARY KEY UNIQUE,
-                                        firstName TEXT,
-                                        lastName TEXT,
-                                        userType TEXT,
-                                        userEmail TEXT,
-                                        userName TEXT UNIQUE,
-                                        userAvatarPath TEXT,
-                                        googleAvatarUrl TEXT
+    CREATE TABLE IF NOT EXISTS user
+    (
+        uid             TEXT PRIMARY KEY UNIQUE,
+        firstName       TEXT,
+        lastName        TEXT,
+        userType        TEXT,
+        userEmail       TEXT,
+        userName        TEXT UNIQUE,
+        userAvatarPath  TEXT,
+        googleAvatarUrl TEXT
     );
 `;
 
@@ -114,10 +115,11 @@ const NOTIFICATION_SCHEMA = () => `
 const DOCUMENTS_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS documents
     (
-        documentID   TEXT PRIMARY KEY NOT NULL UNIQUE,
-        projectID    TEXT             NOT NULL,
-        documentName TEXT             NOT NULL,
-        documentExt  TEXT             NOT NULL,
+        documentID    TEXT PRIMARY KEY NOT NULL UNIQUE,
+        projectID     TEXT             NOT NULL,
+        documentName  TEXT             NOT NULL,
+        documentExt   TEXT             NOT NULL,
+        documentAlias TEXT,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
 `
