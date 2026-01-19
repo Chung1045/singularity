@@ -1,31 +1,4 @@
-/**
- * Document Upload Section Component
- * ID: documentUploadSection.js
- * Purpose: Displays document files in a table format with checkboxes for selection
- *          and handles document file uploads
- *
- * Component IDs:
- * - document-upload-section-container: Main container
- * - document-upload-header: Header section
- * - document-upload-back-button: Back button
- * - document-upload-back-icon: Back arrow icon
- * - document-upload-title: "Import Document" title
- * - document-upload-reupload-button: Reupload button
- * - document-upload-next-button: Next/Upload button for documents
- * - document-upload-header-spacer: Spacing div after Next button
- * - document-upload-table-header: Table header container
- * - document-upload-header-checkbox-placeholder: Checkbox column placeholder
- * - document-upload-header-icon-placeholder: Icon column placeholder
- * - document-upload-header-filename: File Name column header
- * - document-upload-header-type: Type column header
- * - document-upload-header-filesize: File Size column header
- * - document-upload-header-date: Date Uploaded column header
- * - document-upload-header-menu-placeholder: Menu column placeholder
- * - document-upload-header-separator: Separator line under header
- * - document-upload-files-list: Files list container
- * - document-upload-empty-state: Empty state message
- * - document-upload-file-row-${index}: Individual file row
- */
+
 (function () {
     const { useState, useEffect } = React;
 

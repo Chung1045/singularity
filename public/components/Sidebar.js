@@ -1,14 +1,4 @@
-/**
- * Sidebar Component
- * ID: Sidebar.js
- * Purpose: Project navigation sidebar with source file management,
- *          chat history, and file upload integration
- *
- * Component IDs:
- * - sidebar-source-upload-button: Upload files button in source section
- * - source-file-name-${documentID}: Source file name text (in tempHome.js)
- * - source-file-menu-${documentID}: Three-dot menu icon for file options (in tempHome.js) - 30px × 30px
- */
+
 (function () {
     const {useState} = React;
     

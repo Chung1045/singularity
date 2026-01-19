@@ -1,47 +1,4 @@
-/**
- * File Upload Component
- * ID: fileUploadComponent.js
- * Purpose: Main file upload interface with multi-file support, mixed type handling,
- *          sequential upload flow with SKIP option for documents and audio files
- *
- * Features:
- * - Upload documents and/or audio files
- * - Mixed type handling with sequential upload
- * - Skip remaining files option (can upload docs and skip audio, or vice versa)
- * - Upload checked only or upload all files
- * - Edit selection before uploading
- *
- * Component IDs:
- *
- * Initial Screen:
- * - file-upload-initial-screen-container: Main container for initial screen
- * - file-upload-initial-header: Header section
- * - file-upload-back-button: Back/close button
- * - file-upload-back-icon: Back arrow icon
- * - file-upload-title: "Import Files" title
- * - file-upload-initial-next-button: Next button on initial screen
- * - file-upload-header-spacer: Spacing div
- * - file-upload-content-area: Main content area
- * - file-upload-file-list-container: Container for selected files list
- * - file-upload-add-more-button: Add more files button
- * - file-upload-prompt-container: Upload prompt (empty state) container
- * - file-upload-cloud-icon: Cloud upload icon
- * - file-upload-prompt-text: "Import Files for Analysis" text
- *
- * Mixed Choice Screen:
- * - mixed-choice-header: Header section
- * - mixed-choice-back-button: Back button
- * - mixed-choice-back-icon: Back arrow icon
- * - mixed-choice-title: "Choose Upload Order" title
- * - mixed-choice-header-spacer: Header spacing div
- * - mixed-choice-content: Content area
- * - mixed-choice-info-text: Information text
- * - upload-order-documents-first-button: Upload documents first option
- * - upload-order-audio-first-button: Upload audio first option
- * - mixed-choice-edit-selection-button: Edit selection button
- * - mixed-choice-edit-icon: Edit icon
- * - mixed-choice-info-note: Bottom info note
- */
+
 (function () {
     const { useState, useEffect } = React;
 

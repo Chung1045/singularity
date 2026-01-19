@@ -1,32 +1,4 @@
-/**
- * Audio Upload Section Component
- * ID: audioUploadSection.js
- * Purpose: Displays audio files in a table format with checkboxes for selection,
- *          shows duration, and handles audio file uploads
- *
- * Component IDs:
- * - audio-upload-section-container: Main container
- * - audio-upload-header: Header section
- * - audio-upload-back-button: Back button
- * - audio-upload-back-icon: Back arrow icon
- * - audio-upload-title: "Import Audio" title
- * - audio-upload-reupload-button: Reupload button
- * - audio-upload-reupload-icon: Reupload icon (↻)
- * - audio-upload-next-button: Next/Upload button for audio files
- * - audio-upload-header-spacer: Spacing div after Next button
- * - audio-upload-table-header: Table header container
- * - audio-upload-header-checkbox-placeholder: Checkbox column placeholder
- * - audio-upload-header-icon-placeholder: Icon column placeholder
- * - audio-upload-header-filename: File Name column header
- * - audio-upload-header-type: Type column header
- * - audio-upload-header-duration: Duration column header
- * - audio-upload-header-date: Date Uploaded column header
- * - audio-upload-header-menu-placeholder: Menu column placeholder
- * - audio-upload-header-separator: Separator line under header
- * - audio-upload-files-list: Files list container
- * - audio-upload-empty-state: Empty state message
- * - audio-upload-file-row-${index}: Individual file row
- */
+
 (function () {
     const { useState, useEffect } = React;
 

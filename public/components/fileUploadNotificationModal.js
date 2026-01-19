@@ -1,21 +1,4 @@
-/**
- * File Upload Notification Modal Component
- * ID: fileUploadNotificationModal.js
- * Purpose: Custom notification system for file upload operations
- *          Supports success, error, info, confirm, and warning types
- *
- * Component IDs:
- * - file-upload-notification-backdrop: Modal backdrop overlay
- * - file-upload-notification-modal: Modal container
- * - file-upload-notification-icon: Icon
- * - file-upload-notification-title: Notification title
- * - file-upload-notification-message: Notification message
- * - file-upload-notification-actions: Button container
- * - file-upload-notification-cancel-button: Cancel button
- * - file-upload-notification-action-button: Action/OK button
- * - file-upload-notification-container: Root container div
- * - file-upload-notification-styles: CSS animation styles
- */
+
 (function () {
     const { useState } = React;
 
