@@ -269,7 +269,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
             await createAliasFile(projectID, documentID, documentExt)
         }
 
-        return { successful: true };
+        return {successful: true};
     } catch (err) {
         console.error("Database insert error:", err);
         throw err;
@@ -302,7 +302,10 @@ async function deleteProjectFile(documentID, projectID) {
 
         // Delete from database
         const sql = `
-            DELETE FROM documents WHERE documentID = ? AND projectID = ?
+            DELETE
+            FROM documents
+            WHERE documentID = ?
+              AND projectID = ?
         `;
 
         await db.run(sql, [documentID, projectID]);
@@ -344,12 +347,13 @@ async function renameProjectFile(projectID, documentID, newFileName) {
     return new Promise((resolve, reject) => {
 
         const sql = `
-            UPDATE documents 
+            UPDATE documents
             SET documentName = ?
-            WHERE documentID = ? AND projectID = ?
+            WHERE documentID = ?
+              AND projectID = ?
         `;
 
-        db.run(sql, [newFileName, documentID, projectID], function(err) {  // Use db.run for UPDATE
+        db.run(sql, [newFileName, documentID, projectID], function (err) {  // Use db.run for UPDATE
             if (err) {
                 console.error('Error in renameProjectFiles2:', err);
                 return reject(err);
@@ -368,7 +372,8 @@ async function getFileMetadata(documentID, projectID) {
         const sql = `
             SELECT documentID, documentName, documentExt
             FROM documents
-            WHERE documentID = ? AND projectID = ?
+            WHERE documentID = ?
+              AND projectID = ?
         `;
 
         db.get(sql, [documentID, projectID], (err, row) => {
@@ -408,7 +413,9 @@ async function saveGeneratedReport(projectID, buffer, kind) {
 }
 
 async function listReportRecord(projectID) {
-    const sql = `SELECT reportID, reportName, reportType FROM reports WHERE projectID = ?`;
+    const sql = `SELECT reportID, reportName, reportType
+                 FROM reports
+                 WHERE projectID = ?`;
 
     return new Promise((resolve, reject) => {
         db.all(sql, [projectID], (err, rows) => {
@@ -422,7 +429,7 @@ async function listReportRecord(projectID) {
     });
 }
 
-async function downloadReport(projectID, reportID){
+async function downloadReport(projectID, reportID) {
     try {
         const objectPath = `project/${projectID}/reports/${reportID}`;
         console.log(`Attempting to fetch ${objectPath}`)
@@ -467,7 +474,10 @@ async function insertReportRecord(projectID, reportType) {
 }
 
 async function queryReportName(projectID, reportID) {
-    const sql = `SELECT reportName FROM reports WHERE projectID = ? AND reportID = ?`;
+    const sql = `SELECT reportName
+                 FROM reports
+                 WHERE projectID = ?
+                   AND reportID = ?`;
 
     return new Promise((resolve, reject) => {
         db.get(sql, [projectID, reportID], (err, row) => {
@@ -514,7 +524,7 @@ async function deleteReportRecord(projectID, reportID) {
 }
 
 async function extractPDFFromStream(buffer) {
-    const parser = new PDFParse({ data: buffer });
+    const parser = new PDFParse({data: buffer});
 
     try {
         const result = await parser.getText();
@@ -545,13 +555,13 @@ async function extractDOCXFromStream(buffer) {
         const pdfBuffer = await fs.readFile(outputPath);
 
         // Extract text from converted PDF
-        const parser = new PDFParse({ data: pdfBuffer });
+        const parser = new PDFParse({data: pdfBuffer});
         const result = await parser.getText();
         await parser.destroy();
 
         return result.text;
     } finally {
-        await fs.rm(tempDir, { recursive: true, force: true });
+        await fs.rm(tempDir, {recursive: true, force: true});
     }
 }
 
@@ -607,12 +617,67 @@ async function createAliasFile(projectID, documentID, documentExt) {
     };
 }
 
+async function getFileContext(projectID, documentID) {
+    const sql = `SELECT *
+                 FROM documents
+                 WHERE projectID = ?
+                   AND documentID = ?`;
+
+    console.log(`Parameter: projectID: ${projectID}, documentID: ${documentID}`);
+
+    // Wrap db.all in a promise
+    const result = await new Promise((resolve, reject) => {
+        db.all(sql, [projectID, documentID], (err, rows) => {
+            if (err) {
+                console.error("Query error:", err);
+                return reject(err);
+            }
+            resolve(rows);
+        });
+    });
+
+    console.log("DB result:", result);
+    console.log("DB result length:", result?.length);
+
+    if (!result || result.length === 0) {
+        console.log("No rows found");
+        return `Context is not available.`;
+    }
+
+    console.log("First row:", result[0]);
+
+    const documentAlias = result[0].documentAlias;
+    console.log("Document alias:", documentAlias);
+
+    if (!documentAlias) {
+        console.log("Document alias is null/empty");
+        return `Context is not available.`;
+    }
+
+    const objectPath = `project/${projectID}/alias/${documentAlias}.txt`;
+    console.log("Fetching from MinIO:", objectPath);
+
+    const stream = await minioClient.getObject(bucket, objectPath);
+
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+
+    const content = Buffer.concat(chunks).toString('utf-8');
+    console.log("Content length:", content.length);
+
+    return content;
+}
 
 async function testConnection() {
     return await minioClient.bucketExists(process.env.MINIO_BUCKET);
 }
 
 init()
+
+
+
 
 module.exports = {
     createFolder,
@@ -625,6 +690,7 @@ module.exports = {
     FSS_REPORT_REQUIREMENTS,
     FSS_REPORT_USERSTORIES,
     getFileMetadata,
+    getFileContext,
     init,
     insertFileData,
     insertReportRecord,
