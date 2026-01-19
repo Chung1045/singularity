@@ -3,8 +3,9 @@ const fs = require("fs").promises;
 const path = require("path");
 const db = require("./db")
 const uuid = require("uuid-v4");
-const pdfParse = require('pdf-parse');
 const {PDFParse} = require("pdf-parse");
+const docx_pdf = require('docx-pdf');
+const os = require("os");
 
 const FSS_REPORT_USERSTORIES = "userStories";
 const FSS_REPORT_REQUIREMENTS = "requirements";
@@ -380,25 +381,6 @@ async function getFileMetadata(documentID, projectID) {
     });
 }
 
-async function filePreProcessing(projectID, documentID, fileExt){
-
-    switch (fileExt) {
-        case 'doc':
-        case 'docx':
-        // convert to pdf pipeline + extract
-
-        case 'pdf':
-            // extract text from pdf
-
-        case 'mp3':
-            // whisper pipeline
-
-        default:
-            // unrecognized file format
-    }
-
-}
-
 async function saveGeneratedReport(projectID, buffer, kind) {
     try {
 
@@ -544,7 +526,7 @@ async function extractPDFFromStream(buffer) {
 }
 
 async function extractDOCXFromStream(buffer) {
-    const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'docx-'));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'docx-'));
     const docxFilename = crypto.randomUUID() + '.docx';
     const pdfFilename = crypto.randomUUID() + '.pdf';
     const inputPath = path.join(tempDir, docxFilename);
@@ -598,7 +580,7 @@ async function createAliasFile(projectID, documentID, documentExt) {
 
     // Generate alias ID and path
     const aliasID = uuid();
-    const textPath = `project/${projectID}/alias/${aliasID}.txt`;
+    const textPath = `project/${projectID}/alias/${aliasID}`;
 
     // Save extracted text to MinIO
     const textBuffer = Buffer.from(extractedText, 'utf-8');
