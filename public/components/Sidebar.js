@@ -1,3 +1,14 @@
+/**
+ * Sidebar Component
+ * ID: Sidebar.js
+ * Purpose: Project navigation sidebar with source file management,
+ *          chat history, and file upload integration
+ *
+ * Component IDs:
+ * - sidebar-source-upload-button: Upload files button in source section
+ * - source-file-name-${documentID}: Source file name text (in tempHome.js)
+ * - source-file-menu-${documentID}: Three-dot menu icon for file options (in tempHome.js) - 30px × 30px
+ */
 (function () {
     const {useState} = React;
     
@@ -851,6 +862,14 @@
             return localStorage.getItem('selectedProjectID') || null;
         });
 
+        // Expose getCurrentProjectID globally
+        React.useEffect(() => {
+            window.getCurrentProjectID = () => selectedProjectID;
+            return () => {
+                delete window.getCurrentProjectID;
+            };
+        }, [selectedProjectID]);
+
         // Add state to track if projects exist
         const [hasProjects, setHasProjects] = useState(false);
 
@@ -1644,6 +1663,51 @@
                                     display: sourceExpanded && !sidebarCollapsed ? 'block' : 'none'
                                 }
                             },
+                            // Upload button - Only visible when project is selected
+                            (selectedProjectID || (window.getCurrentProjectID && window.getCurrentProjectID())) && React.createElement('button', {
+                                id: 'sidebar-source-upload-button',
+                                'aria-label': 'Upload files to project',
+                                onClick: async () => {
+                                    console.log('[FileUpload] Sidebar upload button clicked');
+                                    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : selectedProjectID;
+                                    console.log('[FileUpload] Sidebar projectID:', projectID);
+                                    if (projectID) {
+                                        // Trigger file upload modal in parent
+                                        const event = new CustomEvent('openFileUpload', { detail: { projectID } });
+                                        window.dispatchEvent(event);
+                                        console.log('[FileUpload] Event dispatched');
+                                    }
+                                },
+                                style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '8px 12px',
+                                    backgroundColor: 'rgb(30, 41, 59)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: '#ffffff',
+                                    fontSize: '12px',
+                                    fontFamily: 'Inter, Helvetica',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    marginBottom: '10px',
+                                    transition: 'background-color 0.2s',
+                                    width: '100%'
+                                },
+                                onMouseEnter: (e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
+                                },
+                                onMouseLeave: (e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
+                                }
+                            },
+                                React.createElement('img', {
+                                    src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                                    style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)' }
+                                }),
+                                'Upload Files'
+                            ),
                             React.createElement('div', {
                                 id: "div-project-source-list",
                                 style: {
