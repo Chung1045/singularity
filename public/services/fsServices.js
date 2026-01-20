@@ -261,20 +261,35 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         VALUES (?, ?, ?, ?)
     `;
 
+    // try {
+    //     await db.run(sql, [documentID, projectID, documentName, documentExt]);
+    //     console.log(`Inserted file metadata: ${documentID}`);
+
+    //     // Only create alias for supported document types (PDF and DOCX)
+    //     // Audio files (.mp3, .m4a, .mp4) will be handled separately by audio processing pipeline
+    //     const extLower = documentExt.toLowerCase();
+    //     console.log(`Checking if alias needed for extension: ${documentExt} (lowercase: ${extLower})`);
+
+    //     if (extLower === ".pdf" || extLower === ".docx") {
+    //         console.log(`Creating alias file for document type: ${extLower}`);
+    //         await createAliasFile(projectID, documentID, documentExt);
+    //     } else {
+    //         console.log(`Skipping alias creation for non-document type: ${extLower}`);
+    //     }
+
+    //     return {successful: true};
+    // } catch (err) {
+    //     console.error("Database insert error:", err);
+    //     throw err;
+    // }
+
+    //its gonna let you see
     try {
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
 
-        // Only create alias for supported document types (PDF and DOCX)
-        // Audio files (.mp3, .m4a, .mp4) will be handled separately by audio processing pipeline
-        const extLower = documentExt.toLowerCase();
-        console.log(`Checking if alias needed for extension: ${documentExt} (lowercase: ${extLower})`);
-
-        if (extLower === ".pdf" || extLower === ".docx") {
-            console.log(`Creating alias file for document type: ${extLower}`);
-            await createAliasFile(projectID, documentID, documentExt);
-        } else {
-            console.log(`Skipping alias creation for non-document type: ${extLower}`);
+        if (documentExt === ".pdf" || ".docx" || ".mp3" || ".m4a" || ".mp4") {
+            await createAliasFile(projectID, documentID, documentExt)
         }
 
         return {successful: true};
@@ -282,6 +297,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         console.error("Database insert error:", err);
         throw err;
     }
+    
 }
 
 /**
