@@ -284,6 +284,7 @@ async function downloadProjectFile(projectID, documentID) {
 
 /**
  * Delete file path
+ * When a document is deleted, all references to it in other tables are also removed.
  */
 async function deleteProjectFile(documentID, projectID) {
     try {
@@ -292,17 +293,46 @@ async function deleteProjectFile(documentID, projectID) {
         await minioClient.removeObject(bucket, objectPath);
         console.log(`Deleted from MinIO: ${objectPath}`);
 
-        // Delete from database
-        const sql = `
-            DELETE FROM documents WHERE documentID = ? AND projectID = ?
-        `;
+        // Delete related records from referencing tables first (to avoid foreign key constraint failures)
+        // These tables have foreign keys referencing documents(documentID)
 
-        await db.run(sql, [documentID, projectID]);
-        console.log(`Deleted from DB: ${documentID}`);
-
-        return {
-            successful: true,
+        const deleteFromTable = (tableName) => {
+            return new Promise((resolve) => {
+                db.run(`DELETE FROM ${tableName} WHERE documentID = ?`, [documentID], function(err) {
+                    if (err) {
+                        console.error(`Error deleting from ${tableName}:`, err);
+                        // Don't reject, just log - table might not exist or have no matching records
+                        resolve();
+                    } else {
+                        console.log(`Deleted ${this.changes} references from ${tableName} for documentID: ${documentID}`);
+                        resolve();
+                    }
+                });
+            });
         };
+
+        // Delete from all tables that reference documentID
+        await deleteFromTable('conversationDocRef');
+        await deleteFromTable('userStorySource');
+        await deleteFromTable('requirementsSource');
+
+        // Now delete from documents table
+        return new Promise((resolve, reject) => {
+            db.run(`DELETE FROM documents WHERE documentID = ? AND projectID = ?`, [documentID, projectID], function(err) {
+                if (err) {
+                    console.error("Error deleting document:", err);
+                    reject({
+                        successful: false,
+                        message: err.message
+                    });
+                } else {
+                    console.log(`Deleted from DB: ${documentID}`);
+                    resolve({
+                        successful: true,
+                    });
+                }
+            });
+        });
     } catch (err) {
         console.error("Delete error:", err);
         return {
