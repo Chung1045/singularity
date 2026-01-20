@@ -203,6 +203,8 @@
 /* Message Bubble */
 .message-bubble {
     max-width: 600px;
+    width: fit-content;
+    height: auto;
     padding: 12px 16px;
     border-radius: 18px;
     font-size: 15px;
@@ -213,6 +215,10 @@
 .user-message .message-bubble {
     background-color: #f0f0f0;
     color: #1a1a1a;
+    width: fit-content;
+    height: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .ai-message .message-bubble {
@@ -221,32 +227,10 @@
     border: 1px solid #e0e0e0;
 }
 
-/* Message Edit Button - positioned at bottom of bubble */
-.message-edit-btn {
-    position: absolute;
-    bottom: -30px; /* Inside bubble at bottom */
-    right: 55px; /* Inside bubble at right */
-    background: transparent;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s ease, background-color 0.2s ease;
-    font-size: 11px;
-    color: #999;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.message-bubble:hover .message-edit-btn {
-    opacity: 1;
-}
-
-.message-edit-btn:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #666;
+/* Message Edit Button - positioned outside bubble with inline styles in tempHome.js */
+/* Show edit button only on hover of the message content wrapper */
+.user-message:hover .message-edit-btn {
+    opacity: 1 !important;
 }
 
 /* Typing Indicator */
@@ -339,8 +323,8 @@
     }
 
     .chat-messages {
-        padding: 10px;
-        gap: 15px;
+        /*! padding: 44px; */
+        /*! gap: 7px; */
     }
 
     .message-bubble {
@@ -358,5 +342,77 @@
         padding: 8px 16px;
         font-size: 13px;
     }
+    /* Suggestion Chips - Positioned right above input field */
+    .suggestion-chips {
+        display: flex;
+        gap: 10px;
+        /*padding: 0 0 16px 0; !* Only bottom padding to separate from input *!*/
+        justify-content: left;
+        flex-wrap: wrap;
+        position: relative;
+        width: 100%;
+        max-width: 800px; /* Match the input field width */
+        /*margin: 0 auto; !* Center it *!*/
+        margin-left: 50px;
+        margin-bottom: -25px;
+
+    }
+
+    /* When sidebar is collapsed */
+    .sidebar-expand.collapsed .chat-top-bar {
+        left: 72px; /* Collapsed sidebar width + gap */
+        width: calc(100% - 72px);
+    }
+
 }
 
+/* Mobile Responsive */
+@media (min-width: 400px),  (max-width: 768px) {
+    .chat-interface {
+        padding: 10px;
+    }
+
+    .chat-messages {
+        /*! padding: 44px; */
+        /*! gap: 7px; */
+    }
+
+    .message-bubble {
+        max-width: 70vw;
+        font-size: 14px;
+    }
+
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+
+    .chip {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+
+    /* Suggestion Chips - Positioned right above input field */
+    .suggestion-chips {
+        display: flex;
+        gap: 10px;
+        /*padding: 0 0 16px 0; !* Only bottom padding to separate from input *!*/
+        justify-content: left;
+        flex-wrap: wrap;
+        position: relative;
+        width: 100%;
+        max-width: 800px; /* Match the input field width */
+        /*margin: 0 auto; !* Center it *!*/
+        margin-left: 50px;
+        margin-bottom: -25px;
+
+    }
+
+    /* When sidebar is collapsed */
+    .sidebar-expand.collapsed .chat-top-bar {
+        left: 0; /* Collapsed sidebar width + gap */
+        right: 0;
+        width: auto;
+    }
+}

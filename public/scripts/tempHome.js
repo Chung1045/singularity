@@ -21,6 +21,14 @@ const TempHome = ({csrfToken, userInfo}) => {
     // Add state for user avatar
     const [userAvatarUrl, setUserAvatarUrl] = useState('./img/user.svg');
 
+    // Add state for file upload modal
+    const [showFileUpload, setShowFileUpload] = useState(false);
+    const [currentProjectID, setCurrentProjectID] = useState(null);
+
+    // Add state for attachment menu and selected files
+    const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+
     React.useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
@@ -106,6 +114,47 @@ const TempHome = ({csrfToken, userInfo}) => {
         }
     }, []);
 
+    // Listen for file upload events from sidebar
+    React.useEffect(() => {
+        const handleOpenFileUpload = (event) => {
+            console.log('[FileUpload] Event received from sidebar');
+
+            // Check if FileUploadComponent is loaded
+            if (!window.FileUploadComponent) {
+                console.error('[FileUpload] FileUploadComponent not loaded!');
+                alert('File upload component is not ready. Please refresh the page.');
+                return;
+            }
+
+            const { projectID } = event.detail;
+            console.log('[FileUpload] Opening upload modal for projectID:', projectID);
+            setCurrentProjectID(projectID);
+            setShowFileUpload(true);
+        };
+
+        window.addEventListener('openFileUpload', handleOpenFileUpload);
+        return () => {
+            window.removeEventListener('openFileUpload', handleOpenFileUpload);
+        };
+    }, []);
+
+    // Close attachment menu when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (attachmentMenuOpen && !event.target.closest('#attachment-menu-button') && !event.target.closest('#attachment-dropdown-menu')) {
+                setAttachmentMenuOpen(false);
+            }
+        };
+
+        if (attachmentMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [attachmentMenuOpen]);
+
     const showAlert = (title, message) => {
         setModal({isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null});
     };
@@ -146,6 +195,9 @@ const TempHome = ({csrfToken, userInfo}) => {
     }
 
     const username = userInfo?.userName || userInfo?.email || 'User';
+
+    // Debug logging
+    console.log('[FileUpload] Render - showFileUpload:', showFileUpload, 'currentProjectID:', currentProjectID);
 
     return React.createElement('div', {
             className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
@@ -246,13 +298,49 @@ const TempHome = ({csrfToken, userInfo}) => {
                 )
             ),
 
+            // File Upload Modal
+            showFileUpload && window.FileUploadComponent && React.createElement('div', {
+                    style: {
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10002,
+                        padding: '20px'
+                    },
+                    onClick: (e) => {
+                        if (e.target === e.currentTarget) {
+                            setShowFileUpload(false);
+                        }
+                    }
+                },
+                React.createElement(window.FileUploadComponent, {
+                    projectID: currentProjectID,
+                    onClose: () => setShowFileUpload(false),
+                    onFilesUploaded: (files) => {
+                        console.log('Files uploaded:', files);
+                        // Refresh the source list in sidebar
+                        if (window.refreshProjectFiles) {
+                            window.refreshProjectFiles(currentProjectID);
+                        }
+                        // Note: Success notification is already shown by the FileUploadComponent
+                        // No need to show another one here
+                    }
+                })
+            ),
+
             // Main content
             React.createElement('main', {className: 'right-container'},
                 React.createElement('section', {className: 'main-screen'},
                     React.createElement('header', {
-                        className: 'main-screen-title'
-                        // Visible by default, hidden when chat starts
-                    },
+                            className: 'main-screen-title'
+                            // Visible by default, hidden when chat starts
+                        },
                         React.createElement('img', {
                             className: 'bouncy-logo',
                             src: './img/bouncy-logo-animation.svg',
@@ -264,26 +352,26 @@ const TempHome = ({csrfToken, userInfo}) => {
                     ),
                     // Chat interface - hidden by default, shown when user submits first message
                     React.createElement('div', {
-                        id: 'chat-interface',
-                        className: 'chat-interface',
-                        style: { display: 'none' }
-                    },
+                            id: 'chat-interface',
+                            className: 'chat-interface',
+                            style: { display: 'none' }
+                        },
                         // Top bar with chat title and back button
                         React.createElement('div', {
-                            id: 'chat-top-bar',
-                            className: 'chat-top-bar'
-                        },
+                                id: 'chat-top-bar',
+                                className: 'chat-top-bar'
+                            },
                             React.createElement('button', {
-                                id: 'btn-back-to-initial',
-                                className: 'btn-back-to-initial',
-                                type: 'button',
-                                'aria-label': 'Back to initial screen',
+                                    id: 'btn-back-to-initial',
+                                    className: 'btn-back-to-initial',
+                                    type: 'button',
+                                    'aria-label': 'Back to initial screen',
 
-                                onClick: () => {
-                                    if (typeof window.backToInitialScreen === 'function') {
-                                        window.backToInitialScreen();
-                                    }
-                                },       onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                                    onClick: () => {
+                                        if (typeof window.backToInitialScreen === 'function') {
+                                            window.backToInitialScreen();
+                                        }
+                                    },       onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
                                     onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
 
                                 },
@@ -309,10 +397,10 @@ const TempHome = ({csrfToken, userInfo}) => {
                     ),
                     // Suggestion chips - positioned right above input field
                     React.createElement('div', {
-                        id: 'suggestion-chips',
-                        className: 'suggestion-chips',
-                        style: { display: 'none' } // Hidden until chat starts
-                    },
+                            id: 'suggestion-chips',
+                            className: 'suggestion-chips',
+                            style: { display: 'none' } // Hidden until chat starts
+                        },
                         React.createElement('button', {
                             className: 'chip',
                             onClick: () => {
@@ -335,12 +423,129 @@ const TempHome = ({csrfToken, userInfo}) => {
                                 submitConversationRequest();
                             }
                         },
-                        React.createElement('button', {
-                                type: 'button',
-                                className: 'input-field-button',
-                                'aria-label': 'Add new item'
+                        React.createElement('div', {
+                                style: { position: 'relative' }
                             },
-                            React.createElement('img', {className: 'vector', src: './img/vector-2.svg', alt: ''})
+                            // === CLIPPER MENU (PAPERCLIP ICON) ===
+                            // This attachment menu provides two options:
+                            // 1. Upload Files - Opens file upload modal to upload new files to project
+                            // 2. Select Uploaded Files - Opens selection modal to choose from existing project files
+                            // Both options are PROJECT-BASED and require an active project to function
+                            // If no project is selected, a notification prompts user to create/select one
+                            React.createElement('button', {
+                                    id: 'attachment-menu-button',
+                                    type: 'button',
+                                    className: 'input-field-button',
+                                    'aria-label': 'Attachment menu',
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        setAttachmentMenuOpen(!attachmentMenuOpen);
+                                    }
+                                },
+                                React.createElement('img', {className: 'vector', src: './img/paperclip.svg', alt: 'Attach', style: { width: '20px', height: '20px' }})
+                            ),
+                            attachmentMenuOpen && React.createElement('div', {
+                                    id: 'attachment-dropdown-menu',
+                                    'aria-label': 'Attachment options menu',
+                                    style: {
+                                        position: 'absolute',
+                                        bottom: '100%',
+                                        left: '0',
+                                        marginBottom: '8px',
+                                        backgroundColor: '#ffffff',
+                                        border: '1.67px solid #e4e4e4',
+                                        borderRadius: '11.12px',
+                                        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+                                        minWidth: '180px',
+                                        zIndex: 1000,
+                                        overflow: 'hidden'
+                                    }
+                                },
+                                React.createElement('button', {
+                                        id: 'attachment-menu-upload-files',
+                                        'aria-label': 'Upload new files',
+                                        type: 'button',
+                                        style: {
+                                            width: '100%',
+                                            padding: '12px 14.5px',
+                                            border: 'none',
+                                            backgroundColor: 'transparent',
+                                            textAlign: 'left',
+                                            cursor: 'pointer',
+                                            fontSize: '13.3px',
+                                            color: '#000',
+                                            fontWeight: 500,
+                                            fontFamily: '"Inter", Helvetica',
+                                            transition: 'background-color 0.2s'
+                                        },
+                                        onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                                        onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                                        onClick: async () => {
+                                            setAttachmentMenuOpen(false);
+                                            console.log('[FileUpload] Upload button clicked');
+
+                                            // Check if project is selected (file uploads are project-based)
+                                            const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                                            console.log('[FileUpload] Current projectID:', projectID);
+
+                                            if (!projectID) {
+                                                // No project selected - show notification
+                                                console.warn('[FileUpload] No project selected');
+                                                if (window.showNotification) {
+                                                    await window.showNotification({
+                                                        type: 'info',
+                                                        title: 'No Project Selected',
+                                                        message: 'Please create or select a project before uploading files. File uploads are project-based.',
+                                                        actionText: 'OK'
+                                                    });
+                                                } else {
+                                                    alert('Please create or select a project before uploading files.');
+                                                }
+                                                return;
+                                            }
+
+                                            // Check if FileUploadComponent is loaded
+                                            if (!window.FileUploadComponent) {
+                                                console.error('[FileUpload] FileUploadComponent not loaded!');
+                                                alert('File upload component is not ready. Please refresh the page.');
+                                                return;
+                                            }
+
+                                            // Open file upload modal
+                                            setCurrentProjectID(projectID);
+                                            setShowFileUpload(true);
+                                            console.log('[FileUpload] Modal should open now');
+                                        }
+                                    },
+                                    'Upload Files'
+                                ),
+                                React.createElement('button', {
+                                        id: 'attachment-menu-select-uploaded',
+                                        'aria-label': 'Select from uploaded files',
+                                        type: 'button',
+                                        style: {
+                                            width: '100%',
+                                            padding: '12px 14.5px',
+                                            border: 'none',
+                                            backgroundColor: 'transparent',
+                                            textAlign: 'left',
+                                            cursor: 'pointer',
+                                            fontSize: '13.3px',
+                                            color: '#000',
+                                            fontWeight: 500,
+                                            fontFamily: '"Inter", Helvetica',
+                                            transition: 'background-color 0.2s'
+                                        },
+                                        onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                                        onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                                        onClick: () => {
+                                            setAttachmentMenuOpen(false);
+                                            showUploadedFilesSelectionModal();
+                                        }
+                                    },
+                                    'Select Uploaded Files'
+                                )
+                            )
                         ),
                         React.createElement('label', {
                             htmlFor: 'main-message-input',
@@ -383,6 +588,369 @@ const TempHome = ({csrfToken, userInfo}) => {
         )
     );
 };
+
+// Function to show uploaded files selection modal
+// This allows users to select from already uploaded files in the current project
+// Note: File uploads and selection are project-based - user must have an active project
+async function showUploadedFilesSelectionModal() {
+    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+    if (!projectID) {
+        // No project selected - show notification instead of alert
+        if (window.showNotification) {
+            await window.showNotification({
+                type: 'warning',
+                title: 'Warning',
+                message: 'Please create a project before selecting files.',
+                actionText: 'OK'
+            });
+        } else {
+            alert('Please create a project before selecting files.');
+        }
+        return;
+    }
+
+    // Fetch project files
+    try {
+        const response = await fetch('/api/project/file/list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ projectID: projectID })
+        });
+
+        const data = await response.json();
+
+        if (!data.files || data.files.length === 0) {
+            await window.showNotification({
+                type: 'info',
+                title: 'No Files',
+                message: 'No files uploaded yet. Please upload files first.',
+                actionText: 'OK'
+            });
+            return;
+        }
+
+        // Create a modal to show files with checkboxes
+        showFileSelectionDialog(data.files, projectID);
+    } catch (error) {
+        console.error('Error fetching files:', error);
+        await window.showNotification({
+            type: 'error',
+            title: 'Error',
+            message: 'Failed to fetch uploaded files.',
+            actionText: 'OK'
+        });
+    }
+}
+
+// Function to show file selection dialog
+function showFileSelectionDialog(files, projectID) {
+    // Create modal backdrop
+    const backdrop = document.createElement('div');
+    backdrop.id = 'file-selection-modal-backdrop';
+    backdrop.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10003;
+        padding: 20px;
+    `;
+
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.id = 'file-selection-modal';
+    modal.style.cssText = `
+        background-color: #ffffff;
+        border-radius: 10px;
+        width: 100%;
+        max-width: 600px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    `;
+
+    // Create header
+    const header = document.createElement('div');
+    header.style.cssText = `
+        padding: 18px 17px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #e4e4e4;
+    `;
+    header.innerHTML = `
+        <div style="font-family: 'SF Pro-Bold', Helvetica; font-weight: 400; font-size: 18px; color: #000;">Select Files</div>
+        <button id="close-file-selection-modal" style="width: 30px; height: 30px; border: none; background: transparent; cursor: pointer; font-size: 20px; color: #666;">×</button>
+    `;
+
+    // Create file list container
+    const fileListContainer = document.createElement('div');
+    fileListContainer.id = 'file-selection-list';
+    fileListContainer.style.cssText = `
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 17px;
+    `;
+
+    const selectedFilesMap = new Map();
+
+    files.forEach((file, index) => {
+        // Construct filename - extension might already have a dot
+        // Also clean documentName in case of old corrupted data (e.g., "file." in database)
+        const ext = file.documentExt || '';
+        let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
+        const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = `
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        `;
+        fileItem.onmouseenter = () => fileItem.style.backgroundColor = '#f5f5f5';
+        fileItem.onmouseleave = () => fileItem.style.backgroundColor = 'transparent';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `file-checkbox-${index}`;
+        checkbox.style.cssText = `
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            cursor: pointer;
+        `;
+        checkbox.onclick = (e) => {
+            e.stopPropagation(); // Prevent triggering the fileItem click
+        };
+        checkbox.onchange = (e) => {
+            if (e.target.checked) {
+                selectedFilesMap.set(file.documentID, { fileName, ...file });
+            } else {
+                selectedFilesMap.delete(file.documentID);
+            }
+        };
+
+        const label = document.createElement('label');
+        label.htmlFor = `file-checkbox-${index}`;
+        label.style.cssText = `
+            flex: 1;
+            font-family: 'Inter', Helvetica;
+            font-size: 13.3px;
+            color: #000;
+            cursor: pointer;
+        `;
+        label.textContent = fileName;
+        label.onclick = (e) => {
+            e.stopPropagation(); // Let the label's default behavior handle checkbox toggle
+        };
+
+        fileItem.appendChild(checkbox);
+        fileItem.appendChild(label);
+        // Remove the onclick from fileItem to prevent double-toggling
+        fileItem.onclick = (e) => {
+            // Only trigger checkbox if clicking on the row background (not checkbox or label)
+            if (e.target === fileItem) {
+                checkbox.click();
+            }
+        };
+
+        fileListContainer.appendChild(fileItem);
+    });
+
+    // Create footer with buttons
+    const footer = document.createElement('div');
+    footer.style.cssText = `
+        padding: 15px 17px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        border-top: 1px solid #e4e4e4;
+    `;
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = `
+        padding: 8px 24px;
+        background-color: #e4e4e4;
+        border-radius: 50px;
+        border: none;
+        font-family: 'Inter-Bold', Helvetica;
+        font-weight: 700;
+        font-size: 12px;
+        color: #1c1d21;
+        cursor: pointer;
+    `;
+    cancelBtn.onclick = () => document.body.removeChild(backdrop);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Add to Chat';
+    confirmBtn.style.cssText = `
+        padding: 8px 24px;
+        background-color: rgb(30, 41, 59);
+        border-radius: 50px;
+        border: none;
+        font-family: 'Inter-Bold', Helvetica;
+        font-weight: 700;
+        font-size: 12px;
+        color: #fff;
+        cursor: pointer;
+    `;
+    confirmBtn.onclick = () => {
+        const selectedFiles = Array.from(selectedFilesMap.values());
+        if (selectedFiles.length > 0) {
+            addFilesToChatInput(selectedFiles);
+            document.body.removeChild(backdrop);
+        } else {
+            alert('Please select at least one file');
+        }
+    };
+
+    footer.appendChild(cancelBtn);
+    footer.appendChild(confirmBtn);
+
+    // Assemble modal
+    modal.appendChild(header);
+    modal.appendChild(fileListContainer);
+    modal.appendChild(footer);
+    backdrop.appendChild(modal);
+
+    // Close button handler
+    header.querySelector('#close-file-selection-modal').onclick = () => document.body.removeChild(backdrop);
+
+    // Append to body
+    document.body.appendChild(backdrop);
+}
+
+// Function to add selected files to chat input
+function addFilesToChatInput(files) {
+    // Get or create wrapper and container
+    let wrapper = document.getElementById('selected-files-wrapper');
+    let container = document.getElementById('selected-files-container');
+
+    if (!container) {
+        // Create wrapper to hold container and cancel button side by side
+        wrapper = document.createElement('div');
+        wrapper.id = 'selected-files-wrapper';
+        wrapper.style.cssText = `
+            margin: 0 auto;
+            width: 90%;
+            max-width: 650px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        `;
+
+        container = document.createElement('div');
+        container.id = 'selected-files-container';
+        container.style.cssText = `
+            flex: 1;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            padding: 10px 15px;
+            background-color: #f9f9f9;
+            border-radius: 16px 16px 0 0;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        `;
+
+        wrapper.appendChild(container);
+
+        // Insert before input field
+        const inputField = document.querySelector('.input-field');
+        if (inputField && inputField.parentNode) {
+            inputField.parentNode.insertBefore(wrapper, inputField);
+        }
+    }
+
+    // Update cancel edit button
+    updateCancelEditButton();
+
+    // Add files as chips
+    files.forEach(file => {
+        // Check if file already added
+        if (document.querySelector(`[data-file-id="${file.documentID}"]`)) {
+            return; // Skip if already added
+        }
+
+        const fileChip = document.createElement('div');
+        fileChip.setAttribute('data-file-id', file.documentID);
+
+        // Construct filename - extension might already have a dot
+        // Also clean documentName in case of old corrupted data
+        const ext = file.documentExt || '';
+        let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
+        const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+        const displayFileName = file.fileName || fullFileName;
+
+        // Store file name as data attribute for later retrieval
+        fileChip.setAttribute('data-file-name', displayFileName);
+
+        fileChip.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background-color: #fff;
+            border: 1px solid #e4e4e4;
+            border-radius: 20px;
+            font-family: 'Inter', Helvetica;
+            font-size: 13px;
+            color: #000;
+        `;
+
+        const fileName = document.createElement('span');
+        fileName.textContent = displayFileName;
+        fileName.style.maxWidth = '200px';
+        fileName.style.overflow = 'hidden';
+        fileName.style.textOverflow = 'ellipsis';
+        fileName.style.whiteSpace = 'nowrap';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '×';
+        removeBtn.style.cssText = `
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        removeBtn.onclick = () => {
+            fileChip.remove();
+            // Remove wrapper if no more files
+            if (container.children.length === 0) {
+                const wrapper = document.getElementById('selected-files-wrapper');
+                if (wrapper) {
+                    wrapper.remove();
+                }
+            }
+        };
+
+        fileChip.appendChild(fileName);
+        fileChip.appendChild(removeBtn);
+        container.appendChild(fileChip);
+    });
+}
 
 // COMMENTED OUT: Sidebar component now handles project initialization
 // window.onload = async function () {
@@ -474,7 +1042,12 @@ async function fetchProjectFiles(projectID) {
 
         if (data.files && Array.isArray(data.files)) {
             for (let file of data.files) {
-                const fileElement = createFileItem(`${file.documentName}.${file.documentExt}`, file.documentID);
+                // Construct filename - extension might already have a dot
+                // Also clean documentName in case of old corrupted data
+                const ext = file.documentExt || '';
+                let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
+                const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+                const fileElement = createFileItem(fullFileName, file.documentID);
 
                 // Create a container div for this React element
                 const wrapper = document.createElement('div');
@@ -622,79 +1195,426 @@ async function fetchProjectChats(projectID) {
 
 // Create a function that returns a React element for a file item
 function createFileItem(fileName, documentID) {
-    return React.createElement('div', {
-            className: 'sidebar-items source-item',
-            'data-document-id': documentID,
-            style: {
-                padding: '8px 12px',
-                cursor: 'pointer',
-                borderRadius: '5px',
-                transition: 'background-color 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-            },
-            onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
-            },
-            onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            },
-            onClick: (e) => {
-                // Prevent the div click when clicking the checkbox
-                if (e.target.type !== 'checkbox') {
-                    console.log(`Clicked on ${fileName}`);
+    const FileItemComponent = () => {
+        const [menuOpen, setMenuOpen] = React.useState(false);
+        const menuRef = React.useRef(null);
+
+        // Close menu when clicking outside
+        React.useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setMenuOpen(false);
                 }
+            };
+
+            if (menuOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
             }
-        },
-        React.createElement('input', {
-            type: 'checkbox',
-            style: {
-                width: "16px",
-                height: "16px",
-                flexShrink: 0  // Prevent checkbox from shrinking
-            },
-            onChange: (e) => {
-                console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
-                getSelectedSource()
-                // Add your checkbox handler here
-            },
-            onClick: (e) => {
-                e.stopPropagation(); // Prevent triggering the div's onClick
+
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [menuOpen]);
+
+        const handleRename = async () => {
+            setMenuOpen(false);
+
+            // Extract extension properly - get the last dot's extension
+            const lastDotIndex = fileName.lastIndexOf('.');
+            let nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+            const ext = lastDotIndex > 0 ? fileName.substring(lastDotIndex + 1) : '';
+
+            // Clean trailing dots from the name BEFORE showing in input
+            nameWithoutExt = nameWithoutExt.replace(/\.+$/, '');
+
+            // Show notification modal with input (no icon for rename)
+            const newName = await window.showNotification({
+                type: 'rename-input',
+                title: 'File Rename',
+                message: `Enter to rename current file: ${nameWithoutExt}.${ext}`,
+                actionText: 'Confirm',
+                showInput: true,
+                inputValue: nameWithoutExt,
+                inputPlaceholder: 'Input for new file name'
+            });
+
+            if (!newName || newName === nameWithoutExt) return;
+
+            // Remove extension from newName if user accidentally included it
+            let finalName = newName.trim();
+            if (finalName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
+                finalName = finalName.slice(0, -(ext.length + 1));
             }
-        }),
-        React.createElement('p', {
-            style: {
-                flexGrow: 1,
-                margin: 0,  // Remove default paragraph margins
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'  // Prevent wrapping, show ellipsis instead
-            }
-        }, fileName),
-        React.createElement('img', {
-            style: {
-                padding: "4px",
-                flexShrink: 0,
-                borderRadius: '5px',
-                transition: 'background-color 0.2s',
-            },
-            src: './img/more_vert_24.svg',
-            alt: '',
-            onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#8e8e8e';
-            },
-            onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            },
-            onClick: (e) => {
-                // Prevent the div click when clicking the checkbox
-                if (e.target.type !== 'checkbox') {
-                    console.log(`Clicked on ${fileName}`);
+
+            // Remove any trailing dots from the filename
+            finalName = finalName.replace(/\.+$/, '');
+
+            try {
+                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                if (!projectID) {
+                    await window.showNotification({
+                        type: 'error',
+                        title: 'Error',
+                        message: 'No project selected',
+                        actionText: 'OK'
+                    });
+                    return;
                 }
+
+                const response = await fetch('/api/project/file/rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        projectID: projectID,
+                        documentID: documentID,
+                        newFileName: `${finalName}.${ext}`
+                    })
+                });
+
+                const data = await response.json();
+                if (data.successful) {
+                    // Refresh file list
+                    if (window.fetchProjectFiles) {
+                        await window.fetchProjectFiles(projectID);
+                    }
+                    // Show success notification with Warning title
+                    await window.showNotification({
+                        type: 'rename-success',
+                        title: 'Warning',
+                        message: 'File has been renamed successfully',
+                        actionText: 'OK'
+                    });
+                } else {
+                    await window.showNotification({
+                        type: 'error',
+                        title: 'Error',
+                        message: 'Failed to rename file: ' + (data.message || 'Unknown error'),
+                        actionText: 'OK'
+                    });
+                }
+            } catch (error) {
+                console.error('Error renaming file:', error);
+                await window.showNotification({
+                    type: 'error',
+                    title: 'Error',
+                    message: 'An error occurred while renaming the file.',
+                    actionText: 'OK'
+                });
             }
-        })
-    );
+        };
+
+        const handleDownload = async () => {
+            setMenuOpen(false);
+
+            try {
+                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                if (!projectID) {
+                    await window.showNotification({
+                        type: 'error',
+                        title: 'Error',
+                        message: 'No project selected',
+                        actionText: 'OK'
+                    });
+                    return;
+                }
+
+                const response = await fetch('/api/project/file/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        projectID: projectID,
+                        documentID: documentID
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Download failed');
+                }
+
+                // Get the blob from response
+                const blob = await response.blob();
+
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+            } catch (error) {
+                console.error('Download error:', error);
+                await window.showNotification({
+                    type: 'error',
+                    title: 'Error',
+                    message: 'Failed to download file',
+                    actionText: 'OK'
+                });
+            }
+        };
+
+        const handleDelete = async () => {
+            setMenuOpen(false);
+
+            // Show warning confirmation
+            const confirmed = await window.showNotification({
+                type: 'warning',
+                title: 'Warning',
+                message: `Are you sure you want to delete "${fileName}"?`,
+                actionText: 'Confirm'
+            });
+
+            if (!confirmed) return;
+
+            try {
+                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                if (!projectID) {
+                    await window.showNotification({
+                        type: 'error',
+                        title: 'Error',
+                        message: 'No project selected',
+                        actionText: 'OK'
+                    });
+                    return;
+                }
+
+                const response = await fetch('/api/project/file/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        projectID: projectID,
+                        documentID: documentID
+                    })
+                });
+
+                const data = await response.json();
+                if (data.successful) {
+                    // Refresh file list
+                    if (window.fetchProjectFiles) {
+                        await window.fetchProjectFiles(projectID);
+                    }
+                    // Show success message
+                    await window.showNotification({
+                        type: 'success',
+                        title: 'File Deleted',
+                        message: 'File deleted successfully',
+                        actionText: 'OK'
+                    });
+                } else {
+                    await window.showNotification({
+                        type: 'error',
+                        title: 'Error',
+                        message: 'Failed to delete file: ' + (data.message || 'Unknown error'),
+                        actionText: 'OK'
+                    });
+                }
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                await window.showNotification({
+                    type: 'error',
+                    title: 'Error',
+                    message: 'An error occurred while deleting the file.',
+                    actionText: 'OK'
+                });
+            }
+        };
+
+        return React.createElement('div', {
+                className: 'sidebar-items source-item',
+                'data-document-id': documentID,
+                style: {
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    borderRadius: '5px',
+                    transition: 'background-color 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    position: 'relative'
+                },
+                onMouseEnter: (e) => {
+                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                },
+                onMouseLeave: (e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                },
+                onClick: (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        console.log(`Clicked on ${fileName}`);
+                    }
+                }
+            },
+            React.createElement('input', {
+                type: 'checkbox',
+                style: {
+                    width: "16px",
+                    height: "16px",
+                    flexShrink: 0
+                },
+                onChange: (e) => {
+                    console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
+                    getSelectedSource()
+                },
+                onClick: (e) => {
+                    e.stopPropagation();
+                }
+            }),
+            React.createElement('p', {
+                id: `source-file-name-${documentID}`,
+                'aria-label': `File name: ${fileName}`,
+                title: fileName, // Show full filename on hover
+                style: {
+                    flexGrow: 1,
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '13.3px',
+                    cursor: 'default'
+                }
+            }, fileName),
+            React.createElement('div', {
+                    ref: menuRef,
+                    style: {
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        width: '30px',
+                        height: '30px',
+                        flexShrink: 0
+                    }
+                },
+                React.createElement('img', {
+                    id: `source-file-menu-${documentID}`,
+                    'aria-label': `File options menu for ${fileName}`,
+                    style: {
+                        width: '30px',
+                        height: '30px',
+                        padding: "4px",
+                        flexShrink: 0,
+                        borderRadius: '5px',
+                        transition: 'background-color 0.2s',
+                        cursor: 'pointer'
+                    },
+                    src: './img/more_vert_24.svg',
+                    alt: '',
+                    onMouseEnter: (e) => {
+                        e.currentTarget.style.backgroundColor = '#8e8e8e';
+                    },
+                    onMouseLeave: (e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    }
+                }),
+                menuOpen && React.createElement('div', {
+                        id: `source-file-menu-dropdown-${documentID}`,
+                        'aria-label': `File options dropdown for ${fileName}`,
+                        style: {
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            marginTop: '4px',
+                            backgroundColor: '#ffffff',
+                            border: '1.67px solid #e4e4e4',
+                            borderRadius: '11.12px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            minWidth: '120px',
+                            zIndex: 1000,
+                            overflow: 'hidden'
+                        }
+                    },
+                    React.createElement('button', {
+                        id: `source-file-rename-button-${documentID}`,
+                        'aria-label': `Rename ${fileName}`,
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#000',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        },
+                        onMouseLeave: (e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        },
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            handleRename();
+                        }
+                    }, 'Rename'),
+                    React.createElement('button', {
+                        id: `source-file-download-button-${documentID}`,
+                        'aria-label': `Download ${fileName}`,
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#000',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        },
+                        onMouseLeave: (e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        },
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            handleDownload();
+                        }
+                    }, 'Download'),
+                    React.createElement('button', {
+                        id: `source-file-delete-button-${documentID}`,
+                        'aria-label': `Delete ${fileName}`,
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#c1281e',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        },
+                        onMouseLeave: (e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        },
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            handleDelete();
+                        }
+                    }, 'Delete')
+                )
+            )
+        );
+    };
+
+    return React.createElement(FileItemComponent);
 }
 
 // Old implementation commented out - replaced with new implementation below
@@ -899,49 +1819,44 @@ function createChatHistoryItem(chatThreadName, chatID) {
                         max-width: 500px;
                         width: 100%;
                         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-                        display: grid;
-                        grid-template-columns: 1fr auto;
+                        display: flex;
+                        flex-direction: column;
                         gap: 20px;
-                        align-items: start;
                     `;
 
                     successContent.innerHTML = `
                         <div style="
-                            display: flex;
-                            flex-direction: column;
-                            gap: 8px;
-                            grid-column: 1;
-                        ">
-                            <div style="
-                                font-family: Urbanist, Helvetica;
-                                font-weight: 700;
-                                font-size: 24px;
-                                color: #000000;
-                                line-height: normal;
-                            ">Delete Successful</div>
-                            <div style="
-                                font-family: Inter, Helvetica;
-                                font-weight: 400;
-                                font-size: 16px;
-                                color: #000000;
-                                line-height: 1.4;
-                            ">Chat history successfully deleted.</div>
-                        </div>
-                        <button id="success-ok-btn" style="
-                            padding: 12px 32px;
-                            border-radius: 10px;
-                            border: none;
-                            background-color: #000000;
-                            color: #ffffff;
                             font-family: Urbanist, Helvetica;
-                            font-weight: 600;
+                            font-weight: 700;
+                            font-size: 24px;
+                            color: #000000;
+                            line-height: normal;
+                        ">Warning</div>
+                        <div style="
+                            font-family: Inter, Helvetica;
+                            font-weight: 400;
                             font-size: 16px;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                            white-space: nowrap;
-                            grid-column: 2;
-                            grid-row: 1;
-                        ">OK</button>
+                            color: #000000;
+                            line-height: 1.4;
+                        ">Current chat sucessfully deleted</div>
+                        <div style="
+                            display: flex;
+                            justify-content: flex-end;
+                        ">
+                            <button id="success-ok-btn" style="
+                                padding: 12px 32px;
+                                border-radius: 10px;
+                                border: none;
+                                background-color: #000000;
+                                color: #ffffff;
+                                font-family: Urbanist, Helvetica;
+                                font-weight: 600;
+                                font-size: 16px;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                white-space: nowrap;
+                            ">OK</button>
+                        </div>
                     `;
 
                     successModal.appendChild(successContent);
@@ -1066,14 +1981,14 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 }
             }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat'),
             React.createElement('div', {
-                ref: menuRef,
-                className: 'chat-menu',
-                style: {
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center'
-                }
-            },
+                    ref: menuRef,
+                    className: 'chat-menu',
+                    style: {
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }
+                },
                 React.createElement('img', {
                     style: {
                         padding: "4px",
@@ -1096,20 +2011,20 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 }),
                 menuOpen && React.createElement('div', {
-                    style: {
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '4px',
-                        backgroundColor: '#ffffff',
-                        border: '1.67px solid #e4e4e4',
-                        borderRadius: '11.12px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        minWidth: '120px',
-                        zIndex: 1000,
-                        overflow: 'hidden'
-                    }
-                },
+                        style: {
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            marginTop: '4px',
+                            backgroundColor: '#ffffff',
+                            border: '1.67px solid #e4e4e4',
+                            borderRadius: '11.12px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            minWidth: '120px',
+                            zIndex: 1000,
+                            overflow: 'hidden'
+                        }
+                    },
                     React.createElement('button', {
                         style: {
                             width: '100%',
@@ -1240,23 +2155,44 @@ async function submitConversationRequest() {
 
         console.log('Editing conversation:', { conversationID, chatSeq });
 
-        // Get selected source documents
+        // Get selected source documents from sidebar
         const selectedSource = getSelectedSource();
+
+        // Get selected files from chips
+        const selectedFileChips = document.querySelectorAll('#selected-files-container [data-file-id]');
+        const chipFileIDs = Array.from(selectedFileChips).map(chip => chip.getAttribute('data-file-id'));
+
+        // Combine both sources
+        const allAttachedDocuments = [...selectedSource, ...chipFileIDs];
+
+        console.log('=== EDITING MESSAGE ===');
+        console.log('Edited message:', userMessage);
+        console.log('Sidebar selected files:', selectedSource);
+        console.log('Chip files:', chipFileIDs);
+        console.log('Total attached files:', allAttachedDocuments.length);
+        console.log('Attached file IDs:', allAttachedDocuments);
 
         // Clear input immediately
         input.value = '';
         input.style.height = 'auto';
 
+        // Clear selected file chips wrapper
+        const wrapper = document.getElementById('selected-files-wrapper');
+        if (wrapper) {
+            wrapper.remove();
+        }
+
         // Remove the old message and subsequent messages from UI
         removeMessagesFromSeq(chatSeq);
 
-        // Add the edited user message
-        addMessage('user', userMessage, conversationID, chatSeq);
+        // Add the edited user message with attached files (can be empty array)
+        addMessage('user', userMessage, conversationID, chatSeq, allAttachedDocuments);
 
         // Show typing indicator
         const typingId = showTypingIndicator();
 
         try {
+            console.log('📤 Sending edit request with', allAttachedDocuments.length, 'files');
             const response = await fetch('/api/agent/conversation-edit', {
                 method: 'POST',
                 headers: {
@@ -1268,7 +2204,7 @@ async function submitConversationRequest() {
                     chatSeq: chatSeq,
                     conversationID: conversationID,
                     message: userMessage,
-                    attachedDocumentIDs: selectedSource
+                    attachedDocumentIDs: allAttachedDocuments
                 })
             });
 
@@ -1310,27 +2246,46 @@ async function submitConversationRequest() {
     const selectedChatItem = document.querySelector('.chat-history-item.selected');
     let chatID = window.currentChatID || selectedChatItem?.dataset?.chatId || '';
 
+    // Get selected source documents from sidebar
     const selectedSource = getSelectedSource();
+
+    // Get selected files from chips
+    const selectedFileChips = document.querySelectorAll('#selected-files-container [data-file-id]');
+    const chipFileIDs = Array.from(selectedFileChips).map(chip => chip.getAttribute('data-file-id'));
+
+    // Combine both sources
+    const allAttachedDocuments = [...selectedSource, ...chipFileIDs];
 
     // Prepare data
     const data = {
         projectID,
         chatID,
         message: userMessage,
-        attachedDocumentIDs: selectedSource,
+        attachedDocumentIDs: allAttachedDocuments,
     };
 
-    console.log("Sending message:", data);
+    console.log("=== SENDING MESSAGE TO AI ===");
+    console.log("Message:", userMessage);
+    console.log("Attached files:", allAttachedDocuments);
+    console.log("ProjectID:", projectID);
+    console.log("ChatID:", chatID);
+    console.log("Full data:", data);
 
     // Show chat interface
     showChatInterface();
 
-    // Add user message
-    addMessage('user', userMessage);
+    // Add user message with attached files
+    addMessage('user', userMessage, null, null, allAttachedDocuments);
 
     // Clear input
     input.value = '';
     input.style.height = 'auto';
+
+    // Clear selected file chips wrapper
+    const wrapper = document.getElementById('selected-files-wrapper');
+    if (wrapper) {
+        wrapper.remove();
+    }
 
     // Show typing indicator
     const typingId = showTypingIndicator();
@@ -1378,39 +2333,32 @@ async function submitConversationRequest() {
             // Clear the "went back to initial" flag since user is now in an active chat
             localStorage.removeItem('wentBackToInitial');
 
-            // Refresh chat history to show the new chat
-            if (typeof fetchProjectChats === 'function') {
-                await fetchProjectChats(projectID);
+            // Select the newly created chat in the sidebar
+            // Note: Title update is already handled in streamChatResponse when 'done' event is received
+            setTimeout(() => {
+                const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${newChatID}"]`);
+                if (newChatItem) {
+                    // Deselect all
+                    const allChatItems = document.querySelectorAll('.chat-history-item');
+                    allChatItems.forEach(item => {
+                        item.classList.remove('selected');
+                        item.style.backgroundColor = 'transparent';
+                    });
 
-                // Select the newly created chat in the sidebar and update title
-                setTimeout(() => {
-                    const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${newChatID}"]`);
-                    if (newChatItem) {
-                        // Deselect all
-                        const allChatItems = document.querySelectorAll('.chat-history-item');
-                        allChatItems.forEach(item => {
-                            item.classList.remove('selected');
-                            item.style.backgroundColor = 'transparent';
-                        });
-
-                        // Select new one
-                        newChatItem.classList.add('selected');
-                        newChatItem.style.backgroundColor = '#e0e0e0';
-
-                        // Update top bar title from the sidebar item
-                        const chatTitleElement = document.getElementById('chat-title');
-                        if (chatTitleElement) {
-                            const threadName = newChatItem.dataset.threadName || 'Untitled Chat';
-                            chatTitleElement.textContent = threadName;
-                        }
-                    }
-                }, 100);
-            }
+                    // Select new one
+                    newChatItem.classList.add('selected');
+                    newChatItem.style.backgroundColor = '#e0e0e0';
+                }
+            }, 100);
         }
     } catch (error) {
-        console.error("Error:", error);
+        console.error("❌ Error in submitConversationRequest:", error);
+        console.error("Error stack:", error.stack);
         removeTypingIndicator(typingId);
-        addMessage('ai', 'Sorry, there was an error processing your request.');
+
+        // Show more detailed error message
+        const errorMsg = error.message || 'Unknown error';
+        addMessage('ai', `Sorry, there was an error processing your request: ${errorMsg}`);
     }
 }
 
@@ -1445,7 +2393,16 @@ function hideChatInterface() {
 }
 
 // Add a message to chat
-function addMessage(role, text, conversationID = null, chatSeq = null) {
+function addMessage(role, text, conversationID = null, chatSeq = null, attachedFileIDs = []) {
+    console.log(`💬 addMessage called:`, {
+        role,
+        text: text?.substring(0, 50) + '...',
+        conversationID,
+        chatSeq,
+        attachedFileIDs,
+        fileCount: (attachedFileIDs || []).length
+    });
+
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
 
@@ -1478,12 +2435,121 @@ function addMessage(role, text, conversationID = null, chatSeq = null) {
     const textNode = document.createTextNode(text);
     bubble.appendChild(textNode);
 
-    // Add edit button to EVERY user message (inside the bubble)
+    // For user messages, create a content wrapper that includes bubble + files + edit button
     if (role === 'user') {
+        // Create wrapper for bubble and additional elements
+        const contentWrapper = document.createElement('div');
+        contentWrapper.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 600px;
+        `;
+
+        // Add the bubble to wrapper
+        contentWrapper.appendChild(bubble);
+
+        // Create a row container for files and edit button (below bubble, same row)
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'message-bottom-row';
+        bottomRow.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-left: 12px;
+            min-height: 24px;
+        `;
+
+        // Add attached files to the left side of bottom row
+        if (attachedFileIDs && attachedFileIDs.length > 0) {
+            const filesContainer = document.createElement('div');
+            filesContainer.style.cssText = `
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                flex: 1;
+            `;
+
+            // Get file information from the chips or source list
+            attachedFileIDs.forEach(fileId => {
+                // Try to find the file in chips first
+                let fileName = fileId; // Default to ID
+                const chipElement = document.querySelector(`[data-file-id="${fileId}"]`);
+                if (chipElement) {
+                    // Try to get file name from data attribute first
+                    const storedFileName = chipElement.getAttribute('data-file-name');
+                    if (storedFileName) {
+                        fileName = storedFileName;
+                    } else {
+                        // Fallback to text content from span
+                        const fileNameSpan = chipElement.querySelector('span');
+                        if (fileNameSpan) {
+                            fileName = fileNameSpan.textContent;
+                        }
+                    }
+                } else {
+                    // Try to find in source list
+                    const sourceElement = document.getElementById(`source-file-name-${fileId}`);
+                    if (sourceElement) {
+                        fileName = sourceElement.textContent;
+                    } else if (window.chatFileNameMap && window.chatFileNameMap.has(fileId)) {
+                        // Use the global file name map from chat history loading
+                        fileName = window.chatFileNameMap.get(fileId);
+                    }
+                }
+
+                const fileChip = document.createElement('div');
+                fileChip.dataset.fileId = fileId; // Store file ID for retrieval during edit
+                fileChip.style.cssText = `
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 4px 10px;
+                    background-color: rgba(195, 171, 111, 0.15);
+                    border: 1px solid rgba(195, 171, 111, 0.3);
+                    border-radius: 12px;
+                    font-size: 11px;
+                    color: #666;
+                    font-family: 'Inter', Helvetica;
+                `;
+                fileChip.innerHTML = `📎 ${fileName}`;
+                filesContainer.appendChild(fileChip);
+            });
+
+            bottomRow.appendChild(filesContainer);
+        } else {
+            // Add spacer to push edit button to the left even when no files
+            const spacer = document.createElement('div');
+            spacer.style.flex = '1';
+            bottomRow.appendChild(spacer);
+        }
+
+        // Add edit button to the right side of bottom row (only shows on hover via CSS)
         const editBtn = document.createElement('button');
         editBtn.className = 'message-edit-btn';
         editBtn.innerHTML = 'Edit';
         editBtn.title = 'Edit message';
+        editBtn.style.cssText = `
+            background: transparent;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #999;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            opacity: 0;
+            flex-shrink: 0;
+        `;
+
+        editBtn.onmouseenter = () => {
+            editBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+            editBtn.style.color = '#666';
+        };
+        editBtn.onmouseleave = () => {
+            editBtn.style.backgroundColor = 'transparent';
+            editBtn.style.color = '#999';
+        };
 
         if (conversationID && chatSeq) {
             editBtn.onclick = () => handleEditMessage(text, conversationID, chatSeq);
@@ -1493,15 +2559,45 @@ function addMessage(role, text, conversationID = null, chatSeq = null) {
             console.log('⚠️ Edit button added without data (will be updated later)');
         }
 
-        bubble.appendChild(editBtn); // Add button inside bubble
-    }
+        bottomRow.appendChild(editBtn);
 
-    if (role === 'user') {
-        // User: bubble first, avatar last (appears on right due to flex-direction: row-reverse)
+        // Add cancel button next to edit button (hidden by default, shown in edit mode)
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'message-cancel-btn';
+        cancelBtn.innerHTML = 'Cancel';
+        cancelBtn.title = 'Cancel edit';
+        cancelBtn.style.cssText = `
+            background: transparent;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #e57373;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+            display: none;
+        `;
+
+        cancelBtn.onmouseenter = () => {
+            cancelBtn.style.backgroundColor = 'rgba(229, 115, 115, 0.1)';
+            cancelBtn.style.color = '#c62828';
+        };
+        cancelBtn.onmouseleave = () => {
+            cancelBtn.style.backgroundColor = 'transparent';
+            cancelBtn.style.color = '#e57373';
+        };
+
+        cancelBtn.onclick = () => cancelEditMode();
+
+        bottomRow.appendChild(cancelBtn);
+        contentWrapper.appendChild(bottomRow);
+
+        // Now add avatar and contentWrapper to messageDiv
         messageDiv.appendChild(avatar);
-        messageDiv.appendChild(bubble);
+        messageDiv.appendChild(contentWrapper);
     } else {
-        // AI: avatar first, bubble last (normal left-to-right)
+        // AI message - simple structure (avatar + bubble)
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(bubble);
     }
@@ -1527,12 +2623,51 @@ function handleEditMessage(text, conversationID, chatSeq) {
         inputField.focus();
     }
 
-    // Store editing state globally
+    // Find the message element to get attached file IDs
+    const messagesContainer = document.getElementById('chat-messages');
+    let attachedFileIDs = [];
+
+    if (messagesContainer) {
+        const messageElements = messagesContainer.querySelectorAll('.message');
+        messageElements.forEach(msg => {
+            if (msg.dataset.conversationId === conversationID && parseInt(msg.dataset.chatSeq) === chatSeq) {
+                // Found the message being edited
+                // Extract file IDs from file chips in the message
+                const fileChips = msg.querySelectorAll('[data-file-id]');
+                if (fileChips.length > 0) {
+                    attachedFileIDs = Array.from(fileChips).map(chip => chip.dataset.fileId);
+                } else {
+                    // Try to extract from file chip elements (alternative structure)
+                    const bottomRow = msg.querySelector('.message-bottom-row');
+                    if (bottomRow) {
+                        // Parse file chips to get document IDs
+                        // We need to match file names to document IDs from the project
+                        // For now, store empty array - files will need to be reselected
+                        // TODO: Store documentIDs in file chips for proper restoration
+                    }
+                }
+            }
+        });
+    }
+
+    // Store editing state globally including attached files
     window.editingMessage = {
         conversationID: conversationID,
         chatSeq: chatSeq,
-        originalText: text
+        originalText: text,
+        attachedFileIDs: attachedFileIDs
     };
+
+    // Show cancel button and hide edit button on the message being edited
+    showCancelButtonOnMessage(conversationID, chatSeq);
+
+    // If files were attached, show them as chips
+    if (attachedFileIDs.length > 0) {
+        console.log('Restoring attached files for edit:', attachedFileIDs);
+        // Re-create file chips for editing
+        // This requires access to file metadata, so we'll need to fetch it
+        restoreFileChipsForEdit(attachedFileIDs);
+    }
 
     // Update send button to show it's editing mode
     const sendBtn = document.querySelector('.btn-send') || document.getElementById('btn-send-message');
@@ -1541,7 +2676,336 @@ function handleEditMessage(text, conversationID, chatSeq) {
         sendBtn.title = 'Send edited message';
     }
 
-    console.log('Editing message:', { conversationID, chatSeq });
+    // Show "On Edit" indicator
+    showEditModeIndicator();
+
+    // Update cancel edit button in file wrapper
+    updateCancelEditButton();
+
+    console.log('Editing message:', { conversationID, chatSeq, attachedFileIDs });
+}
+
+// Show edit mode indicator
+function showEditModeIndicator() {
+    // Remove existing indicator if present
+    const existingIndicator = document.getElementById('edit-mode-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+
+    const chatTitleElement = document.getElementById('chat-title');
+    if (!chatTitleElement) return;
+
+    // Create edit mode indicator container
+    const editIndicator = document.createElement('span');
+    editIndicator.id = 'edit-mode-indicator';
+    editIndicator.style.cssText = `
+        margin-left: 12px;
+        margin-right: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        vertical-align: middle;
+    `;
+
+    // Create ripple dot
+    const rippleDot = document.createElement('span');
+    rippleDot.className = 'edit-ripple-dot';
+    rippleDot.style.cssText = `
+        width: 8px;
+        height: 8px;
+        background-color: #ff9800;
+        border-radius: 50%;
+        display: inline-block;
+        animation: ripple 1.5s ease-in-out infinite;
+    `;
+
+    // Add ripple animation style if not exists
+    if (!document.getElementById('edit-ripple-style')) {
+        const style = document.createElement('style');
+        style.id = 'edit-ripple-style';
+        style.textContent = `
+            @keyframes ripple {
+                0% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scale(1.3);
+                    opacity: 0.7;
+                }
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Create text
+    const textSpan = document.createElement('span');
+    textSpan.textContent = 'On Edit';
+    textSpan.style.cssText = `
+        font-family: 'Inter', Helvetica;
+        font-size: 13px;
+        font-weight: 400;
+        color: #999;
+    `;
+
+    editIndicator.appendChild(rippleDot);
+    editIndicator.appendChild(textSpan);
+
+    // Append inside chat title element so it appears next to the title text
+    chatTitleElement.appendChild(editIndicator);
+}
+
+// Show cancel button on the message being edited
+function showCancelButtonOnMessage(conversationID, chatSeq) {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (!messagesContainer) return;
+
+    const messageElements = messagesContainer.querySelectorAll('.message');
+    messageElements.forEach(msg => {
+        const msgConvId = msg.dataset.conversationId;
+        const msgChatSeq = parseInt(msg.dataset.chatSeq);
+
+        if (msgConvId === conversationID && msgChatSeq === chatSeq) {
+            // This is the message being edited - show cancel, hide edit
+            const editBtn = msg.querySelector('.message-edit-btn');
+            const cancelBtn = msg.querySelector('.message-cancel-btn');
+
+            if (editBtn) editBtn.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'inline-block';
+        }
+    });
+}
+
+// Hide cancel button and restore edit button on all messages
+function hideCancelButtonOnMessages() {
+    const cancelBtns = document.querySelectorAll('.message-cancel-btn');
+    cancelBtns.forEach(btn => {
+        btn.style.display = 'none';
+        // Restore edit button visibility
+        const editBtn = btn.parentNode?.querySelector('.message-edit-btn');
+        if (editBtn) editBtn.style.display = '';
+    });
+}
+
+// Restore file chips for edit mode
+async function restoreFileChipsForEdit(fileIDs) {
+    if (!fileIDs || fileIDs.length === 0) return;
+
+    // Get current project ID
+    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+    if (!projectID) return;
+
+    try {
+        // Fetch project files to get metadata
+        const response = await fetch('/api/project/file/list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectID: projectID })
+        });
+
+        const data = await response.json();
+        if (!data.files) return;
+
+        // Create chips container if it doesn't exist
+        let wrapper = document.getElementById('selected-files-wrapper');
+        let chipsContainer = document.getElementById('selected-files-container');
+
+        if (!chipsContainer) {
+            // Create wrapper to hold container and cancel button
+            wrapper = document.createElement('div');
+            wrapper.id = 'selected-files-wrapper';
+            wrapper.style.cssText = `
+                margin: 0 auto;
+                width: 90%;
+                max-width: 650px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+
+            chipsContainer = document.createElement('div');
+            chipsContainer.id = 'selected-files-container';
+            // chipsContainer.style.cssText = `
+            //     flex: 1;
+            //     display: flex;
+            //     flex-wrap: nowrap;
+            //     gap: 8px;
+            //     padding: 10px 15px;
+            //     background-color: rgb(249, 249, 249);
+            //     border-radius: 16px 16px 0 0;
+            //     align-items: center;
+            //     justify-content: flex-start;
+            //     overflow-x: auto;
+            //     overflow-y: hidden;
+            //     white-space: nowrap;
+            // `;
+
+            chipsContainer.style.cssText = `
+                flex: 1;
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 8px;
+                padding: 10px 15px;
+                border-radius: 16px 16px 0 0;
+                align-items: center;
+                justify-content: flex-start;
+                overflow-x: auto;
+                overflow-y: hidden;
+                white-space: nowrap;
+            `;
+
+
+            wrapper.appendChild(chipsContainer);
+
+            // Insert between suggestion-chips and input-field form
+            const inputForm = document.querySelector('.input-field');
+            const suggestionChips = document.getElementById('suggestion-chips');
+
+            if (inputForm && inputForm.parentNode) {
+                inputForm.parentNode.insertBefore(wrapper, inputForm);
+            } else if (suggestionChips && suggestionChips.parentNode) {
+                if (suggestionChips.nextSibling) {
+                    suggestionChips.parentNode.insertBefore(wrapper, suggestionChips.nextSibling);
+                } else {
+                    suggestionChips.parentNode.appendChild(wrapper);
+                }
+            }
+        } else {
+            // Ensure existing container uses horizontal scroll
+            chipsContainer.style.display = 'flex';
+            chipsContainer.style.flexWrap = 'nowrap';
+            chipsContainer.style.overflowX = 'auto';
+            chipsContainer.style.overflowY = 'hidden';
+            chipsContainer.style.whiteSpace = 'nowrap';
+        }
+
+        // Clear existing chips
+        chipsContainer.innerHTML = '';
+
+        // Add chips for each attached file
+        fileIDs.forEach(fileId => {
+            const fileData = data.files.find(f => f.documentID === fileId);
+            if (fileData) {
+                // Construct filename with defensive cleaning
+                const ext = fileData.documentExt || '';
+                let cleanName = (fileData.documentName || '').replace(/\.+$/, '');
+                const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+
+                // Create file chip
+                const fileChip = document.createElement('div');
+                fileChip.setAttribute('data-file-id', fileId);
+                // Store file name as data attribute for later retrieval
+                fileChip.setAttribute('data-file-name', fileName);
+                fileChip.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 6px 12px;
+                    background-color: #fff;
+                    border: 1px solid #e4e4e4;
+                    border-radius: 20px;
+                    font-family: 'Inter', Helvetica;
+                    font-size: 13px;
+                    color: #000;
+                    flex-shrink: 0;
+                `;
+
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.textContent = fileName;
+                fileNameSpan.style.maxWidth = '200px';
+                fileNameSpan.style.overflow = 'hidden';
+                fileNameSpan.style.textOverflow = 'ellipsis';
+                fileNameSpan.style.whiteSpace = 'nowrap';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×';
+                removeBtn.style.cssText = `
+                    border: none;
+                    background: transparent;
+                    font-size: 18px;
+                    color: #666;
+                    cursor: pointer;
+                    padding: 0;
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                removeBtn.onclick = () => {
+                    fileChip.remove();
+                    // Remove container if no more files
+                    if (chipsContainer.children.length === 0) {
+                        chipsContainer.remove();
+                    }
+                };
+
+                fileChip.appendChild(fileNameSpan);
+                fileChip.appendChild(removeBtn);
+                chipsContainer.appendChild(fileChip);
+            }
+        });
+
+        // Add cancel edit button
+        updateCancelEditButton();
+
+    } catch (error) {
+        console.error('Error restoring file chips:', error);
+    }
+}
+
+// Update or create cancel edit button in file wrapper (only when files are attached)
+function updateCancelEditButton() {
+    // Only add cancel button if in edit mode
+    if (!window.editingMessage) return;
+
+    let wrapper = document.getElementById('selected-files-wrapper');
+
+    // Only add cancel button if wrapper exists (meaning files are attached)
+    if (!wrapper) return;
+
+    // Remove existing cancel button if present
+    const existingBtn = wrapper.querySelector('.cancel-edit-btn');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'cancel-edit-btn';
+    cancelBtn.textContent = 'Cancel Edit';
+    cancelBtn.style.cssText = `
+        padding: 6px 12px;
+        background: transparent;
+        border: none;
+        font-family: 'Inter', Helvetica;
+        font-size: 13px;
+        color: #666;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: color 0.2s;
+    `;
+
+    cancelBtn.onmouseover = () => {
+        cancelBtn.style.color = '#333';
+    };
+
+    cancelBtn.onmouseout = () => {
+        cancelBtn.style.color = '#666';
+    };
+
+    cancelBtn.onclick = () => {
+        cancelEditMode();
+    };
+
+    // Add button to the wrapper
+    wrapper.appendChild(cancelBtn);
 }
 
 // Cancel edit mode
@@ -1553,6 +3017,27 @@ function cancelEditMode() {
     if (sendBtn) {
         sendBtn.style.backgroundColor = ''; // Reset to default
         sendBtn.title = 'Send message';
+    }
+
+    // Remove "On Edit" indicator
+    const editIndicator = document.getElementById('edit-mode-indicator');
+    if (editIndicator) {
+        editIndicator.remove();
+    }
+
+    // Hide cancel button on messages and restore edit buttons
+    hideCancelButtonOnMessages();
+
+    // Clear input field
+    const inputField = document.getElementById('message-input') || document.getElementById('main-message-input');
+    if (inputField) {
+        inputField.value = '';
+    }
+
+    // Clear selected files wrapper (which contains the cancel button)
+    const wrapper = document.getElementById('selected-files-wrapper');
+    if (wrapper) {
+        wrapper.remove();
     }
 }
 
@@ -1621,6 +3106,10 @@ function scrollToBottom() {
 
 // Stream chat response
 async function streamChatResponse(data, typingId) {
+    console.log('=== STREAM CHAT RESPONSE ===');
+    console.log('📤 Sending data to /api/agent/chat:', JSON.stringify(data, null, 2));
+    console.log('typingId:', typingId);
+
     const response = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: {
@@ -1697,14 +3186,46 @@ async function streamChatResponse(data, typingId) {
                         }
 
                         // Refresh chat history again to show generated title
+                        // Title is already generated on server before done event is sent
                         if (chatIDReceived && data.chatID === '') {
                             console.log('Streaming done, refreshing history to show generated title...');
-                            setTimeout(async () => {
-                                await fetchProjectChats(data.projectID);
-                            }, 500); // Small delay to ensure title is generated
+                            await fetchProjectChats(data.projectID);
+
+                            // Update chat title and select the chat item in sidebar
+                            const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatIDReceived}"]`);
+                            if (newChatItem) {
+                                // Deselect all chat items
+                                const allChatItems = document.querySelectorAll('.chat-history-item');
+                                allChatItems.forEach(item => {
+                                    item.classList.remove('selected');
+                                    item.style.backgroundColor = 'transparent';
+                                });
+
+                                // Select the new chat item
+                                newChatItem.classList.add('selected');
+                                newChatItem.style.backgroundColor = '#e0e0e0';
+
+                                // Update chat title from the newly refreshed sidebar data
+                                const chatTitleElement = document.getElementById('chat-title');
+                                if (chatTitleElement) {
+                                    const threadName = newChatItem.dataset.threadName || 'Untitled Chat';
+                                    chatTitleElement.textContent = threadName;
+                                    console.log('📝 Updated chat title to:', threadName);
+                                }
+                            }
                         }
                     } else if (jsonData.type === 'error') {
-                        console.error('Stream error:', jsonData.message);
+                        console.error('❌ Stream error received from server:', jsonData.message);
+
+                        // Remove typing indicator
+                        removeTypingIndicator(typingId);
+
+                        // Display error message in the bubble
+                        bubble.textContent = `Error: ${jsonData.message}`;
+                        bubble.style.color = '#f44336';
+
+                        // Throw error to be caught by outer catch block
+                        throw new Error(jsonData.message || 'Stream failed');
                     }
                 } catch (e) {
                     console.error('Error parsing SSE:', e);
@@ -1816,17 +3337,70 @@ async function loadChatThread(chatID) {
         const messagesContainer = document.getElementById('chat-messages');
         if (messagesContainer) messagesContainer.innerHTML = '';
 
+        // Clear any selected files from the input area (files are per-chat, not shared)
+        const selectedFilesWrapper = document.getElementById('selected-files-wrapper');
+        if (selectedFilesWrapper) {
+            selectedFilesWrapper.remove();
+            console.log('🗑️ Cleared selected files from input area (switching chats)');
+        }
+
+        // Clear input field text as well
+        const inputField = document.getElementById('main-message-input');
+        if (inputField) {
+            inputField.value = '';
+            inputField.style.height = 'auto';
+        }
+
         // Show chat interface (hide welcome screen)
         showChatInterface();
 
+        // Fetch project files to build a file name lookup map
+        let fileNameMap = new Map();
+        if (projectID) {
+            try {
+                const filesResponse = await fetch('/api/project/file/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectID: projectID })
+                });
+
+                if (filesResponse.ok) {
+                    const filesData = await filesResponse.json();
+                    if (filesData.files && Array.isArray(filesData.files)) {
+                        filesData.files.forEach(file => {
+                            const ext = file.documentExt || '';
+                            let cleanName = (file.documentName || '').replace(/\.+$/, '');
+                            const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+                            fileNameMap.set(file.documentID, fullFileName);
+                        });
+                        console.log(`📁 Loaded ${fileNameMap.size} file names for chat history`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching file names:', error);
+            }
+        }
+
+        // Store file name map globally for addMessage to use
+        window.chatFileNameMap = fileNameMap;
+
         // Display all conversations
         const conversations = data.conversations || [];
+        console.log(`📋 Loading ${conversations.length} conversations`);
 
         // Even if empty, keep chat interface visible (user clicked to view this thread)
-        conversations.forEach(conv => {
-            // Add user message with conversation data for editing
+        conversations.forEach((conv, index) => {
+            console.log(`  Conversation ${index + 1}:`, {
+                message: conv.conversationMessage?.substring(0, 50) + '...',
+                conversationID: conv.conversationID,
+                chatSeq: conv.chatSeq,
+                documentIDs: conv.documentIDs,
+                fileCount: (conv.documentIDs || []).length
+            });
+
+            // Add user message with conversation data and attached files for editing
             if (conv.conversationMessage) {
-                addMessage('user', conv.conversationMessage, conv.conversationID, conv.chatSeq);
+                addMessage('user', conv.conversationMessage, conv.conversationID, conv.chatSeq, conv.documentIDs || []);
             }
             // Add AI response (no edit button for AI)
             if (conv.responseMessage) {
@@ -2001,6 +3575,20 @@ function backToInitialScreen() {
         messagesContainer.innerHTML = '';
     }
 
+    // Clear any selected files from the input area
+    const selectedFilesWrapper = document.getElementById('selected-files-wrapper');
+    if (selectedFilesWrapper) {
+        selectedFilesWrapper.remove();
+        console.log('🗑️ Cleared selected files from input area (back to initial)');
+    }
+
+    // Clear input field text
+    const mainMessageInput = document.getElementById('main-message-input');
+    if (mainMessageInput) {
+        mainMessageInput.value = '';
+        mainMessageInput.style.height = 'auto';
+    }
+
     // Reset chat title
     const chatTitle = document.getElementById('chat-title');
     if (chatTitle) {
@@ -2020,6 +3608,7 @@ function backToInitialScreen() {
 // Make functions available globally so Sidebar can call them
 window.fetchProjectChats = fetchProjectChats;
 window.fetchProjectFiles = fetchProjectFiles;
+window.refreshProjectFiles = fetchProjectFiles; // Alias for refreshing files after upload
 window.fetchProjectReports = fetchProjectReports;
 window.loadChatThread = loadChatThread;
 window.backToInitialScreen = backToInitialScreen;

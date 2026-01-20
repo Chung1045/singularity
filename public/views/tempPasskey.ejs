@@ -3,19 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temp Passkeys</title>
+    <!-- Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Passkeys</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
-    <link rel="stylesheet" href="/components/sidebar.css?v=2.0">
     <!-- <link rel="stylesheet" href="/stylesheets/test/passkey.css"> -->
     <link rel="stylesheet" href="/stylesheets/passkey.css">
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
     <!-- Load shared utilities first -->
     <script src="/scripts/projectUtils.js"></script>
     <!-- Load Sidebar component -->
-    <script src="/components/Sidebar.js?v=2.4"></script>
+    <script src="/components/Sidebar.js"></script>
+    <link rel="stylesheet" href="/components/sidebar.css">
+    <!-- Load File Upload Notification Modal (simple version) -->
+    <script src="/components/fileUploadNotificationModal.js"></script>
+    <!-- Load File Upload Components - ORDER MATTERS! Dependencies first -->
+    <script src="/components/documentUploadSection.js"></script>
+    <script src="/components/audioUploadSection.js"></script>
+    <script src="/components/fileUploadComponent.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -27,12 +37,73 @@
     const passkeys = <%- JSON.stringify(passkeys || []) %>;
     const userInfo  = <%- JSON.stringify(userInfo || {}) %>;
 
-
     console.log("CSRF:", csrfToken);
     console.log("Passkeys:", passkeys);
-
     console.log("tempPasskey.ejs → userInfo received:", userInfo);
+    console.log('FileUploadComponent available:', typeof window.FileUploadComponent);
 
+    console.log("window.Sidebar available?", typeof window.Sidebar);
+    console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
+    console.log("window.DocumentUploadSection available?", typeof window.DocumentUploadSection);
+    console.log("window.AudioUploadSection available?", typeof window.AudioUploadSection);
+
+
+
+    // Add file upload event listener
+    const handleOpenFileUpload = (event) => {
+        const { projectID } = event.detail;
+        console.log('[FileUpload] Opening file upload modal for project:', projectID);
+        if (window.FileUploadComponent) {
+            const modalContainer = document.createElement('div');
+            modalContainer.id = 'file-upload-modal-container';
+            modalContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10002;
+                padding: 20px;
+            `;
+            modalContainer.onclick = (e) => {
+                if (e.target === modalContainer) {
+                    document.body.removeChild(modalContainer);
+                }
+            };
+            document.body.appendChild(modalContainer);
+            
+            const modalRoot = ReactDOM.createRoot(modalContainer);
+            // Store projectID for use in callback
+            const currentProjectID = projectID;
+            modalRoot.render(
+                React.createElement(window.FileUploadComponent, {
+                    projectID: currentProjectID,
+                    onClose: () => {
+                        modalRoot.unmount();
+                        if (document.body.contains(modalContainer)) {
+                            document.body.removeChild(modalContainer);
+                        }
+                    },
+                    onFilesUploaded: (files) => {
+                        console.log('Files uploaded:', files);
+                        console.log('Refreshing files for project:', currentProjectID);
+                        // Refresh the source list in sidebar
+                        if (typeof window.fetchProjectFiles === 'function') {
+                            window.fetchProjectFiles(currentProjectID);
+                        } else {
+                            console.error('fetchProjectFiles not available');
+                        }
+                    }
+                })
+            );
+        }
+    };
+    
+    window.addEventListener('openFileUpload', handleOpenFileUpload);
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(React.createElement(window.TempPasskey, { csrfToken, passkeys, userInfo }));

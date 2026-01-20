@@ -253,10 +253,10 @@ a {
   color: #1a1a1a;
 }
 .sidebar-expand .img {
-  position: relative;
-  width: 15.13px;
-  height: 12.74px;
-  margin-top: -0.13px;
-  margin-bottom: -0.13px;
-  aspect-ratio: 1.19;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    margin-top: -0.13px;
+    margin-bottom: -0.13px;
+    aspect-ratio: 1.19;
 }

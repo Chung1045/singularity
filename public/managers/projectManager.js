@@ -279,8 +279,21 @@ router.post("/project/file/upload", upload.single('file'), async(req, res) => {
         const documentID = uuid();
 
         // Extract filename and extension
-        const fileExt = path.extname(uploadedFile.originalname); // e.g., ".pdf"
-        const documentName = path.basename(uploadedFile.originalname, fileExt); // e.g., "report"
+        const fileExt = path.extname(uploadedFile.originalname); // e.g., ".pdf" (with dot)
+        let documentName = path.basename(uploadedFile.originalname, fileExt); // e.g., "report" or "HELLO.pdf"
+
+        // Clean any trailing dots from the filename (e.g., "HELLO.pdf." becomes "HELLO.pdf")
+        documentName = documentName.replace(/\.+$/, '');
+
+        // If the documentName already ends with the extension (e.g., "HELLO.pdf" and ext is ".pdf"),
+        // remove it to avoid duplication (HELLO.pdf.pdf → HELLO.pdf)
+        if (fileExt && documentName.toLowerCase().endsWith(fileExt.toLowerCase())) {
+            documentName = documentName.substring(0, documentName.length - fileExt.length);
+            // Clean trailing dots again after removing extension
+            documentName = documentName.replace(/\.+$/, '');
+        }
+
+        console.log(`[FILE UPLOAD] Original: "${uploadedFile.originalname}" → Name: "${documentName}" Ext: "${fileExt}"`);
 
         // Upload file to MinIO (pass temp file path, not the file object)
         const result = await fss.uploadProjectFile(
@@ -342,7 +355,18 @@ router.post("/project/file/rename", async(req, res) => {
     if (! await projectDBService.isProjectCollaborator(projectID, userID)) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     } else {
-        if (await fss.renameProjectFile(projectID, documentID, newFileName)) {
+        // Extract just the filename without extension
+        // newFileName comes as "file1.pdf", need to split it
+        const path = require('path');
+        const fileExt = path.extname(newFileName); // e.g., ".pdf"
+        let documentName = path.basename(newFileName, fileExt); // e.g., "file1"
+
+        // Clean any trailing dots
+        documentName = documentName.replace(/\.+$/, '');
+
+        console.log(`[RENAME] Full: "${newFileName}" → Name: "${documentName}" Ext: "${fileExt}"`);
+
+        if (await fss.renameProjectFile(projectID, documentID, documentName)) {
             return res.status(200).json({ successful: true });
         } else {
             return res.status(500).json({ successful: false, message: "Internal server error" });

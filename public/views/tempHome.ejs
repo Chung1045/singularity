@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -16,17 +20,22 @@
     <!-- Load shared utilities first -->
     <script src="/scripts/projectUtils.js"></script>
     <!-- Load Sidebar component -->
-    <script src="/components/Sidebar.js?v=2.4"></script>
-    <link rel="stylesheet" href="/components/sidebar.css?v=2.0">
+    <script src="/components/Sidebar.js"></script>
+    <link rel="stylesheet" href="/components/sidebar.css">
+    <!-- Load File Upload Notification Modal (simple version) -->
+    <script src="/components/fileUploadNotificationModal.js"></script>
+    <!-- Load File Upload Components - ORDER MATTERS! Dependencies first -->
+    <script src="/components/documentUploadSection.js"></script>
+    <script src="/components/audioUploadSection.js"></script>
+    <script src="/components/fileUploadComponent.js"></script>
     <link rel="stylesheet" href="/stylesheets/home.css">
     <link rel="stylesheet" href="/stylesheets/chat.css">
-
+    <!-- Load tempHome script -->
+    <script src="/scripts/tempHome.js"></script>
 </head>
 <body>
 
 <div id="root">Loading...</div>
-
-<script src="/scripts/tempHome.js"></script>
 
 <script>
     const userInfo  = <%- JSON.stringify(userInfo || {}) %>;
@@ -35,6 +44,9 @@
     console.log("tempHome.ejs → userInfo received:", userInfo);
     console.log("window.Sidebar available?", typeof window.Sidebar);
     console.log("window.TempHome available?", typeof window.TempHome);
+    console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
+    console.log("window.DocumentUploadSection available?", typeof window.DocumentUploadSection);
+    console.log("window.AudioUploadSection available?", typeof window.AudioUploadSection);
 
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -50,3 +62,4 @@
 
 </body>
 </html>
+
