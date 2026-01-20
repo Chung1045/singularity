@@ -687,7 +687,7 @@ function showFileSelectionDialog(files, projectID) {
         border-bottom: 1px solid #e4e4e4;
     `;
     header.innerHTML = `
-        <div style="font-family: 'SF Pro-Bold', Helvetica; font-weight: 700; font-size: 18px; color: #000;">Select Files</div>
+        <div style="font-family: 'SF Pro-Bold', Helvetica; font-weight: 400; font-size: 18px; color: #000;">Select Files</div>
         <button id="close-file-selection-modal" style="width: 30px; height: 30px; border: none; background: transparent; cursor: pointer; font-size: 20px; color: #666;">×</button>
     `;
 
@@ -2333,34 +2333,23 @@ async function submitConversationRequest() {
             // Clear the "went back to initial" flag since user is now in an active chat
             localStorage.removeItem('wentBackToInitial');
 
-            // Refresh chat history to show the new chat
-            if (typeof fetchProjectChats === 'function') {
-                await fetchProjectChats(projectID);
+            // Select the newly created chat in the sidebar
+            // Note: Title update is already handled in streamChatResponse when 'done' event is received
+            setTimeout(() => {
+                const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${newChatID}"]`);
+                if (newChatItem) {
+                    // Deselect all
+                    const allChatItems = document.querySelectorAll('.chat-history-item');
+                    allChatItems.forEach(item => {
+                        item.classList.remove('selected');
+                        item.style.backgroundColor = 'transparent';
+                    });
 
-                // Select the newly created chat in the sidebar and update title
-                setTimeout(() => {
-                    const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${newChatID}"]`);
-                    if (newChatItem) {
-                        // Deselect all
-                        const allChatItems = document.querySelectorAll('.chat-history-item');
-                        allChatItems.forEach(item => {
-                            item.classList.remove('selected');
-                            item.style.backgroundColor = 'transparent';
-                        });
-
-                        // Select new one
-                        newChatItem.classList.add('selected');
-                        newChatItem.style.backgroundColor = '#e0e0e0';
-
-                        // Update top bar title from the sidebar item
-                        const chatTitleElement = document.getElementById('chat-title');
-                        if (chatTitleElement) {
-                            const threadName = newChatItem.dataset.threadName || 'Untitled Chat';
-                            chatTitleElement.textContent = threadName;
-                        }
-                    }
-                }, 100);
-            }
+                    // Select new one
+                    newChatItem.classList.add('selected');
+                    newChatItem.style.backgroundColor = '#e0e0e0';
+                }
+            }, 100);
         }
     } catch (error) {
         console.error("❌ Error in submitConversationRequest:", error);
@@ -2571,6 +2560,37 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         }
 
         bottomRow.appendChild(editBtn);
+
+        // Add cancel button next to edit button (hidden by default, shown in edit mode)
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'message-cancel-btn';
+        cancelBtn.innerHTML = 'Cancel';
+        cancelBtn.title = 'Cancel edit';
+        cancelBtn.style.cssText = `
+            background: transparent;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #e57373;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+            display: none;
+        `;
+
+        cancelBtn.onmouseenter = () => {
+            cancelBtn.style.backgroundColor = 'rgba(229, 115, 115, 0.1)';
+            cancelBtn.style.color = '#c62828';
+        };
+        cancelBtn.onmouseleave = () => {
+            cancelBtn.style.backgroundColor = 'transparent';
+            cancelBtn.style.color = '#e57373';
+        };
+
+        cancelBtn.onclick = () => cancelEditMode();
+
+        bottomRow.appendChild(cancelBtn);
         contentWrapper.appendChild(bottomRow);
 
         // Now add avatar and contentWrapper to messageDiv
@@ -2638,6 +2658,9 @@ function handleEditMessage(text, conversationID, chatSeq) {
         attachedFileIDs: attachedFileIDs
     };
 
+    // Show cancel button and hide edit button on the message being edited
+    showCancelButtonOnMessage(conversationID, chatSeq);
+
     // If files were attached, show them as chips
     if (attachedFileIDs.length > 0) {
         console.log('Restoring attached files for edit:', attachedFileIDs);
@@ -2656,7 +2679,7 @@ function handleEditMessage(text, conversationID, chatSeq) {
     // Show "On Edit" indicator
     showEditModeIndicator();
 
-    // Update cancel edit button
+    // Update cancel edit button in file wrapper
     updateCancelEditButton();
 
     console.log('Editing message:', { conversationID, chatSeq, attachedFileIDs });
@@ -2673,21 +2696,101 @@ function showEditModeIndicator() {
     const chatTitleElement = document.getElementById('chat-title');
     if (!chatTitleElement) return;
 
-    // Create edit mode indicator
+    // Create edit mode indicator container
     const editIndicator = document.createElement('span');
     editIndicator.id = 'edit-mode-indicator';
-    editIndicator.textContent = 'On Edit';
     editIndicator.style.cssText = `
         margin-left: 12px;
+        margin-right: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        vertical-align: middle;
+    `;
+
+    // Create ripple dot
+    const rippleDot = document.createElement('span');
+    rippleDot.className = 'edit-ripple-dot';
+    rippleDot.style.cssText = `
+        width: 8px;
+        height: 8px;
+        background-color: #ff9800;
+        border-radius: 50%;
+        display: inline-block;
+        animation: ripple 1.5s ease-in-out infinite;
+    `;
+
+    // Add ripple animation style if not exists
+    if (!document.getElementById('edit-ripple-style')) {
+        const style = document.createElement('style');
+        style.id = 'edit-ripple-style';
+        style.textContent = `
+            @keyframes ripple {
+                0% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scale(1.3);
+                    opacity: 0.7;
+                }
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Create text
+    const textSpan = document.createElement('span');
+    textSpan.textContent = 'On Edit';
+    textSpan.style.cssText = `
         font-family: 'Inter', Helvetica;
         font-size: 13px;
         font-weight: 400;
         color: #999;
-        white-space: nowrap;
     `;
 
-    // Insert after chat title
-    chatTitleElement.parentNode.insertBefore(editIndicator, chatTitleElement.nextSibling);
+    editIndicator.appendChild(rippleDot);
+    editIndicator.appendChild(textSpan);
+
+    // Append inside chat title element so it appears next to the title text
+    chatTitleElement.appendChild(editIndicator);
+}
+
+// Show cancel button on the message being edited
+function showCancelButtonOnMessage(conversationID, chatSeq) {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (!messagesContainer) return;
+
+    const messageElements = messagesContainer.querySelectorAll('.message');
+    messageElements.forEach(msg => {
+        const msgConvId = msg.dataset.conversationId;
+        const msgChatSeq = parseInt(msg.dataset.chatSeq);
+
+        if (msgConvId === conversationID && msgChatSeq === chatSeq) {
+            // This is the message being edited - show cancel, hide edit
+            const editBtn = msg.querySelector('.message-edit-btn');
+            const cancelBtn = msg.querySelector('.message-cancel-btn');
+
+            if (editBtn) editBtn.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'inline-block';
+        }
+    });
+}
+
+// Hide cancel button and restore edit button on all messages
+function hideCancelButtonOnMessages() {
+    const cancelBtns = document.querySelectorAll('.message-cancel-btn');
+    cancelBtns.forEach(btn => {
+        btn.style.display = 'none';
+        // Restore edit button visibility
+        const editBtn = btn.parentNode?.querySelector('.message-edit-btn');
+        if (editBtn) editBtn.style.display = '';
+    });
 }
 
 // Restore file chips for edit mode
@@ -2728,13 +2831,27 @@ async function restoreFileChipsForEdit(fileIDs) {
 
             chipsContainer = document.createElement('div');
             chipsContainer.id = 'selected-files-container';
+            // chipsContainer.style.cssText = `
+            //     flex: 1;
+            //     display: flex;
+            //     flex-wrap: nowrap;
+            //     gap: 8px;
+            //     padding: 10px 15px;
+            //     background-color: rgb(249, 249, 249);
+            //     border-radius: 16px 16px 0 0;
+            //     align-items: center;
+            //     justify-content: flex-start;
+            //     overflow-x: auto;
+            //     overflow-y: hidden;
+            //     white-space: nowrap;
+            // `;
+
             chipsContainer.style.cssText = `
                 flex: 1;
                 display: flex;
                 flex-wrap: nowrap;
                 gap: 8px;
                 padding: 10px 15px;
-                background-color: rgb(249, 249, 249);
                 border-radius: 16px 16px 0 0;
                 align-items: center;
                 justify-content: flex-start;
@@ -2742,6 +2859,7 @@ async function restoreFileChipsForEdit(fileIDs) {
                 overflow-y: hidden;
                 white-space: nowrap;
             `;
+
 
             wrapper.appendChild(chipsContainer);
 
@@ -2842,9 +2960,14 @@ async function restoreFileChipsForEdit(fileIDs) {
     }
 }
 
-// Update or create cancel edit button
+// Update or create cancel edit button in file wrapper (only when files are attached)
 function updateCancelEditButton() {
-    const wrapper = document.getElementById('selected-files-wrapper');
+    // Only add cancel button if in edit mode
+    if (!window.editingMessage) return;
+
+    let wrapper = document.getElementById('selected-files-wrapper');
+
+    // Only add cancel button if wrapper exists (meaning files are attached)
     if (!wrapper) return;
 
     // Remove existing cancel button if present
@@ -2853,39 +2976,36 @@ function updateCancelEditButton() {
         existingBtn.remove();
     }
 
-    // Only add cancel button if in edit mode
-    if (window.editingMessage) {
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'cancel-edit-btn';
-        cancelBtn.textContent = 'Cancel Edit';
-        cancelBtn.style.cssText = `
-            padding: 6px 12px;
-            background: transparent;
-            border: none;
-            font-family: 'Inter', Helvetica;
-            font-size: 13px;
-            color: #666;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: color 0.2s;
-        `;
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'cancel-edit-btn';
+    cancelBtn.textContent = 'Cancel Edit';
+    cancelBtn.style.cssText = `
+        padding: 6px 12px;
+        background: transparent;
+        border: none;
+        font-family: 'Inter', Helvetica;
+        font-size: 13px;
+        color: #666;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: color 0.2s;
+    `;
 
-        cancelBtn.onmouseover = () => {
-            cancelBtn.style.color = '#333';
-        };
+    cancelBtn.onmouseover = () => {
+        cancelBtn.style.color = '#333';
+    };
 
-        cancelBtn.onmouseout = () => {
-            cancelBtn.style.color = '#666';
-        };
+    cancelBtn.onmouseout = () => {
+        cancelBtn.style.color = '#666';
+    };
 
-        cancelBtn.onclick = () => {
-            cancelEditMode();
-        };
+    cancelBtn.onclick = () => {
+        cancelEditMode();
+    };
 
-        // Add button next to the container
-        wrapper.appendChild(cancelBtn);
-    }
+    // Add button to the wrapper
+    wrapper.appendChild(cancelBtn);
 }
 
 // Cancel edit mode
@@ -2905,13 +3025,16 @@ function cancelEditMode() {
         editIndicator.remove();
     }
 
+    // Hide cancel button on messages and restore edit buttons
+    hideCancelButtonOnMessages();
+
     // Clear input field
     const inputField = document.getElementById('message-input') || document.getElementById('main-message-input');
     if (inputField) {
         inputField.value = '';
     }
 
-    // Clear selected files wrapper
+    // Clear selected files wrapper (which contains the cancel button)
     const wrapper = document.getElementById('selected-files-wrapper');
     if (wrapper) {
         wrapper.remove();
@@ -3063,11 +3186,33 @@ async function streamChatResponse(data, typingId) {
                         }
 
                         // Refresh chat history again to show generated title
+                        // Title is already generated on server before done event is sent
                         if (chatIDReceived && data.chatID === '') {
                             console.log('Streaming done, refreshing history to show generated title...');
-                            setTimeout(async () => {
-                                await fetchProjectChats(data.projectID);
-                            }, 500); // Small delay to ensure title is generated
+                            await fetchProjectChats(data.projectID);
+
+                            // Update chat title and select the chat item in sidebar
+                            const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatIDReceived}"]`);
+                            if (newChatItem) {
+                                // Deselect all chat items
+                                const allChatItems = document.querySelectorAll('.chat-history-item');
+                                allChatItems.forEach(item => {
+                                    item.classList.remove('selected');
+                                    item.style.backgroundColor = 'transparent';
+                                });
+
+                                // Select the new chat item
+                                newChatItem.classList.add('selected');
+                                newChatItem.style.backgroundColor = '#e0e0e0';
+
+                                // Update chat title from the newly refreshed sidebar data
+                                const chatTitleElement = document.getElementById('chat-title');
+                                if (chatTitleElement) {
+                                    const threadName = newChatItem.dataset.threadName || 'Untitled Chat';
+                                    chatTitleElement.textContent = threadName;
+                                    console.log('📝 Updated chat title to:', threadName);
+                                }
+                            }
                         }
                     } else if (jsonData.type === 'error') {
                         console.error('❌ Stream error received from server:', jsonData.message);

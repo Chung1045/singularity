@@ -1668,23 +1668,25 @@
                                         console.log('[FileUpload] Event dispatched');
                                     }
                                 },
-                                style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '8px 12px',
-                                    backgroundColor: 'rgb(30, 41, 59)',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#ffffff',
-                                    fontSize: '12px',
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    marginBottom: '10px',
-                                    transition: 'background-color 0.2s',
-                                    width: '100%'
-                                },
+                                    style: {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        boxSizing: 'border-box',
+                                        padding: '8px 12px',
+                                        backgroundColor: 'rgb(30, 41, 59)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#ffffff',
+                                        fontSize: '12px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        marginBottom: '10px',
+                                        transition: 'background-color 0.2s',
+                                        width: 'calc(100%)',
+                                        marginLeft: '-20px'
+                                    },
                                 onMouseEnter: (e) => {
                                     e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
                                 },
