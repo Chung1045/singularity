@@ -3,6 +3,9 @@ const fs = require("fs").promises;
 const path = require("path");
 const db = require("./db")
 const uuid = require("uuid-v4");
+const {PDFParse} = require("pdf-parse");
+const docx_pdf = require('docx-pdf');
+const os = require("os");
 
 const FSS_REPORT_USERSTORIES = "userStories";
 const FSS_REPORT_REQUIREMENTS = "requirements";
@@ -261,7 +264,12 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
     try {
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
-        return { successful: true };
+
+        if (documentExt === ".pdf" || ".docx" || ".mp3" || ".m4a" || ".mp4") {
+            await createAliasFile(projectID, documentID, documentExt)
+        }
+
+        return {successful: true};
     } catch (err) {
         console.error("Database insert error:", err);
         throw err;
@@ -284,90 +292,68 @@ async function downloadProjectFile(projectID, documentID) {
 
 /**
  * Delete file path
- * Documents can be deleted even if they have references in source tables.
- * The source references will remain but the documentID will point to a non-existent document.
- * Display logic should handle showing "Document deleted" for such cases.
- * To merger: You may need to take the commented and uncommented to test out which one is more suitable.
  */
-
-// async function deleteProjectFile(documentID, projectID) {
-//     try {
-//         // Delete from MinIO first
-//         const objectPath = `project/${projectID}/${documentID}`;
-//         await minioClient.removeObject(bucket, objectPath);
-//         console.log(`Deleted from MinIO: ${objectPath}`);
-//
-//         // Delete from database
-//         const sql = `
-//             DELETE
-//             FROM documents
-//             WHERE documentID = ?
-//               AND projectID = ?
-//         `;
-//
-//         await db.run(sql, [documentID, projectID]);
-//         console.log(`Deleted from DB: ${documentID}`);
-//
-//         return {
-//             successful: true,
-//         };
-//     } catch (err) {
-//         console.error("Delete error:", err);
-//         return {
-//             successful: false,
-//             message: err.message
-//         };
-//     }
-// }
-
-
 async function deleteProjectFile(documentID, projectID) {
     try {
-        // Delete from MinIO first
+        const getAliasSql = `
+            SELECT documentAlias
+            FROM documents
+            WHERE documentID = ?
+              AND projectID = ?
+        `;
+
+        const doc = await new Promise((resolve, reject) => {
+            db.get(getAliasSql, [documentID, projectID], function (err, row) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row);
+                }
+            });
+        });
+
+        console.log(`Result:`, doc);
+        console.log(`documentAlias value:`, doc?.documentAlias);
+
+        // Delete the original file from MinIO
         const objectPath = `project/${projectID}/${documentID}`;
         await minioClient.removeObject(bucket, objectPath);
         console.log(`Deleted from MinIO: ${objectPath}`);
 
-        // Delete related records from referencing tables first (to avoid foreign key constraint failures)
-        // These tables have foreign keys referencing documents(documentID)
+        // Delete the alias file if it exists
+        if (doc && doc.documentAlias) {
+            console.log("inside - deleting alias");
+            const aliasPath = `project/${projectID}/alias/${doc.documentAlias}`;
+            await minioClient.removeObject(bucket, aliasPath);
+            console.log(`Deleted alias from MinIO: ${aliasPath}`);
+        } else {
+            console.log("No alias to delete or doc not found");
+        }
 
-        const deleteFromTable = (tableName) => {
-            return new Promise((resolve) => {
-                db.run(`DELETE FROM ${tableName} WHERE documentID = ?`, [documentID], function(err) {
-                    if (err) {
-                        console.error(`Error deleting from ${tableName}:`, err);
-                        // Don't reject, just log - table might not exist or have no matching records
-                        resolve();
-                    } else {
-                        console.log(`Deleted ${this.changes} references from ${tableName} for documentID: ${documentID}`);
-                        resolve();
-                    }
-                });
-            });
-        };
+        console.log("Outside")
 
-        // Delete from all tables that reference documentID
-        await deleteFromTable('conversationDocRef');
-        await deleteFromTable('userStorySource');
-        await deleteFromTable('requirementsSource');
+        const deleteSql = `
+            DELETE
+            FROM documents
+            WHERE documentID = ?
+              AND projectID = ?
+        `;
 
-        // Now delete from documents table
-        return new Promise((resolve, reject) => {
-            db.run(`DELETE FROM documents WHERE documentID = ? AND projectID = ?`, [documentID, projectID], function(err) {
+        await new Promise((resolve, reject) => {
+            db.run(deleteSql, [documentID, projectID], function (err) {
                 if (err) {
-                    console.error("Error deleting document:", err);
-                    reject({
-                        successful: false,
-                        message: err.message
-                    });
+                    reject(err);
                 } else {
-                    console.log(`Deleted from DB: ${documentID}`);
-                    resolve({
-                        successful: true,
-                    });
+                    resolve({ changes: this.changes });
                 }
             });
         });
+
+        console.log(`Deleted from DB: ${documentID}`);
+
+        return {
+            successful: true,
+        };
     } catch (err) {
         console.error("Delete error:", err);
         return {
@@ -402,12 +388,13 @@ async function renameProjectFile(projectID, documentID, newFileName) {
     return new Promise((resolve, reject) => {
 
         const sql = `
-            UPDATE documents 
+            UPDATE documents
             SET documentName = ?
-            WHERE documentID = ? AND projectID = ?
+            WHERE documentID = ?
+              AND projectID = ?
         `;
 
-        db.run(sql, [newFileName, documentID, projectID], function(err) {  // Use db.run for UPDATE
+        db.run(sql, [newFileName, documentID, projectID], function (err) {  // Use db.run for UPDATE
             if (err) {
                 console.error('Error in renameProjectFiles2:', err);
                 return reject(err);
@@ -426,7 +413,8 @@ async function getFileMetadata(documentID, projectID) {
         const sql = `
             SELECT documentID, documentName, documentExt
             FROM documents
-            WHERE documentID = ? AND projectID = ?
+            WHERE documentID = ?
+              AND projectID = ?
         `;
 
         db.get(sql, [documentID, projectID], (err, row) => {
@@ -485,7 +473,9 @@ async function saveGeneratedReport(projectID, buffer, kind) {
 }
 
 async function listReportRecord(projectID) {
-    const sql = `SELECT reportID, reportName, reportType FROM reports WHERE projectID = ?`;
+    const sql = `SELECT reportID, reportName, reportType
+                 FROM reports
+                 WHERE projectID = ?`;
 
     return new Promise((resolve, reject) => {
         db.all(sql, [projectID], (err, rows) => {
@@ -499,7 +489,7 @@ async function listReportRecord(projectID) {
     });
 }
 
-async function downloadReport(projectID, reportID){
+async function downloadReport(projectID, reportID) {
     try {
         const objectPath = `project/${projectID}/reports/${reportID}`;
         console.log(`Attempting to fetch ${objectPath}`)
@@ -544,7 +534,10 @@ async function insertReportRecord(projectID, reportType) {
 }
 
 async function queryReportName(projectID, reportID) {
-    const sql = `SELECT reportName FROM reports WHERE projectID = ? AND reportID = ?`;
+    const sql = `SELECT reportName
+                 FROM reports
+                 WHERE projectID = ?
+                   AND reportID = ?`;
 
     return new Promise((resolve, reject) => {
         db.get(sql, [projectID, reportID], (err, row) => {
@@ -590,11 +583,161 @@ async function deleteReportRecord(projectID, reportID) {
     }
 }
 
+async function extractPDFFromStream(buffer) {
+    const parser = new PDFParse({data: buffer});
+
+    try {
+        const result = await parser.getText();
+        console.log(`Parsed data: ${result.text}`);
+        return result.text;
+    } finally {
+        await parser.destroy();
+    }
+}
+
+async function extractDOCXFromStream(buffer) {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'docx-'));
+    const docxFilename = crypto.randomUUID() + '.docx';
+    const pdfFilename = crypto.randomUUID() + '.pdf';
+    const inputPath = path.join(tempDir, docxFilename);
+    const outputPath = path.join(tempDir, pdfFilename);
+
+    try {
+        await fs.writeFile(inputPath, buffer);
+
+        await new Promise((resolve, reject) => {
+            docx_pdf(inputPath, outputPath, (err, result) => {
+                if (err) reject(err);
+                else resolve(result);
+            });
+        });
+
+        const pdfBuffer = await fs.readFile(outputPath);
+
+        // Extract text from converted PDF
+        const parser = new PDFParse({data: pdfBuffer});
+        const result = await parser.getText();
+        await parser.destroy();
+
+        return result.text;
+    } finally {
+        await fs.rm(tempDir, {recursive: true, force: true});
+    }
+}
+
+async function createAliasFile(projectID, documentID, documentExt) {
+    // Download the file
+    const stream = await downloadProjectFile(projectID, documentID);
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    // Extract text based on document type
+    let extractedText = "";
+
+    switch (documentExt.toLowerCase()) {
+        case ".docx":
+            extractedText = await extractDOCXFromStream(buffer);
+            break;
+        case ".pdf":
+            extractedText = await extractPDFFromStream(buffer);
+            break;
+        default:
+            throw new Error(`Unsupported document type: ${documentExt}`);
+    }
+
+    // Generate alias ID and path
+    const aliasID = uuid();
+    const textPath = `project/${projectID}/alias/${aliasID}`;
+
+    // Save extracted text to MinIO
+    const textBuffer = Buffer.from(extractedText, 'utf-8');
+    await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
+        'Content-Type': 'text/plain; charset=utf-8'
+    });
+
+    console.log(`Saved extracted text to: ${textPath}`);
+
+    // Update database with alias ID
+    const sql = `UPDATE documents
+                 SET documentAlias = ?
+                 WHERE projectID = ?
+                   AND documentID = ?`;
+
+    await db.run(sql, [aliasID, projectID, documentID]);
+
+    console.log(`Updated database: documentID=${documentID}, aliasID=${aliasID}`);
+
+    return {
+        aliasID: aliasID,
+        minioPath: textPath,
+        textLength: extractedText.length
+    };
+}
+
+async function getFileContext(projectID, documentID) {
+    const sql = `SELECT *
+                 FROM documents
+                 WHERE projectID = ?
+                   AND documentID = ?`;
+
+    console.log(`Parameter: projectID: ${projectID}, documentID: ${documentID}`);
+
+    // Wrap db.all in a promise
+    const result = await new Promise((resolve, reject) => {
+        db.all(sql, [projectID, documentID], (err, rows) => {
+            if (err) {
+                console.error("Query error:", err);
+                return reject(err);
+            }
+            resolve(rows);
+        });
+    });
+
+    console.log("DB result:", result);
+    console.log("DB result length:", result?.length);
+
+    if (!result || result.length === 0) {
+        console.log("No rows found");
+        return `Context is not available.`;
+    }
+
+    console.log("First row:", result[0]);
+
+    const documentAlias = result[0].documentAlias;
+    console.log("Document alias:", documentAlias);
+
+    if (!documentAlias) {
+        console.log("Document alias is null/empty");
+        return `Context is not available.`;
+    }
+
+    const objectPath = `project/${projectID}/alias/${documentAlias}.txt`;
+    console.log("Fetching from MinIO:", objectPath);
+
+    const stream = await minioClient.getObject(bucket, objectPath);
+
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+
+    const content = Buffer.concat(chunks).toString('utf-8');
+    console.log("Content length:", content.length);
+
+    return content;
+}
+
 async function testConnection() {
     return await minioClient.bucketExists(process.env.MINIO_BUCKET);
 }
 
 init()
+
+
+
 
 module.exports = {
     createFolder,
@@ -607,6 +750,7 @@ module.exports = {
     FSS_REPORT_REQUIREMENTS,
     FSS_REPORT_USERSTORIES,
     getFileMetadata,
+    getFileContext,
     init,
     insertFileData,
     insertReportRecord,

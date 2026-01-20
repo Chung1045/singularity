@@ -561,7 +561,24 @@ const TempHome = ({csrfToken, userInfo}) => {
                             onKeyDown: (e) => {
                                 // Detect if user is on a touch/mobile device
                                 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-                                
+
+                                if (e.key === 'Enter') {
+                                    if (isTouchDevice) {
+                                        // On mobile/touch: Enter creates new line, use Send button to submit
+                                        // Allow default behavior (new line)
+                                        return;
+                                    } else {
+                                        // On desktop: Enter submits, Shift+Enter for new line
+                                        if (!e.shiftKey) {
+                                            e.preventDefault();
+                                            submitConversationRequest();
+                                        }
+                                        // Shift+Enter will naturally create a new line
+                                    }
+                                }
+                                // Detect if user is on a touch/mobile device
+                                const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
                                 if (e.key === 'Enter') {
                                     if (isTouchDevice) {
                                         // On mobile/touch: Enter creates new line, use Send button to submit
