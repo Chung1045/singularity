@@ -114,10 +114,11 @@ const NOTIFICATION_SCHEMA = () => `
 const DOCUMENTS_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS documents
     (
-        documentID   TEXT PRIMARY KEY NOT NULL UNIQUE,
-        projectID    TEXT             NOT NULL,
-        documentName TEXT             NOT NULL,
-        documentExt  TEXT             NOT NULL,
+        documentID    TEXT PRIMARY KEY NOT NULL UNIQUE,
+        projectID     TEXT             NOT NULL,
+        documentName  TEXT             NOT NULL,
+        documentExt   TEXT             NOT NULL,
+        documentAlias TEXT,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
 `
@@ -154,6 +155,7 @@ const USERSTORIES_SCHEMA = () => `
 // `
 
 // FIXED - Corrected data types and foreign key references:
+// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
 const USERSTORIES_SOURCE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS userStorySource
     (
@@ -164,8 +166,7 @@ const USERSTORIES_SOURCE_SCHEMA = () => `
         remarks    TEXT,
         location   TEXT,
         FOREIGN KEY (storyID) REFERENCES userStories (storyID) ON DELETE CASCADE,
-        FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
-        FOREIGN KEY (documentID) REFERENCES documents (documentID) ON DELETE CASCADE
+        FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     )
 `
 
@@ -226,6 +227,7 @@ const REQUIREMENTS_STORY_REF_SCHEMA = () => `
 // `
 
 // FIXED - Added ON DELETE CASCADE:
+// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
 const REQUIREMENTS_SOURCE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS requirementsSource
     (
@@ -236,8 +238,7 @@ const REQUIREMENTS_SOURCE_SCHEMA = () => `
         remarks        TEXT,
         location       TEXT,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
-        FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
-        FOREIGN KEY (documentID) REFERENCES documents (documentID) ON DELETE CASCADE
+        FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE
     )
 `
 
@@ -308,6 +309,7 @@ const CONVERSATION_SCHEMA = () => `
 // `
 
 // FIXED - Added column names and ON DELETE CASCADE:
+// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
 const CONVERSATION_DOC_REF_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS conversationDocRef
     (
@@ -316,8 +318,7 @@ const CONVERSATION_DOC_REF_SCHEMA = () => `
         conversationSeq INTEGER          NOT NULL,
         documentID      TEXT             NOT NULL,
         remarks         TEXT,
-        FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation (conversationID, chatSeq) ON DELETE CASCADE,
-        FOREIGN KEY (documentID) REFERENCES documents (documentID) ON DELETE CASCADE
+        FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation (conversationID, chatSeq) ON DELETE CASCADE
     )
 `
 

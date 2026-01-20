@@ -284,8 +284,43 @@ async function downloadProjectFile(projectID, documentID) {
 
 /**
  * Delete file path
- * When a document is deleted, all references to it in other tables are also removed.
+ * Documents can be deleted even if they have references in source tables.
+ * The source references will remain but the documentID will point to a non-existent document.
+ * Display logic should handle showing "Document deleted" for such cases.
+ * To merger: You may need to take the commented and uncommented to test out which one is more suitable.
  */
+
+// async function deleteProjectFile(documentID, projectID) {
+//     try {
+//         // Delete from MinIO first
+//         const objectPath = `project/${projectID}/${documentID}`;
+//         await minioClient.removeObject(bucket, objectPath);
+//         console.log(`Deleted from MinIO: ${objectPath}`);
+//
+//         // Delete from database
+//         const sql = `
+//             DELETE
+//             FROM documents
+//             WHERE documentID = ?
+//               AND projectID = ?
+//         `;
+//
+//         await db.run(sql, [documentID, projectID]);
+//         console.log(`Deleted from DB: ${documentID}`);
+//
+//         return {
+//             successful: true,
+//         };
+//     } catch (err) {
+//         console.error("Delete error:", err);
+//         return {
+//             successful: false,
+//             message: err.message
+//         };
+//     }
+// }
+
+
 async function deleteProjectFile(documentID, projectID) {
     try {
         // Delete from MinIO first
@@ -341,6 +376,7 @@ async function deleteProjectFile(documentID, projectID) {
         };
     }
 }
+
 
 async function listProjectFiles(projectID) {
     return new Promise((resolve, reject) => {
