@@ -451,24 +451,24 @@ async function getFileMetadata(documentID, projectID) {
     });
 }
 
-async function filePreProcessing(projectID, documentID, fileExt){
-
-    switch (fileExt) {
-        case 'doc':
-        case 'docx':
-        // convert to pdf pipeline + extract
-
-        case 'pdf':
-            // extract text from pdf
-
-        case 'mp3':
-            // whisper pipeline
-
-        default:
-            // unrecognized file format
-    }
-
-}
+// async function filePreProcessing(projectID, documentID, fileExt){
+//
+//     switch (fileExt) {
+//         case 'doc':
+//         case 'docx':
+//         // convert to pdf pipeline + extract
+//
+//         case 'pdf':
+//             // extract text from pdf
+//
+//         case 'mp3':
+//             // whisper pipeline
+//
+//         default:
+//             // unrecognized file format
+//     }
+//
+// }
 
 async function saveGeneratedReport(projectID, buffer, kind) {
     try {
