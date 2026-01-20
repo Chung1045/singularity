@@ -265,8 +265,16 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
 
-        if (documentExt === ".pdf" || ".docx" || ".mp3" || ".m4a" || ".mp4") {
-            await createAliasFile(projectID, documentID, documentExt)
+        // Only create alias for supported document types (PDF and DOCX)
+        // Audio files (.mp3, .m4a, .mp4) will be handled separately by audio processing pipeline
+        const extLower = documentExt.toLowerCase();
+        console.log(`Checking if alias needed for extension: ${documentExt} (lowercase: ${extLower})`);
+
+        if (extLower === ".pdf" || extLower === ".docx") {
+            console.log(`Creating alias file for document type: ${extLower}`);
+            await createAliasFile(projectID, documentID, documentExt);
+        } else {
+            console.log(`Skipping alias creation for non-document type: ${extLower}`);
         }
 
         return {successful: true};

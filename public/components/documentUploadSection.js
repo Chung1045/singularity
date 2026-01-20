@@ -15,6 +15,18 @@
 
         console.log('[FileUpload] Showing', documentFiles.length, 'document files');
 
+        // Update fileList when files prop changes
+        useEffect(() => {
+            const newDocumentFiles = files.filter(f => !f.isAudio);
+            console.log('[FileUpload] DocumentUploadSection useEffect - updating fileList with', newDocumentFiles.length, 'document files');
+            setFileList(newDocumentFiles);
+
+            // Reset checked files when file list changes
+            if (newDocumentFiles.length === 0) {
+                setCheckedFiles({});
+            }
+        }, [files]);
+
         // Toggle checkbox for a file
         const toggleCheckbox = (index) => {
             setCheckedFiles(prev => ({

@@ -6,14 +6,28 @@
 
     window.AudioUploadSection = ({ files, projectID, onClose, onReupload, onNext, formatFileSize, formatDate, formatDuration, isUploading }) => {
         console.log('[FileUpload] AudioUploadSection rendered with', files.length, 'files');
+        console.log('[FileUpload] Files received:', files.map(f => ({ name: f.originalName, isAudio: f.isAudio, fileExt: f.fileExt })));
 
         // Filter to only show audio files
         const audioFiles = files.filter(f => f.isAudio);
+        console.log('[FileUpload] Showing', audioFiles.length, 'audio files');
+
         const [fileList, setFileList] = useState(audioFiles);
         const [menuOpen, setMenuOpen] = useState(null); // Track which file's menu is open
         const [checkedFiles, setCheckedFiles] = useState({}); // Track which files are checked
 
-        console.log('[FileUpload] Showing', audioFiles.length, 'audio files');
+        // Update fileList when files prop changes
+        useEffect(() => {
+            const newAudioFiles = files.filter(f => f.isAudio);
+            console.log('[FileUpload] AudioUploadSection useEffect - updating fileList with', newAudioFiles.length, 'audio files');
+            setFileList(newAudioFiles);
+
+            // Reset checked files when file list changes
+            if (newAudioFiles.length === 0) {
+                setCheckedFiles({});
+            }
+        }, [files]);
+
 
         // Toggle checkbox for a file
         const toggleCheckbox = (index) => {
