@@ -338,9 +338,9 @@ const TempHome = ({csrfToken, userInfo}) => {
             React.createElement('main', {className: 'right-container'},
                 React.createElement('section', {className: 'main-screen'},
                     React.createElement('header', {
-                        className: 'main-screen-title'
-                        // Visible by default, hidden when chat starts
-                    },
+                            className: 'main-screen-title'
+                            // Visible by default, hidden when chat starts
+                        },
                         React.createElement('img', {
                             className: 'bouncy-logo',
                             src: './img/bouncy-logo-animation.svg',
@@ -352,26 +352,26 @@ const TempHome = ({csrfToken, userInfo}) => {
                     ),
                     // Chat interface - hidden by default, shown when user submits first message
                     React.createElement('div', {
-                        id: 'chat-interface',
-                        className: 'chat-interface',
-                        style: { display: 'none' }
-                    },
+                            id: 'chat-interface',
+                            className: 'chat-interface',
+                            style: { display: 'none' }
+                        },
                         // Top bar with chat title and back button
                         React.createElement('div', {
-                            id: 'chat-top-bar',
-                            className: 'chat-top-bar'
-                        },
+                                id: 'chat-top-bar',
+                                className: 'chat-top-bar'
+                            },
                             React.createElement('button', {
-                                id: 'btn-back-to-initial',
-                                className: 'btn-back-to-initial',
-                                type: 'button',
-                                'aria-label': 'Back to initial screen',
+                                    id: 'btn-back-to-initial',
+                                    className: 'btn-back-to-initial',
+                                    type: 'button',
+                                    'aria-label': 'Back to initial screen',
 
-                                onClick: () => {
-                                    if (typeof window.backToInitialScreen === 'function') {
-                                        window.backToInitialScreen();
-                                    }
-                                },       onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                                    onClick: () => {
+                                        if (typeof window.backToInitialScreen === 'function') {
+                                            window.backToInitialScreen();
+                                        }
+                                    },       onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
                                     onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
 
                                 },
@@ -397,10 +397,10 @@ const TempHome = ({csrfToken, userInfo}) => {
                     ),
                     // Suggestion chips - positioned right above input field
                     React.createElement('div', {
-                        id: 'suggestion-chips',
-                        className: 'suggestion-chips',
-                        style: { display: 'none' } // Hidden until chat starts
-                    },
+                            id: 'suggestion-chips',
+                            className: 'suggestion-chips',
+                            style: { display: 'none' } // Hidden until chat starts
+                        },
                         React.createElement('button', {
                             className: 'chip',
                             onClick: () => {
@@ -834,16 +834,27 @@ function showFileSelectionDialog(files, projectID) {
 
 // Function to add selected files to chat input
 function addFilesToChatInput(files) {
-    // Get or create selected files container
+    // Get or create wrapper and container
+    let wrapper = document.getElementById('selected-files-wrapper');
     let container = document.getElementById('selected-files-container');
 
     if (!container) {
-        container = document.createElement('div');
-        container.id = 'selected-files-container';
-        container.style.cssText = `
+        // Create wrapper to hold container and cancel button side by side
+        wrapper = document.createElement('div');
+        wrapper.id = 'selected-files-wrapper';
+        wrapper.style.cssText = `
             margin: 0 auto;
             width: 90%;
             max-width: 650px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        `;
+
+        container = document.createElement('div');
+        container.id = 'selected-files-container';
+        container.style.cssText = `
+            flex: 1;
             display: flex;
             flex-wrap: nowrap;
             gap: 8px;
@@ -857,12 +868,17 @@ function addFilesToChatInput(files) {
             white-space: nowrap;
         `;
 
+        wrapper.appendChild(container);
+
         // Insert before input field
         const inputField = document.querySelector('.input-field');
         if (inputField && inputField.parentNode) {
-            inputField.parentNode.insertBefore(container, inputField);
+            inputField.parentNode.insertBefore(wrapper, inputField);
         }
     }
+
+    // Update cancel edit button
+    updateCancelEditButton();
 
     // Add files as chips
     files.forEach(file => {
@@ -873,6 +889,17 @@ function addFilesToChatInput(files) {
 
         const fileChip = document.createElement('div');
         fileChip.setAttribute('data-file-id', file.documentID);
+
+        // Construct filename - extension might already have a dot
+        // Also clean documentName in case of old corrupted data
+        const ext = file.documentExt || '';
+        let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
+        const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+        const displayFileName = file.fileName || fullFileName;
+
+        // Store file name as data attribute for later retrieval
+        fileChip.setAttribute('data-file-name', displayFileName);
+
         fileChip.style.cssText = `
             display: flex;
             align-items: center;
@@ -887,12 +914,7 @@ function addFilesToChatInput(files) {
         `;
 
         const fileName = document.createElement('span');
-        // Construct filename - extension might already have a dot
-        // Also clean documentName in case of old corrupted data
-        const ext = file.documentExt || '';
-        let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
-        const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
-        fileName.textContent = file.fileName || fullFileName;
+        fileName.textContent = displayFileName;
         fileName.style.maxWidth = '200px';
         fileName.style.overflow = 'hidden';
         fileName.style.textOverflow = 'ellipsis';
@@ -915,9 +937,12 @@ function addFilesToChatInput(files) {
         `;
         removeBtn.onclick = () => {
             fileChip.remove();
-            // Remove container if no more files
+            // Remove wrapper if no more files
             if (container.children.length === 0) {
-                container.remove();
+                const wrapper = document.getElementById('selected-files-wrapper');
+                if (wrapper) {
+                    wrapper.remove();
+                }
             }
         };
 
@@ -1451,16 +1476,16 @@ function createFileItem(fileName, documentID) {
                 }
             }, fileName),
             React.createElement('div', {
-                ref: menuRef,
-                style: {
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: '30px',
-                    height: '30px',
-                    flexShrink: 0
-                }
-            },
+                    ref: menuRef,
+                    style: {
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        width: '30px',
+                        height: '30px',
+                        flexShrink: 0
+                    }
+                },
                 React.createElement('img', {
                     id: `source-file-menu-${documentID}`,
                     'aria-label': `File options menu for ${fileName}`,
@@ -1487,22 +1512,22 @@ function createFileItem(fileName, documentID) {
                     }
                 }),
                 menuOpen && React.createElement('div', {
-                    id: `source-file-menu-dropdown-${documentID}`,
-                    'aria-label': `File options dropdown for ${fileName}`,
-                    style: {
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '4px',
-                        backgroundColor: '#ffffff',
-                        border: '1.67px solid #e4e4e4',
-                        borderRadius: '11.12px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        minWidth: '120px',
-                        zIndex: 1000,
-                        overflow: 'hidden'
-                    }
-                },
+                        id: `source-file-menu-dropdown-${documentID}`,
+                        'aria-label': `File options dropdown for ${fileName}`,
+                        style: {
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            marginTop: '4px',
+                            backgroundColor: '#ffffff',
+                            border: '1.67px solid #e4e4e4',
+                            borderRadius: '11.12px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            minWidth: '120px',
+                            zIndex: 1000,
+                            overflow: 'hidden'
+                        }
+                    },
                     React.createElement('button', {
                         id: `source-file-rename-button-${documentID}`,
                         'aria-label': `Rename ${fileName}`,
@@ -1956,14 +1981,14 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 }
             }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat'),
             React.createElement('div', {
-                ref: menuRef,
-                className: 'chat-menu',
-                style: {
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center'
-                }
-            },
+                    ref: menuRef,
+                    className: 'chat-menu',
+                    style: {
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }
+                },
                 React.createElement('img', {
                     style: {
                         padding: "4px",
@@ -1986,20 +2011,20 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 }),
                 menuOpen && React.createElement('div', {
-                    style: {
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '4px',
-                        backgroundColor: '#ffffff',
-                        border: '1.67px solid #e4e4e4',
-                        borderRadius: '11.12px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        minWidth: '120px',
-                        zIndex: 1000,
-                        overflow: 'hidden'
-                    }
-                },
+                        style: {
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            marginTop: '4px',
+                            backgroundColor: '#ffffff',
+                            border: '1.67px solid #e4e4e4',
+                            borderRadius: '11.12px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            minWidth: '120px',
+                            zIndex: 1000,
+                            overflow: 'hidden'
+                        }
+                    },
                     React.createElement('button', {
                         style: {
                             width: '100%',
@@ -2151,10 +2176,10 @@ async function submitConversationRequest() {
         input.value = '';
         input.style.height = 'auto';
 
-        // Clear selected file chips
-        const chipsContainer = document.getElementById('selected-files-container');
-        if (chipsContainer) {
-            chipsContainer.remove();
+        // Clear selected file chips wrapper
+        const wrapper = document.getElementById('selected-files-wrapper');
+        if (wrapper) {
+            wrapper.remove();
         }
 
         // Remove the old message and subsequent messages from UI
@@ -2256,10 +2281,10 @@ async function submitConversationRequest() {
     input.value = '';
     input.style.height = 'auto';
 
-    // Clear selected file chips
-    const chipsContainer = document.getElementById('selected-files-container');
-    if (chipsContainer) {
-        chipsContainer.remove();
+    // Clear selected file chips wrapper
+    const wrapper = document.getElementById('selected-files-wrapper');
+    if (wrapper) {
+        wrapper.remove();
     }
 
     // Show typing indicator
@@ -2462,15 +2487,25 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
                 let fileName = fileId; // Default to ID
                 const chipElement = document.querySelector(`[data-file-id="${fileId}"]`);
                 if (chipElement) {
-                    const fileNameSpan = chipElement.querySelector('span');
-                    if (fileNameSpan) {
-                        fileName = fileNameSpan.textContent;
+                    // Try to get file name from data attribute first
+                    const storedFileName = chipElement.getAttribute('data-file-name');
+                    if (storedFileName) {
+                        fileName = storedFileName;
+                    } else {
+                        // Fallback to text content from span
+                        const fileNameSpan = chipElement.querySelector('span');
+                        if (fileNameSpan) {
+                            fileName = fileNameSpan.textContent;
+                        }
                     }
                 } else {
                     // Try to find in source list
                     const sourceElement = document.getElementById(`source-file-name-${fileId}`);
                     if (sourceElement) {
                         fileName = sourceElement.textContent;
+                    } else if (window.chatFileNameMap && window.chatFileNameMap.has(fileId)) {
+                        // Use the global file name map from chat history loading
+                        fileName = window.chatFileNameMap.get(fileId);
                     }
                 }
 
@@ -2618,7 +2653,41 @@ function handleEditMessage(text, conversationID, chatSeq) {
         sendBtn.title = 'Send edited message';
     }
 
+    // Show "On Edit" indicator
+    showEditModeIndicator();
+
+    // Update cancel edit button
+    updateCancelEditButton();
+
     console.log('Editing message:', { conversationID, chatSeq, attachedFileIDs });
+}
+
+// Show edit mode indicator
+function showEditModeIndicator() {
+    // Remove existing indicator if present
+    const existingIndicator = document.getElementById('edit-mode-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+
+    const chatTitleElement = document.getElementById('chat-title');
+    if (!chatTitleElement) return;
+
+    // Create edit mode indicator
+    const editIndicator = document.createElement('span');
+    editIndicator.id = 'edit-mode-indicator';
+    editIndicator.textContent = 'On Edit';
+    editIndicator.style.cssText = `
+        margin-left: 12px;
+        font-family: 'Inter', Helvetica;
+        font-size: 13px;
+        font-weight: 400;
+        color: #999;
+        white-space: nowrap;
+    `;
+
+    // Insert after chat title
+    chatTitleElement.parentNode.insertBefore(editIndicator, chatTitleElement.nextSibling);
 }
 
 // Restore file chips for edit mode
@@ -2641,14 +2710,26 @@ async function restoreFileChipsForEdit(fileIDs) {
         if (!data.files) return;
 
         // Create chips container if it doesn't exist
+        let wrapper = document.getElementById('selected-files-wrapper');
         let chipsContainer = document.getElementById('selected-files-container');
+
         if (!chipsContainer) {
-            chipsContainer = document.createElement('div');
-            chipsContainer.id = 'selected-files-container';
-            chipsContainer.style.cssText = `
+            // Create wrapper to hold container and cancel button
+            wrapper = document.createElement('div');
+            wrapper.id = 'selected-files-wrapper';
+            wrapper.style.cssText = `
                 margin: 0 auto;
                 width: 90%;
                 max-width: 650px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+
+            chipsContainer = document.createElement('div');
+            chipsContainer.id = 'selected-files-container';
+            chipsContainer.style.cssText = `
+                flex: 1;
                 display: flex;
                 flex-wrap: nowrap;
                 gap: 8px;
@@ -2662,20 +2743,20 @@ async function restoreFileChipsForEdit(fileIDs) {
                 white-space: nowrap;
             `;
 
+            wrapper.appendChild(chipsContainer);
+
             // Insert between suggestion-chips and input-field form
             const inputForm = document.querySelector('.input-field');
             const suggestionChips = document.getElementById('suggestion-chips');
 
             if (inputForm && inputForm.parentNode) {
-                inputForm.parentNode.insertBefore(chipsContainer, inputForm);
-                chipsContainer.style.display = 'flex';
+                inputForm.parentNode.insertBefore(wrapper, inputForm);
             } else if (suggestionChips && suggestionChips.parentNode) {
                 if (suggestionChips.nextSibling) {
-                    suggestionChips.parentNode.insertBefore(chipsContainer, suggestionChips.nextSibling);
+                    suggestionChips.parentNode.insertBefore(wrapper, suggestionChips.nextSibling);
                 } else {
-                    suggestionChips.parentNode.appendChild(chipsContainer);
+                    suggestionChips.parentNode.appendChild(wrapper);
                 }
-                chipsContainer.style.display = 'flex';
             }
         } else {
             // Ensure existing container uses horizontal scroll
@@ -2701,6 +2782,8 @@ async function restoreFileChipsForEdit(fileIDs) {
                 // Create file chip
                 const fileChip = document.createElement('div');
                 fileChip.setAttribute('data-file-id', fileId);
+                // Store file name as data attribute for later retrieval
+                fileChip.setAttribute('data-file-name', fileName);
                 fileChip.style.cssText = `
                     display: flex;
                     align-items: center;
@@ -2751,8 +2834,57 @@ async function restoreFileChipsForEdit(fileIDs) {
             }
         });
 
+        // Add cancel edit button
+        updateCancelEditButton();
+
     } catch (error) {
         console.error('Error restoring file chips:', error);
+    }
+}
+
+// Update or create cancel edit button
+function updateCancelEditButton() {
+    const wrapper = document.getElementById('selected-files-wrapper');
+    if (!wrapper) return;
+
+    // Remove existing cancel button if present
+    const existingBtn = wrapper.querySelector('.cancel-edit-btn');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+
+    // Only add cancel button if in edit mode
+    if (window.editingMessage) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'cancel-edit-btn';
+        cancelBtn.textContent = 'Cancel Edit';
+        cancelBtn.style.cssText = `
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            font-family: 'Inter', Helvetica;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: color 0.2s;
+        `;
+
+        cancelBtn.onmouseover = () => {
+            cancelBtn.style.color = '#333';
+        };
+
+        cancelBtn.onmouseout = () => {
+            cancelBtn.style.color = '#666';
+        };
+
+        cancelBtn.onclick = () => {
+            cancelEditMode();
+        };
+
+        // Add button next to the container
+        wrapper.appendChild(cancelBtn);
     }
 }
 
@@ -2765,6 +2897,24 @@ function cancelEditMode() {
     if (sendBtn) {
         sendBtn.style.backgroundColor = ''; // Reset to default
         sendBtn.title = 'Send message';
+    }
+
+    // Remove "On Edit" indicator
+    const editIndicator = document.getElementById('edit-mode-indicator');
+    if (editIndicator) {
+        editIndicator.remove();
+    }
+
+    // Clear input field
+    const inputField = document.getElementById('message-input') || document.getElementById('main-message-input');
+    if (inputField) {
+        inputField.value = '';
+    }
+
+    // Clear selected files wrapper
+    const wrapper = document.getElementById('selected-files-wrapper');
+    if (wrapper) {
+        wrapper.remove();
     }
 }
 
@@ -3043,9 +3193,9 @@ async function loadChatThread(chatID) {
         if (messagesContainer) messagesContainer.innerHTML = '';
 
         // Clear any selected files from the input area (files are per-chat, not shared)
-        const selectedFilesContainer = document.getElementById('selected-files-container');
-        if (selectedFilesContainer) {
-            selectedFilesContainer.remove();
+        const selectedFilesWrapper = document.getElementById('selected-files-wrapper');
+        if (selectedFilesWrapper) {
+            selectedFilesWrapper.remove();
             console.log('🗑️ Cleared selected files from input area (switching chats)');
         }
 
@@ -3058,6 +3208,36 @@ async function loadChatThread(chatID) {
 
         // Show chat interface (hide welcome screen)
         showChatInterface();
+
+        // Fetch project files to build a file name lookup map
+        let fileNameMap = new Map();
+        if (projectID) {
+            try {
+                const filesResponse = await fetch('/api/project/file/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectID: projectID })
+                });
+
+                if (filesResponse.ok) {
+                    const filesData = await filesResponse.json();
+                    if (filesData.files && Array.isArray(filesData.files)) {
+                        filesData.files.forEach(file => {
+                            const ext = file.documentExt || '';
+                            let cleanName = (file.documentName || '').replace(/\.+$/, '');
+                            const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+                            fileNameMap.set(file.documentID, fullFileName);
+                        });
+                        console.log(`📁 Loaded ${fileNameMap.size} file names for chat history`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching file names:', error);
+            }
+        }
+
+        // Store file name map globally for addMessage to use
+        window.chatFileNameMap = fileNameMap;
 
         // Display all conversations
         const conversations = data.conversations || [];
@@ -3251,9 +3431,9 @@ function backToInitialScreen() {
     }
 
     // Clear any selected files from the input area
-    const selectedFilesContainer = document.getElementById('selected-files-container');
-    if (selectedFilesContainer) {
-        selectedFilesContainer.remove();
+    const selectedFilesWrapper = document.getElementById('selected-files-wrapper');
+    if (selectedFilesWrapper) {
+        selectedFilesWrapper.remove();
         console.log('🗑️ Cleared selected files from input area (back to initial)');
     }
 
