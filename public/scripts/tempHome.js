@@ -3706,37 +3706,5 @@ window.fetchProjectReports = fetchProjectReports;
 window.loadChatThread = loadChatThread;
 window.backToInitialScreen = backToInitialScreen;
 
-// Global function to open Requirements Panel
-window.openRequirementsPanel = function(projectID) {
-    console.log('Opening Requirements Panel for project:', projectID);
-    
-    // Create container for the panel
-    const panelContainer = document.createElement('div');
-    panelContainer.id = 'requirements-panel-container';
-    document.body.appendChild(panelContainer);
-    
-    // Function to close and cleanup the panel
-    const closePanel = () => {
-        const root = panelContainer._reactRoot;
-        if (root) {
-            root.unmount();
-        }
-        if (panelContainer.parentElement) {
-            panelContainer.parentElement.removeChild(panelContainer);
-        }
-    };
-    
-    // Create the React root and render the panel
-    const root = ReactDOM.createRoot(panelContainer);
-    panelContainer._reactRoot = root;
-    
-    root.render(
-        React.createElement(RequirementsPanel, {
-            projectID: projectID,
-            onClose: closePanel
-        })
-    );
-};
-
 // Make available globally
 window.TempHome = TempHome;
