@@ -899,6 +899,8 @@
                         console.warn("No projects found");
                         setHasProjects(false);
                         setProjects([]); // Clear projects array
+                        setSelectedProjectID(null); // Clear selected project
+                        localStorage.removeItem('selectedProjectID'); // Clear from localStorage
                         populateProjectDropdown([]);
                         return null;
                     }
@@ -929,6 +931,12 @@
             const savedProjectID = localStorage.getItem('selectedProjectID');
             const projectExists = projects.some(p => p.projectID === savedProjectID);
             const selectedID = (savedProjectID && projectExists) ? savedProjectID : projects[0]?.projectID;
+
+            // If saved project doesn't exist, clear it from localStorage
+            if (savedProjectID && !projectExists) {
+                localStorage.removeItem('selectedProjectID');
+                console.log('Cleared invalid selectedProjectID from localStorage');
+            }
 
             const options = projects.map((project) =>
                 `<option value="${project.projectID}" ${project.projectID === selectedID ? 'selected' : ''}>${project.projectName}</option>`
@@ -1105,6 +1113,11 @@
                     localStorage.setItem('selectedProjectID', newProjectID);
                     setSelectedProjectID(newProjectID);
                     console.log(`📌 Auto-selecting new project: ${newProjectID}`);
+
+                    // Expand the Source section so upload button is visible
+                    setSourceExpanded(true);
+                    localStorage.setItem('sourceExpanded', JSON.stringify(true));
+                    console.log(`📂 Expanded Source section for new project`);
 
                     // Set a flag to prevent loading data for the new empty project
                     window.skipProjectDataLoad = true;
@@ -1653,8 +1666,8 @@
                                     display: sourceExpanded && !sidebarCollapsed ? 'block' : 'none'
                                 }
                             },
-                            // Upload button - Only visible when project is selected
-                            (selectedProjectID || (window.getCurrentProjectID && window.getCurrentProjectID())) && React.createElement('button', {
+                            // Upload button - Only visible when a valid project exists and is selected
+                            hasProjects && selectedProjectID && React.createElement('button', {
                                 id: 'sidebar-source-upload-button',
                                 'aria-label': 'Upload files to project',
                                 onClick: async () => {
