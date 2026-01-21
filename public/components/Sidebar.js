@@ -780,35 +780,6 @@
                     },
                     onClick: (e) => {
                         e.stopPropagation();
-                        setMenuOpen(false);
-                        if (window.openRequirementsPanel) {
-                            window.openRequirementsPanel(selectedProjectID);
-                        }
-                    }
-                }, 'Requirements'),
-                React.createElement('button', {
-                    style: {
-                        width: '100%',
-                        padding: '12px 14.5px',
-                        border: 'none',
-                        backgroundColor: 'transparent',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: '13.3px',
-                        color: '#1c1d21',
-                        fontWeight: '400',
-                        fontFamily: '"Inter", Helvetica',
-                        transition: 'background-color 0.2s ease',
-                        borderBottom: '1px solid #f0f0f0'
-                    },
-                    onMouseEnter: (e) => {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
-                    },
-                    onMouseLeave: (e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    },
-                    onClick: (e) => {
-                        e.stopPropagation();
                         handleRename();
                     }
                 }, 'Rename'),
@@ -1802,41 +1773,6 @@
                                     display: requirementsExpanded && !sidebarCollapsed ? 'block' : 'none'
                                 }
                             },
-                            // Button to open Requirements Panel
-                            React.createElement('button', {
-                                onClick: () => {
-                                    if (window.openRequirementsPanel && selectedProjectID) {
-                                        window.openRequirementsPanel(selectedProjectID);
-                                    }
-                                },
-                                style: {
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    backgroundColor: 'rgb(30, 41, 59)',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#ffffff',
-                                    fontSize: '13px',
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    marginBottom: '10px',
-                                    transition: 'background-color 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px'
-                                },
-                                onMouseEnter: (e) => {
-                                    e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
-                                },
-                                onMouseLeave: (e) => {
-                                    e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
-                                }
-                            },
-                                React.createElement('span', null, '📋'),
-                                'Manage Requirements'
-                            ),
                             React.createElement('div', {
                                 id: "div-requirements-list",
                                 style: {
