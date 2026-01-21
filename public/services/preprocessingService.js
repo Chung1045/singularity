@@ -165,7 +165,7 @@ async function getTranscriber() {
 // Extract text from video/audio using ffmpeg and Whisper model
 // InputPath: Where the video / audio path staying at
 // IMPORTANT: Return Raw Text
-async function videoaudioExtracted_ffmpeg(inputPath) {
+async function videoAudioExtracted_ffmpeg(inputPath) {
     try {
         await convert_ffmpeg(inputPath, tempWavPath, 'wav');
 
@@ -212,6 +212,7 @@ async function videoaudioExtracted_ffmpeg(inputPath) {
 }
 
 // OTHER SMALL HELPER FUNCTION
+// Convert video and audio to different file type
 async function convert_ffmpeg(inputPath, outputPath, convertType) {
     let audioCodec_model;
 
@@ -244,7 +245,7 @@ async function convert_ffmpeg(inputPath, outputPath, convertType) {
 }
 
 // Convert extracted text to a .txt file
-async function writetxtFile(extractedText, outputPath) {
+async function writeTxtFile(extractedText, outputPath) {
     try {
         await fs.writeFile(outputPath, extractedText, 'utf8');
         console.log(`\nSaved extracted text to:\n   ${outputPath}`);
@@ -254,7 +255,7 @@ async function writetxtFile(extractedText, outputPath) {
 }
 
 // Extract text from txt file
-async function extracttxtFile(filePath) {
+async function extractTxtFile(filePath) {
     try {
         const data = await fs.readFile(filePath, 'utf8');
         return data;
@@ -318,5 +319,5 @@ async function createAliasFile(projectID, documentID, documentExt) {
 }
 
 module.exports = {
-    documentPreprocessing, documentToPdf_libreofficeconvert,pdfExtracted_pdfjslib, videoaudioExtracted_ffmpeg,mp3Convert_ffmpeg, writetxtFile, extracttxtFile, groupMultipleFile, createAliasFile
+    documentPreprocessing, documentToPdf_libreofficeconvert, pdfExtracted_pdfjslib, videoAudioExtracted_ffmpeg, convert_ffmpeg, writeTxtFile, extractTxtFile, groupMultipleFile, createAliasFile
 };
