@@ -1,4 +1,3 @@
-const { xai } = require('@ai-sdk/xai');
 const { OpenAI } = require('openai');
 const fs = require('fs')
 const {tools, toolImpls} = require("./aiAgentToolsService")

@@ -6,6 +6,7 @@ const uuid = require("uuid-v4");
 const {PDFParse} = require("pdf-parse");
 const docx_pdf = require('docx-pdf');
 const os = require("os");
+const { createAliasFile } = require("./preprocessingService")
 
 const FSS_REPORT_USERSTORIES = "userStories";
 const FSS_REPORT_REQUIREMENTS = "requirements";
@@ -563,58 +564,6 @@ async function extractDOCXFromStream(buffer) {
     } finally {
         await fs.rm(tempDir, {recursive: true, force: true});
     }
-}
-
-async function createAliasFile(projectID, documentID, documentExt) {
-    // Download the file
-    const stream = await downloadProjectFile(projectID, documentID);
-    const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
-    const buffer = Buffer.concat(chunks);
-
-    // Extract text based on document type
-    let extractedText = "";
-
-    switch (documentExt.toLowerCase()) {
-        case ".docx":
-            extractedText = await extractDOCXFromStream(buffer);
-            break;
-        case ".pdf":
-            extractedText = await extractPDFFromStream(buffer);
-            break;
-        default:
-            throw new Error(`Unsupported document type: ${documentExt}`);
-    }
-
-    // Generate alias ID and path
-    const aliasID = uuid();
-    const textPath = `project/${projectID}/alias/${aliasID}`;
-
-    // Save extracted text to MinIO
-    const textBuffer = Buffer.from(extractedText, 'utf-8');
-    await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
-        'Content-Type': 'text/plain; charset=utf-8'
-    });
-
-    console.log(`Saved extracted text to: ${textPath}`);
-
-    // Update database with alias ID
-    const sql = `UPDATE documents
-                 SET documentAlias = ?
-                 WHERE projectID = ?
-                   AND documentID = ?`;
-
-    await db.run(sql, [aliasID, projectID, documentID]);
-
-    console.log(`Updated database: documentID=${documentID}, aliasID=${aliasID}`);
-
-    return {
-        aliasID: aliasID,
-        minioPath: textPath,
-        textLength: extractedText.length
-    };
 }
 
 async function getFileContext(projectID, documentID) {
