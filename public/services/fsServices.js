@@ -693,10 +693,18 @@ async function getFileContext(projectID, documentID) {
         return `Context is not available.`;
     }
 
-    const objectPath = `project/${projectID}/alias/${documentAlias}.txt`;
+    // Note: Alias files are stored WITHOUT extension (just the UUID)
+    const objectPath = `project/${projectID}/alias/${documentAlias}`;
     console.log("Fetching from MinIO:", objectPath);
 
-    const stream = await minioClient.getObject(bucket, objectPath);
+    let stream;
+    try {
+        stream = await minioClient.getObject(bucket, objectPath);
+    } catch (error) {
+        console.error(`❌ Error fetching file from MinIO:`, error.message);
+        console.error(`   Path attempted: ${objectPath}`);
+        throw new Error(`Failed to retrieve file content: ${error.message}`);
+    }
 
     const chunks = [];
     for await (const chunk of stream) {
