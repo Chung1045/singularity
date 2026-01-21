@@ -2138,11 +2138,6 @@ function getSelectedSource() {
     return selectedSource;
 }
 
-function mergeAttachedDocuments(selectedSource = [], chipFileIDs = []) {
-    // De-dupe and drop falsy IDs to avoid bad payloads when files are attached
-    return Array.from(new Set([...selectedSource, ...chipFileIDs].filter(Boolean)));
-}
-
 async function submitConversationRequest() {
     const input = document.getElementById("main-message-input");
     const userMessage = input?.value?.trim();
@@ -2180,7 +2175,7 @@ async function submitConversationRequest() {
         const chipFileIDs = Array.from(selectedFileChips).map(chip => chip.getAttribute('data-file-id'));
 
         // Combine both sources
-        const allAttachedDocuments = mergeAttachedDocuments(selectedSource, chipFileIDs);
+        const allAttachedDocuments = [...selectedSource, ...chipFileIDs];
 
         console.log('=== EDITING MESSAGE ===');
         console.log('Edited message:', userMessage);
@@ -2271,7 +2266,7 @@ async function submitConversationRequest() {
     const chipFileIDs = Array.from(selectedFileChips).map(chip => chip.getAttribute('data-file-id'));
 
     // Combine both sources
-    const allAttachedDocuments = mergeAttachedDocuments(selectedSource, chipFileIDs);
+    const allAttachedDocuments = [...selectedSource, ...chipFileIDs];
 
     // Prepare data
     const data = {
@@ -2409,32 +2404,6 @@ function hideChatInterface() {
     if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
 }
 
-function renderMarkdownContent(text) {
-    const source = text || '';
-    if (window.marked && typeof window.marked.parse === 'function') {
-        try {
-            const rawHtml = window.marked.parse(source, { breaks: true });
-            if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
-                return window.DOMPurify.sanitize(rawHtml);
-            }
-            return rawHtml;
-        } catch (e) {
-            console.error('Error rendering markdown:', e);
-            return source.replace(/\n/g, '<br>');
-        }
-    }
-    return source.replace(/\n/g, '<br>');
-}
-
-function setBubbleContent(bubble, text, { allowMarkdown = false } = {}) {
-    if (!bubble) return;
-    if (allowMarkdown) {
-        bubble.innerHTML = renderMarkdownContent(text);
-    } else {
-        bubble.textContent = text;
-    }
-}
-
 // Add a message to chat
 function addMessage(role, text, conversationID = null, chatSeq = null, attachedFileIDs = []) {
     console.log(`💬 addMessage called:`, {
@@ -2474,14 +2443,9 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
 
-    // Create text node or HTML content for message
-    if (role === 'ai') {
-        bubble.dataset.role = 'ai';
-        setBubbleContent(bubble, text, { allowMarkdown: true });
-    } else {
-        const textNode = document.createTextNode(text);
-        bubble.appendChild(textNode);
-    }
+    // Create text node for message
+    const textNode = document.createTextNode(text);
+    bubble.appendChild(textNode);
 
     // For user messages, create a content wrapper that includes bubble + files + edit button
     if (role === 'user') {
@@ -2961,6 +2925,7 @@ async function restoreFileChipsForEdit(fileIDs) {
                     font-family: 'Inter', Helvetica;
                     font-size: 13px;
                     color: #000;
+                    flex-shrink: 0;
                 `;
 
                 const fileNameSpan = document.createElement('span');
@@ -3184,7 +3149,6 @@ async function streamChatResponse(data, typingId) {
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
-    bubble.dataset.role = 'ai';
 
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
@@ -3194,140 +3158,95 @@ async function streamChatResponse(data, typingId) {
     let chatIDReceived = null;
     let conversationIDReceived = null;
     let chatSeqReceived = null;
-    let buffer = '';
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
-    // Helper function to process a single SSE event
-    const processSSEEvent = async (eventData) => {
-        if (!eventData || !eventData.trim()) return;
-
-        try {
-            const jsonData = JSON.parse(eventData);
-
-            if (jsonData.type === 'chatID') {
-                chatIDReceived = jsonData.chatID;
-                console.log('Chat ID:', chatIDReceived);
-
-                if (data.chatID === '') {
-                    console.log('New chat created, refreshing history...');
-                    await fetchProjectChats(data.projectID);
-                }
-            } else if (jsonData.type === 'chunk') {
-                const content = jsonData.content || '';
-                console.log('📦 Received chunk:', content.substring(0, 50) + (content.length > 50 ? '...' : ''));
-                fullResponse += content;
-                console.log('📝 Full response length:', fullResponse.length);
-
-                if (content.startsWith('\n\n') && fullResponse.length > content.length) {
-                    console.log('🔧 Detected tool response continuation');
-                }
-
-                setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
-                scrollToBottom();
-            } else if (jsonData.type === 'done') {
-                console.log('Streaming complete');
-
-                if (jsonData.conversationID && jsonData.chatSeq) {
-                    conversationIDReceived = jsonData.conversationID;
-                    chatSeqReceived = jsonData.chatSeq;
-                    console.log('📥 Received conversation data:', { conversationID: conversationIDReceived, chatSeq: chatSeqReceived });
-                }
-
-                // Get thread name from the done event and update immediately
-                const threadName = jsonData.threadName || 'Untitled Chat';
-                console.log('📝 Thread name from server:', threadName);
-
-                // Always update the chat title in the header immediately
-                const chatTitleElement = document.getElementById('chat-title');
-                if (chatTitleElement && threadName && threadName !== 'Untitled Chat') {
-                    chatTitleElement.textContent = threadName;
-                    console.log('📝 Updated header title to:', threadName);
-                }
-
-                // For new chats, also update the sidebar
-                if (chatIDReceived) {
-                    // Refresh sidebar to get the new chat entry
-                    if (data.chatID === '') {
-                        console.log('New chat created, refreshing sidebar...');
-                        await fetchProjectChats(data.projectID);
-                    }
-
-                    // Find and update the chat item in sidebar
-                    const chatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatIDReceived}"]`);
-                    if (chatItem) {
-                        // Deselect all and select this one
-                        const allChatItems = document.querySelectorAll('.chat-history-item');
-                        allChatItems.forEach(item => {
-                            item.classList.remove('selected');
-                            item.style.backgroundColor = 'transparent';
-                        });
-
-                        chatItem.classList.add('selected');
-                        chatItem.style.backgroundColor = '#e0e0e0';
-
-                        // Update the sidebar item's dataset and text
-                        chatItem.dataset.threadName = threadName;
-
-                        // Find the name element and update it
-                        const nameElement = chatItem.querySelector('.chat-item-name') ||
-                                           chatItem.querySelector('span:first-child') ||
-                                           chatItem.querySelector('span');
-                        if (nameElement && threadName && threadName !== 'Untitled Chat') {
-                            nameElement.textContent = threadName;
-                            console.log('📝 Updated sidebar title to:', threadName);
-                        }
-                    }
-                }
-            } else if (jsonData.type === 'error') {
-                console.error('❌ Stream error received from server:', jsonData.message);
-                removeTypingIndicator(typingId);
-                setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
-                bubble.style.color = '#f44336';
-                throw new Error(jsonData.message || 'Stream failed');
-            }
-        } catch (e) {
-            console.error('Error parsing SSE event:', e.message);
-            console.error('Event data was:', eventData.substring(0, 200) + (eventData.length > 200 ? '...' : ''));
-        }
-    };
-
-    // Read and process stream
     while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
 
-        // Process complete SSE messages (separated by double newline)
-        let separatorIndex;
-        while ((separatorIndex = buffer.indexOf('\n\n')) !== -1) {
-            const message = buffer.substring(0, separatorIndex);
-            buffer = buffer.substring(separatorIndex + 2);
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                try {
+                    const jsonData = JSON.parse(line.slice(6));
 
-            // Extract data from SSE message
-            const lines = message.split('\n');
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const eventData = line.substring(6);
-                    await processSSEEvent(eventData);
+                    if (jsonData.type === 'chatID') {
+                        chatIDReceived = jsonData.chatID;
+                        console.log('Chat ID:', chatIDReceived);
+
+                        // Refresh chat history immediately to show "Untitled Chat"
+                        if (data.chatID === '') {
+                            console.log('New chat created, refreshing history...');
+                            await fetchProjectChats(data.projectID);
+                        }
+                    } else if (jsonData.type === 'chunk') {
+                        fullResponse += jsonData.content;
+                        bubble.textContent = fullResponse;
+                        scrollToBottom();
+                    } else if (jsonData.type === 'done') {
+                        console.log('Streaming complete');
+
+                        // Capture conversation data from done event
+                        if (jsonData.conversationID && jsonData.chatSeq) {
+                            conversationIDReceived = jsonData.conversationID;
+                            chatSeqReceived = jsonData.chatSeq;
+                            console.log('📥 Received conversation data:', { conversationID: conversationIDReceived, chatSeq: chatSeqReceived });
+                        }
+
+                        // Refresh chat history again to show generated title
+                        // Title is already generated on server before done event is sent
+                        if (chatIDReceived && data.chatID === '') {
+                            console.log('Streaming done, refreshing history to show generated title...');
+                            await fetchProjectChats(data.projectID);
+
+                            // Update chat title and select the chat item in sidebar
+                            const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatIDReceived}"]`);
+                            if (newChatItem) {
+                                // Deselect all chat items
+                                const allChatItems = document.querySelectorAll('.chat-history-item');
+                                allChatItems.forEach(item => {
+                                    item.classList.remove('selected');
+                                    item.style.backgroundColor = 'transparent';
+                                });
+
+                                // Select the new chat item
+                                newChatItem.classList.add('selected');
+                                newChatItem.style.backgroundColor = '#e0e0e0';
+
+                                // Update chat title from the newly refreshed sidebar data
+                                const chatTitleElement = document.getElementById('chat-title');
+                                if (chatTitleElement) {
+                                    const threadName = newChatItem.dataset.threadName || 'Untitled Chat';
+                                    chatTitleElement.textContent = threadName;
+                                    console.log('📝 Updated chat title to:', threadName);
+                                }
+                            }
+                        }
+                    } else if (jsonData.type === 'error') {
+                        console.error('❌ Stream error received from server:', jsonData.message);
+
+                        // Remove typing indicator
+                        removeTypingIndicator(typingId);
+
+                        // Display error message in the bubble
+                        bubble.textContent = `Error: ${jsonData.message}`;
+                        bubble.style.color = '#f44336';
+
+                        // Throw error to be caught by outer catch block
+                        throw new Error(jsonData.message || 'Stream failed');
+                    }
+                } catch (e) {
+                    console.error('Error parsing SSE:', e);
                 }
             }
         }
     }
 
-    // Process any remaining buffer content
-    if (buffer.trim()) {
-        const lines = buffer.split('\n');
-        for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                await processSSEEvent(line.substring(6));
-            }
-        }
-    }
-
+    // Return the chatID and conversation data for tracking
     return {
         chatID: chatIDReceived,
         conversationID: conversationIDReceived,
@@ -3705,6 +3624,38 @@ window.refreshProjectFiles = fetchProjectFiles; // Alias for refreshing files af
 window.fetchProjectReports = fetchProjectReports;
 window.loadChatThread = loadChatThread;
 window.backToInitialScreen = backToInitialScreen;
+
+// Global function to open Requirements Panel
+window.openRequirementsPanel = function(projectID) {
+    console.log('Opening Requirements Panel for project:', projectID);
+    
+    // Create container for the panel
+    const panelContainer = document.createElement('div');
+    panelContainer.id = 'requirements-panel-container';
+    document.body.appendChild(panelContainer);
+    
+    // Function to close and cleanup the panel
+    const closePanel = () => {
+        const root = panelContainer._reactRoot;
+        if (root) {
+            root.unmount();
+        }
+        if (panelContainer.parentElement) {
+            panelContainer.parentElement.removeChild(panelContainer);
+        }
+    };
+    
+    // Create the React root and render the panel
+    const root = ReactDOM.createRoot(panelContainer);
+    panelContainer._reactRoot = root;
+    
+    root.render(
+        React.createElement(RequirementsPanel, {
+            projectID: projectID,
+            onClose: closePanel
+        })
+    );
+};
 
 // Make available globally
 window.TempHome = TempHome;
