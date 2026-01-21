@@ -284,6 +284,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
     // }
 
     //its gonna let you see
+    // this is to cater the master, as create alias file did not support audio.
     try {
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
