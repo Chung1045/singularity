@@ -40,30 +40,31 @@ a {
 
 /* MAIN CONTENT */
 .sidebar-expand .right-container {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 100vh;
-  display: flex;
-  position: relative;
-  background: #fff;
-  z-index: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100vh;
+    display: flex;
+    position: relative;
+    background: #fff;
+    z-index: 1;
 }
 .sidebar-expand .main-screen {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  overflow: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    margin: 15px;
+    /* display: flex; */
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
 }
+
 .sidebar-expand .main-screen-title {
   display: flex;
   align-items: center;
@@ -72,6 +73,8 @@ a {
   height: auto;
   margin: 0;
   gap: 12px;
+    margin: 15px;
+
 }
 .sidebar-expand .bouncy-logo {
   position: relative;

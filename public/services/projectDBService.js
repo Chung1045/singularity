@@ -168,8 +168,105 @@ async function deleteProject(projectID) {
         await fss.deleteProjectFolder(projectID);
         console.log(`   ✓ MinIO files deleted\n`);
 
-        // Then delete the database record (CASCADE will handle related records)
+        // Manually delete from child tables to avoid foreign key mismatch errors
+        // The CASCADE may not work properly due to schema issues with composite keys
         console.log(`💾 Deleting from database...`);
+
+        const deleteFromTable = (tableName, whereClause, params) => {
+            return new Promise((resolve) => {
+                db.run(`DELETE FROM ${tableName} WHERE ${whereClause}`, params, function(err) {
+                    if (err) {
+                        console.log(`   ⚠️ Could not delete from ${tableName}: ${err.message}`);
+                    } else if (this.changes > 0) {
+                        console.log(`   ✓ Deleted ${this.changes} record(s) from ${tableName}`);
+                    }
+                    resolve(); // Always resolve to continue with other tables
+                });
+            });
+        };
+
+        // Delete from source/reference tables first (they reference userStories/requirements/documents)
+        // These have foreign keys that may cause issues
+
+        // Get all storyIDs for this project to delete from userStorySource
+        const storyIDs = await new Promise((resolve, reject) => {
+            db.all('SELECT storyID FROM userStories WHERE projectID = ?', [projectID], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows ? rows.map(r => r.storyID) : []);
+            });
+        });
+
+        if (storyIDs.length > 0) {
+            const placeholders = storyIDs.map(() => '?').join(',');
+            await deleteFromTable('userStorySource', `storyID IN (${placeholders})`, storyIDs);
+        }
+
+        // Get all requirementsIDs for this project to delete from requirementsSource and requirementsStoryRef
+        const reqIDs = await new Promise((resolve, reject) => {
+            db.all('SELECT requirementsID FROM requirements WHERE projectID = ?', [projectID], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows ? rows.map(r => r.requirementsID) : []);
+            });
+        });
+
+        if (reqIDs.length > 0) {
+            const placeholders = reqIDs.map(() => '?').join(',');
+            await deleteFromTable('requirementsSource', `requirementsID IN (${placeholders})`, reqIDs);
+            await deleteFromTable('requirementsStoryRef', `requirementsID IN (${placeholders})`, reqIDs);
+        }
+
+        // Get all documentIDs for this project to delete from conversationDocRef
+        const docIDs = await new Promise((resolve, reject) => {
+            db.all('SELECT documentID FROM documents WHERE projectID = ?', [projectID], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows ? rows.map(r => r.documentID) : []);
+            });
+        });
+
+        if (docIDs.length > 0) {
+            const placeholders = docIDs.map(() => '?').join(',');
+            await deleteFromTable('conversationDocRef', `documentID IN (${placeholders})`, docIDs);
+        }
+
+        // Get all conversationIDs for this project to delete responses
+        const chatIDs = await new Promise((resolve, reject) => {
+            db.all('SELECT chatID FROM chat WHERE projectID = ?', [projectID], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows ? rows.map(r => r.chatID) : []);
+            });
+        });
+
+        if (chatIDs.length > 0) {
+            const convIDs = await new Promise((resolve, reject) => {
+                const placeholders = chatIDs.map(() => '?').join(',');
+                db.all(`SELECT conversationID FROM conversation WHERE chatID IN (${placeholders})`, chatIDs, (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows ? rows.map(r => r.conversationID) : []);
+                });
+            });
+
+            if (convIDs.length > 0) {
+                const placeholders = convIDs.map(() => '?').join(',');
+                await deleteFromTable('response', `conversationID IN (${placeholders})`, convIDs);
+                await deleteFromTable('conversationDocRef', `conversationID IN (${placeholders})`, convIDs);
+            }
+
+            // Delete conversations
+            const chatPlaceholders = chatIDs.map(() => '?').join(',');
+            await deleteFromTable('conversation', `chatID IN (${chatPlaceholders})`, chatIDs);
+        }
+
+        // Now delete from main tables that reference project directly
+        await deleteFromTable('userStories', 'projectID = ?', [projectID]);
+        await deleteFromTable('requirements', 'projectID = ?', [projectID]);
+        await deleteFromTable('chat', 'projectID = ?', [projectID]);
+        await deleteFromTable('documents', 'projectID = ?', [projectID]);
+        await deleteFromTable('reports', 'projectID = ?', [projectID]);
+        await deleteFromTable('voiceAnalysis', 'projectID = ?', [projectID]);
+        await deleteFromTable('projectShare', 'projectID = ?', [projectID]);
+        await deleteFromTable('notification', 'projectID = ?', [projectID]);
+
+        // Finally delete the project itself
         const query = `DELETE FROM project WHERE projectID = ?`;
 
         return new Promise((resolve, reject) => {
@@ -179,8 +276,7 @@ async function deleteProject(projectID) {
                     return reject(err);
                 }
                 console.log(`   ✓ Project record deleted`);
-                console.log(`   ✓ All related records deleted via CASCADE\n`);
-                console.log(`${'='.repeat(60)}`);
+                console.log(`\n${'='.repeat(60)}`);
                 console.log(`✅ PROJECT DELETION COMPLETE`);
                 console.log(`${'='.repeat(60)}\n`);
                 resolve(true);

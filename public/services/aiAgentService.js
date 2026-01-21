@@ -31,13 +31,75 @@ const system_prompt = `
 
 async function getResponse(data, conversationSummary) {
     try {
+        // Validate API key before making requests
+        if (!process.env.XAI_API_KEY) {
+            const errorMsg = 'XAI_API_KEY is not configured. Please set the environment variable and restart the server.';
+            console.error('❌', errorMsg);
+            throw new Error(errorMsg);
+        }
+
+        // Build file context message if files are attached
+        let fileContextMessage = '';
+        if (data.attachedDocumentIDs && data.attachedDocumentIDs.length > 0) {
+            console.log(`📎 [Non-streaming] Processing ${data.attachedDocumentIDs.length} attached file(s)...`);
+
+            // Fetch file metadata from database
+            const fss = require('./fsServices');
+            try {
+                console.log('📂 Fetching project files for projectID:', data.projectID);
+                const allFiles = await fss.listProjectFiles(data.projectID);
+                console.log(`📂 Found ${allFiles?.length || 0} total files in project`);
+
+                // Safety check for null/undefined
+                if (!allFiles || !Array.isArray(allFiles)) {
+                    console.warn('⚠️  listProjectFiles returned invalid data:', allFiles);
+                    throw new Error('Invalid file list returned from database');
+                }
+
+                const attachedFiles = allFiles.filter(file =>
+                    data.attachedDocumentIDs.includes(file.documentID)
+                );
+                console.log(`📎 Matched ${attachedFiles.length} attached files`);
+
+                if (attachedFiles.length > 0) {
+                    const fileList = attachedFiles.map(file => {
+                        // Construct filename - extension might already have a dot
+                        // Also clean documentName in case of old corrupted data
+                        const ext = file.documentExt || '';
+                        let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
+                        const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+                        console.log(`  ✅ Attached file: ${fileName} (${file.documentID})`);
+                        return `- ${fileName} (ID: ${file.documentID})`;
+                    }).join('\n');
+
+                    fileContextMessage = `The user has attached ${attachedFiles.length} file(s) to this message:\n${fileList}\n\nYou can use the get_project_file_content tool to retrieve the contents of these files using their document IDs.`;
+                } else {
+                    console.warn('⚠️  No matching files found for attached document IDs');
+                    fileContextMessage = `The user attempted to attach files, but they could not be found in the project.`;
+                }
+            } catch (error) {
+                console.error('❌ Error fetching file metadata:', error);
+                console.error('❌ Error stack:', error.stack);
+                fileContextMessage = `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')}, but there was an error retrieving file details.`;
+                console.log('⚠️  Continuing with error message in context');
+            }
+        } else {
+            console.log('📎 No files attached to this message');
+        }
+
         const messages = [
             {role: 'system', content: system_prompt},
             {role: 'system', content: `You are now working with projectID: ${data.projectID} and chatID: ${data.chatID}`},
-            {role: 'system', content: `Summary of what the chat have gone so far: ${conversationSummary}`},
-            {role: 'user', content: data.requestMessage},
-            {role: 'system', content: `User have attached these document ID: ${data.attachedDocumentIDs}`}
+            {role: 'system', content: `Summary of what the chat have gone so far: ${conversationSummary}`}
         ];
+
+        // Add file context if files are attached
+        if (fileContextMessage) {
+            messages.push({role: 'system', content: fileContextMessage});
+        }
+
+        // Add user message
+        messages.push({role: 'user', content: data.requestMessage});
 
         let completion = await client.chat.completions.create({
             // model: 'grok-4-1-fast-non-reasoning', //swap due to excessive token spending
@@ -54,6 +116,10 @@ async function getResponse(data, conversationSummary) {
         // Handle tool calls if the AI wants to use them
         while (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
             // Add assistant's message with tool calls to history
+            // Ensure the message has a role field
+            if (!responseMessage.role) {
+                responseMessage.role = 'assistant';
+            }
             messages.push(responseMessage);
 
             // Execute each tool call
@@ -113,9 +179,83 @@ async function getResponse(data, conversationSummary) {
 }
 
 async function* getStreamingResponse(data, conversationSummary) {
+    // Validate API key before making requests
+    if (!process.env.XAI_API_KEY) {
+        const errorMsg = 'XAI_API_KEY is not configured. Please set the environment variable and restart the server.';
+        console.error('❌', errorMsg);
+        throw new Error(errorMsg);
+    }
+
+    // Build file context message if files are attached
+    let fileContextMessage = '';
+    if (data.attachedDocumentIDs && data.attachedDocumentIDs.length > 0) {
+        console.log(`📎 Processing ${data.attachedDocumentIDs.length} attached file(s)...`);
+        console.log('📎 Attached document IDs:', data.attachedDocumentIDs);
+
+        // Fetch file metadata from database
+        const fss = require('./fsServices');
+        try {
+            console.log('📂 Fetching project files for projectID:', data.projectID);
+            const allFiles = await fss.listProjectFiles(data.projectID);
+            console.log(`📂 Found ${allFiles?.length || 0} total files in project`);
+
+            // Safety check for null/undefined
+            if (!allFiles || !Array.isArray(allFiles)) {
+                console.warn('⚠️  listProjectFiles returned invalid data:', allFiles);
+                throw new Error('Invalid file list returned from database');
+            }
+
+            const attachedFiles = allFiles.filter(file =>
+                data.attachedDocumentIDs.includes(file.documentID)
+            );
+            console.log(`📎 Matched ${attachedFiles.length} attached files`);
+
+            if (attachedFiles.length > 0) {
+                const fileList = attachedFiles.map(file => {
+                    // Construct filename - extension might already have a dot
+                    // Also clean documentName in case of old corrupted data
+                    const ext = file.documentExt || '';
+                    let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
+                    const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+                    console.log(`  ✅ Attached file: ${fileName} (${file.documentID})`);
+                    return `- ${fileName} (ID: ${file.documentID})`;
+                }).join('\n');
+
+                fileContextMessage = `The user has attached ${attachedFiles.length} file(s) to this message:\n${fileList}\n\nYou can use the get_project_file_content tool to retrieve the contents of these files using their document IDs.`;
+                console.log('✅ File context message created');
+            } else {
+                console.warn('⚠️  No matching files found for attached document IDs');
+                fileContextMessage = `The user attempted to attach files, but they could not be found in the project.`;
+            }
+        } catch (error) {
+            console.error('❌ Error fetching file metadata:', error);
+            console.error('❌ Error stack:', error.stack);
+            console.error('❌ Error details:', {
+                projectID: data.projectID,
+                attachedDocumentIDs: data.attachedDocumentIDs
+            });
+
+            // Don't throw here - continue with a warning message instead
+            fileContextMessage = `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')}, but there was an error retrieving file details.`;
+            console.log('⚠️  Continuing with error message in context');
+        }
+    } else {
+        console.log('📎 No files attached to this message');
+    }
+
     const messages = [
-        {role: 'user', content: data.requestMessage},
+        {role: 'system', content: system_prompt},
+        {role: 'system', content: `You are now working with projectID: ${data.projectID} and chatID: ${data.chatID}`},
+        {role: 'system', content: `Summary of what the chat have gone so far: ${conversationSummary}`}
     ];
+
+    // Add file context if files are attached
+    if (fileContextMessage) {
+        messages.push({role: 'system', content: fileContextMessage});
+    }
+
+    // Add user message
+    messages.push({role: 'user', content: data.requestMessage});
 
     const stream = await client.chat.completions.create({
         // model: 'grok-4-1-fast-non-reasoning',
@@ -161,7 +301,18 @@ async function* getStreamingResponse(data, conversationSummary) {
 
     // Handle tool calls if present (non-streaming follow-up calls)
     if (responseMessage.tool_calls?.length > 0) {
+        // Ensure responseMessage has role before adding to messages
+        if (!responseMessage.role) {
+            responseMessage.role = 'assistant';
+        }
+
+        // Ensure responseMessage has content field (required by API)
+        if (!responseMessage.content) {
+            responseMessage.content = '';
+        }
+
         messages.push(responseMessage);
+
         for (const toolCall of responseMessage.tool_calls) {
             const functionName = toolCall.function.name;
             const functionArgs = JSON.parse(toolCall.function.arguments);
@@ -186,7 +337,18 @@ async function* getStreamingResponse(data, conversationSummary) {
             });
         }
 
+        // Validate messages array before final API call
+        console.log('📋 Messages array before final API call:');
+        messages.forEach((msg, idx) => {
+            if (!msg.role) {
+                console.error(`❌ Message at index ${idx} is missing role field:`, msg);
+            } else {
+                console.log(`  [${idx}] role: ${msg.role}, has content: ${!!msg.content}, has tool_calls: ${!!msg.tool_calls}`);
+            }
+        });
+
         // Final non-streaming call after tools
+        console.log('🔄 Making final API call with tool results...');
         const completion = await client.chat.completions.create({
             // model: 'grok-4-1-fast-non-reasoning',
             model: 'grok-4-1-fast-reasoning',

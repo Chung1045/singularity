@@ -47,10 +47,15 @@ router.post('/agent/chat', async (req, res) => {
         const projectID = chatData.projectID;
         let chatID = chatData.chatID;
         const requestMessage = chatData.message;
-        const attachedDocumentIDs = chatData.attachedDocumentIDs;
+        const attachedDocumentIDs = chatData.attachedDocumentIDs || [];
 
-        if (!projectID || !requestMessage || !attachedDocumentIDs) {
-            return res.status(400).json({success: false, message: `Missing required fields`})
+        if (!projectID || !requestMessage) {
+            return res.status(400).json({success: false, message: `Missing required fields: projectID and message are required`})
+        }
+
+        // Ensure attachedDocumentIDs is an array
+        if (!Array.isArray(attachedDocumentIDs)) {
+            return res.status(400).json({success: false, message: `attachedDocumentIDs must be an array`})
         }
 
         if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
@@ -137,8 +142,12 @@ router.post('/agent/chat', async (req, res) => {
                 res.end();
 
             } catch (error) {
-                console.error(`Streaming error: ${error}`);
-                res.write(`data: ${JSON.stringify({ type: 'error', message: 'Stream failed' })}\n\n`);
+                console.error(`❌ Streaming error in /agent/chat:`, error);
+                console.error(`Error stack:`, error.stack);
+                console.error(`Error details - projectID: ${projectID}, chatID: ${chatID}`);
+
+                const errorMessage = error.message || 'Stream failed';
+                res.write(`data: ${JSON.stringify({ type: 'error', message: `Stream failed: ${errorMessage}` })}\n\n`);
                 res.end();
             }
         } else {

@@ -262,6 +262,30 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         VALUES (?, ?, ?, ?)
     `;
 
+    // try {
+    //     await db.run(sql, [documentID, projectID, documentName, documentExt]);
+    //     console.log(`Inserted file metadata: ${documentID}`);
+
+    //     // Only create alias for supported document types (PDF and DOCX)
+    //     // Audio files (.mp3, .m4a, .mp4) will be handled separately by audio processing pipeline
+    //     const extLower = documentExt.toLowerCase();
+    //     console.log(`Checking if alias needed for extension: ${documentExt} (lowercase: ${extLower})`);
+
+    //     if (extLower === ".pdf" || extLower === ".docx") {
+    //         console.log(`Creating alias file for document type: ${extLower}`);
+    //         await createAliasFile(projectID, documentID, documentExt);
+    //     } else {
+    //         console.log(`Skipping alias creation for non-document type: ${extLower}`);
+    //     }
+
+    //     return {successful: true};
+    // } catch (err) {
+    //     console.error("Database insert error:", err);
+    //     throw err;
+    // }
+
+    //its gonna let you see
+    // this is to cater the master, as create alias file did not support audio.
     try {
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
@@ -275,6 +299,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         console.error("Database insert error:", err);
         throw err;
     }
+    
 }
 
 /**
@@ -296,20 +321,60 @@ async function downloadProjectFile(projectID, documentID) {
  */
 async function deleteProjectFile(documentID, projectID) {
     try {
-        // Delete from MinIO first
+        const getAliasSql = `
+            SELECT documentAlias
+            FROM documents
+            WHERE documentID = ?
+              AND projectID = ?
+        `;
+
+        const doc = await new Promise((resolve, reject) => {
+            db.get(getAliasSql, [documentID, projectID], function (err, row) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row);
+                }
+            });
+        });
+
+        console.log(`Result:`, doc);
+        console.log(`documentAlias value:`, doc?.documentAlias);
+
+        // Delete the original file from MinIO
         const objectPath = `project/${projectID}/${documentID}`;
         await minioClient.removeObject(bucket, objectPath);
         console.log(`Deleted from MinIO: ${objectPath}`);
 
-        // Delete from database
-        const sql = `
+        // Delete the alias file if it exists
+        if (doc && doc.documentAlias) {
+            console.log("inside - deleting alias");
+            const aliasPath = `project/${projectID}/alias/${doc.documentAlias}`;
+            await minioClient.removeObject(bucket, aliasPath);
+            console.log(`Deleted alias from MinIO: ${aliasPath}`);
+        } else {
+            console.log("No alias to delete or doc not found");
+        }
+
+        console.log("Outside")
+
+        const deleteSql = `
             DELETE
             FROM documents
             WHERE documentID = ?
               AND projectID = ?
         `;
 
-        await db.run(sql, [documentID, projectID]);
+        await new Promise((resolve, reject) => {
+            db.run(deleteSql, [documentID, projectID], function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ changes: this.changes });
+                }
+            });
+        });
+
         console.log(`Deleted from DB: ${documentID}`);
 
         return {
@@ -323,6 +388,7 @@ async function deleteProjectFile(documentID, projectID) {
         };
     }
 }
+
 
 async function listProjectFiles(projectID) {
     return new Promise((resolve, reject) => {
@@ -386,6 +452,25 @@ async function getFileMetadata(documentID, projectID) {
         });
     });
 }
+
+// async function filePreProcessing(projectID, documentID, fileExt){
+//
+//     switch (fileExt) {
+//         case 'doc':
+//         case 'docx':
+//         // convert to pdf pipeline + extract
+//
+//         case 'pdf':
+//             // extract text from pdf
+//
+//         case 'mp3':
+//             // whisper pipeline
+//
+//         default:
+//             // unrecognized file format
+//     }
+//
+// }
 
 async function saveGeneratedReport(projectID, buffer, kind) {
     try {

@@ -103,96 +103,223 @@ async function fetchProjectChats(projectID) {
 }
 
 /**
- * Create a React element for a chat history item
+ * Create a React element for a chat history item with full menu functionality
  * @param {string} threadName - The name of the chat thread
  * @param {string} chatID - The UUID of the chat
  */
 function createChatHistoryItem(threadName, chatID) {
-    return React.createElement('div', {
-        className: 'sidebar-items chat-history-item',
-        'data-chat-id': chatID,
-        style: {
-            padding: '8px 12px',
-            cursor: 'pointer',
-            borderRadius: '5px',
-            transition: 'background-color 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-        },
-        onMouseEnter: (e) => {
-            if (!e.currentTarget.classList.contains('selected')) {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
+    const ChatHistoryItemComponent = () => {
+        const [menuOpen, setMenuOpen] = React.useState(false);
+        const menuRef = React.useRef(null);
+
+        // Close menu when clicking outside
+        React.useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setMenuOpen(false);
+                }
+            };
+
+            if (menuOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
             }
-        },
-        onMouseLeave: (e) => {
-            if (!e.currentTarget.classList.contains('selected')) {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            }
-        },
-        onClick: (e) => {
-            if (e.target.tagName !== 'IMG') {
-                // Deselect all chat history items
-                const allChatItems = document.querySelectorAll('.chat-history-item');
-                allChatItems.forEach(item => {
-                    item.classList.remove('selected');
-                    item.style.backgroundColor = 'transparent';
+
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [menuOpen]);
+
+        const handleDelete = async () => {
+            setMenuOpen(false);
+
+            // Show warning confirmation
+            const confirmed = await window.showNotification({
+                type: 'warning',
+                title: 'Warning',
+                message: `Are you sure you want to delete this chat?`,
+                actionText: 'Confirm'
+            });
+
+            if (!confirmed) return;
+
+            try {
+                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                if (!projectID) {
+                    await window.showNotification({ type: 'error', title: 'Error', message: 'No project selected', actionText: 'OK' });
+                    return;
+                }
+
+                const response = await fetch('/api/agent/chat-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectID, chatID })
                 });
 
-                // Select this item
-                e.currentTarget.classList.add('selected');
-                e.currentTarget.style.backgroundColor = '#e0e0e0';
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    // Show success message
+                    await window.showNotification({
+                        type: 'success',
+                        title: 'Warning',
+                        message: 'Current chat successfully deleted',
+                        actionText: 'OK'
+                    });
 
-                console.log(`Selected chat: ${threadName}, ID: ${chatID}`);
+                    // Refresh chat history
+                    if (typeof window.fetchProjectChats === 'function') {
+                        await window.fetchProjectChats(projectID);
+                    }
 
-                // Check if we're on the home page
-                const isHomePage = window.location.pathname === '/home';
-
-                if (isHomePage && typeof window.loadChatThread === 'function') {
-                    // On home page - load the chat thread directly
-                    window.loadChatThread(chatID);
+                    // If on home page and deleted chat was active, go back to initial screen
+                    const isHomePage = window.location.pathname === '/home';
+                    if (isHomePage && window.currentChatID === chatID) {
+                        window.currentChatID = null;
+                        localStorage.removeItem('activeChatID');
+                        localStorage.removeItem('activeChatProjectID');
+                        if (typeof window.backToInitialScreen === 'function') {
+                            window.backToInitialScreen();
+                        }
+                        // Remove chatID from URL
+                        const currentUrl = new URL(window.location);
+                        if (currentUrl.searchParams.has('chatID')) {
+                            currentUrl.searchParams.delete('chatID');
+                            window.history.replaceState({}, '', currentUrl);
+                        }
+                    }
                 } else {
-                    // On other pages - navigate to home with chatID to auto-load
-                    console.log('Navigating to home page with chatID:', chatID);
-                    window.location.href = `/home?chatID=${chatID}`;
+                    await window.showNotification({ type: 'error', title: 'Error', message: 'Failed to delete chat. Please try again.', actionText: 'OK' });
                 }
+            } catch (error) {
+                console.error('Error deleting chat:', error);
+                await window.showNotification({ type: 'error', title: 'Error', message: 'An error occurred while deleting the chat.', actionText: 'OK' });
             }
-        }
-    },
-        React.createElement('p', {
+        };
+
+        return React.createElement('div', {
+            className: 'sidebar-items chat-history-item',
+            'data-chat-id': chatID,
             style: {
-                flexGrow: 1,
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontSize: '14px'
-            }
-        }, (threadName && threadName.trim() !== '') ? threadName : 'Untitled Chat'),
-        React.createElement('img', {
-            style: {
-                padding: "4px",
-                flexShrink: 0,
+                padding: '8px 12px',
+                cursor: 'pointer',
                 borderRadius: '5px',
                 transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
             },
-            src: './img/more_vert_24.svg',
-            alt: '',
             onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#8e8e8e';
+                if (!e.currentTarget.classList.contains('selected')) {
+                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                }
             },
             onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
+                if (!e.currentTarget.classList.contains('selected')) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                }
             },
             onClick: (e) => {
-                e.stopPropagation(); // Prevent the div's onClick from firing
-                console.log(`Menu clicked for ${threadName}`);
-                // Add your menu logic here
-            }
-        })
-    );
-}
+                if (e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
+                    // Deselect all chat history items
+                    const allChatItems = document.querySelectorAll('.chat-history-item');
+                    allChatItems.forEach(item => {
+                        item.classList.remove('selected');
+                        item.style.backgroundColor = 'transparent';
+                    });
 
+                    // Select this item
+                    e.currentTarget.classList.add('selected');
+                    e.currentTarget.style.backgroundColor = '#e0e0e0';
+
+                    console.log(`Selected chat: ${threadName}, ID: ${chatID}`);
+
+                    // Check if we're on the home page
+                    const isHomePage = window.location.pathname === '/home';
+
+                    if (isHomePage && typeof window.loadChatThread === 'function') {
+                        window.loadChatThread(chatID);
+                    } else {
+                        console.log('Navigating to home page with chatID:', chatID);
+                        window.location.href = `/home?chatID=${chatID}`;
+                    }
+                }
+            }
+        },
+            React.createElement('p', {
+                style: {
+                    flexGrow: 1,
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '14px'
+                }
+            }, (threadName && threadName.trim() !== '') ? threadName : 'Untitled Chat'),
+            React.createElement('div', {
+                ref: menuRef,
+                className: 'chat-menu',
+                style: {
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center'
+                }
+            },
+                React.createElement('img', {
+                    style: {
+                        padding: "4px",
+                        flexShrink: 0,
+                        borderRadius: '5px',
+                        transition: 'background-color 0.2s',
+                        cursor: 'pointer'
+                    },
+                    src: './img/more_vert_24.svg',
+                    alt: '',
+                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#8e8e8e'; },
+                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    }
+                }),
+                menuOpen && React.createElement('div', {
+                    style: {
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '4px',
+                        backgroundColor: '#ffffff',
+                        border: '1.67px solid #e4e4e4',
+                        borderRadius: '11.12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        minWidth: '120px',
+                        zIndex: 1000,
+                        overflow: 'hidden'
+                    }
+                },
+                    React.createElement('button', {
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#c1281e',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+                        onClick: (e) => { e.stopPropagation(); handleDelete(); }
+                    }, 'Delete')
+                )
+            )
+        );
+    };
+
+    return React.createElement(ChatHistoryItemComponent);
+}
 /**
  * Fetch and display project files
  * @param {string} projectID - The UUID of the project
@@ -220,13 +347,18 @@ async function fetchProjectFiles(projectID) {
 
         if (response.ok) {
             let data = await response.json();
-            console.log(`Response Data: ${JSON.stringify(data)}`);
+            console.log(`fetchProjectFiles Response Data:`, data);
 
             sourceListContainer.innerHTML = '';
 
             if (data.files && data.files.length > 0) {
                 for (let file of data.files) {
-                    const fileElement = createFileItem(file.documentName, file.documentID);
+                    // Construct full filename with extension (same as tempHome)
+                    const ext = file.documentExt || '';
+                    let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
+                    const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+
+                    const fileElement = createFileItem(fullFileName, file.documentID);
                     const wrapper = document.createElement('div');
                     sourceListContainer.appendChild(wrapper);
                     const root = ReactDOM.createRoot(wrapper);
@@ -234,7 +366,7 @@ async function fetchProjectFiles(projectID) {
                 }
             }
 
-            const noFilesLabel = document.getElementById("p-label-project-source-no-entry");
+            const noFilesLabel = document.getElementById("p-label-source-no-entry");
             if (noFilesLabel) {
                 noFilesLabel.style.display = (data.files && data.files.length > 0) ? "none" : "block";
             }
@@ -245,85 +377,314 @@ async function fetchProjectFiles(projectID) {
 }
 
 /**
- * Create a React element for a file item
+ * Create a React element for a file item with full menu functionality
  * @param {string} fileName - The name of the file
  * @param {string} documentID - The UUID of the document
  */
 function createFileItem(fileName, documentID) {
-    return React.createElement('div', {
-        className: 'sidebar-items source-item',
-        'data-document-id': documentID,
-        style: {
-            padding: '8px 12px',
-            cursor: 'pointer',
-            borderRadius: '5px',
-            transition: 'background-color 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-        },
-        onMouseEnter: (e) => {
-            e.currentTarget.style.backgroundColor = '#f0f0f0';
-        },
-        onMouseLeave: (e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-        },
-        onClick: (e) => {
-            // Prevent the div click when clicking the checkbox
-            if (e.target.type !== 'checkbox') {
-                console.log(`Clicked on ${fileName}`);
-            }
-        }
-    },
-        React.createElement('input', {
-            type: 'checkbox',
-            style: {
-                width: "16px",
-                height: "16px",
-                flexShrink: 0
-            },
-            onChange: (e) => {
-                console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
-                // Call getSelectedSource if it exists
-                if (typeof window.getSelectedSource === 'function') {
-                    window.getSelectedSource();
+    const FileItemComponent = () => {
+        const [menuOpen, setMenuOpen] = React.useState(false);
+        const menuRef = React.useRef(null);
+
+        // Close menu when clicking outside
+        React.useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setMenuOpen(false);
                 }
-            },
-            onClick: (e) => {
-                e.stopPropagation();
+            };
+
+            if (menuOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
             }
-        }),
-        React.createElement('p', {
-            style: {
-                flexGrow: 1,
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [menuOpen]);
+
+        const handleRename = async () => {
+            setMenuOpen(false);
+
+            // Extract extension properly
+            const lastDotIndex = fileName.lastIndexOf('.');
+            let nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+            const ext = lastDotIndex > 0 ? fileName.substring(lastDotIndex + 1) : '';
+            nameWithoutExt = nameWithoutExt.replace(/\.+$/, '');
+
+            // Show notification modal with input
+            const newName = await window.showNotification({
+                type: 'rename-input',
+                title: 'File Rename',
+                message: `Enter to rename current file: ${nameWithoutExt}.${ext}`,
+                actionText: 'Confirm',
+                showInput: true,
+                inputValue: nameWithoutExt,
+                inputPlaceholder: 'Input for new file name'
+            });
+
+            if (!newName || newName === nameWithoutExt) return;
+
+            let finalName = newName.trim();
+            if (finalName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
+                finalName = finalName.slice(0, -(ext.length + 1));
             }
-        }, fileName),
-        React.createElement('img', {
+            finalName = finalName.replace(/\.+$/, '');
+
+            try {
+                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                if (!projectID) {
+                    await window.showNotification({ type: 'error', title: 'Error', message: 'No project selected', actionText: 'OK' });
+                    return;
+                }
+
+                const response = await fetch('/api/project/file/rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectID, documentID, newFileName: `${finalName}.${ext}` })
+                });
+
+                const data = await response.json();
+                if (data.successful) {
+                    if (window.fetchProjectFiles) await window.fetchProjectFiles(projectID);
+                    await window.showNotification({ type: 'rename-success', title: 'Warning', message: 'File has been renamed successfully', actionText: 'OK' });
+                } else {
+                    await window.showNotification({ type: 'error', title: 'Error', message: 'Failed to rename file: ' + (data.message || 'Unknown error'), actionText: 'OK' });
+                }
+            } catch (error) {
+                console.error('Error renaming file:', error);
+                await window.showNotification({ type: 'error', title: 'Error', message: 'An error occurred while renaming the file.', actionText: 'OK' });
+            }
+        };
+
+        const handleDownload = async () => {
+            setMenuOpen(false);
+            try {
+                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                if (!projectID) {
+                    await window.showNotification({ type: 'error', title: 'Error', message: 'No project selected', actionText: 'OK' });
+                    return;
+                }
+
+                const response = await fetch('/api/project/file/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectID, documentID })
+                });
+
+                if (!response.ok) throw new Error('Download failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Download error:', error);
+                await window.showNotification({ type: 'error', title: 'Error', message: 'Failed to download file', actionText: 'OK' });
+            }
+        };
+
+        const handleDelete = async () => {
+            setMenuOpen(false);
+            const confirmed = await window.showNotification({
+                type: 'warning',
+                title: 'Warning',
+                message: `Are you sure you want to delete "${fileName}"?`,
+                actionText: 'Confirm'
+            });
+
+            if (!confirmed) return;
+
+            try {
+                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                if (!projectID) {
+                    await window.showNotification({ type: 'error', title: 'Error', message: 'No project selected', actionText: 'OK' });
+                    return;
+                }
+
+                const response = await fetch('/api/project/file/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectID, documentID })
+                });
+
+                const data = await response.json();
+                if (data.successful) {
+                    if (window.fetchProjectFiles) await window.fetchProjectFiles(projectID);
+                    await window.showNotification({ type: 'success', title: 'File Deleted', message: 'File deleted successfully', actionText: 'OK' });
+                } else {
+                    await window.showNotification({ type: 'error', title: 'Error', message: 'Failed to delete file: ' + (data.message || 'Unknown error'), actionText: 'OK' });
+                }
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                await window.showNotification({ type: 'error', title: 'Error', message: 'An error occurred while deleting the file.', actionText: 'OK' });
+            }
+        };
+
+        return React.createElement('div', {
+            className: 'sidebar-items source-item',
+            'data-document-id': documentID,
             style: {
-                padding: "4px",
-                flexShrink: 0,
+                padding: '8px 12px',
+                cursor: 'pointer',
                 borderRadius: '5px',
                 transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                position: 'relative'
             },
-            src: './img/more_vert_24.svg',
-            alt: '',
-            onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#8e8e8e';
-            },
-            onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            },
+            onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f0f0f0'; },
+            onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
             onClick: (e) => {
-                e.stopPropagation();
-                console.log(`Menu clicked for ${fileName}`);
-                // Add your menu logic here
+                if (e.target.type !== 'checkbox') {
+                    console.log(`Clicked on ${fileName}`);
+                }
             }
-        })
-    );
+        },
+            React.createElement('input', {
+                type: 'checkbox',
+                style: { width: "16px", height: "16px", flexShrink: 0 },
+                onChange: (e) => {
+                    console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
+                    if (typeof window.getSelectedSource === 'function') window.getSelectedSource();
+                },
+                onClick: (e) => e.stopPropagation()
+            }),
+            React.createElement('p', {
+                id: `source-file-name-${documentID}`,
+                'aria-label': `File name: ${fileName}`,
+                title: fileName,
+                style: {
+                    flexGrow: 1,
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '13.3px',
+                    cursor: 'default'
+                }
+            }, fileName),
+            React.createElement('div', {
+                ref: menuRef,
+                style: {
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '30px',
+                    height: '30px',
+                    flexShrink: 0
+                }
+            },
+                React.createElement('img', {
+                    id: `source-file-menu-${documentID}`,
+                    'aria-label': `File options menu for ${fileName}`,
+                    style: {
+                        width: '30px',
+                        height: '30px',
+                        padding: "4px",
+                        flexShrink: 0,
+                        borderRadius: '5px',
+                        transition: 'background-color 0.2s',
+                        cursor: 'pointer'
+                    },
+                    src: './img/more_vert_24.svg',
+                    alt: '',
+                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#8e8e8e'; },
+                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    }
+                }),
+                menuOpen && React.createElement('div', {
+                    id: `source-file-menu-dropdown-${documentID}`,
+                    'aria-label': `File options dropdown for ${fileName}`,
+                    style: {
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '4px',
+                        backgroundColor: '#ffffff',
+                        border: '1.67px solid #e4e4e4',
+                        borderRadius: '11.12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        minWidth: '120px',
+                        zIndex: 1000,
+                        overflow: 'hidden'
+                    }
+                },
+                    React.createElement('button', {
+                        id: `source-file-rename-button-${documentID}`,
+                        'aria-label': `Rename ${fileName}`,
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#000',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+                        onClick: (e) => { e.stopPropagation(); handleRename(); }
+                    }, 'Rename'),
+                    React.createElement('button', {
+                        id: `source-file-download-button-${documentID}`,
+                        'aria-label': `Download ${fileName}`,
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#000',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+                        onClick: (e) => { e.stopPropagation(); handleDownload(); }
+                    }, 'Download'),
+                    React.createElement('button', {
+                        id: `source-file-delete-button-${documentID}`,
+                        'aria-label': `Delete ${fileName}`,
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#c1281e',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+                        onClick: (e) => { e.stopPropagation(); handleDelete(); }
+                    }, 'Delete')
+                )
+            )
+        );
+    };
+
+    return React.createElement(FileItemComponent);
 }
 
 /**
@@ -435,6 +796,10 @@ function createReportItem(reportName, reportID) {
 window.fetchProjectChats = fetchProjectChats;
 window.fetchProjectFiles = fetchProjectFiles;
 window.fetchProjectReports = fetchProjectReports;
+window.refreshProjectFiles = fetchProjectFiles; // Alias for refreshing files after upload
+window.createChatHistoryItem = createChatHistoryItem;
+window.createFileItem = createFileItem;
+window.createReportItem = createReportItem;
 
 /**
  * Create a new chat thread
