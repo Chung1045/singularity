@@ -6,7 +6,7 @@ const uuid = require("uuid-v4");
 const {PDFParse} = require("pdf-parse");
 const docx_pdf = require('docx-pdf');
 const os = require("os");
-const { createAliasFile } = require("./preprocessingService")
+const {documentPreprocessing} = require("./preprocessingService");
 
 const FSS_REPORT_USERSTORIES = "userStories";
 const FSS_REPORT_REQUIREMENTS = "requirements";
@@ -708,10 +708,45 @@ async function testConnection() {
     return await minioClient.bucketExists(process.env.MINIO_BUCKET);
 }
 
+async function createAliasFile(projectID, documentID, documentExt) {
+    const stream = await downloadProjectFile(projectID, documentID);
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const data = await documentPreprocessing(buffer, documentExt);
+
+    // Generate alias ID and path
+    const aliasID = uuid();
+    const textPath = `project/${projectID}/alias/${aliasID}`;
+
+    // Save extracted text to MinIO
+    const textBuffer = Buffer.from(data, 'utf-8');
+    await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
+        'Content-Type': 'text/plain; charset=utf-8'
+    });
+
+    console.log(`Saved extracted text to: ${textPath}`);
+
+    // Update database with alias ID
+    const sql = `UPDATE documents
+                 SET documentAlias = ?
+                 WHERE projectID = ?
+                   AND documentID = ?`;
+
+    await db.run(sql, [aliasID, projectID, documentID]);
+
+    console.log(`Updated database: documentID=${documentID}, aliasID=${aliasID}`);
+
+    return {
+        aliasID: aliasID,
+        minioPath: textPath,
+        textLength: data.length
+    };
+}
+
 init()
-
-
-
 
 module.exports = {
     createFolder,
@@ -736,6 +771,7 @@ module.exports = {
     saveGeneratedReport,
     testConnection,
     uploadFile,
+    createAliasFile,
     uploadProjectFile,
     updateProfilePic,
     removeProfilePic,

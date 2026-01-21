@@ -1,12 +1,95 @@
-const { OpenAI } = require('openai');
 const fs = require('fs')
+const { OpenAI } = require('openai');
 const {tools, toolImpls} = require("./aiAgentToolsService")
 const aiDB = require("./aiAgentDBService");
+const axios = require('axios');
+const { groupMultipleFile } = require('./preprocessingService');
 
 const client = new OpenAI({
     apiKey: process.env.XAI_API_KEY,
-    baseURL: 'https://api.x.ai/v1',
+    baseURL: 'https://api.x.ai/v1'
 });
+
+const apiKey = process.env.XAI_API_KEY;
+const model = "grok-4-fast-reasoning";
+
+function requirementAnalysisPrompt(title) {
+    return `
+    You are an expert in software requirements specification and structured extraction.
+
+    Analyze the attached text document completely.
+
+    First, check if the document is related to the ${title} topic.
+
+    If NOT related → output only this exact line and nothing else:
+    null
+
+    If related → extract ALL functional (if any) and non-functional (if any) requirements relevant to the topic.
+
+    Output them in this strict order and format ONLY:
+
+    1. ALL Functional Requirements first, sorted by Requirement ID ascending
+    2. ALL Non-Functional Requirements second, sorted by Requirement ID ascending
+
+    Use exact this format for each requirement (no extra spaces, no line breaks within a requirement):
+
+    Title request: ${title}
+
+    Functional Requirement 
+    Role: [User/System/Other] 
+    Requirement ID: [ID] 
+    Requirement Title: [title]
+    Requirement Description: [full description] 
+    Citation: [source or reference in the text document] 
+
+    Non-Functional Requirement 
+    Role: [User/System/Other] 
+    Requirement ID: [ID] 
+    Requirement Title: [title]
+    Requirement Description: [full description]
+    Citation: [source or reference in the text document] 
+
+    Strict rules:
+    - Generate sequential IDs if missing
+    - NO Acceptance Criteria field
+    - Accuracy field must contain detailed, testable expectations
+    - No extra text, headings, blank lines or markdown
+    - Each requirement on its own single line
+    - If none → output only: No relevant requirements found
+    - If no citation available, ignore that requirement
+
+    Start immediately.`;
+}
+
+// Get functional and non-functional requirement analysis output
+async function requirementAnalysisModel(documentData, title) {
+    const prompt = requirementAnalysisPrompt(title);
+    try {
+        const res = await axios.post('https://api.x.ai/v1/chat/completions', {
+            model: model,
+            messages: [
+                {
+                    role: 'system',
+                    content: prompt
+                },
+                {
+                    role: 'user',
+                    content: documentData
+                }
+            ],
+            temperature: 0.0
+        }, {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return res.data.choices[0].message.content;
+    } catch (err) {
+        console.error('analysisModel failed:', err.message);
+    }
+}
+
 
 const system_prompt = `
     You are an assistant for the software engineering project,
@@ -102,8 +185,7 @@ async function getResponse(data, conversationSummary) {
         messages.push({role: 'user', content: data.requestMessage});
 
         let completion = await client.chat.completions.create({
-            // model: 'grok-4-1-fast-non-reasoning', //swap due to excessive token spending
-            model: 'grok-4-1-fast-reasoning',
+            model: 'grok-4-fast-reasoning',
             messages: messages,
             tools: tools,
             tool_choice: "auto",  // Let the AI decide when to use tools

@@ -1,41 +1,26 @@
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
-const pdfjsLib = require('pdfjs-dist');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const { pipeline } = require('@huggingface/transformers');
 const { WaveFile } = require('wavefile');
 const libre = require('libreoffice-convert');
-const uuid = require("uuid-v4");
-const db = require("./db");
-const {downloadProjectFile} = require("./fsServices");
-const Minio = require("minio");
+const crypto = require('crypto');
 libre.convertAsync = require('util').promisify(libre.convert);
 
 // Environment Setting
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
-let transcriber = null;
-const tempWavPath = '../tempfolder/temp_audio.wav';
-const tempPdfPath = '../tempfolder/temp_document.pdf';
-
-const minioClient = new Minio.Client({
-    endPoint: process.env.MINIO_END_POINT,
-    port: process.env.MINIO_PORT,
-    useSSL: false,
-    accessKey: process.env.MINIO_ACCESSKEY,
-    secretKey: process.env.MINIO_SECRETKEY,
-});
-
-const bucket = process.env.MINIO_BUCKET;
+const tempWavPath = path.join(__dirname, '../tempfolder/temp_audio.wav');
+const tempPdfPath = path.join(__dirname, '../tempfolder/temp_document.pdf');
 
 // MAIN PRE-PROCESSING HELPER FUNCTION - GROUPED
 // CAN USE DIRECTLY
 // InputPath: ALL DOCUMENT, VIDEO, AUDIO TYPE
 // IMPORTANT: Return Raw Text
 async function documentPreprocessing(buffer, documentExt) {
-    const supportedVideoAudioFormats = ['mp4', 'mov', 'avi', 'mkv', 'mp3', 'wav', 'flac', 'aac'];
-    const supportedDocumentFormats = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'odt', 'odp', 'ods', 'txt', 'rtf'];
+    const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac'];
+    const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.txt', '.rtf'];
     let tempFilePath = "";
 
     // Create temporary directory
@@ -100,7 +85,7 @@ async function documentPreprocessing(buffer, documentExt) {
             }
 
             // 3.12 Extract text from original PDF file
-            return await pdfExtracted_pdfjslib(tempPdfPath);
+            return await pdfExtracted_pdfjslib(tempFilePath);
         } else {
             console.error('Unsupported file format');
         }
@@ -110,6 +95,43 @@ async function documentPreprocessing(buffer, documentExt) {
 }
 
 // SMALL HELPER FUNCTION FOR REFERENCES
+
+// Pre-loaded whisper model
+let transcriber = null;
+let modelLoading = null;
+
+async function getTranscriber() {
+    // If already loaded, return immediately
+    if (transcriber) {
+        return transcriber;
+    }
+
+    // If currently loading, wait for it
+    if (modelLoading) {
+        return modelLoading;
+    }
+
+    // Start loading
+    console.log('Loading Whisper model (this happens once)...');
+    const startTime = Date.now();
+
+    modelLoading = pipeline(
+        'automatic-speech-recognition',
+        'Xenova/distil-whisper-large-v2',
+        {
+            quantized: true,
+            cache_dir: path.join(__dirname, '../model_cache')
+        }
+    ).then(model => {
+        transcriber = model;
+        modelLoading = null;
+        const loadTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`Whisper model loaded in ${loadTime}s and ready for requests`);
+        return model;
+    });
+
+    return modelLoading;
+}
 
 // Convert document to pdf file with libreoffice-convert
 // InputPath: Where the document path staying at
@@ -132,6 +154,7 @@ async function documentToPdf_libreofficeconvert(inputPath, outputPath) {
 // InputPath: Where the document path staying at
 // IMPORTANT: Return Raw Text
 async function pdfExtracted_pdfjslib(inputPath){
+    const pdfjsLib = await import('pdfjs-dist');
     const loadingTask = pdfjsLib.getDocument({
         url: inputPath,
         standardFontDataUrl: '/standard_fonts/'
@@ -147,19 +170,6 @@ async function pdfExtracted_pdfjslib(inputPath){
     }
 
     return extractedText.join('\n\n');
-}
-
-// Load whisper model
-async function getTranscriber() {
-    if (!transcriber) {
-        console.log('Loading Whisper model...');
-        transcriber = await pipeline(
-            'automatic-speech-recognition',
-            'Xenova/whisper-base.en',
-        );
-        console.log('Whisper model loaded');
-    }
-    return transcriber;
 }
 
 // Extract text from video/audio using ffmpeg and Whisper model
@@ -280,44 +290,6 @@ Report File ${report}
     }
 }
 
-async function createAliasFile(projectID, documentID, documentExt) {
-    const stream = await downloadProjectFile(projectID, documentID);
-    const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
-    const buffer = Buffer.concat(chunks);
-    const data = await documentPreprocessing(buffer, documentExt);
-
-    // Generate alias ID and path
-    const aliasID = uuid();
-    const textPath = `project/${projectID}/alias/${aliasID}`;
-
-    // Save extracted text to MinIO
-    const textBuffer = Buffer.from(data, 'utf-8');
-    await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
-        'Content-Type': 'text/plain; charset=utf-8'
-    });
-
-    console.log(`Saved extracted text to: ${textPath}`);
-
-    // Update database with alias ID
-    const sql = `UPDATE documents
-                 SET documentAlias = ?
-                 WHERE projectID = ?
-                   AND documentID = ?`;
-
-    await db.run(sql, [aliasID, projectID, documentID]);
-
-    console.log(`Updated database: documentID=${documentID}, aliasID=${aliasID}`);
-
-    return {
-        aliasID: aliasID,
-        minioPath: textPath,
-        textLength: data.length
-    };
-}
-
 module.exports = {
-    documentPreprocessing, documentToPdf_libreofficeconvert, pdfExtracted_pdfjslib, videoAudioExtracted_ffmpeg, convert_ffmpeg, writeTxtFile, extractTxtFile, groupMultipleFile, createAliasFile
+    documentPreprocessing, documentToPdf_libreofficeconvert, pdfExtracted_pdfjslib, videoAudioExtracted_ffmpeg, getTranscriber,  convert_ffmpeg, writeTxtFile, extractTxtFile, groupMultipleFile
 };
