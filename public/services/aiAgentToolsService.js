@@ -259,7 +259,31 @@ const toolImpls = {
     },
 
     async get_project_file_content(projectID, documentID) {
-        return await fss.getFileContext(projectID, documentID)
+        try {
+            console.log(`🔍 Fetching file content: projectID=${projectID}, documentID=${documentID}`);
+            const content = await fss.getFileContext(projectID, documentID);
+
+            if (!content || content === "Context is not available.") {
+                console.warn(`⚠️  File content not available for documentID: ${documentID}`);
+                return {
+                    error: "File content is not available. The file may not have been processed yet, or it may be in an unsupported format.",
+                    documentID: documentID
+                };
+            }
+
+            console.log(`✅ Successfully retrieved file content (${content.length} characters)`);
+            return {
+                documentID: documentID,
+                content: content,
+                contentLength: content.length
+            };
+        } catch (error) {
+            console.error(`❌ Error in get_project_file_content:`, error.message);
+            return {
+                error: `Failed to retrieve file content: ${error.message}`,
+                documentID: documentID
+            };
+        }
     },
 
     async get_software_requirements_list(projectID) {

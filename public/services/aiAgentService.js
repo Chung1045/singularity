@@ -103,8 +103,8 @@ async function getResponse(data, conversationSummary) {
         messages.push({role: 'user', content: data.requestMessage});
 
         let completion = await client.chat.completions.create({
-            // model: 'grok-4-1-fast-non-reasoning', //swap due to excessive token spending
-            model: 'grok-4-1-fast-reasoning',
+             model: 'grok-4-1-fast-non-reasoning', //swap due to excessive token spending
+            //model: 'grok-4-1-fast-reasoning',
             messages: messages,
             tools: tools,
             tool_choice: "auto",  // Let the AI decide when to use tools
@@ -126,7 +126,18 @@ async function getResponse(data, conversationSummary) {
             // Execute each tool call
             for (const toolCall of responseMessage.tool_calls) {
                 const functionName = toolCall.function.name;
-                const functionArgs = JSON.parse(toolCall.function.arguments);
+                let functionArgs;
+
+                // Safely parse JSON arguments with error handling
+                try {
+                    console.log(`🔧 [Non-streaming] Parsing arguments for ${functionName}:`, toolCall.function.arguments);
+                    functionArgs = JSON.parse(toolCall.function.arguments);
+                    console.log(`✅ [Non-streaming] Parsed successfully:`, functionArgs);
+                } catch (parseError) {
+                    console.error(`❌ [Non-streaming] Failed to parse tool arguments for ${functionName}:`, parseError.message);
+                    console.error(`Raw arguments string:`, toolCall.function.arguments);
+                    functionArgs = {}; // Use empty object as fallback
+                }
 
                 console.log(`AI is calling tool: ${functionName} with args:`, functionArgs);
 
@@ -138,6 +149,7 @@ async function getResponse(data, conversationSummary) {
                     try {
                         functionResponse = await toolImpl(...Object.values(functionArgs));
                     } catch (error) {
+                        console.error(`❌ [Non-streaming] Error executing tool ${functionName}:`, error.message);
                         functionResponse = {error: error.message};
                     }
                 } else {
@@ -154,8 +166,8 @@ async function getResponse(data, conversationSummary) {
 
             // Get AI's next response with tool results
             completion = await client.chat.completions.create({
-                // model: 'grok-4-1-fast-non-reasoning',
-                model: 'grok-4-1-fast-reasoning',
+                 model: 'grok-4-1-fast-non-reasoning',
+                //model: 'grok-4-1-fast-reasoning',
 
                 messages: messages,
                 tools: tools,
@@ -260,8 +272,7 @@ async function* getStreamingResponse(data, conversationSummary) {
 
     const stream = await client.chat.completions.create({
         // model: 'grok-4-1-fast-non-reasoning',
-        model: 'grok-4-1-fast-reasoning',
-
+        model: 'grok-4-1-fast-reasoning',  // Use reasoning model for better tool handling
         messages: messages,
         tools: tools,
         tool_choice: "auto",
@@ -282,19 +293,48 @@ async function* getStreamingResponse(data, conversationSummary) {
         }
         if (delta?.tool_calls?.length > 0) {
             // Accumulate tool calls across chunks
-            delta.tool_calls.forEach((tcDelta, idx) => {
-                const tc = toolCalls[idx] || { id: '', function: { name: '', arguments: '' } };
-                tc.id ||= tcDelta.id;
-                tc.function.name += tcDelta.function?.name || '';
-                tc.function.arguments += tcDelta.function?.arguments || '';
-                toolCalls[idx] = tc;
+            delta.tool_calls.forEach((tcDelta) => {
+                // Use the index from the delta itself, not forEach index
+                const idx = tcDelta.index;
+
+                // Initialize tool call object if it doesn't exist
+                if (!toolCalls[idx]) {
+                    toolCalls[idx] = {
+                        id: '',
+                        function: { name: '', arguments: '' }
+                    };
+                }
+
+                const tc = toolCalls[idx];
+
+                // Set ID only once (don't concatenate)
+                if (tcDelta.id) {
+                    tc.id = tcDelta.id;
+                }
+
+                // Accumulate function name and arguments (they come in chunks)
+                if (tcDelta.function?.name) {
+                    tc.function.name += tcDelta.function.name;
+                }
+                if (tcDelta.function?.arguments) {
+                    tc.function.arguments += tcDelta.function.arguments;
+                }
             });
         }
         if (chunk.choices[0]?.finish_reason === 'tool_calls') {
-            responseMessage.tool_calls = toolCalls.map(tc => ({
-                id: tc.id,
-                function: { name: tc.function.name, arguments: tc.function.arguments }
-            }));
+            // Filter out empty slots and map to clean structure
+            responseMessage.tool_calls = toolCalls
+                .filter(tc => tc && tc.id && tc.function.name)
+                .map(tc => ({
+                    id: tc.id,
+                    function: {
+                        name: tc.function.name,
+                        arguments: tc.function.arguments
+                    }
+                }));
+
+            console.log(`✅ Collected ${responseMessage.tool_calls.length} tool call(s):`,
+                responseMessage.tool_calls.map(tc => tc.function.name));
         }
     }
 
@@ -316,7 +356,19 @@ async function* getStreamingResponse(data, conversationSummary) {
 
         for (const toolCall of responseMessage.tool_calls) {
             const functionName = toolCall.function.name;
-            const functionArgs = JSON.parse(toolCall.function.arguments);
+            let functionArgs;
+
+            // Safely parse JSON arguments with error handling
+            try {
+                console.log(`🔧 Parsing arguments for ${functionName}:`, toolCall.function.arguments);
+                functionArgs = JSON.parse(toolCall.function.arguments);
+                console.log(`✅ Parsed successfully:`, functionArgs);
+            } catch (parseError) {
+                console.error(`❌ Failed to parse tool arguments for ${functionName}:`, parseError.message);
+                console.error(`Raw arguments string:`, toolCall.function.arguments);
+                functionArgs = {}; // Use empty object as fallback
+            }
+
             console.log(`AI is calling tool: ${functionName} with args:`, functionArgs);
 
             const toolImpl = toolImpls[functionName];
@@ -325,6 +377,7 @@ async function* getStreamingResponse(data, conversationSummary) {
                 try {
                     functionResponse = await toolImpl(...Object.values(functionArgs));
                 } catch (error) {
+                    console.error(`❌ Error executing tool ${functionName}:`, error.message);
                     functionResponse = {error: error.message};
                 }
             } else {
@@ -348,21 +401,75 @@ async function* getStreamingResponse(data, conversationSummary) {
             }
         });
 
-        // Final non-streaming call after tools
-        console.log('🔄 Making final API call with tool results...');
-        const completion = await client.chat.completions.create({
-            // model: 'grok-4-1-fast-non-reasoning',
-            model: 'grok-4-1-fast-reasoning',
-            messages: messages,
-            tools: tools,
-            tool_choice: "auto",
-            temperature: 0.7,
-            max_tokens: 1500,
+        // Add explicit instruction to respond based on tool results
+        messages.push({
+            role: 'user',
+            content: 'Please analyze the tool results above and provide a helpful response to my original question. Format your response using Markdown for readability.'
         });
 
-        const finalMessage = completion.choices[0].message;
-        yield `\n\n${finalMessage.content}`;  // Yield final tool response
-        console.log('Final Message Respond: ' + finalMessage.content);
+        // Final STREAMING call after tools - force text response with tool_choice: "none"
+        console.log('🔄 Making final streaming API call with tool results...');
+        const finalStream = await client.chat.completions.create({
+            model: 'grok-4-1-fast-non-reasoning',
+            messages: messages,
+            tools: tools,
+            tool_choice: "none",  // Force text response, no more tool calls
+            temperature: 0.7,
+            max_tokens: 2000,
+            stream: true,  // Enable streaming for smooth output
+        });
+
+        let finalContent = '';
+
+        // Stream the final response chunk by chunk
+        for await (const chunk of finalStream) {
+            const delta = chunk.choices[0]?.delta;
+            if (delta?.content) {
+                finalContent += delta.content;
+                yield delta.content;  // Yield each chunk for real-time UI updates
+            }
+        }
+
+        console.log('✅ Final streaming completed. Total length:', finalContent.length);
+
+        if (!finalContent || !finalContent.trim()) {
+            console.warn('⚠️  AI returned empty response after tool execution!');
+
+            // Extract tool results for fallback display
+            const toolResults = messages.filter(m => m.role === 'tool').map(m => {
+                try {
+                    return JSON.parse(m.content);
+                } catch {
+                    return { rawContent: m.content };
+                }
+            });
+
+            console.log('Tool results for fallback:', JSON.stringify(toolResults).substring(0, 500));
+
+            // Build a meaningful fallback from the tool data
+            let fallbackResponse = "Here's what I found:\n\n";
+
+            toolResults.forEach((result, idx) => {
+                if (result.content) {
+                    // Document content
+                    const preview = result.content.substring(0, 1000);
+                    fallbackResponse += `**Document Content:**\n\n${preview}${result.content.length > 1000 ? '...\n\n*(Content truncated)*' : ''}\n\n`;
+                } else if (result.error) {
+                    fallbackResponse += `⚠️ ${result.error}\n\n`;
+                } else if (Array.isArray(result)) {
+                    // List of items (requirements, user stories, etc.)
+                    fallbackResponse += `Found ${result.length} item(s).\n\n`;
+                } else if (typeof result === 'object') {
+                    // Other structured data
+                    fallbackResponse += `\`\`\`json\n${JSON.stringify(result, null, 2)}\n\`\`\`\n\n`;
+                }
+            });
+
+            yield fallbackResponse;
+            console.log('📤 Yielded fallback with tool data');
+        } else {
+            console.log('✅ Final Message Respond: ' + finalContent.substring(0, 100) + '...');
+        }
     } else {
         console.log('Message Respond: ' + fullContent);
     }
@@ -387,8 +494,8 @@ async function getChatSummary(conversationHistory) {
         ];
 
         const completion = await client.chat.completions.create({
-            // model: 'grok-4-1-fast-non-reasoning',
-            model: 'grok-4-1-fast-reasoning',
+             model: 'grok-4-1-fast-non-reasoning',
+            // model: 'grok-4-1-fast-reasoning',
             messages,
             temperature: 0.2,
             max_tokens: 1500,
@@ -426,8 +533,8 @@ async function createChatName(conversationHistory) {
         ];
 
         const completion = await client.chat.completions.create({
-            // model: 'grok-4-1-fast-non-reasoning',
-            model: 'grok-4-1-fast-reasoning',
+             model: 'grok-4-1-fast-non-reasoning',
+            // model: 'grok-4-1-fast-reasoning',
             messages,
             temperature: 0.2,
             max_tokens: 1500,

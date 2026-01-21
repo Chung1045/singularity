@@ -115,6 +115,7 @@ router.post('/agent/chat', async (req, res) => {
                 // Stream the response
                 for await (const chunk of agent.getStreamingResponse(data, conversationSummary)) {
                     fullResponse += chunk;
+                    console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
                 }
 
@@ -128,16 +129,20 @@ router.post('/agent/chat', async (req, res) => {
                 // Save the complete streamed response
                 await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
 
-                if (await aiDB.getChatThreadName(projectID, chatID) == null) {
-                    let threadName = await agent.createChatName(JSON.stringify(await aiDB.fetchChatThread(projectID, chatID)))
-                    await aiDB.renameChatThread(projectID, chatID, threadName)
+                // Generate thread name if it doesn't exist
+                let threadName = await aiDB.getChatThreadName(projectID, chatID);
+                if (threadName == null) {
+                    threadName = await agent.createChatName(JSON.stringify(await aiDB.fetchChatThread(projectID, chatID)));
+                    await aiDB.renameChatThread(projectID, chatID, threadName);
+                    console.log('📝 Generated thread name:', threadName);
                 }
 
-                // Send completion event
+                // Send completion event with threadName
                 res.write(`data: ${JSON.stringify({ 
                     type: 'done', 
                     chatSeq: chatSeq,
-                    conversationID: conversationID 
+                    conversationID: conversationID,
+                    threadName: threadName || 'Untitled Chat'
                 })}\n\n`);
                 res.end();
 
