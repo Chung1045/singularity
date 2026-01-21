@@ -118,7 +118,6 @@ async function deleteProjectFolder(projectID) {
     });
 }
 
-// TODO: New, need testing
 async function updateProfilePic(userID, uploadedFile) {
     try {
         const objectPath = `user/${userID}`;

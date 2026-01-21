@@ -246,7 +246,6 @@ async function checkUsernameEmail(data) {
     });
 }
 
-
 // TODO: Fix logic
 // MODIFIED: Updated to include device information
 async function updatePasskeyLastUsed(keyID) {

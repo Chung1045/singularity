@@ -446,7 +446,6 @@ router.post('/agent/chat-delete', async (req, res) => {
  * @param {string} [chatID] - UUID of chat thread (required)
  * @param {string} [conversationID] - UUID of chat conversationID of the message (required)
  */
-// TODO: Test functionality
 router.post('/agent/conversation-delete', async(req, res) => {
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
