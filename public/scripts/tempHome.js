@@ -25,6 +25,10 @@ const TempHome = ({csrfToken, userInfo}) => {
     const [showFileUpload, setShowFileUpload] = useState(false);
     const [currentProjectID, setCurrentProjectID] = useState(null);
 
+    // Add state for requirements panel modal
+    const [showRequirementsPanel, setShowRequirementsPanel] = useState(false);
+    const [requirementsPanelProjectID, setRequirementsPanelProjectID] = useState(null);
+
     // Add state for attachment menu and selected files
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -135,6 +139,30 @@ const TempHome = ({csrfToken, userInfo}) => {
         window.addEventListener('openFileUpload', handleOpenFileUpload);
         return () => {
             window.removeEventListener('openFileUpload', handleOpenFileUpload);
+        };
+    }, []);
+
+    // Listen for requirements panel events from sidebar
+    React.useEffect(() => {
+        const handleOpenRequirementsPanel = (event) => {
+            console.log('[Requirements] Event received to open requirements panel');
+
+            // Check if RequirementsPanel is loaded
+            if (!window.RequirementsPanel) {
+                console.error('[Requirements] RequirementsPanel not loaded!');
+                alert('Requirements panel component is not ready. Please refresh the page.');
+                return;
+            }
+
+            const { projectID } = event.detail;
+            console.log('[Requirements] Opening requirements panel for projectID:', projectID);
+            setRequirementsPanelProjectID(projectID);
+            setShowRequirementsPanel(true);
+        };
+
+        window.addEventListener('openRequirementsPanel', handleOpenRequirementsPanel);
+        return () => {
+            window.removeEventListener('openRequirementsPanel', handleOpenRequirementsPanel);
         };
     }, []);
 
@@ -331,6 +359,33 @@ const TempHome = ({csrfToken, userInfo}) => {
                         // Note: Success notification is already shown by the FileUploadComponent
                         // No need to show another one here
                     }
+                })
+            ),
+
+            // Requirements Panel Modal
+            showRequirementsPanel && window.RequirementsPanel && React.createElement('div', {
+                    style: {
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10002,
+                        padding: '20px'
+                    },
+                    onClick: (e) => {
+                        if (e.target === e.currentTarget) {
+                            setShowRequirementsPanel(false);
+                        }
+                    }
+                },
+                React.createElement(window.RequirementsPanel, {
+                    projectID: requirementsPanelProjectID,
+                    onClose: () => setShowRequirementsPanel(false)
                 })
             ),
 
@@ -3705,6 +3760,26 @@ window.refreshProjectFiles = fetchProjectFiles; // Alias for refreshing files af
 window.fetchProjectReports = fetchProjectReports;
 window.loadChatThread = loadChatThread;
 window.backToInitialScreen = backToInitialScreen;
+
+// Function to open requirements panel
+function openRequirementsPanel() {
+    console.log('[Requirements] Opening requirements panel');
+    
+    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+    
+    if (!projectID) {
+        console.error('[Requirements] No project selected');
+        alert('Please select a project first');
+        return;
+    }
+    
+    // Create and show the requirements panel modal
+    const event = new CustomEvent('openRequirementsPanel', { detail: { projectID } });
+    window.dispatchEvent(event);
+}
+
+// Make openRequirementsPanel available globally
+window.openRequirementsPanel = openRequirementsPanel;
 
 // Make available globally
 window.TempHome = TempHome;
