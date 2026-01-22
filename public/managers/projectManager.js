@@ -10,6 +10,7 @@ const multer = require('multer');
 const path = require('path');
 const {apiAuthUser} = require("../services/accountDBService");
 const fs = require('fs').promises;
+const agentDB = require("../services/aiAgentDBService")
 
 router.use(dbService.apiAuthUser);
 
@@ -600,5 +601,41 @@ router.post("/project/report/download", async (req, res) => {
     }
 });
 
+router.post("/project/list/requirements", async (req, res) => {
+    console.log("New request /project/report/download");
+
+    const { projectID } = req.body;
+
+    const userID = req.userID;
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    try {
+        const requirementList = await agentDB.getProjectRequirements(projectID)
+        return res.status(200).json({successful: true, reports: requirementList});
+    } catch (err) {
+        return res.status(403).json({ successful: false, message: "Unable to fetch project requirements" });
+    }
+});
+
+router.post("/project/list/user-stories", async (req, res) => {
+
+    const { projectID } = req.body;
+
+    const userID = req.userID;
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    try {
+        const requirementList = await agentDB.getProjectUserStories(projectID)
+        return res.status(200).json({successful: true, reports: requirementList});
+    } catch (err) {
+        return res.status(403).json({ successful: false, message: "Unable to fetch project user-stories" });
+    }
+});
 
 module.exports = router;

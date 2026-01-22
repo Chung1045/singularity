@@ -370,6 +370,9 @@ async function updateRequirements(projectID, jsonList) {
 
     const getMaxSeqSQL = `SELECT MAX(requirementSeq) as maxSeq FROM requirements WHERE projectID = ? AND requirementType = ?`
 
+    // SQL for inserting source references
+    const insertSourceSQL = `INSERT INTO requirementsSource (refID, requirementsID, projectID, documentID, remarks, location) VALUES (?, ?, ?, ?, ?, ?)`
+
     try {
         for (let data of jsonList) {
             switch (data.operation) {
@@ -400,6 +403,24 @@ async function updateRequirements(projectID, jsonList) {
                         data.details.description,
                         data.details.role
                     ]);
+
+                    // Also insert source references if provided
+                    if (data.details.sourceReference && Array.isArray(data.details.sourceReference)) {
+                        for (const srcRef of data.details.sourceReference) {
+                            if (srcRef.documentID) {
+                                const refID = uuid();
+                                await dbRun(insertSourceSQL, [
+                                    refID,
+                                    requirementID,
+                                    projectID,
+                                    srcRef.documentID,
+                                    srcRef.remarks || '',
+                                    srcRef.location || ''
+                                ]);
+                                console.log(`📎 [DB] Linked source document ${srcRef.documentID} to requirement ${requirementID}`);
+                            }
+                        }
+                    }
                     break;
 
                 case 'DELETE':
@@ -421,6 +442,9 @@ async function updateProjectUserStories(projectID, jsonList){
     const insertSQL = `INSERT INTO userStories (storyID, projectID, storySeq, storyRole, storyTitle, storyContent, storySource) VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const deleteSQL = `DELETE FROM userStories WHERE storyID = ? AND projectID = ?`;
     const getMaxSeqSQL = `SELECT COALESCE(MAX(storySeq), 0) as maxSeq FROM userStories WHERE projectID = ?`;
+
+    // SQL for inserting source references
+    const insertSourceSQL = `INSERT INTO userStorySource (refID, storyID, projectID, documentID, remarks, location) VALUES (?, ?, ?, ?, ?, ?)`;
 
     try {
         for (let data of jsonList) {
@@ -445,8 +469,11 @@ async function updateProjectUserStories(projectID, jsonList){
                         storySeq = result.maxSeq + 1;
                     }
 
+                    // Generate storyID for the new story
+                    const newStoryID = uuid();
+
                     await dbRun(insertSQL, [
-                        uuid(),
+                        newStoryID,
                         projectID,
                         storySeq,
                         data.details.role,
@@ -454,9 +481,29 @@ async function updateProjectUserStories(projectID, jsonList){
                         data.details.description,
                         data.details.source
                     ]);
+
+                    // Also insert source references if provided
+                    if (data.details.sourceReference && Array.isArray(data.details.sourceReference)) {
+                        for (const srcRef of data.details.sourceReference) {
+                            if (srcRef.documentID) {
+                                const refID = uuid();
+                                await dbRun(insertSourceSQL, [
+                                    refID,
+                                    newStoryID,
+                                    projectID,
+                                    srcRef.documentID,
+                                    srcRef.remarks || '',
+                                    srcRef.location || ''
+                                ]);
+                                console.log(`📎 [DB] Linked source document ${srcRef.documentID} to user story ${newStoryID}`);
+                            }
+                        }
+                    }
                     break;
 
                 case 'DELETE':
+                    // Also delete associated source references
+                    await dbRun(`DELETE FROM userStorySource WHERE storyID = ? AND projectID = ?`, [data.storyID, projectID]);
                     await dbRun(deleteSQL, [data.storyID, projectID]);
                     break;
             }

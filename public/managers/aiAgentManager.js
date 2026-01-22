@@ -108,12 +108,50 @@ router.post('/agent/chat', async (req, res) => {
 
             let fullResponse = '';
 
+            // Use legacy mode only if explicitly requested (default is 3-stage for reliable DB updates)
+            const useLegacy = req.query.legacy === 'true' || req.body.legacy === true;
+
             try {
                 // Send chatID immediately
                 res.write(`data: ${JSON.stringify({ type: 'chatID', chatID: chatID })}\n\n`);
 
+                // Default: Use 3-stage streaming for reliable database updates
+                const streamGenerator = useLegacy
+                    ? agent.getStreamingResponse(data, conversationSummary)
+                    : agent.getStreamingResponseThreeStage(data, conversationSummary);
+
                 // Stream the response
-                for await (const chunk of agent.getStreamingResponse(data, conversationSummary)) {
+                for await (const chunk of streamGenerator) {
+                    // Handle stage markers from 3-stage process (check trimmed content)
+                    const trimmedChunk = chunk.trim();
+                    if (!useLegacy && trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
+                        // Log stage markers but don't send to client as content
+                        console.log(`📊 Stage marker: ${trimmedChunk}`);
+
+                        // Send stage events to client for progress indication
+                        if (trimmedChunk.includes('STAGE_1_START')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 1, status: 'start', message: 'Analyzing your request...' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_1_COMPLETE')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 1, status: 'complete' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_2_START')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 2, status: 'start', message: 'Updating database...' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_2_COMPLETE')) {
+                            // Stage 2 complete - database updated, tell client to refresh requirements
+                            res.write(`data: ${JSON.stringify({ 
+                                type: 'stage', 
+                                stage: 2, 
+                                status: 'complete',
+                                refreshRequirements: true,
+                                projectID: projectID
+                            })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_3_START')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 3, status: 'start', message: 'Generating response...' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_3_COMPLETE')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 3, status: 'complete' })}\n\n`);
+                        }
+                        continue;
+                    }
+
                     fullResponse += chunk;
                     console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);

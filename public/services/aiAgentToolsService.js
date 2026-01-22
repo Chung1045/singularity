@@ -302,11 +302,12 @@ const toolImpls = {
                 requirementID: "string (UUID format, empty string when operation is 'INSERT')",
                 details: {
                     requirementType: "string (either 'functional' or 'non-functional')",
-                    requirementSeq: "integer (Sequence number of the functional / non-functional requirement, empty when operation is 'INSERT')",
+                    requirementSeq: "integer (Sequence number of the functional / non-functional requirement, null when operation is 'INSERT')",
                     title: "string (brief title of the requirement)",
                     description: "string (detailed description)",
                     role: "string (Role of the user which likely to come up with the requirement)",
                     source: "string (either 'Document' or 'User Input')",
+                    sourceReference: "array (REQUIRED for INSERT when source is 'Document' - list of document references)"
                 },
             },
             examples: [
@@ -315,11 +316,18 @@ const toolImpls = {
                     requirementID: "",  // Empty for INSERT
                     details: {
                         requirementType: "functional",
-                        requirementSeq: null, // Empty for INSERT
+                        requirementSeq: null, // null for INSERT
                         title: "User Login Authentication",
                         description: "Users should be able to log in with their username and password",
                         role: "End User",
                         source: "Document",
+                        sourceReference: [
+                            {
+                                documentID: "550e8400-e29b-41d4-a716-446655440000",
+                                remarks: "Extracted from authentication requirements section",
+                                location: "Page 12, Section 3.1"
+                            }
+                        ]
                     }
                 },
                 {
@@ -339,6 +347,11 @@ const toolImpls = {
                     requirementID: "550e8400-e29b-41d4-a716-446655440000",
                     details: null  // Details not needed for DELETE
                 }
+            ],
+            important_notes: [
+                "When inserting requirements from a document, ALWAYS include sourceReference with the documentID",
+                "The documentID must be a valid UUID obtained from get_project_file_list",
+                "location should specify where in the document the requirement was found (page, section, line)"
             ]
         };
     },
@@ -350,17 +363,12 @@ const toolImpls = {
                 operation: "string ('UPDATE', 'INSERT' or 'DELETE')",
                 storyID: "string (UUID format, empty string when operation is 'INSERT')",
                 details: {
-                    storySeq: "integer (The sequence number of the user story, empty when the operation is 'INSERT')",
+                    storySeq: "integer (The sequence number of the user story, null when the operation is 'INSERT')",
                     role: "string (The role that the user story likely to come up with)",
                     title: "string (brief title of the user story)",
                     description: "string (detailed description in user story format: 'As a [role], I want [goal] so that [benefit]')",
                     source: "string (either 'Document' or 'User Input')",
-                    sourceReference: [{
-                        operation: "string ('UPDATE, 'INSERT' or 'DELETE')",
-                        documentID: "string (UUID of source document if source is 'Document')",
-                        remarks: "string",
-                        location: "string (page number, line number, or section where requirement was found)"
-                    }],
+                    sourceReference: "array (REQUIRED for INSERT when source is 'Document' - list of document references)"
                 },
             },
             examples: [
@@ -368,17 +376,18 @@ const toolImpls = {
                     operation: "INSERT",
                     storyID: "",  // Empty for INSERT
                     details: {
-                        storySeq: "",  // Empty for INSERT
+                        storySeq: null,  // null for INSERT
                         role: "End User",
                         title: "Login to Access Account",
                         description: "As an end user, I want to log in with my username and password so that I can access my personal account securely",
                         source: "Document",
-                        sourceReference: [{
-                            operation: "INSERT",
-                            documentID: "0a0cf490-6408-49fc-a44d-b30063d804dc",
-                            remarks: "",
-                            location: "Line 45-48"
-                        }]
+                        sourceReference: [
+                            {
+                                documentID: "0a0cf490-6408-49fc-a44d-b30063d804dc",
+                                remarks: "Derived from authentication requirements",
+                                location: "Page 5, Section 2.1"
+                            }
+                        ]
                     }
                 },
                 {
@@ -389,13 +398,7 @@ const toolImpls = {
                         role: "End User",
                         title: "Login with Two-Factor Authentication",
                         description: "As an end user, I want to log in with username, password, and 2FA so that my account has enhanced security",
-                        source: "User Input",
-                        sourceReference: [{
-                            operation: "UPDATE",
-                            documentID: "9fe99745-b68c-45a9-9709-8bafaa527b9b",
-                            remarks: "Was from document, and updated from user request",
-                            location: "Page 43, line 5"
-                        }]
+                        source: "User Input"
                     }
                 },
                 {
@@ -403,6 +406,12 @@ const toolImpls = {
                     storyID: "660e8400-e29b-41d4-a716-446655440001",
                     details: null  // Details not needed for DELETE
                 }
+            ],
+            important_notes: [
+                "When inserting user stories from a document, ALWAYS include sourceReference with the documentID",
+                "The documentID must be a valid UUID obtained from get_project_file_list",
+                "location should specify where in the document the user story was derived from (page, section, line)",
+                "For INSERT operations, do NOT include 'operation' field inside sourceReference - just include documentID, remarks, and location"
             ]
         };
     },

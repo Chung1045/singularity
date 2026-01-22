@@ -3241,9 +3241,48 @@ async function streamChatResponse(data, typingId) {
     bubble.className = 'message-bubble';
     bubble.dataset.role = 'ai';
 
+    // Create progress indicator for 3-stage processing
+    const progressIndicator = document.createElement('div');
+    progressIndicator.id = 'ai-progress-indicator';
+    progressIndicator.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        margin-bottom: 0;
+        font-family: Inter, Helvetica, sans-serif;
+        font-size: 13px;
+        color: #495057;
+    `;
+    progressIndicator.innerHTML = `
+        <div style="display: flex; gap: 6px;">
+            <div id="stage-dot-1" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>
+            <div id="stage-dot-2" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>
+            <div id="stage-dot-3" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>
+        </div>
+        <span id="stage-message" style="flex: 1;">Initializing...</span>
+        <div class="spinner-small" style="width: 16px; height: 16px; border: 2px solid #dee2e6; border-top-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    `;
+
+    // Add spinner animation if not exists
+    if (!document.getElementById('spinner-style')) {
+        const style = document.createElement('style');
+        style.id = 'spinner-style';
+        style.textContent = `
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.2); } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    bubble.appendChild(progressIndicator);
+
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
     messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
 
     let fullResponse = '';
     let chatIDReceived = null;
@@ -3253,6 +3292,40 @@ async function streamChatResponse(data, typingId) {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+
+    // Helper to update progress indicator
+    const updateProgress = (stage, status, message) => {
+        const indicator = document.getElementById('ai-progress-indicator');
+        if (!indicator) return;
+
+        const stageMessage = document.getElementById('stage-message');
+        if (stageMessage && message) {
+            stageMessage.textContent = message;
+        }
+
+        // Update dots
+        for (let i = 1; i <= 3; i++) {
+            const dot = document.getElementById(`stage-dot-${i}`);
+            if (dot) {
+                if (i < stage) {
+                    dot.style.background = '#28a745'; // Completed - green
+                } else if (i === stage && status === 'start') {
+                    dot.style.background = '#007bff'; // Active - blue
+                    dot.style.animation = 'pulse 1s infinite';
+                } else if (i === stage && status === 'complete') {
+                    dot.style.background = '#28a745'; // Just completed - green
+                    dot.style.animation = 'none';
+                } else {
+                    dot.style.background = '#dee2e6'; // Pending - gray
+                }
+            }
+        }
+
+        // Remove indicator when stage 3 starts (content will stream)
+        if (stage === 3 && status === 'start') {
+            indicator.remove();
+        }
+    };
 
     // Helper function to process a single SSE event
     const processSSEEvent = async (eventData) => {
@@ -3268,6 +3341,30 @@ async function streamChatResponse(data, typingId) {
                 if (data.chatID === '') {
                     console.log('New chat created, refreshing history...');
                     await fetchProjectChats(data.projectID);
+                }
+            } else if (jsonData.type === 'stage') {
+                // Handle stage progress events from 3-stage processing
+                console.log(`📊 Stage ${jsonData.stage}: ${jsonData.status}`, jsonData.message || '');
+
+                // Update visual progress indicator
+                updateProgress(jsonData.stage, jsonData.status, jsonData.message);
+
+                // When Stage 2 completes, refresh requirements panel data
+                if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
+                    console.log('🔄 Stage 2 complete - refreshing requirements data...');
+
+                    // Dispatch event to refresh requirements in the panel
+                    window.dispatchEvent(new CustomEvent('requirementsUpdated', {
+                        detail: { projectID: jsonData.projectID || data.projectID }
+                    }));
+
+                    // Also refresh the sidebar requirements section if available
+                    if (typeof window.fetchProjectRequirements === 'function') {
+                        window.fetchProjectRequirements(jsonData.projectID || data.projectID);
+                    }
+                    if (typeof window.fetchProjectUserStories === 'function') {
+                        window.fetchProjectUserStories(jsonData.projectID || data.projectID);
+                    }
                 }
             } else if (jsonData.type === 'chunk') {
                 const content = jsonData.content || '';

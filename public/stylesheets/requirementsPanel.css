@@ -1,5 +1,6 @@
 /* Requirements Panel Styles */
 
+/* Panel Overlay Animation */
 #requirements-panel-overlay {
     animation: fadeIn 0.2s ease-out;
 }
@@ -13,8 +14,20 @@
     }
 }
 
+/* Panel Container Animation */
 #requirements-panel-container {
-    animation: slideInRight 0.3s ease-out;
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 @keyframes slideInRight {
@@ -33,16 +46,7 @@
     animation: fadeIn 0.2s ease-out;
 }
 
-/* Requirement List Styles from Figma Design */
-.requirement-list {
-    font-family: 'Inter-Regular', Helvetica;
-}
-
-.requirement-list .header {
-    border-bottom: 1px solid #e4e4e4;
-}
-
-/* Custom scrollbar */
+/* Custom scrollbar for the panel */
 #requirements-panel-container *::-webkit-scrollbar {
     width: 6px;
 }
@@ -53,12 +57,12 @@
 }
 
 #requirements-panel-container *::-webkit-scrollbar-thumb {
-    background: #888;
+    background: #c1c1c6;
     border-radius: 10px;
 }
 
 #requirements-panel-container *::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #a1a1a6;
 }
 
 /* Button hover effects */
@@ -76,13 +80,72 @@
 }
 
 .report-item:hover {
-    background-color: #e8e8ed !important;
+    background-color: #f5f5f7 !important;
 }
 
 /* Loading state */
 .requirements-loading {
     opacity: 0.6;
     pointer-events: none;
+}
+
+/* Tab transitions */
+#requirements-panel-container button {
+    transition: all 0.2s ease;
+}
+
+/* Requirement/Story card hover effect */
+#requirements-panel-container .requirement-card:hover,
+#requirements-panel-container .story-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Success message animation */
+@keyframes successPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.success-message {
+    animation: successPulse 0.3s ease-out;
+}
+
+/* Report generation button loading state */
+.generating-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.generating-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
 }
 
 /* Responsive design */
@@ -95,9 +158,26 @@
         border-radius: 0 !important;
     }
     
-    .requirement-list {
-        width: 100% !important;
-        max-width: 100% !important;
+    #requirements-panel-container .header {
+        min-height: auto !important;
+        padding-bottom: 80px;
+    }
+
+    /* Stack report generation buttons on mobile */
+    #requirements-panel-container > div > div:nth-child(3) {
+        flex-direction: column !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #requirements-panel-container .header > div:nth-child(2) {
+        flex-direction: column !important;
+        gap: 6px !important;
+    }
+
+    #requirements-panel-container .header > div:nth-child(2) button {
+        min-width: 100px !important;
+        font-size: 11px !important;
     }
 }
 
@@ -108,6 +188,60 @@ button {
 
 /* Focus states for accessibility */
 button:focus-visible {
-    outline: 2px solid #4a90e2;
+    outline: 2px solid #1c1d21;
     outline-offset: 2px;
+}
+
+/* Focus visible for close button */
+#requirements-panel-container button[aria-label="Close panel"]:focus-visible {
+    outline: 2px solid #1c1d21;
+    outline-offset: 2px;
+}
+
+/* Sequence badge styling */
+.sequence-badge {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Empty state styling */
+.empty-state-icon {
+    opacity: 0.5;
+    user-select: none;
+}
+
+/* Report type badge */
+.report-type-badge {
+    text-transform: capitalize;
+}
+
+/* Download/Delete button hover states */
+button[aria-label="Download report"]:hover svg path,
+button[aria-label="Delete report"]:hover svg path {
+    stroke-width: 2.5;
+}
+
+/* Header section border */
+#requirements-panel-container .header {
+    border-bottom: 1px solid #e4e4e4;
+}
+
+/* Content section padding adjustments */
+#requirements-panel-container > div:last-child {
+    padding: 20px;
+}
+
+/* List item consistent styling */
+.requirement-item,
+.story-item,
+.report-item {
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.requirement-item:hover,
+.story-item:hover,
+.report-item:hover {
+    border-color: #e8e8ed;
+    background-color: #f5f5f7;
 }

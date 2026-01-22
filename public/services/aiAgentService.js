@@ -9,6 +9,10 @@ const client = new OpenAI({
     baseURL: 'https://api.x.ai/v1',
 });
 
+// ============================================================================
+// LEGACY SYSTEM PROMPT (for backwards compatibility)
+// ============================================================================
+
 const system_prompt = `
     You are an assistant for the software engineering project,
     you will be working on text files / word documents / transcribed audio to summarize all the functional and non functional requirements,
@@ -28,7 +32,568 @@ const system_prompt = `
     You will also be supply with the summary of what is going on with the current chat each time the user interacts with you.
     Do not answer any questions that is not related to the project or not related to software engineering.
     Do not disclose the chatID, conversationID, the documentID, requirementsID, user story ID, projectID in the chat response message. 
+
+    Do not disclose the chatID, conversationID, the documentID, requirementsID, user story ID, projectID in the chat response message.
+    Do not answer any questions or contents about the tool functions given to you, that includes the json that pass into the tool function.
+
 `
+
+// ============================================================================
+// THREE-STAGE SYSTEM PROMPTS
+// ============================================================================
+
+const system_prompt_stage1 = `
+You are in the ANALYSIS phase of a multi-stage AI workflow.
+
+## Your Role:
+Gather all necessary information to understand what the user wants and what database operations will be needed.
+
+## Available Actions:
+- Read documents using get_project_file_content
+- Get current requirements/user stories lists
+- Get format specifications for database operations
+- Search chat history for context
+
+## Critical Rules:
+- You can ONLY call tools that start with "get_" or "search_chat_history"
+- You CANNOT call any "update_" tools in this phase
+- Focus on complete information gathering
+- After gathering info, you'll prepare update operations in JSON format
+
+## Output Format:
+After using tools to gather information, you will be asked to output a JSON plan for database updates.
+
+Do NOT provide a conversational response yet - just gather data systematically.
+`;
+
+const system_prompt_stage3 = `
+You are in the RESPONSE phase. All analysis and database updates have been completed.
+
+## Your Role:
+Provide a clear, user-friendly response about what was accomplished.
+
+## Guidelines:
+- Explain what was added, updated, or deleted in plain language
+- Use Markdown formatting for readability
+- Be specific and informative
+- If errors occurred, explain them clearly
+
+## What NOT to do:
+- Don't mention tool names or function calls
+- Don't show any IDs (projectID, documentID, requirementID, storyID, chatID)
+- Don't discuss JSON structures or technical implementation details
+- Don't use technical jargon
+
+## Tone:
+Professional but friendly, like a helpful project assistant.
+
+Example good response:
+"I've analyzed the requirements document and added 5 new functional requirements to the project:
+1. User authentication with email/password
+2. Password reset functionality
+3. ...
+
+All requirements have been linked to their source locations in the document."
+
+Example bad response:
+"I called update_software_requirements with projectID abc-123 and inserted 5 records using the following JSON: {...}"
+`;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+async function buildFileContextMessage(data) {
+    if (!data.attachedDocumentIDs || data.attachedDocumentIDs.length === 0) {
+        return null;
+    }
+
+    const fss = require('./fsServices');
+    try {
+        const allFiles = await fss.listProjectFiles(data.projectID);
+        if (!allFiles || !Array.isArray(allFiles)) {
+            return `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')}, but file list could not be retrieved.`;
+        }
+
+        const attachedFiles = allFiles.filter(file =>
+            data.attachedDocumentIDs.includes(file.documentID)
+        );
+
+        if (attachedFiles.length > 0) {
+            const fileList = attachedFiles.map(file => {
+                const ext = file.documentExt || '';
+                let cleanName = (file.documentName || '').replace(/\.+$/, '');
+                const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+                return `- ${fileName} (ID: ${file.documentID})`;
+            }).join('\n');
+
+            return `The user has attached ${attachedFiles.length} file(s):\n${fileList}\n\nUse get_project_file_content to retrieve their contents.`;
+        }
+
+        return `The user attempted to attach files, but they could not be found.`;
+    } catch (error) {
+        console.error('❌ Error building file context:', error);
+        return `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')}, but there was an error retrieving details.`;
+    }
+}
+
+// ============================================================================
+// STAGE 1: GATHER CONTEXT & PREPARE UPDATE PLAN (Non-streaming)
+// ============================================================================
+
+async function prepareUpdates(data, conversationSummary) {
+    console.log('📖 [Stage 1] Starting context gathering...');
+
+    const messages = [
+        {role: 'system', content: system_prompt_stage1},
+        {role: 'system', content: `You are working with projectID: ${data.projectID} and chatID: ${data.chatID}`},
+        {role: 'system', content: `Conversation summary: ${conversationSummary}`}
+    ];
+
+    // Add file context if files are attached
+    const fileContextMessage = await buildFileContextMessage(data);
+    if (fileContextMessage) {
+        messages.push({role: 'system', content: fileContextMessage});
+    }
+
+    messages.push({role: 'user', content: data.requestMessage});
+
+    // Only allow read-only tools in Stage 1
+    const readOnlyTools = tools.filter(t =>
+        t.function.name.startsWith('get_') ||
+        t.function.name === 'search_chat_history'
+    );
+
+    // Use fast non-reasoning model for tool calls (faster)
+    let completion = await client.chat.completions.create({
+        model: 'grok-4-1-fast-non-reasoning',
+        messages: messages,
+        tools: readOnlyTools,
+        tool_choice: "auto",
+        temperature: 0.7,
+        max_tokens: 3000,
+    });
+
+    let responseMessage = completion.choices[0].message;
+
+    // Execute tool calls (read-only operations)
+    while (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+        if (!responseMessage.role) responseMessage.role = 'assistant';
+        messages.push(responseMessage);
+
+        for (const toolCall of responseMessage.tool_calls) {
+            const functionName = toolCall.function.name;
+            let functionArgs;
+
+            try {
+                functionArgs = JSON.parse(toolCall.function.arguments);
+            } catch (error) {
+                console.error(`❌ Failed to parse arguments for ${functionName}`);
+                functionArgs = {};
+            }
+
+            console.log(`🔧 [Stage 1] Calling: ${functionName}`);
+
+            const toolImpl = toolImpls[functionName];
+            let functionResponse;
+
+            if (toolImpl) {
+                try {
+                    // Handle special cases for projectID/chatID injection
+                    if (functionName === 'search_chat_history') {
+                        functionResponse = await toolImpl(data.projectID, data.chatID, functionArgs.keyword);
+                    } else {
+                        functionResponse = await toolImpl(...Object.values(functionArgs));
+                    }
+                } catch (error) {
+                    console.error(`❌ Error executing ${functionName}:`, error.message);
+                    functionResponse = {error: error.message};
+                }
+            } else {
+                functionResponse = {error: `Unknown function: ${functionName}`};
+            }
+
+            messages.push({
+                role: "tool",
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(functionResponse),
+            });
+        }
+
+        // Use fast non-reasoning model for tool call follow-ups
+        completion = await client.chat.completions.create({
+            model: 'grok-4-1-fast-non-reasoning',
+            messages: messages,
+            tools: readOnlyTools,
+            tool_choice: "auto",
+            temperature: 0.7,
+            max_tokens: 3000,
+        });
+
+        responseMessage = completion.choices[0].message;
+    }
+
+    // Now ask AI to generate the update plan
+    console.log('📋 [Stage 1] Requesting update plan...');
+    messages.push({
+        role: 'user',
+        content: `Based on the information you gathered, generate a complete plan for database updates.
+
+Return ONLY a valid JSON object (no markdown, no code blocks) with this exact structure:
+
+{
+  "requiresUpdate": true or false,
+  "operations": {
+    "update_software_requirements": {
+      "projectID": "${data.projectID}",
+      "jsonList": [ /* array of requirement operations */ ]
+    },
+    "update_requirements_source_ref": {
+      "jsonList": [ /* array of source reference operations for EXISTING requirements only */ ]
+    },
+    "update_user_stories": {
+      "projectID": "${data.projectID}",
+      "jsonList": [ /* array of user story operations */ ]
+    },
+    "update_user_stories_source_ref": {
+      "jsonList": [ /* array of source reference operations for EXISTING user stories only */ ]
+    },
+    "update_requirements_story_ref": {
+      "jsonList": [ /* array of requirement-story link operations */ ]
+    }
+  },
+  "summary": "Brief description of what will be updated"
+}
+
+IMPORTANT - For INSERT operations, include sourceReference INSIDE the details object:
+
+Example for update_software_requirements INSERT:
+{
+  "operation": "INSERT",
+  "requirementID": "",
+  "details": {
+    "requirementType": "functional",
+    "requirementSeq": null,
+    "title": "User Login",
+    "description": "Users must be able to log in",
+    "role": "End User",
+    "source": "Document",
+    "sourceReference": [
+      {
+        "documentID": "the-document-uuid-from-get_project_file_list",
+        "remarks": "Extracted from section 2.1",
+        "location": "Page 5, Section 2.1"
+      }
+    ]
+  }
+}
+
+Example for update_user_stories INSERT:
+{
+  "operation": "INSERT",
+  "storyID": "",
+  "details": {
+    "storySeq": null,
+    "role": "End User",
+    "title": "Login Feature",
+    "description": "As an end user, I want to log in so that I can access my account",
+    "source": "Document",
+    "sourceReference": [
+      {
+        "documentID": "the-document-uuid-from-get_project_file_list",
+        "remarks": "User story derived from login requirements",
+        "location": "Page 5-6"
+      }
+    ]
+  }
+}
+
+Rules:
+- Set requiresUpdate to false if the user is just asking a question (no database changes needed)
+- Only include operation keys that are actually needed
+- Use the exact formats returned by the get_*_format tools
+- For INSERT operations, use empty string for IDs and null for sequence numbers
+- **CRITICAL: For INSERT operations extracted from documents, ALWAYS include sourceReference with the documentID from get_project_file_list**
+- The documentID in sourceReference must be a valid UUID from the attached documents
+- update_requirements_source_ref and update_user_stories_source_ref are ONLY for updating sources on EXISTING items (not for INSERT)
+- Ensure all UUIDs are properly formatted
+- The summary should be 1-2 sentences describing what will change
+
+Return ONLY the JSON object, nothing else.`
+    });
+
+    // Use fast non-reasoning model for JSON plan generation (structured output)
+    const planCompletion = await client.chat.completions.create({
+        model: 'grok-4-1-fast-non-reasoning',
+        messages: messages,
+        temperature: 0.2,
+        max_tokens: 8000,
+    });
+
+    const planResponse = planCompletion.choices[0].message.content;
+
+    // Parse the update plan
+    let updatePlan;
+    try {
+        // Try to extract JSON from markdown code blocks if present
+        const jsonMatch = planResponse.match(/```json\n([\s\S]*?)\n```/) ||
+            planResponse.match(/```\n([\s\S]*?)\n```/);
+        const jsonStr = jsonMatch ? jsonMatch[1] : planResponse.trim();
+        updatePlan = JSON.parse(jsonStr);
+        console.log('✅ [Stage 1] Update plan parsed successfully');
+    } catch (error) {
+        console.error('❌ [Stage 1] Failed to parse update plan:', error.message);
+        console.error('\n');
+        console.error('Raw response:', planResponse);
+        console.error('\n');
+        updatePlan = {
+            requiresUpdate: false,
+            operations: {},
+            summary: "Failed to generate update plan - will respond without updates",
+            error: error.message,
+            rawResponse: planResponse.substring(0, 1000)
+        };
+    }
+
+    console.log('📋 [Stage 1] Plan:', JSON.stringify(updatePlan, null, 2));
+
+    return {
+        updatePlan,
+        conversationContext: messages
+    };
+}
+
+// ============================================================================
+// STAGE 2: EXECUTE UPDATES (Non-streaming)
+// ============================================================================
+
+async function executeUpdates(updatePlan, projectID) {
+    console.log('⚙️ [Stage 2] Starting update execution...');
+
+    if (!updatePlan.requiresUpdate) {
+        console.log('ℹ️ [Stage 2] No updates required, skipping execution');
+        return {
+            success: true,
+            message: 'No database updates needed',
+            results: {}
+        };
+    }
+
+    const results = {};
+    const operations = updatePlan.operations || {};
+    const errors = [];
+
+    try {
+        // Execute operations in logical order
+
+        // 1. Update requirements first
+        if (operations.update_software_requirements?.jsonList?.length > 0) {
+            try {
+                console.log(`🔧 [Stage 2] Updating ${operations.update_software_requirements.jsonList.length} requirement(s)...`);
+                results.requirements = await toolImpls.update_software_requirements(
+                    projectID,
+                    operations.update_software_requirements.jsonList
+                );
+                console.log('✅ [Stage 2] Requirements updated');
+            } catch (error) {
+                console.error('❌ [Stage 2] Error updating requirements:', error.message);
+                errors.push(`Requirements update failed: ${error.message}`);
+            }
+        }
+
+        // 2. Update user stories
+        if (operations.update_user_stories?.jsonList?.length > 0) {
+            try {
+                console.log(`🔧 [Stage 2] Updating ${operations.update_user_stories.jsonList.length} user story(ies)...`);
+                results.userStories = await toolImpls.update_user_stories(
+                    projectID,
+                    operations.update_user_stories.jsonList
+                );
+                console.log('✅ [Stage 2] User stories updated');
+            } catch (error) {
+                console.error('❌ [Stage 2] Error updating user stories:', error.message);
+                errors.push(`User stories update failed: ${error.message}`);
+            }
+        }
+
+        // 3. Link requirements to documents
+        if (operations.update_requirements_source_ref?.jsonList?.length > 0) {
+            try {
+                console.log(`🔧 [Stage 2] Linking ${operations.update_requirements_source_ref.jsonList.length} requirement source(s)...`);
+                results.requirementSources = await toolImpls.update_requirements_source_ref(
+                    operations.update_requirements_source_ref.jsonList
+                );
+                console.log('✅ [Stage 2] Requirement sources linked');
+            } catch (error) {
+                console.error('❌ [Stage 2] Error linking requirement sources:', error.message);
+                errors.push(`Requirement source linking failed: ${error.message}`);
+            }
+        }
+
+        // 4. Link user stories to documents
+        if (operations.update_user_stories_source_ref?.jsonList?.length > 0) {
+            try {
+                console.log(`🔧 [Stage 2] Linking ${operations.update_user_stories_source_ref.jsonList.length} user story source(s)...`);
+                results.userStorySources = await toolImpls.update_user_stories_source_ref(
+                    operations.update_user_stories_source_ref.jsonList
+                );
+                console.log('✅ [Stage 2] User story sources linked');
+            } catch (error) {
+                console.error('❌ [Stage 2] Error linking user story sources:', error.message);
+                errors.push(`User story source linking failed: ${error.message}`);
+            }
+        }
+
+        // 5. Link requirements to user stories
+        if (operations.update_requirements_story_ref?.jsonList?.length > 0) {
+            try {
+                console.log(`🔧 [Stage 2] Linking ${operations.update_requirements_story_ref.jsonList.length} requirement-story link(s)...`);
+                results.requirementStoryLinks = await toolImpls.update_requirements_story_ref(
+                    operations.update_requirements_story_ref.jsonList
+                );
+                console.log('✅ [Stage 2] Requirements linked to user stories');
+            } catch (error) {
+                console.error('❌ [Stage 2] Error linking requirements to stories:', error.message);
+                errors.push(`Requirement-story linking failed: ${error.message}`);
+            }
+        }
+
+        if (errors.length > 0) {
+            console.warn('⚠️ [Stage 2] Completed with errors:', errors);
+            return {
+                success: false,
+                message: 'Some updates failed',
+                errors: errors,
+                results
+            };
+        }
+
+        console.log('✅ [Stage 2] All updates executed successfully');
+        return {
+            success: true,
+            message: 'Database updated successfully',
+            results
+        };
+
+    } catch (error) {
+        console.error('❌ [Stage 2] Critical error during execution:', error.message);
+        return {
+            success: false,
+            message: 'Critical error during update execution',
+            error: error.message,
+            results
+        };
+    }
+}
+
+// ============================================================================
+// STAGE 3: GENERATE RESPONSE (STREAMING)
+// ============================================================================
+
+async function* streamResponse(updatePlan, updateResults, originalMessage, conversationSummary) {
+    console.log('💬 [Stage 3] Starting response generation (streaming)...');
+
+    const messages = [
+        {role: 'system', content: system_prompt_stage3},
+        {role: 'system', content: `Conversation summary: ${conversationSummary}`},
+        {role: 'user', content: originalMessage},
+    ];
+
+    // Add context about what was done
+    if (updatePlan.requiresUpdate) {
+        const contextMessage = updateResults.success
+            ? `You successfully completed the following database operations:\n\nPlan: ${updatePlan.summary}\n\nResults: ${JSON.stringify(updateResults.results, null, 2)}\n\nAll operations completed successfully.`
+            : `You attempted database operations but encountered issues:\n\nPlan: ${updatePlan.summary}\n\nErrors: ${updateResults.errors?.join(', ') || updateResults.error || 'Unknown error'}\n\nPartial results: ${JSON.stringify(updateResults.results, null, 2)}`;
+
+        messages.push({
+            role: 'assistant',
+            content: contextMessage
+        });
+    } else {
+        messages.push({
+            role: 'assistant',
+            content: `This was an informational query. No database updates were needed. Context: ${updatePlan.summary}`
+        });
+    }
+
+    messages.push({
+        role: 'user',
+        content: 'Now provide a clear, user-friendly response. Use Markdown formatting. Be specific about what was done. Remember: no IDs, no tool names, no technical jargon.'
+    });
+
+    // Stream the response
+    const stream = await client.chat.completions.create({
+        model: 'grok-4-1-fast-non-reasoning',
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 3000,
+        stream: true
+    });
+
+    let fullResponse = '';
+    for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta;
+        if (delta?.content) {
+            fullResponse += delta.content;
+            yield delta.content;
+        }
+    }
+
+    console.log('✅ [Stage 3] Response streaming complete. Length:', fullResponse.length);
+}
+
+// ============================================================================
+// MAIN ORCHESTRATOR: THREE-STAGE STREAMING
+// ============================================================================
+
+async function* getStreamingResponseThreeStage(data, conversationSummary) {
+    try {
+        console.log('🎬 [Orchestrator] Starting 3-stage streaming process...');
+
+        // STAGE 1: Prepare (non-streaming)
+        yield '<!-- STAGE_1_START -->\n';
+        console.log('📖 [Orchestrator] Executing Stage 1...');
+
+        const { updatePlan, conversationContext } = await prepareUpdates(data, conversationSummary);
+
+        yield `<!-- STAGE_1_COMPLETE: ${updatePlan.requiresUpdate ? 'Updates planned' : 'No updates needed'} -->\n`;
+        console.log('✅ [Orchestrator] Stage 1 complete');
+
+        // STAGE 2: Execute (non-streaming)
+        yield '<!-- STAGE_2_START -->\n';
+        console.log('⚙️ [Orchestrator] Executing Stage 2...');
+
+        const updateResults = await executeUpdates(updatePlan, data.projectID);
+
+        yield `<!-- STAGE_2_COMPLETE: ${updateResults.success ? 'Success' : 'Partial/Failed'} -->\n`;
+        console.log('✅ [Orchestrator] Stage 2 complete');
+
+        // STAGE 3: Respond (streaming)
+        yield '<!-- STAGE_3_START -->\n';
+        console.log('💬 [Orchestrator] Executing Stage 3 (streaming)...');
+
+        for await (const chunk of streamResponse(updatePlan, updateResults, data.requestMessage, conversationSummary)) {
+            yield chunk;
+        }
+
+        yield '\n<!-- STAGE_3_COMPLETE -->\n';
+        console.log('✅ [Orchestrator] Stage 3 complete');
+        console.log('🎉 [Orchestrator] All stages complete!');
+
+    } catch (error) {
+        console.error('❌ [Orchestrator] Error in 3-stage process:', error.message);
+        console.error('Stack:', error.stack);
+
+        yield '\n\n---\n\n';
+        yield '❌ **An error occurred while processing your request.**\n\n';
+        yield `Error: ${error.message}\n\n`;
+        yield 'Please try again or contact support if the issue persists.';
+    }
+}
+
+// ============================================================================
+// LEGACY FUNCTIONS (kept for backwards compatibility)
+// ============================================================================
 
 async function getResponse(data, conversationSummary) {
     try {
@@ -173,7 +738,7 @@ async function getResponse(data, conversationSummary) {
                 tools: tools,
                 tool_choice: "auto",
                 temperature: 0.7,
-                max_tokens: 1500,
+                max_tokens: 2000,
             });
 
             responseMessage = completion.choices[0].message;
@@ -277,7 +842,7 @@ async function* getStreamingResponse(data, conversationSummary) {
         tools: tools,
         tool_choice: "auto",
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: 200000,
         stream: true  // Enable streaming
     });
 
@@ -410,12 +975,12 @@ async function* getStreamingResponse(data, conversationSummary) {
         // Final STREAMING call after tools - force text response with tool_choice: "none"
         console.log('🔄 Making final streaming API call with tool results...');
         const finalStream = await client.chat.completions.create({
-            model: 'grok-4-1-fast-non-reasoning',
+            model: 'grok-4-1-fast-reasoning',
             messages: messages,
             tools: tools,
             tool_choice: "none",  // Force text response, no more tool calls
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: 3000,
             stream: true,  // Enable streaming for smooth output
         });
 
@@ -588,7 +1153,10 @@ module.exports = {
     getResponse,
     getChatSummary,
     createChatName,
-    getStreamingResponse
+    getStreamingResponse,
+    // New 3-stage exports
+    getStreamingResponseThreeStage,
+    prepareUpdates,
+    executeUpdates,
+    streamResponse
 }
-
-
