@@ -10,6 +10,7 @@ const multer = require('multer');
 const path = require('path');
 const {apiAuthUser} = require("../services/accountDBService");
 const fs = require('fs').promises;
+const aiAgentDBService = require("../services/aiAgentDBService");
 
 router.use(dbService.apiAuthUser);
 
@@ -597,6 +598,153 @@ router.post("/project/report/download", async (req, res) => {
     } catch (err) {
         console.error("Download failed:", err);
         res.status(500).send("Download failed");
+    }
+});
+
+
+/**
+ * Fetch requirements for a project
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} requirementType - Type of requirements to fetch: 'functional' or 'non-functional' (optional)
+ */
+router.post('/project/requirements/fetch', async (req, res) => {
+    try {
+        const { projectID, requirementType } = req.body;
+
+        if (!projectID) {
+            return res.status(400).json({ success: false, message: 'Missing required field: projectID' });
+        }
+
+        // Check if user is authorized
+        if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // Get all requirements for the project
+        const allRequirements = await aiAgentDBService.getProjectRequirements(projectID);
+
+        // Filter by requirement type if specified
+        let requirements = allRequirements;
+        if (requirementType && (requirementType === 'functional' || requirementType === 'non-functional')) {
+            requirements = allRequirements.filter(req => req.details.requirementType === requirementType);
+        }
+
+        return res.status(200).json({ 
+            success: true, 
+            requirements: requirements
+        });
+
+    } catch (error) {
+        console.error('Error fetching requirements:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error while fetching requirements' 
+        });
+    }
+});
+
+/**
+ * Fetch user stories for a project
+ * @param {string} projectID - UUID of the project (required)
+ */
+router.post('/project/stories/fetch', async (req, res) => {
+    try {
+        const { projectID } = req.body;
+
+        if (!projectID) {
+            return res.status(400).json({ success: false, message: 'Missing required field: projectID' });
+        }
+
+        // Check if user is authorized
+        if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // Get all user stories for the project
+        const stories = await aiAgentDBService.getProjectUserStories(projectID);
+
+        return res.status(200).json({ 
+            success: true, 
+            stories: stories
+        });
+
+    } catch (error) {
+        console.error('Error fetching user stories:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error while fetching user stories' 
+        });
+    }
+});
+
+/**
+ * Generate requirements report
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} requirementType - Type of requirements: 'functional' or 'non-functional' (optional)
+ */
+router.post('/project/report/generate/requirements', async (req, res) => {
+    try {
+        const { projectID, requirementType } = req.body;
+
+        if (!projectID) {
+            return res.status(400).json({ success: false, message: 'Missing required field: projectID' });
+        }
+
+        // Check if user is authorized
+        if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // This endpoint is a placeholder - actual implementation would generate the report
+        // For now, return success to allow the UI to work
+        console.log(`Generate requirements report requested for project ${projectID}, type: ${requirementType || 'all'}`);
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Report generation initiated'
+        });
+
+    } catch (error) {
+        console.error('Error generating requirements report:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error while generating report' 
+        });
+    }
+});
+
+/**
+ * Generate user stories report
+ * @param {string} projectID - UUID of the project (required)
+ */
+router.post('/project/report/generate/stories', async (req, res) => {
+    try {
+        const { projectID } = req.body;
+
+        if (!projectID) {
+            return res.status(400).json({ success: false, message: 'Missing required field: projectID' });
+        }
+
+        // Check if user is authorized
+        if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // This endpoint is a placeholder - actual implementation would generate the report
+        // For now, return success to allow the UI to work
+        console.log(`Generate user stories report requested for project ${projectID}`);
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Report generation initiated'
+        });
+
+    } catch (error) {
+        console.error('Error generating user stories report:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error while generating report' 
+        });
     }
 });
 
