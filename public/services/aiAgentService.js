@@ -378,14 +378,18 @@ async function* getStreamingResponse(data, conversationSummary) {
                     functionResponse = await toolImpl(...Object.values(functionArgs));
                     
                     // Yield events for requirements and user stories saves
-                    if (functionName === 'update_software_requirements' && functionResponse) {
+                    // Check for successful response (not undefined and no error)
+                    if (functionResponse !== undefined && !functionResponse?.error) {
+                        // Calculate count of INSERT operations
                         const savedCount = functionArgs.jsonList?.filter(item => item.operation === 'INSERT').length || 0;
-                        console.log(`      📣 Signaling requirementsSaved event with count: ${savedCount}`);
-                        yield { type: 'requirementsSaved', count: savedCount, projectID: data.projectID };
-                    } else if (functionName === 'update_user_stories' && functionResponse) {
-                        const savedCount = functionArgs.jsonList?.filter(item => item.operation === 'INSERT').length || 0;
-                        console.log(`      📣 Signaling userStoriesSaved event with count: ${savedCount}`);
-                        yield { type: 'userStoriesSaved', count: savedCount, projectID: data.projectID };
+                        
+                        if (functionName === 'update_software_requirements') {
+                            console.log(`      📣 Signaling requirementsSaved event with count: ${savedCount}`);
+                            yield { type: 'requirementsSaved', count: savedCount, projectID: data.projectID };
+                        } else if (functionName === 'update_user_stories') {
+                            console.log(`      📣 Signaling userStoriesSaved event with count: ${savedCount}`);
+                            yield { type: 'userStoriesSaved', count: savedCount, projectID: data.projectID };
+                        }
                     }
                 } catch (error) {
                     console.error(`❌ Error executing tool ${functionName}:`, error.message);
