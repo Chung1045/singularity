@@ -378,10 +378,10 @@ async function* getStreamingResponse(data, conversationSummary) {
                     functionResponse = await toolImpl(...Object.values(functionArgs));
                     
                     // Yield events for requirements and user stories saves
-                    // Check for successful response (not undefined and no error)
-                    if (functionResponse !== undefined && !functionResponse?.error) {
+                    // Check for successful response (not undefined and no error property)
+                    if (functionResponse !== undefined && !functionResponse?.hasOwnProperty('error')) {
                         // Calculate count of INSERT operations
-                        const savedCount = functionArgs.jsonList?.filter(item => item.operation === 'INSERT').length || 0;
+                        const savedCount = functionArgs.jsonList?.filter?.(item => item.operation === 'INSERT')?.length || 0;
                         
                         if (functionName === 'update_software_requirements') {
                             console.log(`      📣 Signaling requirementsSaved event with count: ${savedCount}`);
