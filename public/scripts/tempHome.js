@@ -3281,6 +3281,16 @@ async function streamChatResponse(data, typingId) {
 
                 setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
                 scrollToBottom();
+            } else if (jsonData.type === 'requirementsSaved') {
+                console.log('📋 Requirements saved! Count:', jsonData.count, 'projectID:', jsonData.projectID);
+                window.dispatchEvent(new CustomEvent('requirementsUpdated', { 
+                    detail: { projectID: jsonData.projectID, count: jsonData.count } 
+                }));
+            } else if (jsonData.type === 'userStoriesSaved') {
+                console.log('📝 User stories saved! Count:', jsonData.count, 'projectID:', jsonData.projectID);
+                window.dispatchEvent(new CustomEvent('userStoriesUpdated', { 
+                    detail: { projectID: jsonData.projectID, count: jsonData.count } 
+                }));
             } else if (jsonData.type === 'done') {
                 console.log('Streaming complete');
 

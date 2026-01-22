@@ -376,6 +376,17 @@ async function* getStreamingResponse(data, conversationSummary) {
             if (toolImpl) {
                 try {
                     functionResponse = await toolImpl(...Object.values(functionArgs));
+                    
+                    // Yield events for requirements and user stories saves
+                    if (functionName === 'update_software_requirements' && functionResponse) {
+                        const savedCount = functionArgs.jsonList?.filter(item => item.operation === 'INSERT').length || 0;
+                        console.log(`      📣 Signaling requirementsSaved event with count: ${savedCount}`);
+                        yield { type: 'requirementsSaved', count: savedCount, projectID: data.projectID };
+                    } else if (functionName === 'update_user_stories' && functionResponse) {
+                        const savedCount = functionArgs.jsonList?.filter(item => item.operation === 'INSERT').length || 0;
+                        console.log(`      📣 Signaling userStoriesSaved event with count: ${savedCount}`);
+                        yield { type: 'userStoriesSaved', count: savedCount, projectID: data.projectID };
+                    }
                 } catch (error) {
                     console.error(`❌ Error executing tool ${functionName}:`, error.message);
                     functionResponse = {error: error.message};

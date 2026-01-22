@@ -114,9 +114,17 @@ router.post('/agent/chat', async (req, res) => {
 
                 // Stream the response
                 for await (const chunk of agent.getStreamingResponse(data, conversationSummary)) {
-                    fullResponse += chunk;
-                    console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
-                    res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+                    // Check if chunk is an event object or string content
+                    if (typeof chunk === 'object' && chunk.type) {
+                        // Event object (requirementsSaved, userStoriesSaved, etc.)
+                        console.log(`📤 Sending event:`, chunk.type, 'projectID:', chunk.projectID, 'count:', chunk.count);
+                        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                    } else {
+                        // String content chunk
+                        fullResponse += chunk;
+                        console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+                        res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+                    }
                 }
 
                 // Save to database

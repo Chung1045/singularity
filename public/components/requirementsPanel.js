@@ -25,6 +25,33 @@
             }
         }, [projectID, mainTab, subTab]);
 
+        // Listen for requirements/user stories updates from AI agent
+        useEffect(() => {
+            const handleRequirementsUpdate = (event) => {
+                console.log('📋 RequirementsPanel: Received requirementsUpdated event', event.detail);
+                if (event.detail?.projectID === projectID && mainTab === 'requirements') {
+                    console.log('📋 RequirementsPanel: Refreshing requirements...');
+                    fetchRequirements();
+                }
+            };
+
+            const handleUserStoriesUpdate = (event) => {
+                console.log('📝 RequirementsPanel: Received userStoriesUpdated event', event.detail);
+                if (event.detail?.projectID === projectID && mainTab === 'user-stories') {
+                    console.log('📝 RequirementsPanel: Refreshing user stories...');
+                    fetchUserStories();
+                }
+            };
+
+            window.addEventListener('requirementsUpdated', handleRequirementsUpdate);
+            window.addEventListener('userStoriesUpdated', handleUserStoriesUpdate);
+
+            return () => {
+                window.removeEventListener('requirementsUpdated', handleRequirementsUpdate);
+                window.removeEventListener('userStoriesUpdated', handleUserStoriesUpdate);
+            };
+        }, [projectID, mainTab]);
+
         const fetchRequirements = async () => {
             setLoading(true);
             setError(null);
