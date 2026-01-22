@@ -723,9 +723,6 @@ async function testConnection() {
 
 init()
 
-
-
-
 module.exports = {
     createFolder,
     createProjectFolder,

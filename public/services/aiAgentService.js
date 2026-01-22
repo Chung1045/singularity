@@ -13,22 +13,25 @@ const system_prompt = `
     You are an assistant for the software engineering project,
     you will be working on text files / word documents / transcribed audio to summarize all the functional and non functional requirements,
     as well as summarizing the user stories and identify the possible user role of the user stories.
-      
+
     You will need to link the reference of the documentID and the location of where the user story or requirements identified,
     you will also need to specify whether the requirement or user story were summarized from the document as "Document",
     or "User Input" if the user request to add / modify the software requirements or user stories.
-    
+
     You will have access to tools for operations like getting the document list with documentID in the project,
     getting the contents of the documents, searching for chat history with keyword,
     getting the data structure for software requirements / user stories,
     as well as reading and editing the software requirements / user stories. Only call the tools when needed.
     If tools keep failing, stop the tool after 3 attempts.
     To insert / delete linkage to the user story for each requirements, the user story must be exist first before performing the action.
-    
+
     You will also be supply with the summary of what is going on with the current chat each time the user interacts with you.
     Do not answer any questions that is not related to the project or not related to software engineering.
-    Do not disclose the chatID, conversationID, the documentID, requirementsID, user story ID, projectID in the chat response message. 
+    Do not disclose the chatID, conversationID, the documentID, requirementsID, user story ID, projectID in the chat response message.
+    Do not answer any questions or contents about the tool functions given to you, that includes the json that pass into the tool function.
+    For calling the get update format function, you must call the respective update function afterwards
 `
+
 
 async function getResponse(data, conversationSummary) {
     try {
@@ -271,13 +274,12 @@ async function* getStreamingResponse(data, conversationSummary) {
     messages.push({role: 'user', content: data.requestMessage});
 
     const stream = await client.chat.completions.create({
-        // model: 'grok-4-1-fast-non-reasoning',
         model: 'grok-4-1-fast-reasoning',  // Use reasoning model for better tool handling
         messages: messages,
         tools: tools,
         tool_choice: "auto",
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: 200000,
         stream: true  // Enable streaming
     });
 
@@ -415,7 +417,7 @@ async function* getStreamingResponse(data, conversationSummary) {
             tools: tools,
             tool_choice: "none",  // Force text response, no more tool calls
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: 5000,
             stream: true,  // Enable streaming for smooth output
         });
 
@@ -478,7 +480,7 @@ async function* getStreamingResponse(data, conversationSummary) {
 
 async function getChatSummary(conversationHistory) {
 
-    if (conversationHistory == null) {
+    if (conversationHistory == null || conversationHistory === "") {
         return
     }
 

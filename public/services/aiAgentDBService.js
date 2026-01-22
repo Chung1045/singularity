@@ -425,17 +425,17 @@ async function updateProjectUserStories(projectID, jsonList){
     try {
         for (let data of jsonList) {
             switch (data.operation) {
-                case 'UPDATE':
-                    await dbRun(updateSQL, [
-                        data.storySeq,
-                        data.details.role,
-                        data.details.title,
-                        data.details.description,
-                        data.details.source,
-                        data.storyID,
-                        projectID
-                    ]);
-                    break;
+                // case 'UPDATE':
+                //     await dbRun(updateSQL, [
+                //         data.storySeq,
+                //         data.details.role,
+                //         data.details.title,
+                //         data.details.description,
+                //         data.details.source,
+                //         data.storyID,
+                //         projectID
+                //     ]);
+                //     break;
 
                 case 'INSERT':
                     let storySeq = data.storySeq;

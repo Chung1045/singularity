@@ -77,7 +77,7 @@ const tools = [
         type: "function",
         function: {
             name: "get_software_requirements_return_format",
-            description: "Get the exact JSON format structure that should be used when creating or updating software requirements",
+            description: "Get the exact JSON format structure that should be used when creating or updating software requirements, after calling this, you must call update_software_requirements()",
             parameters: {
                 type: "object",
                 properties: {},
@@ -623,26 +623,32 @@ const toolImpls = {
     },
 
     async update_software_requirements(projectID, jsonList) {
+        console.log(`Update software requirements is called with parameter: ${projectID} and JSON list: ${jsonList}`)
         return await aiDB.updateRequirements(projectID, jsonList);
     },
 
     async update_requirements_source_ref(jsonList) {
+        console.log(`Update requirements source ref is called with parameter ${jsonList}`)
         return await aiDB.updateProjectRequirementSourceRef(jsonList);
     },
 
     async update_requirements_story_ref(jsonList) {
+        console.log(`Update requirements story ref is called with parameter ${jsonList}`)
         return await aiDB.updateProjectRequirementStoryRef(jsonList)
     },
 
     async update_user_stories(projectID, jsonList) {
+        console.log(`Update user stories is called with parameter: ${projectID} and JSON list: ${jsonList}`)
         return await aiDB.updateProjectUserStories(projectID, jsonList)
     },
 
     async update_user_stories_source_ref(jsonList) {
+        console.log(`Update user stories source ref is called with parameter ${jsonList}`)
         return await aiDB.updateUserStorySourceRef(jsonList)
     },
 
     async search_chat_history(projectID, chatID, keyword) {
+        console.log(`Search chat history is called with parameters: ${projectID}, ${chatID}, ${keyword}`)
         return await aiDB.searchChatHistory(projectID, chatID, keyword)
     }
 

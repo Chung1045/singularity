@@ -7,6 +7,7 @@ const {json} = require("express");
 const router = express.Router();
 const aiDB = require("../services/aiAgentDBService");
 const agent = require("../services/aiAgentService");
+const agent2 = require("../services/aiAgentService2")
 const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
 const docGen = require("../services/docGenerationService");
 const {apiAuthUser} = require("../services/accountDBService");
@@ -113,7 +114,7 @@ router.post('/agent/chat', async (req, res) => {
                 res.write(`data: ${JSON.stringify({ type: 'chatID', chatID: chatID })}\n\n`);
 
                 // Stream the response
-                for await (const chunk of agent.getStreamingResponse(data, conversationSummary)) {
+                for await (const chunk of agent2.getStreamingResponseThreeStage(data, conversationSummary)) {
                     fullResponse += chunk;
                     console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
