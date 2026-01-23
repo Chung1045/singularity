@@ -367,8 +367,11 @@ Return ONLY the JSON object, nothing else.`
 // STAGE 2: EXECUTE UPDATES (Non-streaming)
 // ============================================================================
 
-async function executeUpdates(updatePlan, projectID) {
+async function executeUpdates(updatePlan, projectID, chatID = null) {
     console.log('⚙️ [Stage 2] Starting update execution...');
+    if (chatID) {
+        console.log(`⚙️ [Stage 2] Updates will be associated with chatID: ${chatID}`);
+    }
 
     if (!updatePlan.requiresUpdate) {
         console.log('ℹ️ [Stage 2] No updates required, skipping execution');
@@ -392,7 +395,8 @@ async function executeUpdates(updatePlan, projectID) {
                 console.log(`🔧 [Stage 2] Updating ${operations.update_software_requirements.jsonList.length} requirement(s)...`);
                 results.requirements = await toolImpls.update_software_requirements(
                     projectID,
-                    operations.update_software_requirements.jsonList
+                    operations.update_software_requirements.jsonList,
+                    chatID
                 );
                 console.log('✅ [Stage 2] Requirements updated');
             } catch (error) {
@@ -407,7 +411,8 @@ async function executeUpdates(updatePlan, projectID) {
                 console.log(`🔧 [Stage 2] Updating ${operations.update_user_stories.jsonList.length} user story(ies)...`);
                 results.userStories = await toolImpls.update_user_stories(
                     projectID,
-                    operations.update_user_stories.jsonList
+                    operations.update_user_stories.jsonList,
+                    chatID
                 );
                 console.log('✅ [Stage 2] User stories updated');
             } catch (error) {
@@ -563,7 +568,7 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
         yield '<!-- STAGE_2_START -->\n';
         console.log('⚙️ [Orchestrator] Executing Stage 2...');
 
-        const updateResults = await executeUpdates(updatePlan, data.projectID);
+        const updateResults = await executeUpdates(updatePlan, data.projectID, data.chatID);
 
         yield `<!-- STAGE_2_COMPLETE: ${updateResults.success ? 'Success' : 'Partial/Failed'} -->\n`;
         console.log('✅ [Orchestrator] Stage 2 complete');

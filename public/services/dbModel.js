@@ -129,6 +129,7 @@ const USERSTORIES_SCHEMA = () => `
     (
         storyID      TEXT    NOT NULL UNIQUE,
         projectID    TEXT    NOT NULL,
+        chatID       TEXT,
         storySeq     INTEGER NOT NULL,
         storyRole    TEXT    NOT NULL,
         storyTitle   TEXT    NOT NULL,
@@ -176,6 +177,7 @@ const REQUIREMENTS_SCHEMA = () => `
         requirementsID     TEXT PRIMARY KEY NOT NULL UNIQUE,
         requirementSeq     INTEGER          NOT NULL,
         projectID          TEXT             NOT NULL,
+        chatID             TEXT,
         requirementType    TEXT             NOT NULL CHECK ( requirementType in ('functional', 'non-functional') ),
         requirementTitle   TEXT             NOT NULL,
         requirementContent TEXT             NOT NULL,

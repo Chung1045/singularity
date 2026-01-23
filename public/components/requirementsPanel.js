@@ -12,7 +12,7 @@
      * - Two buttons for generating reports
      * - List of generated reports with download/delete options
      */
-    const RequirementsPanel = ({ projectID, onClose }) => {
+    const RequirementsPanel = ({ projectID, chatID, onClose }) => {
         // State management
         const [mainTab, setMainTab] = useState('requirements'); // 'requirements' or 'user-stories'
         const [subTab, setSubTab] = useState('functional'); // 'functional' or 'non-functional'
@@ -24,20 +24,34 @@
         const [error, setError] = useState(null);
         const [successMessage, setSuccessMessage] = useState(null);
 
+        // Log chatID for debugging
+        useEffect(() => {
+            if (chatID) {
+                console.log('[RequirementsPanel] Component loaded for chatID:', chatID);
+            } else {
+                console.log('[RequirementsPanel] Component loaded for entire project');
+            }
+        }, [chatID]);
+
         // Fetch data when component mounts or tabs change
         useEffect(() => {
             if (projectID) {
                 fetchData();
             }
-        }, [projectID, mainTab, subTab]);
+        }, [projectID, chatID, mainTab, subTab]);
 
         // Listen for requirementsUpdated event from chat (when AI creates/updates requirements)
         useEffect(() => {
             const handleRequirementsUpdated = (event) => {
                 console.log('📊 [RequirementsPanel] Received requirementsUpdated event');
                 const eventProjectID = event.detail?.projectID;
-                // Refresh if it's for this project or no project specified
-                if (!eventProjectID || eventProjectID === projectID) {
+                const eventChatID = event.detail?.chatID;
+
+                // Refresh if it matches our project and chat
+                const projectMatches = !eventProjectID || eventProjectID === projectID;
+                const chatMatches = !eventChatID || eventChatID === chatID;
+
+                if (projectMatches && chatMatches) {
                     console.log('🔄 [RequirementsPanel] Refreshing data...');
                     fetchData();
                 }
@@ -47,7 +61,7 @@
             return () => {
                 window.removeEventListener('requirementsUpdated', handleRequirementsUpdated);
             };
-        }, [projectID, mainTab, subTab]);
+        }, [projectID, chatID, mainTab, subTab]);
 
         const fetchData = async () => {
             setLoading(true);
@@ -66,10 +80,15 @@
 
         const fetchRequirements = async () => {
             try {
+                const requestBody = { projectID: projectID };
+                if (chatID) {
+                    requestBody.chatID = chatID;
+                }
+
                 const response = await fetch('/api/project/list/requirements', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ projectID: projectID })
+                    body: JSON.stringify(requestBody)
                 });
 
                 const data = await response.json();
@@ -96,10 +115,15 @@
 
         const fetchUserStories = async () => {
             try {
+                const requestBody = { projectID: projectID };
+                if (chatID) {
+                    requestBody.chatID = chatID;
+                }
+
                 const response = await fetch('/api/project/list/user-stories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ projectID: projectID })
+                    body: JSON.stringify(requestBody)
                 });
 
                 const data = await response.json();
@@ -1224,13 +1248,23 @@
     };
 
     // Global function to open the requirements panel
-    window.openRequirementsPanel = function() {
+    window.openRequirementsPanel = function(chatID = null) {
         const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : localStorage.getItem('selectedProjectID');
 
         if (!projectID) {
             console.error('[RequirementsPanel] No project selected');
             alert('Please select a project first');
             return;
+        }
+
+        // If chatID is provided, this is a chat-specific requirements panel
+        if (chatID) {
+            console.log('[RequirementsPanel] Opening requirements panel for chat:', chatID);
+            // Store the chatID for the requirements panel to use
+            window.currentRequirementsChatID = chatID;
+        } else {
+            console.log('[RequirementsPanel] Opening requirements panel for project:', projectID);
+            window.currentRequirementsChatID = null;
         }
 
         // Check if panel already exists
@@ -1249,14 +1283,21 @@
         root.render(
             React.createElement(RequirementsPanel, {
                 projectID: projectID,
+                chatID: chatID,
                 onClose: () => {
                     root.unmount();
                     container.remove();
+                    // Clear the stored chatID when panel closes
+                    window.currentRequirementsChatID = null;
                 }
             })
         );
 
-        console.log('[RequirementsPanel] Panel opened for project:', projectID);
+        if (chatID) {
+            console.log('[RequirementsPanel] Panel opened for chat:', chatID, 'in project:', projectID);
+        } else {
+            console.log('[RequirementsPanel] Panel opened for entire project:', projectID);
+        }
     };
 
     // Make component available globally

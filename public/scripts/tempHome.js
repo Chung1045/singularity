@@ -775,6 +775,10 @@ function showFileSelectionDialog(files, projectID) {
         const ext = file.documentExt || '';
         let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
         const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+
+        // Check if this file is already added to chat input
+        const isAlreadyAdded = document.querySelector(`[data-file-id="${file.documentID}"]`) !== null;
+
         const fileItem = document.createElement('div');
         fileItem.style.cssText = `
             display: flex;
@@ -782,20 +786,25 @@ function showFileSelectionDialog(files, projectID) {
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 8px;
-            cursor: pointer;
+            cursor: ${isAlreadyAdded ? 'not-allowed' : 'pointer'};
             transition: background-color 0.2s;
+            opacity: ${isAlreadyAdded ? '0.5' : '1'};
         `;
-        fileItem.onmouseenter = () => fileItem.style.backgroundColor = '#f5f5f5';
-        fileItem.onmouseleave = () => fileItem.style.backgroundColor = 'transparent';
+        if (!isAlreadyAdded) {
+            fileItem.onmouseenter = () => fileItem.style.backgroundColor = '#f5f5f5';
+            fileItem.onmouseleave = () => fileItem.style.backgroundColor = 'transparent';
+        }
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = `file-checkbox-${index}`;
+        checkbox.checked = isAlreadyAdded;
+        checkbox.disabled = isAlreadyAdded;
         checkbox.style.cssText = `
             width: 18px;
             height: 18px;
             margin-right: 12px;
-            cursor: pointer;
+            cursor: ${isAlreadyAdded ? 'not-allowed' : 'pointer'};
         `;
         checkbox.onclick = (e) => {
             e.stopPropagation(); // Prevent triggering the fileItem click
@@ -814,23 +823,27 @@ function showFileSelectionDialog(files, projectID) {
             flex: 1;
             font-family: 'Inter', Helvetica;
             font-size: 13.3px;
-            color: #000;
-            cursor: pointer;
+            color: ${isAlreadyAdded ? '#999' : '#000'};
+            cursor: ${isAlreadyAdded ? 'not-allowed' : 'pointer'};
         `;
-        label.textContent = fileName;
-        label.onclick = (e) => {
-            e.stopPropagation(); // Let the label's default behavior handle checkbox toggle
-        };
+        label.textContent = fileName + (isAlreadyAdded ? ' (Already added)' : '');
+        if (!isAlreadyAdded) {
+            label.onclick = (e) => {
+                e.stopPropagation(); // Let the label's default behavior handle checkbox toggle
+            };
+        }
 
         fileItem.appendChild(checkbox);
         fileItem.appendChild(label);
         // Remove the onclick from fileItem to prevent double-toggling
-        fileItem.onclick = (e) => {
-            // Only trigger checkbox if clicking on the row background (not checkbox or label)
-            if (e.target === fileItem) {
-                checkbox.click();
-            }
-        };
+        if (!isAlreadyAdded) {
+            fileItem.onclick = (e) => {
+                // Only trigger checkbox if clicking on the row background (not checkbox or label)
+                if (e.target === fileItem) {
+                    checkbox.click();
+                }
+            };
+        }
 
         fileListContainer.appendChild(fileItem);
     });
@@ -1133,20 +1146,219 @@ async function fetchProjectFiles(projectID) {
 }
 
 async function fetchProjectReports(projectID) {
+    console.log("📑 [Reports] Fetching reports for project:", projectID);
 
-    const response = await fetch('/api/project/report/list', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            projectID: projectID
-        })
-    });
+    const requirementsList = document.getElementById("div-requirements-list");
+    const noRequirementsLabel = document.getElementById("p-label-requirements-no-entry");
 
-    if (response.ok) {
-        let data = await response.json()
-        console.log(`Response Data: ${JSON.stringify(data)}`)
+    if (!requirementsList) {
+        console.error("📑 [Reports] Requirements list container not found");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/project/report/list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                projectID: projectID
+            })
+        });
+
+        if (response.ok) {
+            let data = await response.json();
+            console.log(`📑 [Reports] Response Data:`, data);
+
+            requirementsList.innerHTML = '';
+
+            if (data.successful && data.reports && data.reports.length > 0) {
+                // Group reports by type
+                const requirementsReports = data.reports.filter(r => r.reportType === 'requirements');
+                const userStoriesReports = data.reports.filter(r => r.reportType === 'userStories');
+
+                console.log(`📑 [Reports] Found ${requirementsReports.length} requirements reports and ${userStoriesReports.length} user stories reports`);
+
+                // Add Requirements section
+                if (requirementsReports.length > 0) {
+                    const reqSection = document.createElement('div');
+                    reqSection.style.cssText = 'margin-bottom: 12px;';
+
+                    const reqHeader = document.createElement('div');
+                    reqHeader.textContent = 'Requirements Reports';
+                    reqHeader.style.cssText = `
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #666;
+                        margin-bottom: 6px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    `;
+                    reqSection.appendChild(reqHeader);
+
+                    requirementsReports.forEach(report => {
+                        const reportItem = createReportListItem(report, projectID);
+                        reqSection.appendChild(reportItem);
+                    });
+
+                    requirementsList.appendChild(reqSection);
+                }
+
+                // Add User Stories section
+                if (userStoriesReports.length > 0) {
+                    const storiesSection = document.createElement('div');
+                    storiesSection.style.cssText = 'margin-bottom: 12px;';
+
+                    const storiesHeader = document.createElement('div');
+                    storiesHeader.textContent = 'User Stories Reports';
+                    storiesHeader.style.cssText = `
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #666;
+                        margin-bottom: 6px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    `;
+                    storiesSection.appendChild(storiesHeader);
+
+                    userStoriesReports.forEach(report => {
+                        const reportItem = createReportListItem(report, projectID);
+                        storiesSection.appendChild(reportItem);
+                    });
+
+                    requirementsList.appendChild(storiesSection);
+                }
+
+                if (noRequirementsLabel) {
+                    noRequirementsLabel.style.display = 'none';
+                }
+            } else {
+                console.log("📑 [Reports] No reports found");
+                if (noRequirementsLabel) {
+                    noRequirementsLabel.style.display = 'block';
+                }
+            }
+        } else {
+            console.error("📑 [Reports] Failed to fetch reports:", response.status);
+        }
+    } catch (error) {
+        console.error("📑 [Reports] Error fetching reports:", error);
+    }
+}
+
+// Helper function to create report list item
+function createReportListItem(report, projectID) {
+    const item = document.createElement('div');
+    item.style.cssText = `
+        padding: 8px 10px;
+        background-color: #f9f9f9;
+        border-radius: 6px;
+        margin-bottom: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    `;
+
+    item.onmouseenter = () => item.style.backgroundColor = '#efefef';
+    item.onmouseleave = () => item.style.backgroundColor = '#f9f9f9';
+
+    const icon = document.createElement('span');
+    icon.textContent = report.reportType === 'requirements' ? '📋' : '📝';
+    icon.style.cssText = 'font-size: 14px;';
+
+    const info = document.createElement('div');
+    info.style.cssText = 'flex: 1; min-width: 0;';
+
+    const name = document.createElement('div');
+    name.textContent = report.reportName || 'Untitled Report';
+    name.style.cssText = `
+        font-size: 13px;
+        font-weight: 500;
+        color: #1c1d21;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    `;
+
+    const date = document.createElement('div');
+    const reportDate = new Date(report.reportDate);
+    date.textContent = reportDate.toLocaleDateString();
+    date.style.cssText = `
+        font-size: 11px;
+        color: #999;
+        margin-top: 2px;
+    `;
+
+    info.appendChild(name);
+    info.appendChild(date);
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.innerHTML = '⬇️';
+    downloadBtn.style.cssText = `
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    `;
+    downloadBtn.onmouseenter = () => downloadBtn.style.opacity = '1';
+    downloadBtn.onmouseleave = () => downloadBtn.style.opacity = '0.6';
+
+    downloadBtn.onclick = async (e) => {
+        e.stopPropagation();
+        console.log(`📑 [Reports] Downloading report:`, report.reportID);
+        await downloadReportFile(projectID, report.reportID, report.reportName);
+    };
+
+    item.appendChild(icon);
+    item.appendChild(info);
+    item.appendChild(downloadBtn);
+
+    item.onclick = () => {
+        console.log(`📑 [Reports] Report clicked:`, report.reportName);
+        // Could add preview functionality here
+    };
+
+    return item;
+}
+
+// Helper function to download report
+async function downloadReportFile(projectID, reportID, reportName) {
+    try {
+        const response = await fetch('/api/project/report/download', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                projectID: projectID,
+                reportID: reportID
+            })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = reportName || 'report.docx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            console.log(`✅ [Reports] Downloaded: ${reportName}`);
+        } else {
+            console.error(`❌ [Reports] Download failed:`, response.status);
+            alert('Failed to download report');
+        }
+    } catch (error) {
+        console.error(`❌ [Reports] Download error:`, error);
+        alert('Error downloading report');
     }
 }
 
@@ -1694,6 +1906,7 @@ function createFileItem(fileName, documentID) {
 function createChatHistoryItem(chatThreadName, chatID) {
     const ChatHistoryItemComponent = () => {
         const [menuOpen, setMenuOpen] = React.useState(false);
+        const [isChecked, setIsChecked] = React.useState(false);
         const menuRef = React.useRef(null);
 
         // Close menu when clicking outside
@@ -1712,6 +1925,18 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 document.removeEventListener('mousedown', handleClickOutside);
             };
         }, [menuOpen]);
+
+        const handleRequirementsPanel = () => {
+            setMenuOpen(false);
+            console.log(`[Requirements] Opening requirements panel for chat: ${chatID}`);
+
+            // Open requirements panel for this specific chat
+            if (typeof window.openRequirementsPanel === 'function') {
+                window.openRequirementsPanel(chatID);
+            } else {
+                console.error('[Requirements] openRequirementsPanel function not available');
+            }
+        };
 
         const handleDelete = async () => {
             setMenuOpen(false);
@@ -2011,32 +2236,53 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 },
                 onClick: (e) => {
-                    if (e.target.tagName !== 'IMG' && !e.target.closest('.chat-menu')) {
-                        const allChatItems = document.querySelectorAll('.chat-history-item');
-                        allChatItems.forEach(item => {
-                            item.classList.remove('selected');
-                            item.style.backgroundColor = 'transparent';
-                        });
-
-                        e.currentTarget.classList.add('selected');
-                        e.currentTarget.style.backgroundColor = '#e0e0e0';
-
-                        console.log(`[CLICK] Selected chat: ${chatThreadName}, ID: ${chatID}`);
-
-                        const newUrl = new URL(window.location);
-                        newUrl.searchParams.set('chatID', chatID);
-                        window.history.pushState({ chatID }, '', newUrl);
-
-                        const chatTitleElement = document.getElementById('chat-title');
-                        if (chatTitleElement) {
-                            const displayName = (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat';
-                            chatTitleElement.textContent = displayName;
-                        }
-
-                        loadChatThread(chatID);
+                    // Don't trigger chat load if clicking on checkbox or menu
+                    if (e.target.type === 'checkbox' || e.target.tagName === 'IMG' || e.target.closest('.chat-menu')) {
+                        return;
                     }
+
+                    const allChatItems = document.querySelectorAll('.chat-history-item');
+                    allChatItems.forEach(item => {
+                        item.classList.remove('selected');
+                        item.style.backgroundColor = 'transparent';
+                    });
+
+                    e.currentTarget.classList.add('selected');
+                    e.currentTarget.style.backgroundColor = '#e0e0e0';
+
+                    console.log(`[CLICK] Selected chat: ${chatThreadName}, ID: ${chatID}`);
+
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('chatID', chatID);
+                    window.history.pushState({ chatID }, '', newUrl);
+
+                    const chatTitleElement = document.getElementById('chat-title');
+                    if (chatTitleElement) {
+                        const displayName = (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat';
+                        chatTitleElement.textContent = displayName;
+                    }
+
+                    loadChatThread(chatID);
                 }
             },
+            // Checkbox
+            React.createElement('input', {
+                type: 'checkbox',
+                checked: isChecked,
+                onChange: (e) => {
+                    e.stopPropagation();
+                    setIsChecked(e.target.checked);
+                },
+                onClick: (e) => {
+                    e.stopPropagation();
+                },
+                style: {
+                    width: '16px',
+                    height: '16px',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                }
+            }),
             React.createElement('p', {
                 style: {
                     flexGrow: 1,
@@ -2047,7 +2293,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     fontSize: '14px'
                 }
             }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat'),
-            React.createElement('div', {
+            // Three-dot menu (only visible when checkbox is checked)
+            isChecked && React.createElement('div', {
                     ref: menuRef,
                     className: 'chat-menu',
                     style: {
@@ -2087,11 +2334,44 @@ function createChatHistoryItem(chatThreadName, chatID) {
                             border: '1.67px solid #e4e4e4',
                             borderRadius: '11.12px',
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                            minWidth: '120px',
+                            minWidth: '180px',
                             zIndex: 1000,
                             overflow: 'hidden'
                         }
                     },
+                    // Requirements Panel option
+                    React.createElement('button', {
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#1c1d21',
+                            fontWeight: '400',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease',
+                            borderBottom: '1px solid #f0f0f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        },
+                        onMouseEnter: (e) => {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        },
+                        onMouseLeave: (e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        },
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            handleRequirementsPanel();
+                        }
+                    },
+                        'Requirements Panel'
+                    ),
+                    // Delete option
                     React.createElement('button', {
                         style: {
                             width: '100%',
@@ -2466,18 +2746,21 @@ function hideChatInterface() {
 
 function renderMarkdownContent(text) {
     const source = text || '';
+    console.log('[Markdown] Rendering content, marked available:', !!window.marked, 'DOMPurify available:', !!window.DOMPurify);
     if (window.marked && typeof window.marked.parse === 'function') {
         try {
             const rawHtml = window.marked.parse(source, { breaks: true });
+            console.log('[Markdown] Parsed successfully, length:', rawHtml.length);
             if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
                 return window.DOMPurify.sanitize(rawHtml);
             }
             return rawHtml;
         } catch (e) {
-            console.error('Error rendering markdown:', e);
+            console.error('[Markdown] Error rendering markdown:', e);
             return source.replace(/\n/g, '<br>');
         }
     }
+    console.warn('[Markdown] Falling back to basic line breaks');
     return source.replace(/\n/g, '<br>');
 }
 
@@ -3112,6 +3395,7 @@ function updateCancelEditButton() {
 
 // Cancel edit mode
 function cancelEditMode() {
+    console.log('[Edit] Canceling edit mode');
     window.editingMessage = null;
 
     // Reset send button appearance
@@ -3121,11 +3405,15 @@ function cancelEditMode() {
         sendBtn.title = 'Send message';
     }
 
-    // Remove "On Edit" indicator
+    // Remove "On Edit" indicator - try multiple selectors to be thorough
     const editIndicator = document.getElementById('edit-mode-indicator');
     if (editIndicator) {
+        console.log('[Edit] Removing edit indicator');
         editIndicator.remove();
     }
+
+    // Also try to find and remove any stray edit indicators
+    document.querySelectorAll('[id*="edit-mode"]').forEach(el => el.remove());
 
     // Hide cancel button on messages and restore edit buttons
     hideCancelButtonOnMessages();

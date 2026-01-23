@@ -45,65 +45,120 @@ const dbModel = require('./dbModel');
 // Helper function to check and add missing columns
 async function migrateDatabase(db) {
     return new Promise((resolve, reject) => {
+        const operations = [];
+
+        // Migrate user table
         db.all("PRAGMA table_info(user)", [], (err, columns) => {
             if (err) {
-                console.error('❌ Error checking table schema:', err);
+                console.error('❌ Error checking user table schema:', err);
                 return reject(err);
             }
 
-            if (!columns || columns.length === 0) {
-                // Table doesn't exist yet, no migration needed
-                return resolve();
+            if (columns && columns.length > 0) {
+                const hasUserAvatarPath = columns.some(col => col.name === 'userAvatarPath');
+                const hasGoogleAvatarUrl = columns.some(col => col.name === 'googleAvatarUrl');
+
+                if (!hasUserAvatarPath) {
+                    console.log('⚠️  Adding missing column: user.userAvatarPath');
+                    operations.push(new Promise((res, rej) => {
+                        db.run('ALTER TABLE user ADD COLUMN userAvatarPath TEXT', (err) => {
+                            if (err) {
+                                console.error('❌ Error adding userAvatarPath:', err);
+                                rej(err);
+                            } else {
+                                console.log('✅ Added userAvatarPath column');
+                                res();
+                            }
+                        });
+                    }));
+                }
+
+                if (!hasGoogleAvatarUrl) {
+                    console.log('⚠️  Adding missing column: user.googleAvatarUrl');
+                    operations.push(new Promise((res, rej) => {
+                        db.run('ALTER TABLE user ADD COLUMN googleAvatarUrl TEXT', (err) => {
+                            if (err) {
+                                console.error('❌ Error adding googleAvatarUrl:', err);
+                                rej(err);
+                            } else {
+                                console.log('✅ Added googleAvatarUrl column');
+                                res();
+                            }
+                        });
+                    }));
+                }
             }
 
-            const hasUserAvatarPath = columns.some(col => col.name === 'userAvatarPath');
-            const hasGoogleAvatarUrl = columns.some(col => col.name === 'googleAvatarUrl');
+            // Migrate requirements table
+            db.all("PRAGMA table_info(requirements)", [], (err, reqColumns) => {
+                if (err) {
+                    console.error('❌ Error checking requirements table schema:', err);
+                    return reject(err);
+                }
 
-            const operations = [];
+                if (reqColumns && reqColumns.length > 0) {
+                    const hasChatID = reqColumns.some(col => col.name === 'chatID');
 
-            if (!hasUserAvatarPath) {
-                console.log('⚠️  Adding missing column: userAvatarPath');
-                operations.push(new Promise((res, rej) => {
-                    db.run('ALTER TABLE user ADD COLUMN userAvatarPath TEXT', (err) => {
-                        if (err) {
-                            console.error('❌ Error adding userAvatarPath:', err);
-                            rej(err);
-                        } else {
-                            console.log('✅ Added userAvatarPath column');
-                            res();
+                    if (!hasChatID) {
+                        console.log('⚠️  Adding missing column: requirements.chatID');
+                        operations.push(new Promise((res, rej) => {
+                            db.run('ALTER TABLE requirements ADD COLUMN chatID TEXT', (err) => {
+                                if (err) {
+                                    console.error('❌ Error adding requirements.chatID:', err);
+                                    rej(err);
+                                } else {
+                                    console.log('✅ Added requirements.chatID column');
+                                    res();
+                                }
+                            });
+                        }));
+                    }
+                }
+
+                // Migrate userStories table
+                db.all("PRAGMA table_info(userStories)", [], (err, storyColumns) => {
+                    if (err) {
+                        console.error('❌ Error checking userStories table schema:', err);
+                        return reject(err);
+                    }
+
+                    if (storyColumns && storyColumns.length > 0) {
+                        const hasChatID = storyColumns.some(col => col.name === 'chatID');
+
+                        if (!hasChatID) {
+                            console.log('⚠️  Adding missing column: userStories.chatID');
+                            operations.push(new Promise((res, rej) => {
+                                db.run('ALTER TABLE userStories ADD COLUMN chatID TEXT', (err) => {
+                                    if (err) {
+                                        console.error('❌ Error adding userStories.chatID:', err);
+                                        rej(err);
+                                    } else {
+                                        console.log('✅ Added userStories.chatID column');
+                                        res();
+                                    }
+                                });
+                            }));
                         }
-                    });
-                }));
-            }
+                    }
 
-            if (!hasGoogleAvatarUrl) {
-                console.log('⚠️  Adding missing column: googleAvatarUrl');
-                operations.push(new Promise((res, rej) => {
-                    db.run('ALTER TABLE user ADD COLUMN googleAvatarUrl TEXT', (err) => {
-                        if (err) {
-                            console.error('❌ Error adding googleAvatarUrl:', err);
-                            rej(err);
-                        } else {
-                            console.log('✅ Added googleAvatarUrl column');
-                            res();
-                        }
-                    });
-                }));
-            }
+                    // Execute all migration operations
+                    if (operations.length === 0) {
+                        console.log('✅ No database migrations needed');
+                        return resolve();
+                    }
 
-            if (operations.length === 0) {
-                return resolve();
-            }
-
-            Promise.all(operations)
-                .then(() => {
-                    console.log('✅ Database migration completed');
-                    resolve();
-                })
-                .catch(reject);
+                    Promise.all(operations)
+                        .then(() => {
+                            console.log('✅ Database migration completed successfully');
+                            resolve();
+                        })
+                        .catch(reject);
+                });
+            });
         });
     });
 }
+
 
 // Create or open a database file
 const dbPath = path.resolve(__dirname, 'database.db');

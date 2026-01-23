@@ -631,8 +631,8 @@ const toolImpls = {
         }
     },
 
-    async update_software_requirements(projectID, jsonList) {
-        return await aiDB.updateRequirements(projectID, jsonList);
+    async update_software_requirements(projectID, jsonList, chatID = null) {
+        return await aiDB.updateRequirements(projectID, jsonList, chatID);
     },
 
     async update_requirements_source_ref(jsonList) {
@@ -643,8 +643,8 @@ const toolImpls = {
         return await aiDB.updateProjectRequirementStoryRef(jsonList)
     },
 
-    async update_user_stories(projectID, jsonList) {
-        return await aiDB.updateProjectUserStories(projectID, jsonList)
+    async update_user_stories(projectID, jsonList, chatID = null) {
+        return await aiDB.updateProjectUserStories(projectID, jsonList, chatID)
     },
 
     async update_user_stories_source_ref(jsonList) {
