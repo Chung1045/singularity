@@ -142,7 +142,8 @@ router.post('/agent/chat', async (req, res) => {
                                 stage: 2, 
                                 status: 'complete',
                                 refreshRequirements: true,
-                                projectID: projectID
+                                projectID: projectID,
+                                chatID: chatID
                             })}\n\n`);
                         } else if (trimmedChunk.includes('STAGE_3_START')) {
                             res.write(`data: ${JSON.stringify({ type: 'stage', stage: 3, status: 'start', message: 'Generating response...' })}\n\n`);
