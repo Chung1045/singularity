@@ -592,7 +592,7 @@ router.post("/project/report/download", async (req, res) => {
         const stream = await fss.downloadReport(projectID, reportID);
 
         res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
         stream.pipe(res);
     } catch (err) {

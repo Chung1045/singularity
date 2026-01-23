@@ -232,7 +232,12 @@
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = reportName + '.docx';
+                    // Ensure filename has .docx extension (avoid double extension)
+                    let downloadName = reportName || 'report';
+                    if (!downloadName.toLowerCase().endsWith('.docx')) {
+                        downloadName += '.docx';
+                    }
+                    a.download = downloadName;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);

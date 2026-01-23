@@ -1384,12 +1384,17 @@ async function downloadReportFile(projectID, reportID, reportName) {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = reportName || 'report.docx';
+            // Ensure filename has .docx extension
+            let downloadName = reportName || 'report';
+            if (!downloadName.toLowerCase().endsWith('.docx')) {
+                downloadName += '.docx';
+            }
+            a.download = downloadName;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            console.log(`✅ [Reports] Downloaded: ${reportName}`);
+            console.log(`✅ [Reports] Downloaded: ${downloadName}`);
         } else {
             console.error(`❌ [Reports] Download failed:`, response.status);
             alert('Failed to download report');
