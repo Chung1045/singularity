@@ -28,7 +28,6 @@ const TempHome = ({csrfToken, userInfo}) => {
     // Add state for requirements panel modal
     const [showRequirementsPanel, setShowRequirementsPanel] = useState(false);
     const [requirementsPanelProjectID, setRequirementsPanelProjectID] = useState(null);
-    const [requirementsPanelChatID, setRequirementsPanelChatID] = useState(null);
 
     // Add state for attachment menu and selected files
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
@@ -155,10 +154,9 @@ const TempHome = ({csrfToken, userInfo}) => {
                 return;
             }
 
-            const { projectID, chatID } = event.detail;
-            console.log('[Requirements] Opening requirements panel for projectID:', projectID, 'chatID:', chatID || 'ALL');
+            const { projectID } = event.detail;
+            console.log('[Requirements] Opening requirements panel for projectID:', projectID);
             setRequirementsPanelProjectID(projectID);
-            setRequirementsPanelChatID(chatID || null);
             setShowRequirementsPanel(true);
         };
 
@@ -387,7 +385,6 @@ const TempHome = ({csrfToken, userInfo}) => {
                 },
                 React.createElement(window.RequirementsPanel, {
                     projectID: requirementsPanelProjectID,
-                    chatID: requirementsPanelChatID,
                     onClose: () => setShowRequirementsPanel(false)
                 })
             ),
@@ -3646,10 +3643,7 @@ async function streamChatResponse(data, typingId) {
 
                     // Dispatch event to refresh requirements in the panel
                     window.dispatchEvent(new CustomEvent('requirementsUpdated', {
-                        detail: {
-                            projectID: jsonData.projectID || data.projectID,
-                            chatID: jsonData.chatID || data.chatID
-                        }
+                        detail: { projectID: jsonData.projectID || data.projectID }
                     }));
 
                     // Also refresh the sidebar requirements section if available
@@ -4153,9 +4147,9 @@ window.loadChatThread = loadChatThread;
 window.backToInitialScreen = backToInitialScreen;
 
 // Function to open requirements panel
-function openRequirementsPanel(chatID = null) {
-    console.log('[Requirements] Opening requirements panel', chatID ? `for chatID: ${chatID}` : 'for entire project');
-
+function openRequirementsPanel() {
+    console.log('[Requirements] Opening requirements panel');
+    
     const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
     
     if (!projectID) {
@@ -4165,7 +4159,7 @@ function openRequirementsPanel(chatID = null) {
     }
     
     // Create and show the requirements panel modal
-    const event = new CustomEvent('openRequirementsPanel', { detail: { projectID, chatID } });
+    const event = new CustomEvent('openRequirementsPanel', { detail: { projectID } });
     window.dispatchEvent(event);
 }
 
