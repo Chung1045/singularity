@@ -602,12 +602,9 @@ router.post("/project/report/download", async (req, res) => {
 });
 
 router.post("/project/list/requirements", async (req, res) => {
-    console.log("📊 [API] /project/list/requirements called");
-    console.log("📊 [API] Request body:", JSON.stringify(req.body, null, 2));
+    console.log("New request /project/report/download");
 
-    const { projectID, chatID } = req.body;
-
-    console.log("📊 [API] Extracted - projectID:", projectID, "chatID:", chatID || 'NONE (fetching all)');
+    const { projectID } = req.body;
 
     const userID = req.userID;
 
@@ -616,22 +613,16 @@ router.post("/project/list/requirements", async (req, res) => {
     }
 
     try {
-        const requirementList = await agentDB.getProjectRequirements(projectID, chatID)
-        console.log("📊 [API] Fetched", requirementList.length, "requirements", chatID ? `for chatID: ${chatID}` : "for entire project");
+        const requirementList = await agentDB.getProjectRequirements(projectID)
         return res.status(200).json({successful: true, reports: requirementList});
     } catch (err) {
-        console.error("📊 [API] Error fetching requirements:", err);
         return res.status(403).json({ successful: false, message: "Unable to fetch project requirements" });
     }
 });
 
 router.post("/project/list/user-stories", async (req, res) => {
-    console.log("📖 [API] /project/list/user-stories called");
-    console.log("📖 [API] Request body:", JSON.stringify(req.body, null, 2));
 
-    const { projectID, chatID } = req.body;
-
-    console.log("📖 [API] Extracted - projectID:", projectID, "chatID:", chatID || 'NONE (fetching all)');
+    const { projectID } = req.body;
 
     const userID = req.userID;
 
@@ -640,11 +631,9 @@ router.post("/project/list/user-stories", async (req, res) => {
     }
 
     try {
-        const requirementList = await agentDB.getProjectUserStories(projectID, chatID)
-        console.log("📖 [API] Fetched", requirementList.length, "user stories", chatID ? `for chatID: ${chatID}` : "for entire project");
+        const requirementList = await agentDB.getProjectUserStories(projectID)
         return res.status(200).json({successful: true, reports: requirementList});
     } catch (err) {
-        console.error("📖 [API] Error fetching user stories:", err);
         return res.status(403).json({ successful: false, message: "Unable to fetch project user-stories" });
     }
 });

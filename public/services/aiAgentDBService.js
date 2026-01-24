@@ -304,23 +304,9 @@ async function fetchChatThread(projectID, chatID) {
     });
 }
 
-async function getProjectRequirements(projectID, chatID = null) {
-    // If chatID is provided, filter by chat; otherwise get all project requirements
-    const sql = chatID
-        ? `SELECT * FROM requirements WHERE projectID = ? AND chatID = ?`
-        : `SELECT * FROM requirements WHERE projectID = ?`;
-    const params = chatID ? [projectID, chatID] : [projectID];
-
-    console.log("📊 [DB] getProjectRequirements called");
-    console.log("📊 [DB] SQL:", sql);
-    console.log("📊 [DB] Params:", params);
-
-    const rows = await dbAll(sql, params);
-
-    console.log("📊 [DB] Raw query returned", rows.length, "requirements");
-    if (rows.length > 0) {
-        console.log("📊 [DB] Sample requirement chatIDs:", rows.map(r => ({ id: r.requirementsID, chatID: r.chatID })));
-    }
+async function getProjectRequirements(projectID) {
+    const sql = `SELECT * FROM requirements WHERE projectID = ?`;
+    const rows = await dbAll(sql, [projectID]);
 
     return await Promise.all(
         rows.map(async (requirement) => {
@@ -366,9 +352,8 @@ async function getRequirementsStoryRef(requirementsID) {
     return await dbAll(sql, [requirementsID]);
 }
 
-async function updateRequirements(projectID, jsonList, chatID = null) {
-    console.log("Received updateRequirements request")
-    console.log("ProjectID:", projectID, "ChatID:", chatID)
+async function updateRequirements(projectID, jsonList) {
+    console.log("Received******")
     console.log(jsonList)
 
     const updateSQL = `
@@ -377,9 +362,9 @@ async function updateRequirements(projectID, jsonList, chatID = null) {
         WHERE requirementsID = ? AND projectID = ?
     `
 
-    const insertSQL = `INSERT INTO requirements (requirementsID, requirementSeq, projectID, chatID,
+    const insertSQL = `INSERT INTO requirements (requirementsID, requirementSeq, projectID,
                                                  requirementType, requirementTitle, requirementContent, requirementRole)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                       VALUES (?, ?, ?, ?, ?, ?, ?)`
 
     const deleteSQL = `DELETE FROM requirements WHERE requirementsID = ? AND projectID = ?`
 
@@ -409,28 +394,15 @@ async function updateRequirements(projectID, jsonList, chatID = null) {
                     const result = await dbGet(getMaxSeqSQL, [projectID, data.details.requirementType]);
                     const nextSeq = (result && result.maxSeq != null ? result.maxSeq : 0) + 1;
 
-                    console.log(`📊 [DB] Inserting requirement with chatID: ${chatID || 'NULL'}`);
-                    console.log(`📊 [DB] Requirement details:`, {
-                        requirementID,
-                        seq: nextSeq,
-                        projectID,
-                        chatID: chatID || 'NULL',
-                        type: data.details.requirementType,
-                        title: data.details.title
-                    });
-
                     await dbRun(insertSQL, [
                         requirementID,
                         nextSeq,
                         projectID,
-                        chatID,
                         data.details.requirementType,
                         data.details.title,
                         data.details.description,
                         data.details.role
                     ]);
-
-                    console.log(`✅ [DB] Requirement inserted successfully`);
 
                     // Also insert source references if provided
                     if (data.details.sourceReference && Array.isArray(data.details.sourceReference)) {
@@ -465,12 +437,9 @@ async function updateRequirements(projectID, jsonList, chatID = null) {
     }
 }
 
-async function updateProjectUserStories(projectID, jsonList, chatID = null){
-    console.log("Received updateProjectUserStories request")
-    console.log("ProjectID:", projectID, "ChatID:", chatID)
-
+async function updateProjectUserStories(projectID, jsonList){
     const updateSQL = `UPDATE userStories SET storySeq = ?, storyRole = ?, storyTitle = ?, storyContent = ?, storySource = ? WHERE storyID = ? AND projectID = ?`;
-    const insertSQL = `INSERT INTO userStories (storyID, projectID, chatID, storySeq, storyRole, storyTitle, storyContent, storySource) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const insertSQL = `INSERT INTO userStories (storyID, projectID, storySeq, storyRole, storyTitle, storyContent, storySource) VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const deleteSQL = `DELETE FROM userStories WHERE storyID = ? AND projectID = ?`;
     const getMaxSeqSQL = `SELECT COALESCE(MAX(storySeq), 0) as maxSeq FROM userStories WHERE projectID = ?`;
 
@@ -506,7 +475,6 @@ async function updateProjectUserStories(projectID, jsonList, chatID = null){
                     await dbRun(insertSQL, [
                         newStoryID,
                         projectID,
-                        chatID,
                         storySeq,
                         data.details.role,
                         data.details.title,
@@ -623,13 +591,9 @@ async function updateUserStorySourceRef(jsonList){
     }
 }
 
-async function getProjectUserStories(projectID, chatID = null) {
-    // If chatID is provided, filter by chat; otherwise get all project user stories
-    const sql = chatID
-        ? `SELECT * FROM userStories WHERE projectID = ? AND chatID = ?`
-        : `SELECT * FROM userStories WHERE projectID = ?`;
-    const params = chatID ? [projectID, chatID] : [projectID];
-    const rows = await dbAll(sql, params);
+async function getProjectUserStories(projectID) {
+    const sql = `SELECT * FROM userStories WHERE projectID = ?`
+    const rows = await dbAll(sql, [projectID]);
 
     return await Promise.all(
         rows.map(async (story) => {
