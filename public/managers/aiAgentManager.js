@@ -136,13 +136,12 @@ router.post('/agent/chat', async (req, res) => {
                         } else if (trimmedChunk.includes('STAGE_2_START')) {
                             res.write(`data: ${JSON.stringify({ type: 'stage', stage: 2, status: 'start', message: 'Updating database...' })}\n\n`);
                         } else if (trimmedChunk.includes('STAGE_2_COMPLETE')) {
-                            // Stage 2 complete - database updated, tell client to refresh requirements and reports
+                            // Stage 2 complete - database updated, tell client to refresh requirements
                             res.write(`data: ${JSON.stringify({ 
                                 type: 'stage', 
                                 stage: 2, 
                                 status: 'complete',
                                 refreshRequirements: true,
-                                refreshReports: true,
                                 projectID: projectID,
                                 chatID: chatID
                             })}\n\n`);

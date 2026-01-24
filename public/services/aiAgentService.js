@@ -260,14 +260,6 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with this exact st
     },
     "update_requirements_story_ref": {
       "jsonList": [ /* array of requirement-story link operations */ ]
-    },
-    "generate_requirements_report": {
-      "generate": true or false,
-      "projectID": "${data.projectID}"
-    },
-    "generate_user_stories_report": {
-      "generate": true or false,
-      "projectID": "${data.projectID}"
     }
   },
   "summary": "Brief description of what will be updated"
@@ -324,8 +316,6 @@ Rules:
 - **CRITICAL: For INSERT operations extracted from documents, ALWAYS include sourceReference with the documentID from get_project_file_list**
 - The documentID in sourceReference must be a valid UUID from the attached documents
 - update_requirements_source_ref and update_user_stories_source_ref are ONLY for updating sources on EXISTING items (not for INSERT)
-- **REPORT GENERATION: Set generate_requirements_report.generate to true if user explicitly asks to generate/create/export a requirements document/report**
-- **REPORT GENERATION: Set generate_user_stories_report.generate to true if user explicitly asks to generate/create/export a user stories document/report**
 - Ensure all UUIDs are properly formatted
 - The summary should be 1-2 sentences describing what will change
 
@@ -470,40 +460,6 @@ async function executeUpdates(updatePlan, projectID, chatID = null) {
             } catch (error) {
                 console.error('❌ [Stage 2] Error linking requirements to stories:', error.message);
                 errors.push(`Requirement-story linking failed: ${error.message}`);
-            }
-        }
-
-        // 6. Generate requirements report if requested
-        if (operations.generate_requirements_report?.generate) {
-            try {
-                console.log(`📄 [Stage 2] Generating requirements report...`);
-                results.requirementsReport = await toolImpls.generate_requirements_report(projectID);
-                if (results.requirementsReport.success) {
-                    console.log('✅ [Stage 2] Requirements report generated');
-                    results.reportGenerated = true;
-                } else {
-                    console.warn('⚠️ [Stage 2] Requirements report generation failed:', results.requirementsReport.message);
-                }
-            } catch (error) {
-                console.error('❌ [Stage 2] Error generating requirements report:', error.message);
-                errors.push(`Requirements report generation failed: ${error.message}`);
-            }
-        }
-
-        // 7. Generate user stories report if requested
-        if (operations.generate_user_stories_report?.generate) {
-            try {
-                console.log(`📄 [Stage 2] Generating user stories report...`);
-                results.userStoriesReport = await toolImpls.generate_user_stories_report(projectID);
-                if (results.userStoriesReport.success) {
-                    console.log('✅ [Stage 2] User stories report generated');
-                    results.reportGenerated = true;
-                } else {
-                    console.warn('⚠️ [Stage 2] User stories report generation failed:', results.userStoriesReport.message);
-                }
-            } catch (error) {
-                console.error('❌ [Stage 2] Error generating user stories report:', error.message);
-                errors.push(`User stories report generation failed: ${error.message}`);
             }
         }
 

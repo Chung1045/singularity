@@ -3640,42 +3640,24 @@ async function streamChatResponse(data, typingId) {
                 // Update visual progress indicator
                 updateProgress(jsonData.stage, jsonData.status, jsonData.message);
 
-                // When Stage 2 completes, refresh requirements panel data and reports
-                if (jsonData.stage === 2 && jsonData.status === 'complete') {
-                    // Refresh requirements if needed
-                    if (jsonData.refreshRequirements) {
-                        console.log('🔄 Stage 2 complete - refreshing requirements data...');
+                // When Stage 2 completes, refresh requirements panel data
+                if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
+                    console.log('🔄 Stage 2 complete - refreshing requirements data...');
 
-                        // Dispatch event to refresh requirements in the panel
-                        window.dispatchEvent(new CustomEvent('requirementsUpdated', {
-                            detail: {
-                                projectID: jsonData.projectID || data.projectID,
-                                chatID: jsonData.chatID || data.chatID
-                            }
-                        }));
+                    // Dispatch event to refresh requirements in the panel
+                    window.dispatchEvent(new CustomEvent('requirementsUpdated', {
+                        detail: {
+                            projectID: jsonData.projectID || data.projectID,
+                            chatID: jsonData.chatID || data.chatID
+                        }
+                    }));
 
-                        // Also refresh the sidebar requirements section if available
-                        if (typeof window.fetchProjectRequirements === 'function') {
-                            window.fetchProjectRequirements(jsonData.projectID || data.projectID);
-                        }
-                        if (typeof window.fetchProjectUserStories === 'function') {
-                            window.fetchProjectUserStories(jsonData.projectID || data.projectID);
-                        }
+                    // Also refresh the sidebar requirements section if available
+                    if (typeof window.fetchProjectRequirements === 'function') {
+                        window.fetchProjectRequirements(jsonData.projectID || data.projectID);
                     }
-
-                    // Refresh reports if needed
-                    if (jsonData.refreshReports) {
-                        console.log('🔄 Stage 2 complete - refreshing reports list...');
-
-                        // Dispatch event to refresh reports in the sidebar
-                        window.dispatchEvent(new CustomEvent('reportGenerated', {
-                            detail: { projectID: jsonData.projectID || data.projectID }
-                        }));
-
-                        // Also refresh reports directly if function is available
-                        if (typeof window.fetchProjectReports === 'function') {
-                            window.fetchProjectReports(jsonData.projectID || data.projectID);
-                        }
+                    if (typeof window.fetchProjectUserStories === 'function') {
+                        window.fetchProjectUserStories(jsonData.projectID || data.projectID);
                     }
                 }
             } else if (jsonData.type === 'chunk') {

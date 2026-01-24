@@ -1,5 +1,4 @@
 const fss = require("./fsServices")
-const docGen = require("./docGenerationService")
 
 const tools = [
     {
@@ -241,40 +240,6 @@ const tools = [
                     }
                 },
                 required: ["jsonList"]
-            }
-        }
-    },
-    {
-        type: "function",
-        function: {
-            name: "generate_requirements_report",
-            description: "Generate a DOCX report document containing all requirements in the project. The report will be saved and available for download in the sidebar. Call this when the user asks to generate, create, or export a requirements document/report.",
-            parameters: {
-                type: "object",
-                properties: {
-                    projectID: {
-                        type: "string",
-                        description: "The ID of the project"
-                    }
-                },
-                required: ["projectID"]
-            }
-        }
-    },
-    {
-        type: "function",
-        function: {
-            name: "generate_user_stories_report",
-            description: "Generate a DOCX report document containing all user stories in the project. The report will be saved and available for download in the sidebar. Call this when the user asks to generate, create, or export a user stories document/report.",
-            parameters: {
-                type: "object",
-                properties: {
-                    projectID: {
-                        type: "string",
-                        description: "The ID of the project"
-                    }
-                },
-                required: ["projectID"]
             }
         }
     }
@@ -688,80 +653,6 @@ const toolImpls = {
 
     async search_chat_history(projectID, chatID, keyword) {
         return await aiDB.searchChatHistory(projectID, chatID, keyword)
-    },
-
-    async generate_requirements_report(projectID) {
-        try {
-            console.log(`📄 [Tool] Generating requirements report for project: ${projectID}`);
-            const requirements = await aiDB.getProjectRequirements(projectID);
-
-            if (!requirements || requirements.length === 0) {
-                return {
-                    success: false,
-                    message: "No requirements found in the project. Please add requirements first before generating a report."
-                };
-            }
-
-            const result = await docGen.generateRequirementsDocument(projectID, requirements);
-
-            if (result) {
-                console.log(`✅ [Tool] Requirements report generated successfully`);
-                return {
-                    success: true,
-                    message: `Requirements report generated successfully with ${requirements.length} requirement(s). The report is now available for download in the sidebar.`,
-                    requirementCount: requirements.length,
-                    reportGenerated: true
-                };
-            } else {
-                return {
-                    success: false,
-                    message: "Failed to generate requirements report. Please try again."
-                };
-            }
-        } catch (error) {
-            console.error(`❌ [Tool] Error generating requirements report:`, error.message);
-            return {
-                success: false,
-                message: `Error generating requirements report: ${error.message}`
-            };
-        }
-    },
-
-    async generate_user_stories_report(projectID) {
-        try {
-            console.log(`📄 [Tool] Generating user stories report for project: ${projectID}`);
-            const userStories = await aiDB.getProjectUserStories(projectID);
-
-            if (!userStories || userStories.length === 0) {
-                return {
-                    success: false,
-                    message: "No user stories found in the project. Please add user stories first before generating a report."
-                };
-            }
-
-            const result = await docGen.generateUserStoriesDocument(projectID, userStories);
-
-            if (result) {
-                console.log(`✅ [Tool] User stories report generated successfully`);
-                return {
-                    success: true,
-                    message: `User stories report generated successfully with ${userStories.length} user story(ies). The report is now available for download in the sidebar.`,
-                    storyCount: userStories.length,
-                    reportGenerated: true
-                };
-            } else {
-                return {
-                    success: false,
-                    message: "Failed to generate user stories report. Please try again."
-                };
-            }
-        } catch (error) {
-            console.error(`❌ [Tool] Error generating user stories report:`, error.message);
-            return {
-                success: false,
-                message: `Error generating user stories report: ${error.message}`
-            };
-        }
     }
 
 };
