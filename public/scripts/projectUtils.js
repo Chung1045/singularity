@@ -110,6 +110,7 @@ async function fetchProjectChats(projectID) {
 function createChatHistoryItem(threadName, chatID) {
     const ChatHistoryItemComponent = () => {
         const [menuOpen, setMenuOpen] = React.useState(false);
+        const [isChecked, setIsChecked] = React.useState(false);
         const menuRef = React.useRef(null);
 
         // Close menu when clicking outside
@@ -218,7 +219,7 @@ function createChatHistoryItem(threadName, chatID) {
                 }
             },
             onClick: (e) => {
-                if (e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
+                if (e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON' && e.target.type !== 'checkbox') {
                     // Deselect all chat history items
                     const allChatItems = document.querySelectorAll('.chat-history-item');
                     allChatItems.forEach(item => {
@@ -244,28 +245,54 @@ function createChatHistoryItem(threadName, chatID) {
                 }
             }
         },
+            // Checkbox - click to show/hide menu
+            React.createElement('input', {
+                type: 'checkbox',
+                className: 'chat-checkbox',
+                style: { width: "16px", height: "16px", flexShrink: 0, cursor: 'pointer' },
+                onChange: (e) => {
+                    e.stopPropagation();
+                    const checked = e.target.checked;
+                    console.log(`Chat checkbox ${checked ? 'checked' : 'unchecked'} for ${threadName}`);
+                    setIsChecked(checked);
+                    if (!checked) {
+                        setMenuOpen(false);
+                    }
+                },
+                onClick: (e) => e.stopPropagation()
+            }),
             React.createElement('p', {
                 style: {
-                    flexGrow: 1,
+                    flex: '1 1 0',
+                    minWidth: 0,
                     margin: 0,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    fontSize: '14px'
-                }
+                    fontSize: '14px',
+                    paddingLeft: '10px'
+                },
+                title: (threadName && threadName.trim() !== '') ? threadName : 'Untitled Chat' // Tooltip shows full name
             }, (threadName && threadName.trim() !== '') ? threadName : 'Untitled Chat'),
-            React.createElement('div', {
+            // Menu container - only visible when checkbox is checked
+            isChecked && React.createElement('div', {
                 ref: menuRef,
                 className: 'chat-menu',
                 style: {
                     position: 'relative',
                     display: 'flex',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    flexShrink: 0,
+                    width: '50px',
+                    height: '50px'
                 }
             },
                 React.createElement('img', {
+                    className: 'chat-menu-btn',
                     style: {
-                        padding: "4px",
+                        width: '50px',
+                        height: '50px',
+                        padding: '4px',
                         flexShrink: 0,
                         borderRadius: '5px',
                         transition: 'background-color 0.2s',
@@ -384,6 +411,7 @@ async function fetchProjectFiles(projectID) {
 function createFileItem(fileName, documentID) {
     const FileItemComponent = () => {
         const [menuOpen, setMenuOpen] = React.useState(false);
+        const [isChecked, setIsChecked] = React.useState(false);
         const menuRef = React.useRef(null);
 
         // Close menu when clicking outside
@@ -539,8 +567,12 @@ function createFileItem(fileName, documentID) {
                 gap: '8px',
                 position: 'relative'
             },
-            onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f0f0f0'; },
-            onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+            onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+            },
+            onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            },
             onClick: (e) => {
                 if (e.target.type !== 'checkbox') {
                     console.log(`Clicked on ${fileName}`);
@@ -549,9 +581,16 @@ function createFileItem(fileName, documentID) {
         },
             React.createElement('input', {
                 type: 'checkbox',
-                style: { width: "16px", height: "16px", flexShrink: 0 },
+                className: 'source-checkbox',
+                style: { width: "16px", height: "16px", flexShrink: 0, cursor: 'pointer' },
                 onChange: (e) => {
-                    console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
+                    e.stopPropagation();
+                    const checked = e.target.checked;
+                    console.log(`Source checkbox ${checked ? 'checked' : 'unchecked'} for ${fileName}`);
+                    setIsChecked(checked);
+                    if (!checked) {
+                        setMenuOpen(false);
+                    }
                     if (typeof window.getSelectedSource === 'function') window.getSelectedSource();
                 },
                 onClick: (e) => e.stopPropagation()
@@ -567,10 +606,12 @@ function createFileItem(fileName, documentID) {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     fontSize: '13.3px',
-                    cursor: 'default'
+                    cursor: 'default',
+                    paddingLeft: '10px'
                 }
             }, fileName),
-            React.createElement('div', {
+            // Menu container - only visible when checkbox is checked
+            isChecked && React.createElement('div', {
                 ref: menuRef,
                 style: {
                     position: 'relative',
@@ -583,6 +624,7 @@ function createFileItem(fileName, documentID) {
             },
                 React.createElement('img', {
                     id: `source-file-menu-${documentID}`,
+                    className: 'source-menu-btn',
                     'aria-label': `File options menu for ${fileName}`,
                     style: {
                         width: '30px',
@@ -688,108 +730,431 @@ function createFileItem(fileName, documentID) {
 }
 
 /**
- * Fetch and display project reports
+ * Fetch and display project reports categorized by type
  * @param {string} projectID - The UUID of the project
  */
 async function fetchProjectReports(projectID) {
-    console.log(`fetchProjectReports called with ProjectID: ${projectID}`);
+    console.log(`📊 fetchProjectReports called with ProjectID: ${projectID}`);
 
-    const reportsListContainer = document.getElementById("div-project-requirements-list");
+    const reportsListContainer = document.getElementById("div-requirements-list");
 
     if (!reportsListContainer) {
-        console.log("Reports list container not found on this page");
+        console.warn("⚠️ Reports list container (div-requirements-list) not found on this page");
         return;
     }
 
+    const noReportsLabel = document.getElementById("p-label-requirements-no-entry");
+    console.log(`📊 Found noReportsLabel:`, noReportsLabel ? 'yes' : 'no');
+
     try {
+        console.log(`📊 Fetching reports from API...`);
         const response = await fetch('/api/project/report/list', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include', // Include cookies for authentication
             body: JSON.stringify({
                 projectID: projectID
             })
         });
 
+        console.log(`📊 API response status: ${response.status}`);
+
         if (response.ok) {
             let data = await response.json();
-            console.log(`Response Data: ${JSON.stringify(data)}`);
+            console.log(`📊 Reports Response Data:`, data);
+            console.log(`📊 Number of reports: ${data.reports?.length || 0}`);
 
             reportsListContainer.innerHTML = '';
+            console.log(`📊 Cleared reportsListContainer`);
 
             if (data.reports && data.reports.length > 0) {
-                for (let report of data.reports) {
-                    const reportElement = createReportItem(report.reportName, report.reportID);
-                    const wrapper = document.createElement('div');
-                    reportsListContainer.appendChild(wrapper);
-                    const root = ReactDOM.createRoot(wrapper);
-                    root.render(reportElement);
+                // Categorize reports by type (DOCX only)
+                const requirementsReports = data.reports.filter(r =>
+                    r.reportType === 'requirements' || r.reportType === 'Requirements'
+                );
+                const userStoriesReports = data.reports.filter(r =>
+                    r.reportType === 'userStories' || r.reportType === 'UserStories' || r.reportType === 'user_stories'
+                );
+
+                let hasReports = false;
+
+                // Requirements section
+                if (requirementsReports.length > 0) {
+                    hasReports = true;
+                    console.log(`📊 Rendering ${requirementsReports.length} requirements report(s)`);
+                    const reqHeader = document.createElement('div');
+                    reqHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-bottom: 8px; font-family: Inter, Helvetica;';
+                    reqHeader.textContent = 'Requirements';
+                    reportsListContainer.appendChild(reqHeader);
+
+                    for (let report of requirementsReports) {
+                        console.log(`📊 Rendering report: ${report.reportName} (ID: ${report.reportID})`);
+                        const reportElement = createReportItem(report.reportName, report.reportID, projectID);
+                        const wrapper = document.createElement('div');
+                        reportsListContainer.appendChild(wrapper);
+                        const root = ReactDOM.createRoot(wrapper);
+                        root.render(reportElement);
+                    }
+                    console.log(`✅ Requirements reports rendered`);
+                }
+
+                // User Stories section
+                if (userStoriesReports.length > 0) {
+                    hasReports = true;
+                    console.log(`📊 Rendering ${userStoriesReports.length} user stories report(s)`);
+                    const usHeader = document.createElement('div');
+                    usHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-top: 12px; margin-bottom: 8px; font-family: Inter, Helvetica;';
+                    usHeader.textContent = 'User Stories';
+                    reportsListContainer.appendChild(usHeader);
+
+                    for (let report of userStoriesReports) {
+                        console.log(`📊 Rendering report: ${report.reportName} (ID: ${report.reportID})`);
+                        const reportElement = createReportItem(report.reportName, report.reportID, projectID);
+                        const wrapper = document.createElement('div');
+                        reportsListContainer.appendChild(wrapper);
+                        const root = ReactDOM.createRoot(wrapper);
+                        root.render(reportElement);
+                    }
+                    console.log(`✅ User stories reports rendered`);
+                }
+
+                if (noReportsLabel) {
+                    noReportsLabel.style.display = hasReports ? 'none' : 'block';
+                    console.log(`📊 NoReportsLabel display: ${hasReports ? 'none' : 'block'}`);
+                }
+            } else {
+                console.log(`📊 No reports found for this project`);
+                if (noReportsLabel) {
+                    noReportsLabel.style.display = 'block';
+                    console.log(`📊 Showing "No requirements yet" label`);
                 }
             }
-
-            const noReportsLabel = document.getElementById("p-label-project-requirements-no-entry");
-            if (noReportsLabel) {
-                noReportsLabel.style.display = (data.reports && data.reports.length > 0) ? "none" : "block";
-            }
+        } else {
+            console.error(`📊 API request failed with status: ${response.status}`);
         }
     } catch (error) {
-        console.error("Error fetching project reports:", error);
+        console.error("❌ Error fetching project reports:", error);
     }
 }
 
 /**
- * Create a React element for a report item
+ * Create a React element for a report item with options menu
  * @param {string} reportName - The name of the report
  * @param {string} reportID - The UUID of the report
+ * @param {string} projectID - The UUID of the project
  */
-function createReportItem(reportName, reportID) {
-    return React.createElement('div', {
-        style: {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 12px',
-            cursor: 'pointer',
-            borderRadius: '6px',
-            transition: 'background-color 0.2s',
-            fontSize: '14px',
-            color: '#1c1d21',
-            marginBottom: '4px'
-        },
-        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
-        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
-        onClick: () => {
-            console.log('Report clicked:', reportID);
-            if (typeof window.viewReport === 'function') {
-                window.viewReport(reportID);
+function createReportItem(reportName, reportID, projectID) {
+    const { useState, useRef, useEffect } = React;
+
+    const ReportItemComponent = () => {
+        const [menuOpen, setMenuOpen] = useState(false);
+        const [isChecked, setIsChecked] = useState(false);
+        const menuRef = useRef(null);
+
+        // Close menu when clicking outside
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setMenuOpen(false);
+                }
+            };
+
+            if (menuOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
             }
-        }
-    },
-        React.createElement('span', {
+
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [menuOpen]);
+
+        const handleDownload = async (e) => {
+            e.stopPropagation();
+            setMenuOpen(false);
+
+            // Inline download logic to avoid function name conflicts with tempHome.js
+            try {
+                const response = await fetch('/api/project/report/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        projectID: projectID,
+                        reportID: reportID
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = reportName + '.docx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    console.error('Failed to download report');
+                    if (window.showNotification) {
+                        window.showNotification({
+                            type: 'error',
+                            title: 'Download Failed',
+                            message: 'Failed to download the report.',
+                            actionText: 'OK'
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error downloading report:', error);
+            }
+        };
+
+        const handleDelete = async (e) => {
+            e.stopPropagation();
+            setMenuOpen(false);
+
+            if (!confirm(`Are you sure you want to delete "${reportName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/project/report/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', // Include cookies for authentication
+                    body: JSON.stringify({
+                        projectID: projectID,
+                        reportID: reportID
+                    })
+                });
+
+                if (response.ok) {
+                    // Refresh the reports list
+                    if (typeof window.fetchProjectReports === 'function') {
+                        window.fetchProjectReports(projectID);
+                    }
+                    // Dispatch event to notify other components
+                    window.dispatchEvent(new CustomEvent('reportGenerated', { detail: { projectID } }));
+                } else {
+                    console.error('Failed to delete report');
+                    if (window.showNotification) {
+                        window.showNotification({
+                            type: 'error',
+                            title: 'Delete Failed',
+                            message: 'Failed to delete the report.',
+                            actionText: 'OK'
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting report:', error);
+            }
+        };
+
+        return React.createElement('div', {
+            id: `sidebar-report-item-${reportID}`,
+            'data-report-id': reportID,
             style: {
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                flex: 1
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px',
+                marginLeft: '-20px',
+                cursor: 'pointer',
+                borderRadius: '6px',
+                transition: 'background-color 0.2s',
+                fontSize: '12px',
+                color: '#1c1d21',
+                marginBottom: '4px',
+                fontFamily: 'Inter, Helvetica',
+                position: 'relative'
             },
-            title: reportName
-        }, reportName),
-        React.createElement('img', {
-            src: './img/more_vert_24.svg',
-            alt: 'Options',
-            style: {
-                width: '20px',
-                height: '20px',
-                marginLeft: '8px',
-                flexShrink: 0
+            onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = '#f5f5f5';
+            },
+            onMouseLeave: (e) => {
+                if (!menuOpen) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                }
             },
             onClick: (e) => {
-                e.stopPropagation();
-                console.log('Report options clicked:', reportID);
+                // Download the report on click (unless clicking checkbox or menu)
+                if (e.target.type !== 'checkbox' && e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
+                    handleDownload(e);
+                }
             }
-        })
-    );
+        },
+            // Checkbox - click to show/hide menu
+            React.createElement('input', {
+                type: 'checkbox',
+                className: 'report-checkbox',
+                style: { width: "16px", height: "16px", flexShrink: 0, cursor: 'pointer' },
+                onChange: (e) => {
+                    e.stopPropagation();
+                    const checked = e.target.checked;
+                    console.log(`Report checkbox ${checked ? 'checked' : 'unchecked'} for ${reportName}`);
+                    setIsChecked(checked);
+                    if (!checked) {
+                        setMenuOpen(false);
+                    }
+                },
+                onClick: (e) => e.stopPropagation()
+            }),
+            // Report name with tooltip on hover
+            React.createElement('span', {
+                id: `sidebar-report-name-${reportID}`,
+                style: {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flex: 1,
+                    fontSize: '14px',
+                    paddingLeft: '10px'
+                },
+                title: reportName // Tooltip shows full name on hover
+            }, reportName),
+
+            // Options menu container - only visible when checkbox is checked
+            isChecked && React.createElement('div', {
+                ref: menuRef,
+                style: { position: 'relative' }
+            },
+                // Options button (three dots) - 30x30 fixed size
+                React.createElement('img', {
+                    id: `sidebar-report-options-btn-${reportID}`,
+                    className: 'report-menu-btn',
+                    src: './img/more_vert_24.svg',
+                    alt: 'Options',
+                    style: {
+                        width: '30px',
+                        height: '30px',
+                        padding: '4px',
+                        flexShrink: 0,
+                        borderRadius: '5px',
+                        transition: 'background-color 0.2s',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer'
+                    },
+                    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#e4e4e4',
+                    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    }
+                }),
+
+                // Dropdown menu
+                menuOpen && React.createElement('div', {
+                    id: `sidebar-report-options-menu-${reportID}`,
+                    style: {
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '4px',
+                        backgroundColor: '#ffffff',
+                        border: '1.67px solid #e4e4e4',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        minWidth: '120px',
+                        zIndex: 1000,
+                        overflow: 'hidden'
+                    }
+                },
+                    // Download option
+                    React.createElement('button', {
+                        id: `sidebar-report-download-btn-${reportID}`,
+                        style: {
+                            width: '100%',
+                            padding: '10px 14px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            color: '#1c1d21',
+                            fontWeight: '400',
+                            fontFamily: 'Inter, Helvetica',
+                            transition: 'background-color 0.2s',
+                            borderBottom: '1px solid #f0f0f0'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                        onClick: handleDownload
+                    }, 'Download'),
+
+                    // Delete option
+                    React.createElement('button', {
+                        id: `sidebar-report-delete-btn-${reportID}`,
+                        style: {
+                            width: '100%',
+                            padding: '10px 14px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            color: '#c1281e',
+                            fontWeight: '500',
+                            fontFamily: 'Inter, Helvetica',
+                            transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                        onClick: handleDelete
+                    }, 'Delete')
+                )
+            )
+        );
+    };
+
+    return React.createElement(ReportItemComponent);
+}
+
+/**
+ * Download a report file
+ * @param {string} reportID - The UUID of the report
+ * @param {string} reportName - The name of the report
+ * @param {string} projectID - The UUID of the project
+ */
+async function downloadReport(reportID, reportName, projectID) {
+    try {
+        const response = await fetch('/api/project/report/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Include cookies for authentication
+            body: JSON.stringify({
+                projectID: projectID,
+                reportID: reportID
+            })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = reportName + '.docx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            console.error('Failed to download report');
+            if (window.showNotification) {
+                window.showNotification({
+                    type: 'error',
+                    title: 'Download Failed',
+                    message: 'Failed to download the report.',
+                    actionText: 'OK'
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error downloading report:', error);
+    }
 }
 
 // Make functions available globally

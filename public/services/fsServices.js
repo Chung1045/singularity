@@ -265,7 +265,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
 
-        if (documentExt === ".pdf" || ".docx" || ".mp3" || ".m4a" || ".mp4") {
+        if (documentExt === ".pdf" || documentExt === ".docx" || documentExt === ".mp3" || documentExt === ".m4a" || documentExt === ".mp4") {
             await createAliasFile(projectID, documentID, documentExt)
         }
 
@@ -427,24 +427,34 @@ async function getFileMetadata(documentID, projectID) {
 }
 
 async function saveGeneratedReport(projectID, buffer, kind) {
+    console.log(`📊 saveGeneratedReport called: projectID=${projectID}, bufferSize=${buffer.length}, kind=${kind}`);
     try {
 
-        const reportID = await insertReportRecord(projectID, kind)
+        console.log(`📊 Calling insertReportRecord...`);
+        const reportID = await insertReportRecord(projectID, kind);
+        console.log(`📊 insertReportRecord returned reportID: ${reportID}`);
+
         const pathName = `project/${projectID}/reports/${reportID}`;
+        console.log(`📊 Saving to MinIO path: ${pathName}`);
+
+        // Only DOCX is supported now
+        const contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        console.log(`📊 Content type: ${contentType}`);
 
         // Use putObject for buffer data
         await minioClient.putObject(bucket, pathName, buffer, buffer.length, {
-            'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            'Content-Type': contentType
         });
 
-        console.log(`Uploaded ${pathName}`);
+        console.log(`✅ Uploaded ${pathName} with content type: ${contentType}`);
 
         return {
             successful: true,
             path: pathName,
         };
     } catch (err) {
-        console.error("Upload error:", err);
+        console.error("❌ Upload error:", err);
+        console.error("❌ Error stack:", err.stack);
         return {
             successful: false,
             message: err.message
@@ -484,17 +494,29 @@ async function insertReportRecord(projectID, reportType) {
     const sql = `INSERT INTO reports (reportID, projectID, reportName, reportType, reportDate)
                  VALUES (?, ?, ?, ?, ?)`;
 
+    console.log(`📊 insertReportRecord called with projectID: ${projectID}, reportType: ${reportType}`);
+    console.log(`📊 FSS_REPORT_REQUIREMENTS = ${FSS_REPORT_REQUIREMENTS}`);
+    console.log(`📊 FSS_REPORT_USERSTORIES = ${FSS_REPORT_USERSTORIES}`);
+
     let reportName;
 
     if (reportType === FSS_REPORT_REQUIREMENTS) {
-        reportName = "Project Requirements Report"
+        reportName = "Project Requirements Report";
     } else if (reportType === FSS_REPORT_USERSTORIES) {
-        reportName = "Project User Stories Report"
+        reportName = "Project User Stories Report";
+    } else {
+        // Fallback for unknown report types
+        reportName = "Generated Report";
+        console.warn(`⚠️ Unknown report type: ${reportType}, using fallback name`);
     }
+
+    console.log(`📊 Report name: ${reportName}`);
 
     const reportID = uuid();
     const now = new Date();
     const dateTimeStr = now.toISOString().replace('T', ' ').split('.')[0];
+
+    console.log(`📊 Creating report: ${reportName}-${dateTimeStr}, ID: ${reportID}`);
 
     const params = [
         reportID,
@@ -502,14 +524,30 @@ async function insertReportRecord(projectID, reportType) {
         `${reportName}-${dateTimeStr}`,
         reportType,
         dateTimeStr
-    ]
+    ];
 
-    await db.run(sql, params, (err) => {
-        if (err) {
-            console.error("Error inserting report record:", err);
-        }
-    });
+    console.log(`📊 SQL params:`, params);
 
+    try {
+        await new Promise((resolve, reject) => {
+            db.run(sql, params, function(err) {
+                if (err) {
+                    console.error("❌ Error inserting report record:", err);
+                    console.error("❌ SQL:", sql);
+                    console.error("❌ Params:", params);
+                    reject(err);
+                } else {
+                    console.log(`✅ Report record inserted successfully, ID: ${reportID}, lastID: ${this.lastID}`);
+                    resolve(this.lastID);
+                }
+            });
+        });
+    } catch (error) {
+        console.error(`❌ Exception in insertReportRecord:`, error);
+        throw error;
+    }
+
+    console.log(`📊 Returning reportID: ${reportID}`);
     return reportID;
 }
 

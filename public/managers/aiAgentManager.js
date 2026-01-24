@@ -128,6 +128,33 @@ router.post('/agent/chat', async (req, res) => {
                         // Log stage markers but don't send to client as content
                         console.log(`📊 Stage marker: ${trimmedChunk}`);
 
+                        // Handle report generation events
+                        if (trimmedChunk.includes('REPORT_GENERATED:')) {
+                            try {
+                                // Extract JSON - handle quotes and special characters
+                                const startIdx = trimmedChunk.indexOf('{');
+                                const endIdx = trimmedChunk.lastIndexOf('}');
+                                if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                                    const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
+                                    console.log(`📊 Report generation marker found, JSON string:`, jsonStr);
+                                    const reportInfo = JSON.parse(jsonStr);
+                                    console.log(`📊 Parsed reportInfo:`, reportInfo);
+                                    console.log(`📊 Sending reportGenerated event to client`);
+                                    res.write(`data: ${JSON.stringify({ 
+                                        type: 'reportGenerated', 
+                                        reportType: reportInfo.type,
+                                        projectID: reportInfo.projectID || projectID
+                                    })}\n\n`);
+                                } else {
+                                    console.error('📊 Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
+                                }
+                            } catch (parseErr) {
+                                console.error('Failed to parse report info:', parseErr);
+                                console.error('Chunk was:', trimmedChunk);
+                            }
+                            continue;
+                        }
+
                         // Send stage events to client for progress indication
                         if (trimmedChunk.includes('STAGE_1_START')) {
                             res.write(`data: ${JSON.stringify({ type: 'stage', stage: 1, status: 'start', message: 'Analyzing your request...' })}\n\n`);
@@ -180,7 +207,9 @@ router.post('/agent/chat', async (req, res) => {
                     type: 'done', 
                     chatSeq: chatSeq,
                     conversationID: conversationID,
-                    threadName: threadName || 'Untitled Chat'
+                    threadName: threadName || 'Untitled Chat',
+                    refreshReports: true,
+                    projectID: projectID
                 })}\n\n`);
                 res.end();
 
@@ -189,8 +218,19 @@ router.post('/agent/chat', async (req, res) => {
                 console.error(`Error stack:`, error.stack);
                 console.error(`Error details - projectID: ${projectID}, chatID: ${chatID}`);
 
-                const errorMessage = error.message || 'Stream failed';
-                res.write(`data: ${JSON.stringify({ type: 'error', message: `Stream failed: ${errorMessage}` })}\n\n`);
+                let errorMessage = error.message || 'Stream failed';
+                let userFriendlyMessage = errorMessage;
+
+                // Provide user-friendly messages for specific error types
+                if (errorMessage.includes('SAFETY_CHECK') || errorMessage.includes('content') && errorMessage.includes('violates')) {
+                    userFriendlyMessage = 'The AI provider\'s content filter flagged this request. This can happen with certain document types (medical, biological topics, etc.). Try rephrasing your request or analyzing specific sections.';
+                } else if (errorMessage.includes('403')) {
+                    userFriendlyMessage = 'Access was denied by the AI provider. Please try again with a different request.';
+                } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+                    userFriendlyMessage = 'Too many requests. Please wait a moment and try again.';
+                }
+
+                res.write(`data: ${JSON.stringify({ type: 'error', message: userFriendlyMessage })}\n\n`);
                 res.end();
             }
         } else {

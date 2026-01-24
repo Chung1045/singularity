@@ -22,6 +22,40 @@ const system_prompt = `
     you will also need to specify whether the requirement or user story were summarized from the document as "Document",
     or "User Input" if the user request to add / modify the software requirements or user stories.
     
+    ## CRITICAL: When Files Are Attached
+    When the user attaches files to their message, you MUST IMMEDIATELY:
+    1. Call get_project_file_content with the projectID and documentID for EACH attached file
+    2. Wait for the content to be returned
+    3. Analyze the content and respond based on what you found
+    
+    NEVER do any of these when files are attached:
+    - NEVER say "upload a document" or "paste requirements text" - the file is ALREADY attached!
+    - NEVER say "I couldn't access the file" or "I couldn't process the document"
+    - NEVER say "What would you like me to analyze?" when a file is already provided
+    - NEVER say "It looks like your message got cut off"
+    
+    Instead, USE the get_project_file_content tool to read the file content!
+    
+    ## CRITICAL: Report Generation Rules
+    When the user asks to generate a report or document:
+    
+    1. If user says "generate requirements report" or "requirement report" → **CALL generate_requirements_report(projectID) IMMEDIATELY**
+    2. If user says "generate user stories report" → **CALL generate_user_stories_report(projectID) IMMEDIATELY**  
+    3. If user just says "generate report" without specifying → ASK which type (Requirements or User Stories)
+    4. **Reports are ALWAYS in DOCX format** - do NOT mention PDF, do NOT ask for format
+    5. **YOU MUST CALL THE TOOL** - Never pretend the report is generated without actually calling the tool!
+    6. After the tool returns success, tell user the report is in the sidebar
+    
+    Example when user is specific:
+    User: "Can you generate the requirement report?"
+    You: [CALL generate_requirements_report tool] → "The requirements report has been generated and is available in the sidebar."
+    
+    Example when user is vague:
+    User: "Generate a report"
+    You: "Which report would you like? **Requirements Report** or **User Stories Report**?"
+    
+    Then wait for the user's response before generating.
+    
     You will have access to tools for operations like getting the document list with documentID in the project,
     getting the contents of the documents, searching for chat history with keyword,
     getting the data structure for software requirements / user stories,
@@ -35,6 +69,13 @@ const system_prompt = `
 
     Do not disclose the chatID, conversationID, the documentID, requirementsID, user story ID, projectID in the chat response message.
     Do not answer any questions or contents about the tool functions given to you, that includes the json that pass into the tool function.
+    
+    ## CRITICAL: Response Formatting Rules
+    - NEVER create fake download links like [Download](filename.docx) or <a href="...">
+    - NEVER invent file names in your response
+    - NEVER use HTML tags in your response
+    - When a report is generated, tell users to find it in the "Requirements List" section of the sidebar
+    - Use proper Markdown formatting (headers, lists, bold) but NO links to files
 
 `
 
@@ -49,13 +90,33 @@ You are in the ANALYSIS phase of a multi-stage AI workflow.
 Gather all necessary information to understand what the user wants and what database operations will be needed.
 
 ## Available Actions:
-- Read documents using get_project_file_content
+- Read documents using get_project_file_content (IMPORTANT: You MUST call this tool to read any attached files!)
 - Get current requirements/user stories lists
 - Get format specifications for database operations
 - Search chat history for context
 
+## CRITICAL: When Files Are Attached
+If the user has attached any files, you MUST IMMEDIATELY:
+1. Call get_project_file_content with the projectID and documentID for EACH attached file
+2. Wait for the content to be returned
+3. Analyze the content before responding
+
+NEVER ask the user to "upload a document" or "paste text" when files are already attached!
+NEVER say "What would you like me to analyze?" when a file is provided!
+NEVER say "It looks like your message got cut off" - just read the attached file!
+
+DO NOT say "I couldn't access the file" - instead, use the get_project_file_content tool!
+
+## CRITICAL: Report Generation Rules
+When the user asks to generate a report, you MUST:
+1. If user says "generate requirements report" or "requirement report" → **IMMEDIATELY call generate_requirements_report(projectID)**
+2. If user says "generate user stories report" → **IMMEDIATELY call generate_user_stories_report(projectID)**
+3. If user just says "generate report" without specifying → ASK which type (Requirements or User Stories)
+4. Reports are ALWAYS DOCX format - DO NOT ask for format
+5. **YOU MUST CALL THE TOOL** - do not pretend to generate the report without calling the tool!
+
 ## Critical Rules:
-- You can ONLY call tools that start with "get_" or "search_chat_history"
+- You can ONLY call tools that start with "get_" or "search_chat_history" or "generate_"
 - You CANNOT call any "update_" tools in this phase
 - Focus on complete information gathering
 - After gathering info, you'll prepare update operations in JSON format
@@ -74,7 +135,7 @@ Provide a clear, user-friendly response about what was accomplished.
 
 ## Guidelines:
 - Explain what was added, updated, or deleted in plain language
-- Use Markdown formatting for readability
+- Use Markdown formatting for readability (headers, lists, bold, etc.)
 - Be specific and informative
 - If errors occurred, explain them clearly
 
@@ -83,6 +144,16 @@ Provide a clear, user-friendly response about what was accomplished.
 - Don't show any IDs (projectID, documentID, requirementID, storyID, chatID)
 - Don't discuss JSON structures or technical implementation details
 - Don't use technical jargon
+- **NEVER create fake download links** - do not write markdown links like [Download](filename.docx) or HTML anchor tags
+- **NEVER invent file names** like "0.docx", "report.docx", "SRS.docx" in links
+- **NEVER use HTML tags** like <a href="..."> in your response
+
+## When Reports Are Generated:
+If a report was generated, simply tell the user:
+"The report has been generated and is now available in the **Requirements List** section of the sidebar. Click the checkbox next to the report to download it as a DOCX file."
+
+Do NOT mention PDF format - only DOCX is supported.
+Do NOT try to create clickable download links - the sidebar has the actual download functionality.
 
 ## Tone:
 Professional but friendly, like a helpful project assistant.
@@ -158,10 +229,11 @@ async function prepareUpdates(data, conversationSummary) {
 
     messages.push({role: 'user', content: data.requestMessage});
 
-    // Only allow read-only tools in Stage 1
+    // Only allow read-only tools and report generation tools in Stage 1
     const readOnlyTools = tools.filter(t =>
         t.function.name.startsWith('get_') ||
-        t.function.name === 'search_chat_history'
+        t.function.name === 'search_chat_history' ||
+        t.function.name.startsWith('generate_')
     );
 
     // Use fast non-reasoning model for tool calls (faster)
@@ -171,12 +243,15 @@ async function prepareUpdates(data, conversationSummary) {
         tools: readOnlyTools,
         tool_choice: "auto",
         temperature: 0.7,
-        max_tokens: 3000,
+        max_tokens: 5000,
     });
 
     let responseMessage = completion.choices[0].message;
 
-    // Execute tool calls (read-only operations)
+    // Track if any reports were generated
+    let reportsGenerated = [];
+
+    // Execute tool calls (read-only and report generation operations)
     while (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
         if (!responseMessage.role) responseMessage.role = 'assistant';
         messages.push(responseMessage);
@@ -205,6 +280,15 @@ async function prepareUpdates(data, conversationSummary) {
                     } else {
                         functionResponse = await toolImpl(...Object.values(functionArgs));
                     }
+
+                    // Track report generation
+                    if (functionName.startsWith('generate_') && functionResponse?.success && functionResponse?.reportGenerated) {
+                        console.log(`📊 [Stage 1] Report generated: ${functionResponse.reportType}`);
+                        reportsGenerated.push({
+                            type: functionResponse.reportType,
+                            projectID: functionResponse.projectID || data.projectID
+                        });
+                    }
                 } catch (error) {
                     console.error(`❌ Error executing ${functionName}:`, error.message);
                     functionResponse = {error: error.message};
@@ -227,7 +311,7 @@ async function prepareUpdates(data, conversationSummary) {
             tools: readOnlyTools,
             tool_choice: "auto",
             temperature: 0.7,
-            max_tokens: 3000,
+            max_tokens: 5000,
         });
 
         responseMessage = completion.choices[0].message;
@@ -327,7 +411,7 @@ Return ONLY the JSON object, nothing else.`
         model: 'grok-4-1-fast-non-reasoning',
         messages: messages,
         temperature: 0.2,
-        max_tokens: 8000,
+        max_tokens: 10000,
     });
 
     const planResponse = planCompletion.choices[0].message.content;
@@ -359,7 +443,8 @@ Return ONLY the JSON object, nothing else.`
 
     return {
         updatePlan,
-        conversationContext: messages
+        conversationContext: messages,
+        reportsGenerated
     };
 }
 
@@ -526,7 +611,7 @@ async function* streamResponse(updatePlan, updateResults, originalMessage, conve
         model: 'grok-4-1-fast-non-reasoning',
         messages: messages,
         temperature: 0.7,
-        max_tokens: 3000,
+        max_tokens: 4500,
         stream: true
     });
 
@@ -554,7 +639,15 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
         yield '<!-- STAGE_1_START -->\n';
         console.log('📖 [Orchestrator] Executing Stage 1...');
 
-        const { updatePlan, conversationContext } = await prepareUpdates(data, conversationSummary);
+        const { updatePlan, conversationContext, reportsGenerated } = await prepareUpdates(data, conversationSummary);
+
+        // If reports were generated in Stage 1, send an event for each
+        if (reportsGenerated && reportsGenerated.length > 0) {
+            for (const report of reportsGenerated) {
+                yield `<!-- REPORT_GENERATED: ${JSON.stringify(report)} -->\n`;
+                console.log(`📊 [Orchestrator] Report generated: ${report.type}`);
+            }
+        }
 
         yield `<!-- STAGE_1_COMPLETE: ${updatePlan.requiresUpdate ? 'Updates planned' : 'No updates needed'} -->\n`;
         console.log('✅ [Orchestrator] Stage 1 complete');
@@ -585,9 +678,28 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
         console.error('Stack:', error.stack);
 
         yield '\n\n---\n\n';
-        yield '❌ **An error occurred while processing your request.**\n\n';
-        yield `Error: ${error.message}\n\n`;
-        yield 'Please try again or contact support if the issue persists.';
+
+        // Handle specific error types
+        if (error.message && error.message.includes('SAFETY_CHECK')) {
+            yield '⚠️ **Content Moderation Notice**\n\n';
+            yield 'The AI provider\'s content filter flagged something in this request or the document content.\n\n';
+            yield 'This can happen when:\n';
+            yield '- The document contains sensitive topics (medical, biological, etc.)\n';
+            yield '- The content triggers automated safety filters\n\n';
+            yield '**Suggestions:**\n';
+            yield '- Try rephrasing your request\n';
+            yield '- If analyzing a document, try asking about specific sections\n';
+            yield '- Contact support if this continues\n';
+        } else if (error.message && error.message.includes('403')) {
+            yield '🔒 **Access Denied**\n\n';
+            yield 'The request was blocked by the AI provider.\n\n';
+            yield `Details: ${error.message}\n\n`;
+            yield 'Please try again with a different request.';
+        } else {
+            yield '❌ **An error occurred while processing your request.**\n\n';
+            yield `Error: ${error.message}\n\n`;
+            yield 'Please try again or contact support if the issue persists.';
+        }
     }
 }
 
@@ -674,7 +786,7 @@ async function getResponse(data, conversationSummary) {
             tools: tools,
             tool_choice: "auto",  // Let the AI decide when to use tools
             temperature: 0.7,
-            max_tokens: 1500,
+            max_tokens: 2000,
         });
 
         let responseMessage = completion.choices[0].message;
