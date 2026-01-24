@@ -1020,11 +1020,9 @@
 
         // Listen for report generation events to refresh the reports list
         useEffect(() => {
-            const handleReportGenerated = async (event) => {
+            const handleReportGenerated = (event) => {
                 const projectID = event.detail?.projectID || selectedProjectID;
                 console.log('[Sidebar] Report generated event received, refreshing reports for project:', projectID);
-                // Add delay to ensure database write completes
-                await new Promise(resolve => setTimeout(resolve, 500));
                 if (projectID && typeof window.fetchProjectReports === 'function') {
                     window.fetchProjectReports(projectID);
                 }
