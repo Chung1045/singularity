@@ -247,7 +247,7 @@ const tools = [
         type: "function",
         function: {
             name: "generate_requirements_report",
-            description: "Generate a REQUIREMENTS document report (NOT user stories) in DOCX format. Call this whenever user mentions 'requirements report' or 'requirement report' in any form (including questions like 'can you generate requirements report', 'generate the requirements', etc.). DO NOT ask the user if they want to generate - just call this tool immediately when requirements are mentioned.",
+            description: "Generate a REQUIREMENTS document report (NOT user stories) in DOCX format. ONLY call this when user SPECIFICALLY mentions 'requirements' or 'requirement' (e.g., 'generate requirements report', 'can you generate requirement report', 'generate the requirements'). DO NOT call this if user just says 'generate report' or 'generate a report' without specifying the type - in that case, ask them which type they want first.",
             parameters: {
                 type: "object",
                 properties: {
@@ -264,7 +264,7 @@ const tools = [
         type: "function",
         function: {
             name: "generate_user_stories_report",
-            description: "Generate a USER STORIES document report (NOT requirements) in DOCX format. Call this whenever user mentions 'user stories report' in any form (including questions like 'can you generate user stories report', 'generate user stories', etc.). DO NOT ask the user if they want to generate - just call this tool immediately when user stories are mentioned.",
+            description: "Generate a USER STORIES document report (NOT requirements) in DOCX format. ONLY call this when user SPECIFICALLY mentions 'user stories' or 'stories' (e.g., 'generate user stories report', 'can you generate stories report', 'generate the user stories'). DO NOT call this if user just says 'generate report' or 'generate a report' without specifying the type - in that case, ask them which type they want first.",
             parameters: {
                 type: "object",
                 properties: {

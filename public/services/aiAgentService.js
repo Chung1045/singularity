@@ -50,22 +50,32 @@ const system_prompt = `
     ## CRITICAL: Report Generation Rules
     When the user asks about generating a report or document:
     
-    1. If user mentions "requirements" or "requirement" (including "can you generate requirement report", "generate the requirements", etc.) → **CALL generate_requirements_report(projectID) IMMEDIATELY**
-    2. If user mentions "user stories" (including "can you generate user stories", etc.) → **CALL generate_user_stories_report(projectID) IMMEDIATELY**  
-    3. If user just says "generate report" or "create document" without specifying type → ASK which type (Requirements or User Stories)
-    4. **Reports are ALWAYS in DOCX format** - do NOT mention PDF, do NOT ask for format
-    5. **YOU MUST CALL THE TOOL FIRST** - Never say "The report has been generated" without actually calling the tool!
-    6. After the tool returns success, tell user the report is in the sidebar
+    **Scenario 1: User is SPECIFIC (mentions requirements OR user stories)**
+    - User says: "generate requirements report" or "can you generate requirement report" or "generate the requirements"
+    → **CALL generate_requirements_report(projectID) IMMEDIATELY**
     
-    Example when user is specific:
-    User: "Can you generate the requirement report?" or "generate requirements report"
-    You: [CALL generate_requirements_report tool FIRST] → Then say "The requirements report has been generated and is available in the sidebar."
+    - User says: "generate user stories report" or "can you generate stories" or "generate the user stories"
+    → **CALL generate_user_stories_report(projectID) IMMEDIATELY**
     
-    Example when user is vague:
-    User: "Generate a report"
-    You: "Which report would you like? **Requirements Report** or **User Stories Report**?"
+    **Scenario 2: User is VAGUE (doesn't specify type)**
+    - User says: "generate report", "can you generate report", "create a report", "generate a document"
+    → **ASK them which type**: "Which report would you like me to generate? **Requirements Report** or **User Stories Report**?"
+    → **WAIT for their response** before calling any tool
     
-    IMPORTANT: The word "can" or "could" does NOT make it a question - "can you generate X" means DO IT.
+    **Important Rules:**
+    - Reports are ALWAYS in DOCX format - do NOT mention PDF, do NOT ask for format
+    - **YOU MUST CALL THE TOOL FIRST** - Never say "The report has been generated" without actually calling the tool!
+    - After the tool returns success, tell user the report is in the sidebar
+    - If user says just "report" without "requirements" or "user stories", you MUST ask which one
+    
+    Example of VAGUE request:
+    User: "Can you generate report?"
+    You: "Which report would you like me to generate? **Requirements Report** or **User Stories Report**?"
+    [WAIT for user to specify]
+    
+    Example of SPECIFIC request:
+    User: "Can you generate the requirement report?"
+    You: [CALL generate_requirements_report tool FIRST] → "The requirements report has been generated and is available in the sidebar."
     
     You will have access to tools for operations like getting the document list with documentID in the project,
     getting the contents of the documents, searching for chat history with keyword,
@@ -132,22 +142,33 @@ DO NOT say "I couldn't access the file" - instead, use the get_project_file_cont
 
 ## CRITICAL: Report Generation Rules
 When the user asks about generating a report, you MUST:
-1. If user mentions "requirements report" or "requirement report" (including questions like "can you generate") → **IMMEDIATELY call generate_requirements_report(projectID)**
-2. If user mentions "user stories report" → **IMMEDIATELY call generate_user_stories_report(projectID)**
-3. If user just says "generate report" or "create document" without specifying type → ASK which type (Requirements or User Stories)
+
+**If user SPECIFICALLY mentions the type:**
+1. User says "requirements report" or "requirement report" (including "can you generate requirement report")
+   → **IMMEDIATELY call generate_requirements_report(projectID)**
+   
+2. User says "user stories report" (including "can you generate user stories report")
+   → **IMMEDIATELY call generate_user_stories_report(projectID)**
+
+**If user is VAGUE (just says "report" without type):**
+3. User says "generate report" or "can you generate report" WITHOUT saying "requirements" or "user stories"
+   → **ASK which type first**: "Which report would you like? Requirements Report or User Stories Report?"
+   → **DO NOT call any tool until user specifies**
+
 4. Reports are ALWAYS DOCX format - DO NOT ask for format
 5. **YOU MUST CALL THE TOOL** - Never respond "The report has been generated" without actually calling the tool first!
 
-Trigger phrases that REQUIRE calling generate_requirements_report:
-- "generate the requirement report"
-- "generate requirements report"  
-- "can you generate requirement report"
-- "create a requirements document"
-- "generate the requirements"
+Examples of VAGUE requests (MUST ASK):
+- "can you generate report"
+- "generate report"
+- "create a report"
+- "generate a document"
 
-Trigger phrases that REQUIRE calling generate_user_stories_report:
-- "generate the user stories report"
-- "generate user stories"
+Examples of SPECIFIC requests (CALL TOOL IMMEDIATELY):
+- "generate requirements report" → call generate_requirements_report
+- "can you generate requirement report" → call generate_requirements_report
+- "generate user stories report" → call generate_user_stories_report
+- "can you generate stories report" → call generate_user_stories_report
 - "can you generate user stories report"
 - "create a user stories document"
 
