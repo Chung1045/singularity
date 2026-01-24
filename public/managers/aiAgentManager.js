@@ -7,7 +7,6 @@ const {json} = require("express");
 const router = express.Router();
 const aiDB = require("../services/aiAgentDBService");
 const agent = require("../services/aiAgentService");
-const agent2 = require("../services/aiAgentService2")
 const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
 const docGen = require("../services/docGenerationService");
 const {apiAuthUser} = require("../services/accountDBService");
@@ -109,12 +108,77 @@ router.post('/agent/chat', async (req, res) => {
 
             let fullResponse = '';
 
+            // Use legacy mode only if explicitly requested (default is 3-stage for reliable DB updates)
+            const useLegacy = req.query.legacy === 'true' || req.body.legacy === true;
+
             try {
                 // Send chatID immediately
                 res.write(`data: ${JSON.stringify({ type: 'chatID', chatID: chatID })}\n\n`);
 
+                // Default: Use 3-stage streaming for reliable database updates
+                const streamGenerator = useLegacy
+                    ? agent.getStreamingResponse(data, conversationSummary)
+                    : agent.getStreamingResponseThreeStage(data, conversationSummary);
+
                 // Stream the response
-                for await (const chunk of agent2.getStreamingResponseThreeStage(data, conversationSummary)) {
+                for await (const chunk of streamGenerator) {
+                    // Handle stage markers from 3-stage process (check trimmed content)
+                    const trimmedChunk = chunk.trim();
+                    if (!useLegacy && trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
+                        // Log stage markers but don't send to client as content
+                        console.log(`📊 Stage marker: ${trimmedChunk}`);
+
+                        // Handle report generation events
+                        if (trimmedChunk.includes('REPORT_GENERATED:')) {
+                            try {
+                                // Extract JSON - handle quotes and special characters
+                                const startIdx = trimmedChunk.indexOf('{');
+                                const endIdx = trimmedChunk.lastIndexOf('}');
+                                if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                                    const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
+                                    console.log(`📊 Report generation marker found, JSON string:`, jsonStr);
+                                    const reportInfo = JSON.parse(jsonStr);
+                                    console.log(`📊 Parsed reportInfo:`, reportInfo);
+                                    console.log(`📊 Sending reportGenerated event to client`);
+                                    res.write(`data: ${JSON.stringify({ 
+                                        type: 'reportGenerated', 
+                                        reportType: reportInfo.type,
+                                        projectID: reportInfo.projectID || projectID
+                                    })}\n\n`);
+                                } else {
+                                    console.error('📊 Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
+                                }
+                            } catch (parseErr) {
+                                console.error('Failed to parse report info:', parseErr);
+                                console.error('Chunk was:', trimmedChunk);
+                            }
+                            continue;
+                        }
+
+                        // Send stage events to client for progress indication
+                        if (trimmedChunk.includes('STAGE_1_START')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 1, status: 'start', message: 'Analyzing your request...' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_1_COMPLETE')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 1, status: 'complete' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_2_START')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 2, status: 'start', message: 'Updating database...' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_2_COMPLETE')) {
+                            // Stage 2 complete - database updated, tell client to refresh requirements
+                            res.write(`data: ${JSON.stringify({ 
+                                type: 'stage', 
+                                stage: 2, 
+                                status: 'complete',
+                                refreshRequirements: true,
+                                projectID: projectID
+                            })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_3_START')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 3, status: 'start', message: 'Generating response...' })}\n\n`);
+                        } else if (trimmedChunk.includes('STAGE_3_COMPLETE')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 3, status: 'complete' })}\n\n`);
+                        }
+                        continue;
+                    }
+
                     fullResponse += chunk;
                     console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
@@ -143,7 +207,9 @@ router.post('/agent/chat', async (req, res) => {
                     type: 'done', 
                     chatSeq: chatSeq,
                     conversationID: conversationID,
-                    threadName: threadName || 'Untitled Chat'
+                    threadName: threadName || 'Untitled Chat',
+                    refreshReports: true,
+                    projectID: projectID
                 })}\n\n`);
                 res.end();
 
@@ -152,8 +218,19 @@ router.post('/agent/chat', async (req, res) => {
                 console.error(`Error stack:`, error.stack);
                 console.error(`Error details - projectID: ${projectID}, chatID: ${chatID}`);
 
-                const errorMessage = error.message || 'Stream failed';
-                res.write(`data: ${JSON.stringify({ type: 'error', message: `Stream failed: ${errorMessage}` })}\n\n`);
+                let errorMessage = error.message || 'Stream failed';
+                let userFriendlyMessage = errorMessage;
+
+                // Provide user-friendly messages for specific error types
+                if (errorMessage.includes('SAFETY_CHECK') || errorMessage.includes('content') && errorMessage.includes('violates')) {
+                    userFriendlyMessage = 'The AI provider\'s content filter flagged this request. This can happen with certain document types (medical, biological topics, etc.). Try rephrasing your request or analyzing specific sections.';
+                } else if (errorMessage.includes('403')) {
+                    userFriendlyMessage = 'Access was denied by the AI provider. Please try again with a different request.';
+                } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+                    userFriendlyMessage = 'Too many requests. Please wait a moment and try again.';
+                }
+
+                res.write(`data: ${JSON.stringify({ type: 'error', message: userFriendlyMessage })}\n\n`);
                 res.end();
             }
         } else {

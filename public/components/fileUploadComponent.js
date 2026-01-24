@@ -83,6 +83,9 @@
                 // Add to existing selected files (for multi-batch selection)
                 setSelectedFiles(prev => [...prev, ...processedFilesList]);
 
+                // Reset input value to allow selecting the same file again
+                event.target.value = '';
+
                 // DON'T auto-route - stay on initial screen to show files
                 console.log('[FileUpload] Files added to selection. Total:', selectedFiles.length + processedFilesList.length);
             };

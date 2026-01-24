@@ -242,6 +242,40 @@ const tools = [
                 required: ["jsonList"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "generate_requirements_report",
+            description: "Generate a REQUIREMENTS document report (NOT user stories) in DOCX format. RULES: 1) Only call this if user explicitly asked for a Requirements report. 2) If user just said 'generate report' without specifying, DO NOT call this - ask them first which report type they want (Requirements or User Stories).",
+            parameters: {
+                type: "object",
+                properties: {
+                    projectID: {
+                        type: "string",
+                        description: "The ID of the project to generate the requirements report for"
+                    }
+                },
+                required: ["projectID"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "generate_user_stories_report",
+            description: "Generate a USER STORIES document report (NOT requirements) in DOCX format. RULES: 1) Only call this if user explicitly asked for a User Stories report. 2) If user just said 'generate report' without specifying, DO NOT call this - ask them first which report type they want (Requirements or User Stories).",
+            parameters: {
+                type: "object",
+                properties: {
+                    projectID: {
+                        type: "string",
+                        description: "The ID of the project to generate the user stories report for"
+                    }
+                },
+                required: ["projectID"]
+            }
+        }
     }
 ];
 
@@ -302,11 +336,12 @@ const toolImpls = {
                 requirementID: "string (UUID format, empty string when operation is 'INSERT')",
                 details: {
                     requirementType: "string (either 'functional' or 'non-functional')",
-                    requirementSeq: "integer (Sequence number of the functional / non-functional requirement, empty when operation is 'INSERT')",
+                    requirementSeq: "integer (Sequence number of the functional / non-functional requirement, null when operation is 'INSERT')",
                     title: "string (brief title of the requirement)",
                     description: "string (detailed description)",
                     role: "string (Role of the user which likely to come up with the requirement)",
                     source: "string (either 'Document' or 'User Input')",
+                    sourceReference: "array (REQUIRED for INSERT when source is 'Document' - list of document references)"
                 },
             },
             examples: [
@@ -315,11 +350,18 @@ const toolImpls = {
                     requirementID: "",  // Empty for INSERT
                     details: {
                         requirementType: "functional",
-                        requirementSeq: null, // Empty for INSERT
+                        requirementSeq: null, // null for INSERT
                         title: "User Login Authentication",
                         description: "Users should be able to log in with their username and password",
                         role: "End User",
                         source: "Document",
+                        sourceReference: [
+                            {
+                                documentID: "550e8400-e29b-41d4-a716-446655440000",
+                                remarks: "Extracted from authentication requirements section",
+                                location: "Page 12, Section 3.1"
+                            }
+                        ]
                     }
                 },
                 {
@@ -339,6 +381,11 @@ const toolImpls = {
                     requirementID: "550e8400-e29b-41d4-a716-446655440000",
                     details: null  // Details not needed for DELETE
                 }
+            ],
+            important_notes: [
+                "When inserting requirements from a document, ALWAYS include sourceReference with the documentID",
+                "The documentID must be a valid UUID obtained from get_project_file_list",
+                "location should specify where in the document the requirement was found (page, section, line)"
             ]
         };
     },
@@ -350,17 +397,12 @@ const toolImpls = {
                 operation: "string ('UPDATE', 'INSERT' or 'DELETE')",
                 storyID: "string (UUID format, empty string when operation is 'INSERT')",
                 details: {
-                    storySeq: "integer (The sequence number of the user story, empty when the operation is 'INSERT')",
+                    storySeq: "integer (The sequence number of the user story, null when the operation is 'INSERT')",
                     role: "string (The role that the user story likely to come up with)",
                     title: "string (brief title of the user story)",
                     description: "string (detailed description in user story format: 'As a [role], I want [goal] so that [benefit]')",
                     source: "string (either 'Document' or 'User Input')",
-                    sourceReference: [{
-                        operation: "string ('UPDATE, 'INSERT' or 'DELETE')",
-                        documentID: "string (UUID of source document if source is 'Document')",
-                        remarks: "string",
-                        location: "string (page number, line number, or section where requirement was found)"
-                    }],
+                    sourceReference: "array (REQUIRED for INSERT when source is 'Document' - list of document references)"
                 },
             },
             examples: [
@@ -368,17 +410,18 @@ const toolImpls = {
                     operation: "INSERT",
                     storyID: "",  // Empty for INSERT
                     details: {
-                        storySeq: "",  // Empty for INSERT
+                        storySeq: null,  // null for INSERT
                         role: "End User",
                         title: "Login to Access Account",
                         description: "As an end user, I want to log in with my username and password so that I can access my personal account securely",
                         source: "Document",
-                        sourceReference: [{
-                            operation: "INSERT",
-                            documentID: "0a0cf490-6408-49fc-a44d-b30063d804dc",
-                            remarks: "",
-                            location: "Line 45-48"
-                        }]
+                        sourceReference: [
+                            {
+                                documentID: "0a0cf490-6408-49fc-a44d-b30063d804dc",
+                                remarks: "Derived from authentication requirements",
+                                location: "Page 5, Section 2.1"
+                            }
+                        ]
                     }
                 },
                 {
@@ -389,13 +432,7 @@ const toolImpls = {
                         role: "End User",
                         title: "Login with Two-Factor Authentication",
                         description: "As an end user, I want to log in with username, password, and 2FA so that my account has enhanced security",
-                        source: "User Input",
-                        sourceReference: [{
-                            operation: "UPDATE",
-                            documentID: "9fe99745-b68c-45a9-9709-8bafaa527b9b",
-                            remarks: "Was from document, and updated from user request",
-                            location: "Page 43, line 5"
-                        }]
+                        source: "User Input"
                     }
                 },
                 {
@@ -403,6 +440,12 @@ const toolImpls = {
                     storyID: "660e8400-e29b-41d4-a716-446655440001",
                     details: null  // Details not needed for DELETE
                 }
+            ],
+            important_notes: [
+                "When inserting user stories from a document, ALWAYS include sourceReference with the documentID",
+                "The documentID must be a valid UUID obtained from get_project_file_list",
+                "location should specify where in the document the user story was derived from (page, section, line)",
+                "For INSERT operations, do NOT include 'operation' field inside sourceReference - just include documentID, remarks, and location"
             ]
         };
     },
@@ -650,6 +693,100 @@ const toolImpls = {
     async search_chat_history(projectID, chatID, keyword) {
         console.log(`Search chat history is called with parameters: ${projectID}, ${chatID}, ${keyword}`)
         return await aiDB.searchChatHistory(projectID, chatID, keyword)
+    },
+
+    async generate_requirements_report(projectID) {
+        console.log(`📊 ========================================`);
+        console.log(`📊 generate_requirements_report called with projectID: ${projectID}`);
+        console.log(`📊 ========================================`);
+
+        const docGen = require("./docGenerationService");
+        try {
+            // Test database connectivity first
+            console.log(`📊 Testing database connectivity...`);
+            try {
+                const testQuery = await aiDB.getProjectRequirements(projectID);
+                console.log(`📊 Database test successful, found ${testQuery?.length || 0} requirements`);
+            } catch (dbError) {
+                console.error(`❌ Database test failed:`, dbError);
+                throw new Error(`Database connection failed: ${dbError.message}`);
+            }
+
+            const requirementsData = await aiDB.getProjectRequirements(projectID);
+            console.log(`📊 Found ${requirementsData?.length || 0} requirements`);
+
+            if (!requirementsData || requirementsData.length === 0) {
+                console.warn(`⚠️ No requirements found for project ${projectID}`);
+                return { success: false, message: "No requirements found for this project. Please add requirements first before generating a report." };
+            }
+
+            console.log(`📊 ========================================`);
+            console.log(`📊 Starting document generation...`);
+            console.log(`📊 ========================================`);
+
+            const result = await docGen.generateRequirementsDocument(projectID, requirementsData);
+
+            console.log(`📊 ========================================`);
+            console.log(`📊 Document generation result: ${result}`);
+            console.log(`📊 ========================================`);
+
+            if (result) {
+                console.log(`✅ ========================================`);
+                console.log(`✅ REPORT GENERATED SUCCESSFULLY`);
+                console.log(`✅ Returning success with reportGenerated: true`);
+                console.log(`✅ ========================================`);
+                return {
+                    success: true,
+                    message: `Requirements report generated successfully with ${requirementsData.length} requirement(s). The report is now available for download in the **Requirements List** section of the sidebar.`,
+                    reportGenerated: true,
+                    projectID: projectID,
+                    reportType: 'requirements'
+                };
+            } else {
+                console.error(`❌ Document generation returned false`);
+                return { success: false, message: "Failed to generate requirements report." };
+            }
+        } catch (error) {
+            console.error(`❌ ========================================`);
+            console.error(`❌ ERROR in generate_requirements_report`);
+            console.error(`❌ Error:`, error);
+            console.error(`❌ Error message:`, error.message);
+            console.error(`❌ Error stack:`, error.stack);
+            console.error(`❌ ========================================`);
+            return { success: false, message: `Error generating requirements report: ${error.message}` };
+        }
+    },
+
+    async generate_user_stories_report(projectID) {
+        console.log(`📊 generate_user_stories_report called with projectID: ${projectID}`);
+        const docGen = require("./docGenerationService");
+        try {
+            const userStoriesData = await aiDB.getProjectUserStories(projectID);
+            console.log(`📊 Found ${userStoriesData?.length || 0} user stories`);
+            if (!userStoriesData || userStoriesData.length === 0) {
+                return { success: false, message: "No user stories found for this project. Please add user stories first before generating a report." };
+            }
+
+            console.log(`📊 Generating user stories document...`);
+            const result = await docGen.generateUserStoriesDocument(projectID, userStoriesData);
+            console.log(`📊 Document generation result: ${result}`);
+
+            if (result) {
+                console.log(`📊 Returning success with reportGenerated: true`);
+                return {
+                    success: true,
+                    message: `User stories report generated successfully with ${userStoriesData.length} user story(ies). The report is now available for download in the **Requirements List** section of the sidebar.`,
+                    reportGenerated: true,
+                    projectID: projectID,
+                    reportType: 'userStories'
+                };
+            } else {
+                return { success: false, message: "Failed to generate user stories report." };
+            }
+        } catch (error) {
+            console.error("Error generating user stories report:", error);
+            return { success: false, message: `Error generating user stories report: ${error.message}` };
+        }
     }
 
 };

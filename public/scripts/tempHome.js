@@ -25,6 +25,10 @@ const TempHome = ({csrfToken, userInfo}) => {
     const [showFileUpload, setShowFileUpload] = useState(false);
     const [currentProjectID, setCurrentProjectID] = useState(null);
 
+    // Add state for requirements panel modal
+    const [showRequirementsPanel, setShowRequirementsPanel] = useState(false);
+    const [requirementsPanelProjectID, setRequirementsPanelProjectID] = useState(null);
+
     // Add state for attachment menu and selected files
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -135,6 +139,30 @@ const TempHome = ({csrfToken, userInfo}) => {
         window.addEventListener('openFileUpload', handleOpenFileUpload);
         return () => {
             window.removeEventListener('openFileUpload', handleOpenFileUpload);
+        };
+    }, []);
+
+    // Listen for requirements panel events from sidebar
+    React.useEffect(() => {
+        const handleOpenRequirementsPanel = (event) => {
+            console.log('[Requirements] Event received to open requirements panel');
+
+            // Check if RequirementsPanel is loaded
+            if (!window.RequirementsPanel) {
+                console.error('[Requirements] RequirementsPanel not loaded!');
+                alert('Requirements panel component is not ready. Please refresh the page.');
+                return;
+            }
+
+            const { projectID } = event.detail;
+            console.log('[Requirements] Opening requirements panel for projectID:', projectID);
+            setRequirementsPanelProjectID(projectID);
+            setShowRequirementsPanel(true);
+        };
+
+        window.addEventListener('openRequirementsPanel', handleOpenRequirementsPanel);
+        return () => {
+            window.removeEventListener('openRequirementsPanel', handleOpenRequirementsPanel);
         };
     }, []);
 
@@ -331,6 +359,33 @@ const TempHome = ({csrfToken, userInfo}) => {
                         // Note: Success notification is already shown by the FileUploadComponent
                         // No need to show another one here
                     }
+                })
+            ),
+
+            // Requirements Panel Modal
+            showRequirementsPanel && window.RequirementsPanel && React.createElement('div', {
+                    style: {
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10002,
+                        padding: '20px'
+                    },
+                    onClick: (e) => {
+                        if (e.target === e.currentTarget) {
+                            setShowRequirementsPanel(false);
+                        }
+                    }
+                },
+                React.createElement(window.RequirementsPanel, {
+                    projectID: requirementsPanelProjectID,
+                    onClose: () => setShowRequirementsPanel(false)
                 })
             ),
 
@@ -820,12 +875,36 @@ function showFileSelectionDialog(files, projectID) {
     `;
     confirmBtn.onclick = () => {
         const selectedFiles = Array.from(selectedFilesMap.values());
+
+        // Get the container
+        const container = document.getElementById('selected-files-container');
+
+        // Remove files that were unchecked
+        if (container) {
+            const existingChips = container.querySelectorAll('[data-file-id]');
+            existingChips.forEach(chip => {
+                const fileId = chip.getAttribute('data-file-id');
+                if (!selectedFilesMap.has(fileId)) {
+                    // File was unchecked, remove it
+                    chip.remove();
+                }
+            });
+
+            // If container is now empty, remove the wrapper
+            if (container.children.length === 0 && selectedFiles.length === 0) {
+                const wrapper = document.getElementById('selected-files-wrapper');
+                if (wrapper) {
+                    wrapper.remove();
+                }
+            }
+        }
+
+        // Add newly selected files
         if (selectedFiles.length > 0) {
             addFilesToChatInput(selectedFiles);
-            document.body.removeChild(backdrop);
-        } else {
-            alert('Please select at least one file');
         }
+
+        document.body.removeChild(backdrop);
     };
 
     footer.appendChild(cancelBtn);
@@ -894,9 +973,10 @@ function addFilesToChatInput(files) {
 
     // Add files as chips
     files.forEach(file => {
-        // Check if file already added
-        if (document.querySelector(`[data-file-id="${file.documentID}"]`)) {
-            return; // Skip if already added
+        // Check if file already added - only check within the selected-files-container, not entire document
+        // (Other elements like chat messages may have same data-file-id)
+        if (container && container.querySelector(`[data-file-id="${file.documentID}"]`)) {
+            return; // Skip if already added to container
         }
 
         const fileChip = document.createElement('div');
@@ -1077,23 +1157,7 @@ async function fetchProjectFiles(projectID) {
     }
 }
 
-async function fetchProjectReports(projectID) {
-
-    const response = await fetch('/api/project/report/list', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            projectID: projectID
-        })
-    });
-
-    if (response.ok) {
-        let data = await response.json()
-        console.log(`Response Data: ${JSON.stringify(data)}`)
-    }
-}
+// Note: fetchProjectReports is defined in projectUtils.js and registered as window.fetchProjectReports
 
 async function fetchProjectChats(projectID) {
     console.log("ProjectID:", projectID)
@@ -1205,429 +1269,8 @@ async function fetchProjectChats(projectID) {
     }
 }
 
-// Create a function that returns a React element for a file item
-function createFileItem(fileName, documentID) {
-    const FileItemComponent = () => {
-        const [menuOpen, setMenuOpen] = React.useState(false);
-        const menuRef = React.useRef(null);
-
-        // Close menu when clicking outside
-        React.useEffect(() => {
-            const handleClickOutside = (event) => {
-                if (menuRef.current && !menuRef.current.contains(event.target)) {
-                    setMenuOpen(false);
-                }
-            };
-
-            if (menuOpen) {
-                document.addEventListener('mousedown', handleClickOutside);
-            }
-
-            return () => {
-                document.removeEventListener('mousedown', handleClickOutside);
-            };
-        }, [menuOpen]);
-
-        const handleRename = async () => {
-            setMenuOpen(false);
-
-            // Extract extension properly - get the last dot's extension
-            const lastDotIndex = fileName.lastIndexOf('.');
-            let nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
-            const ext = lastDotIndex > 0 ? fileName.substring(lastDotIndex + 1) : '';
-
-            // Clean trailing dots from the name BEFORE showing in input
-            nameWithoutExt = nameWithoutExt.replace(/\.+$/, '');
-
-            // Show notification modal with input (no icon for rename)
-            const newName = await window.showNotification({
-                type: 'rename-input',
-                title: 'File Rename',
-                message: `Enter to rename current file: ${nameWithoutExt}.${ext}`,
-                actionText: 'Confirm',
-                showInput: true,
-                inputValue: nameWithoutExt,
-                inputPlaceholder: 'Input for new file name'
-            });
-
-            if (!newName || newName === nameWithoutExt) return;
-
-            // Remove extension from newName if user accidentally included it
-            let finalName = newName.trim();
-            if (finalName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
-                finalName = finalName.slice(0, -(ext.length + 1));
-            }
-
-            // Remove any trailing dots from the filename
-            finalName = finalName.replace(/\.+$/, '');
-
-            try {
-                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
-                if (!projectID) {
-                    await window.showNotification({
-                        type: 'error',
-                        title: 'Error',
-                        message: 'No project selected',
-                        actionText: 'OK'
-                    });
-                    return;
-                }
-
-                const response = await fetch('/api/project/file/rename', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projectID: projectID,
-                        documentID: documentID,
-                        newFileName: `${finalName}.${ext}`
-                    })
-                });
-
-                const data = await response.json();
-                if (data.successful) {
-                    // Refresh file list
-                    if (window.fetchProjectFiles) {
-                        await window.fetchProjectFiles(projectID);
-                    }
-                    // Show success notification with Warning title
-                    await window.showNotification({
-                        type: 'rename-success',
-                        title: 'Warning',
-                        message: 'File has been renamed successfully',
-                        actionText: 'OK'
-                    });
-                } else {
-                    await window.showNotification({
-                        type: 'error',
-                        title: 'Error',
-                        message: 'Failed to rename file: ' + (data.message || 'Unknown error'),
-                        actionText: 'OK'
-                    });
-                }
-            } catch (error) {
-                console.error('Error renaming file:', error);
-                await window.showNotification({
-                    type: 'error',
-                    title: 'Error',
-                    message: 'An error occurred while renaming the file.',
-                    actionText: 'OK'
-                });
-            }
-        };
-
-        const handleDownload = async () => {
-            setMenuOpen(false);
-
-            try {
-                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
-                if (!projectID) {
-                    await window.showNotification({
-                        type: 'error',
-                        title: 'Error',
-                        message: 'No project selected',
-                        actionText: 'OK'
-                    });
-                    return;
-                }
-
-                const response = await fetch('/api/project/file/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projectID: projectID,
-                        documentID: documentID
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Download failed');
-                }
-
-                // Get the blob from response
-                const blob = await response.blob();
-
-                // Create download link
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-
-            } catch (error) {
-                console.error('Download error:', error);
-                await window.showNotification({
-                    type: 'error',
-                    title: 'Error',
-                    message: 'Failed to download file',
-                    actionText: 'OK'
-                });
-            }
-        };
-
-        const handleDelete = async () => {
-            setMenuOpen(false);
-
-            // Show warning confirmation
-            const confirmed = await window.showNotification({
-                type: 'warning',
-                title: 'Warning',
-                message: `Are you sure you want to delete "${fileName}"?`,
-                actionText: 'Confirm'
-            });
-
-            if (!confirmed) return;
-
-            try {
-                const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
-                if (!projectID) {
-                    await window.showNotification({
-                        type: 'error',
-                        title: 'Error',
-                        message: 'No project selected',
-                        actionText: 'OK'
-                    });
-                    return;
-                }
-
-                const response = await fetch('/api/project/file/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projectID: projectID,
-                        documentID: documentID
-                    })
-                });
-
-                const data = await response.json();
-                if (data.successful) {
-                    // Refresh file list
-                    if (window.fetchProjectFiles) {
-                        await window.fetchProjectFiles(projectID);
-                    }
-                    // Show success message
-                    await window.showNotification({
-                        type: 'success',
-                        title: 'File Deleted',
-                        message: 'File deleted successfully',
-                        actionText: 'OK'
-                    });
-                } else {
-                    await window.showNotification({
-                        type: 'error',
-                        title: 'Error',
-                        message: 'Failed to delete file: ' + (data.message || 'Unknown error'),
-                        actionText: 'OK'
-                    });
-                }
-            } catch (error) {
-                console.error('Error deleting file:', error);
-                await window.showNotification({
-                    type: 'error',
-                    title: 'Error',
-                    message: 'An error occurred while deleting the file.',
-                    actionText: 'OK'
-                });
-            }
-        };
-
-        return React.createElement('div', {
-                className: 'sidebar-items source-item',
-                'data-document-id': documentID,
-                style: {
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '5px',
-                    transition: 'background-color 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    position: 'relative'
-                },
-                onMouseEnter: (e) => {
-                    e.currentTarget.style.backgroundColor = '#f0f0f0';
-                },
-                onMouseLeave: (e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                },
-                onClick: (e) => {
-                    if (e.target.type !== 'checkbox') {
-                        console.log(`Clicked on ${fileName}`);
-                    }
-                }
-            },
-            React.createElement('input', {
-                type: 'checkbox',
-                style: {
-                    width: "16px",
-                    height: "16px",
-                    flexShrink: 0
-                },
-                onChange: (e) => {
-                    console.log(`Checkbox ${e.target.checked ? 'checked' : 'unchecked'} for ${fileName}`);
-                    getSelectedSource()
-                },
-                onClick: (e) => {
-                    e.stopPropagation();
-                }
-            }),
-            React.createElement('p', {
-                id: `source-file-name-${documentID}`,
-                'aria-label': `File name: ${fileName}`,
-                title: fileName, // Show full filename on hover
-                style: {
-                    flexGrow: 1,
-                    margin: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    fontSize: '13.3px',
-                    cursor: 'default'
-                }
-            }, fileName),
-            React.createElement('div', {
-                    ref: menuRef,
-                    style: {
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        width: '30px',
-                        height: '30px',
-                        flexShrink: 0
-                    }
-                },
-                React.createElement('img', {
-                    id: `source-file-menu-${documentID}`,
-                    'aria-label': `File options menu for ${fileName}`,
-                    style: {
-                        width: '30px',
-                        height: '30px',
-                        padding: "4px",
-                        flexShrink: 0,
-                        borderRadius: '5px',
-                        transition: 'background-color 0.2s',
-                        cursor: 'pointer'
-                    },
-                    src: './img/more_vert_24.svg',
-                    alt: '',
-                    onMouseEnter: (e) => {
-                        e.currentTarget.style.backgroundColor = '#8e8e8e';
-                    },
-                    onMouseLeave: (e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    },
-                    onClick: (e) => {
-                        e.stopPropagation();
-                        setMenuOpen(!menuOpen);
-                    }
-                }),
-                menuOpen && React.createElement('div', {
-                        id: `source-file-menu-dropdown-${documentID}`,
-                        'aria-label': `File options dropdown for ${fileName}`,
-                        style: {
-                            position: 'absolute',
-                            top: '100%',
-                            right: 0,
-                            marginTop: '4px',
-                            backgroundColor: '#ffffff',
-                            border: '1.67px solid #e4e4e4',
-                            borderRadius: '11.12px',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                            minWidth: '120px',
-                            zIndex: 1000,
-                            overflow: 'hidden'
-                        }
-                    },
-                    React.createElement('button', {
-                        id: `source-file-rename-button-${documentID}`,
-                        'aria-label': `Rename ${fileName}`,
-                        style: {
-                            width: '100%',
-                            padding: '12px 14.5px',
-                            border: 'none',
-                            backgroundColor: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '13.3px',
-                            color: '#000',
-                            fontWeight: '500',
-                            fontFamily: '"Inter", Helvetica',
-                            transition: 'background-color 0.2s ease'
-                        },
-                        onMouseEnter: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f5f5f5';
-                        },
-                        onMouseLeave: (e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        },
-                        onClick: (e) => {
-                            e.stopPropagation();
-                            handleRename();
-                        }
-                    }, 'Rename'),
-                    React.createElement('button', {
-                        id: `source-file-download-button-${documentID}`,
-                        'aria-label': `Download ${fileName}`,
-                        style: {
-                            width: '100%',
-                            padding: '12px 14.5px',
-                            border: 'none',
-                            backgroundColor: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '13.3px',
-                            color: '#000',
-                            fontWeight: '500',
-                            fontFamily: '"Inter", Helvetica',
-                            transition: 'background-color 0.2s ease'
-                        },
-                        onMouseEnter: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f5f5f5';
-                        },
-                        onMouseLeave: (e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        },
-                        onClick: (e) => {
-                            e.stopPropagation();
-                            handleDownload();
-                        }
-                    }, 'Download'),
-                    React.createElement('button', {
-                        id: `source-file-delete-button-${documentID}`,
-                        'aria-label': `Delete ${fileName}`,
-                        style: {
-                            width: '100%',
-                            padding: '12px 14.5px',
-                            border: 'none',
-                            backgroundColor: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '13.3px',
-                            color: '#c1281e',
-                            fontWeight: '500',
-                            fontFamily: '"Inter", Helvetica',
-                            transition: 'background-color 0.2s ease'
-                        },
-                        onMouseEnter: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f5f5f5';
-                        },
-                        onMouseLeave: (e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        },
-                        onClick: (e) => {
-                            e.stopPropagation();
-                            handleDelete();
-                        }
-                    }, 'Delete')
-                )
-            )
-        );
-    };
-
-    return React.createElement(FileItemComponent);
-}
+// NOTE: createFileItem is defined in projectUtils.js with checkbox toggle functionality for menu
+// Do not define it here to avoid overwriting
 
 // Old implementation commented out - replaced with new implementation below
 // function createChatHistoryItem(chatThreadName, chatID) {
@@ -2070,58 +1713,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
     return React.createElement(ChatHistoryItemComponent);
 }
 
-function createReportItem(reportName, reportID) {
-    return React.createElement('div', {
-            className: 'sidebar-items report-item',
-            'data-report-id': reportID,
-            style: {
-                padding: '8px 12px',
-                cursor: 'pointer',
-                borderRadius: '5px',
-                transition: 'background-color 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-            },
-            onMouseEnter: (e) => {
-            },
-            onMouseLeave: (e) => {
-            },
-            onClick: (e) => {
-            }
-        },
-        React.createElement('p', {
-            style: {
-                flexGrow: 1,
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-            }
-        }, reportName),
-        React.createElement('img', {
-            style: {
-                padding: "4px",
-                flexShrink: 0,
-                borderRadius: '5px',
-                transition: 'background-color 0.2s',
-            },
-            src: './img/more_vert_24.svg',
-            alt: '',
-            onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#8e8e8e';
-            },
-            onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            },
-            onClick: (e) => {
-                e.stopPropagation(); // Prevent the div's onClick from firing
-                console.log(`Menu clicked for ${reportName}`);
-                // Add your menu logic here
-            }
-        })
-    );
-}
+// NOTE: createReportItem is defined in projectUtils.js with full menu functionality
+// Do not define it here to avoid overwriting
 
 function getSelectedSource() {
     let selectedSource = [];
@@ -2426,10 +2019,177 @@ function renderMarkdownContent(text) {
     return source.replace(/\n/g, '<br>');
 }
 
+/**
+ * Post-process rendered content to make report download links clickable
+ * @param {HTMLElement} bubble - The bubble element containing the rendered content
+ */
+function postProcessDownloadLinks(bubble) {
+    if (!bubble) return;
+
+    // Look for patterns like "Download link: filename.docx" or "filename.docx"
+    const html = bubble.innerHTML;
+
+    // Pattern to match .docx file references
+    const docxPattern = /([A-Za-z0-9_\-\s]+\.docx)/gi;
+
+    // Replace with clickable links
+    const processedHtml = html.replace(docxPattern, (match) => {
+        // Don't double-process if already in a link
+        if (html.includes(`data-report-download="${match}"`)) {
+            return match;
+        }
+        return `<a href="#" class="report-download-link" data-report-download="${match}" style="color: #007bff; text-decoration: underline; cursor: pointer;">${match}</a>`;
+    });
+
+    if (processedHtml !== html) {
+        bubble.innerHTML = processedHtml;
+
+        // Add click handlers for download links
+        const downloadLinks = bubble.querySelectorAll('.report-download-link');
+        downloadLinks.forEach(link => {
+            link.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const fileName = link.dataset.reportDownload;
+                console.log('📥 Download link clicked:', fileName);
+
+                // Try to find and download the matching report
+                await downloadReportByName(fileName);
+            });
+        });
+    }
+}
+
+/**
+ * Find and download a report by its file name
+ * @param {string} fileName - The name of the report file (e.g., "Requirements_Summary_Report.docx")
+ */
+async function downloadReportByName(fileName) {
+    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+    if (!projectID) {
+        console.error('No project selected');
+        return;
+    }
+
+    try {
+        // Fetch the list of reports to find the matching one
+        const response = await fetch('/api/project/report/list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Include cookies for authentication
+            body: JSON.stringify({ projectID })
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch reports list');
+            return;
+        }
+
+        const data = await response.json();
+        if (!data.reports || data.reports.length === 0) {
+            console.log('No reports found');
+            // Show notification to user
+            if (window.showNotification) {
+                window.showNotification({
+                    type: 'info',
+                    title: 'Report Not Found',
+                    message: 'The report is not yet available. Please check the Requirements List section in the sidebar.',
+                    actionText: 'OK'
+                });
+            }
+            return;
+        }
+
+        // Find a report that matches the file name
+        const searchName = fileName.replace('.docx', '').toLowerCase();
+        console.log('🔍 Searching for report matching:', searchName);
+        console.log('🔍 Available reports:', data.reports.map(r => `${r.reportName} (${r.reportType})`));
+
+        // Determine if user is looking for requirements or user stories based on keywords
+        const isLookingForRequirements = searchName.includes('requirement') && !searchName.includes('user stor');
+        const isLookingForUserStories = searchName.includes('user stor') || searchName.includes('stories');
+
+        let matchingReport = null;
+
+        // First try exact type match based on keywords
+        if (isLookingForRequirements) {
+            matchingReport = data.reports.find(r =>
+                r.reportType === 'requirements' || r.reportType === 'Requirements'
+            );
+            console.log('🔍 Looking for requirements report, found:', matchingReport?.reportName);
+        } else if (isLookingForUserStories) {
+            matchingReport = data.reports.find(r =>
+                r.reportType === 'userStories' || r.reportType === 'UserStories' || r.reportType === 'user_stories'
+            );
+            console.log('🔍 Looking for user stories report, found:', matchingReport?.reportName);
+        }
+
+        // If no type match, try name matching
+        if (!matchingReport) {
+            matchingReport = data.reports.find(r =>
+                r.reportName.toLowerCase().includes(searchName) ||
+                searchName.includes(r.reportName.toLowerCase().replace(/[^a-z0-9]/g, ''))
+            );
+        }
+
+        // If still no match, show available options instead of downloading random report
+        if (!matchingReport) {
+            console.log('⚠️ No matching report found for:', searchName);
+            if (window.showNotification) {
+                window.showNotification({
+                    type: 'info',
+                    title: 'Report Not Found',
+                    message: 'Could not find the specific report. Please check the Requirements List section in the sidebar to download available reports.',
+                    actionText: 'OK'
+                });
+            }
+            return;
+        }
+
+        console.log('📥 Downloading report:', matchingReport.reportName);
+
+        // Download the report
+        const downloadResponse = await fetch('/api/project/report/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Include cookies for authentication
+            body: JSON.stringify({
+                projectID: projectID,
+                reportID: matchingReport.reportID
+            })
+        });
+
+        if (downloadResponse.ok) {
+            const blob = await downloadResponse.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = matchingReport.reportName + '.docx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            console.error('Failed to download report');
+            if (window.showNotification) {
+                window.showNotification({
+                    type: 'error',
+                    title: 'Download Failed',
+                    message: 'Failed to download the report.',
+                    actionText: 'OK'
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error downloading report:', error);
+    }
+}
+
 function setBubbleContent(bubble, text, { allowMarkdown = false } = {}) {
     if (!bubble) return;
     if (allowMarkdown) {
         bubble.innerHTML = renderMarkdownContent(text);
+        // Post-process to make download links clickable
+        postProcessDownloadLinks(bubble);
     } else {
         bubble.textContent = text;
     }
@@ -2449,7 +2209,9 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
 
+    const messageTimestamp = Date.now();
     const messageDiv = document.createElement('div');
+    messageDiv.id = `chat-message-${role}-${messageTimestamp}`;
     messageDiv.className = role === 'user' ? 'message user-message' : 'message ai-message';
 
     // Store conversation data for editing
@@ -2461,6 +2223,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     }
 
     const avatar = document.createElement('div');
+    avatar.id = `chat-message-avatar-${role}-${messageTimestamp}`;
     avatar.className = 'message-avatar';
 
     // Use profile picture for user, Union.svg for AI
@@ -2472,6 +2235,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     }
 
     const bubble = document.createElement('div');
+    bubble.id = `chat-message-bubble-${role}-${messageTimestamp}`;
     bubble.className = 'message-bubble';
 
     // Create text node or HTML content for message
@@ -3112,19 +2876,21 @@ function showTypingIndicator() {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return null;
 
-    const id = 'typing-' + Date.now();
+    const id = 'typing-indicator-' + Date.now();
     const typingDiv = document.createElement('div');
-    typingDiv.className = 'message ai-message';
     typingDiv.id = id;
+    typingDiv.className = 'message ai-message';
 
     const avatar = document.createElement('div');
+    avatar.id = id + '-avatar';
     avatar.className = 'message-avatar';
     avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
     const bubble = document.createElement('div');
+    bubble.id = id + '-bubble';
     bubble.className = 'message-bubble typing-bubble';
     bubble.innerHTML = `
-        <div class="typing-indicator">
+        <div id="${id}-dots" class="typing-indicator">
             <span></span><span></span><span></span>
         </div>
     `;
@@ -3179,16 +2945,59 @@ async function streamChatResponse(data, typingId) {
     messageDiv.className = 'message ai-message';
 
     const avatar = document.createElement('div');
+    avatar.id = 'ai-message-avatar-' + Date.now();
     avatar.className = 'message-avatar';
     avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
     const bubble = document.createElement('div');
+    bubble.id = 'ai-message-bubble-' + Date.now();
     bubble.className = 'message-bubble';
     bubble.dataset.role = 'ai';
+
+    // Stage progress indicator - COMMENTED OUT (not needed for now)
+
+    const progressIndicator = document.createElement('div');
+    progressIndicator.id = 'ai-progress-indicator';
+    progressIndicator.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        margin-bottom: 0;
+        font-family: Inter, Helvetica, sans-serif;
+        font-size: 13px;
+        color: #495057;
+    `;
+    progressIndicator.innerHTML = `
+<!--        <div style="display: flex; gap: 6px;">-->
+<!--            <div id="stage-dot-1" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>-->
+<!--            <div id="stage-dot-2" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>-->
+<!--            <div id="stage-dot-3" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>-->
+<!--        </div>-->
+        <span id="stage-message" style="flex: 1;">Initializing...</span>
+        <div class="spinner-small" style="width: 16px; height: 16px; border: 2px solid #dee2e6; border-top-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    `;
+
+    // Add spinner animation if not exists
+    if (!document.getElementById('spinner-style')) {
+        const style = document.createElement('style');
+        style.id = 'spinner-style';
+        style.textContent = `
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.2); } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    bubble.appendChild(progressIndicator);
+
 
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
     messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
 
     let fullResponse = '';
     let chatIDReceived = null;
@@ -3198,6 +3007,42 @@ async function streamChatResponse(data, typingId) {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+
+    // Helper to update progress indicator - COMMENTED OUT (progress indicator disabled)
+    /*
+    const updateProgress = (stage, status, message) => {
+        const indicator = document.getElementById('ai-progress-indicator');
+        if (!indicator) return;
+
+        const stageMessage = document.getElementById('stage-message');
+        if (stageMessage && message) {
+            stageMessage.textContent = message;
+        }
+
+        // Update dots
+        for (let i = 1; i <= 3; i++) {
+            const dot = document.getElementById(`stage-dot-${i}`);
+            if (dot) {
+                if (i < stage) {
+                    dot.style.background = '#28a745'; // Completed - green
+                } else if (i === stage && status === 'start') {
+                    dot.style.background = '#007bff'; // Active - blue
+                    dot.style.animation = 'pulse 1s infinite';
+                } else if (i === stage && status === 'complete') {
+                    dot.style.background = '#28a745'; // Just completed - green
+                    dot.style.animation = 'none';
+                } else {
+                    dot.style.background = '#dee2e6'; // Pending - gray
+                }
+            }
+        }
+
+        // Remove indicator when stage 3 starts (content will stream)
+        if (stage === 3 && status === 'start') {
+            indicator.remove();
+        }
+    };
+    */
 
     // Helper function to process a single SSE event
     const processSSEEvent = async (eventData) => {
@@ -3213,6 +3058,58 @@ async function streamChatResponse(data, typingId) {
                 if (data.chatID === '') {
                     console.log('New chat created, refreshing history...');
                     await fetchProjectChats(data.projectID);
+                }
+            } else if (jsonData.type === 'reportGenerated') {
+                // Handle report generation event - refresh sidebar reports
+                console.log('📊 Report generated event received:', jsonData);
+                console.log('📊 Report type:', jsonData.reportType);
+                const projectID = jsonData.projectID || data.projectID;
+                console.log('📊 Project ID for refresh:', projectID);
+
+                // Add a small delay to ensure database write completes
+                console.log('📊 Waiting 500ms before fetching reports...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Refresh the reports list in sidebar
+                if (typeof window.fetchProjectReports === 'function') {
+                    console.log('🔄 Calling fetchProjectReports for project:', projectID);
+                    try {
+                        await window.fetchProjectReports(projectID);
+                        console.log('✅ fetchProjectReports completed');
+                    } catch (err) {
+                        console.error('❌ fetchProjectReports error:', err);
+                    }
+                } else {
+                    console.warn('⚠️ window.fetchProjectReports is not a function');
+                }
+
+                // Also dispatch the event for other listeners
+                window.dispatchEvent(new CustomEvent('reportGenerated', {
+                    detail: { projectID, reportType: jsonData.reportType }
+                }));
+                console.log('📊 Dispatched reportGenerated custom event');
+            } else if (jsonData.type === 'stage') {
+                // Handle stage progress events from 3-stage processing (UI indicator disabled)
+                console.log(`📊 Stage ${jsonData.stage}: ${jsonData.status}`, jsonData.message || '');
+
+                // Stage UI update disabled - updateProgress(jsonData.stage, jsonData.status, jsonData.message);
+
+                // When Stage 2 completes, refresh requirements panel data
+                if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
+                    console.log('🔄 Stage 2 complete - refreshing requirements data...');
+
+                    // Dispatch event to refresh requirements in the panel
+                    window.dispatchEvent(new CustomEvent('requirementsUpdated', {
+                        detail: { projectID: jsonData.projectID || data.projectID }
+                    }));
+
+                    // Also refresh the sidebar requirements section if available
+                    if (typeof window.fetchProjectRequirements === 'function') {
+                        window.fetchProjectRequirements(jsonData.projectID || data.projectID);
+                    }
+                    if (typeof window.fetchProjectUserStories === 'function') {
+                        window.fetchProjectUserStories(jsonData.projectID || data.projectID);
+                    }
                 }
             } else if (jsonData.type === 'chunk') {
                 const content = jsonData.content || '';
@@ -3279,6 +3176,14 @@ async function streamChatResponse(data, typingId) {
                             console.log('📝 Updated sidebar title to:', threadName);
                         }
                     }
+                }
+
+                // Always refresh reports after stream completes (in case reports were generated)
+                // Add a small delay to ensure database writes are complete
+                if (typeof window.fetchProjectReports === 'function') {
+                    console.log('🔄 Refreshing reports after stream complete (with 500ms delay)');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await window.fetchProjectReports(data.projectID);
                 }
             } else if (jsonData.type === 'error') {
                 console.error('❌ Stream error received from server:', jsonData.message);
@@ -3554,6 +3459,7 @@ async function downloadReport(projectID, reportID) {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include', // Include cookies for authentication
             body: JSON.stringify({
                 projectID: projectID,
                 reportID: reportID
@@ -3705,6 +3611,26 @@ window.refreshProjectFiles = fetchProjectFiles; // Alias for refreshing files af
 window.fetchProjectReports = fetchProjectReports;
 window.loadChatThread = loadChatThread;
 window.backToInitialScreen = backToInitialScreen;
+
+// Function to open requirements panel
+function openRequirementsPanel() {
+    console.log('[Requirements] Opening requirements panel');
+    
+    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+    
+    if (!projectID) {
+        console.error('[Requirements] No project selected');
+        alert('Please select a project first');
+        return;
+    }
+    
+    // Create and show the requirements panel modal
+    const event = new CustomEvent('openRequirementsPanel', { detail: { projectID } });
+    window.dispatchEvent(event);
+}
+
+// Make openRequirementsPanel available globally
+window.openRequirementsPanel = openRequirementsPanel;
 
 // Make available globally
 window.TempHome = TempHome;
