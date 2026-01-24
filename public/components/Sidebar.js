@@ -1682,7 +1682,7 @@
                             }),
                             React.createElement('span', {
                                 className: 'text-wrapper-2'
-                            }, 'Generated Reports'),
+                            }, 'Requirements List'),
                             React.createElement('span', {
                                     className: 'submenu',
                                     'aria-hidden': 'true'

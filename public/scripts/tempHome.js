@@ -1298,17 +1298,8 @@ function createReportListItem(report, projectID) {
     info.appendChild(name);
     info.appendChild(date);
 
-    // Buttons container
-    const buttonsContainer = document.createElement('div');
-    buttonsContainer.style.cssText = `
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    `;
-
     const downloadBtn = document.createElement('button');
     downloadBtn.innerHTML = '⬇️';
-    downloadBtn.title = 'Download Report';
     downloadBtn.style.cssText = `
         background: none;
         border: none;
@@ -1327,35 +1318,9 @@ function createReportListItem(report, projectID) {
         await downloadReportFile(projectID, report.reportID, report.reportName);
     };
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.innerHTML = '🗑️';
-    deleteBtn.title = 'Delete Report';
-    deleteBtn.style.cssText = `
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
-        padding: 4px;
-        opacity: 0.6;
-        transition: opacity 0.2s;
-    `;
-    deleteBtn.onmouseenter = () => deleteBtn.style.opacity = '1';
-    deleteBtn.onmouseleave = () => deleteBtn.style.opacity = '0.6';
-
-    deleteBtn.onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm(`Are you sure you want to delete "${report.reportName || 'this report'}"?`)) {
-            console.log(`📑 [Reports] Deleting report:`, report.reportID);
-            await deleteReportFile(projectID, report.reportID);
-        }
-    };
-
-    buttonsContainer.appendChild(downloadBtn);
-    buttonsContainer.appendChild(deleteBtn);
-
     item.appendChild(icon);
     item.appendChild(info);
-    item.appendChild(buttonsContainer);
+    item.appendChild(downloadBtn);
 
     item.onclick = () => {
         console.log(`📑 [Reports] Report clicked:`, report.reportName);
@@ -1397,40 +1362,6 @@ async function downloadReportFile(projectID, reportID, reportName) {
     } catch (error) {
         console.error(`❌ [Reports] Download error:`, error);
         alert('Error downloading report');
-    }
-}
-
-// Helper function to delete report
-async function deleteReportFile(projectID, reportID) {
-    try {
-        const response = await fetch('/api/project/report/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                projectID: projectID,
-                reportID: reportID
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.successful) {
-                console.log(`✅ [Reports] Deleted report: ${reportID}`);
-                // Refresh the reports list
-                await fetchProjectReports(projectID);
-            } else {
-                console.error(`❌ [Reports] Delete failed:`, data.message);
-                alert(data.message || 'Failed to delete report');
-            }
-        } else {
-            console.error(`❌ [Reports] Delete failed:`, response.status);
-            alert('Failed to delete report');
-        }
-    } catch (error) {
-        console.error(`❌ [Reports] Delete error:`, error);
-        alert('Error deleting report');
     }
 }
 

@@ -453,10 +453,9 @@ async function saveGeneratedReport(projectID, buffer, kind) {
 }
 
 async function listReportRecord(projectID) {
-    const sql = `SELECT reportID, reportName, reportType, reportDate
+    const sql = `SELECT reportID, reportName, reportType
                  FROM reports
-                 WHERE projectID = ?
-                 ORDER BY reportDate DESC`;
+                 WHERE projectID = ?`;
 
     return new Promise((resolve, reject) => {
         db.all(sql, [projectID], (err, rows) => {
