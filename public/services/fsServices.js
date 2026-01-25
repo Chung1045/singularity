@@ -6,6 +6,7 @@ const uuid = require("uuid-v4");
 const {PDFParse} = require("pdf-parse");
 const docx_pdf = require('docx-pdf');
 const os = require("os");
+const {documentPreprocessing} = require("./preprocessingService");
 
 const FSS_REPORT_USERSTORIES = "userStories";
 const FSS_REPORT_REQUIREMENTS = "requirements";
@@ -260,6 +261,30 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         VALUES (?, ?, ?, ?)
     `;
 
+    // try {
+    //     await db.run(sql, [documentID, projectID, documentName, documentExt]);
+    //     console.log(`Inserted file metadata: ${documentID}`);
+
+    //     // Only create alias for supported document types (PDF and DOCX)
+    //     // Audio files (.mp3, .m4a, .mp4) will be handled separately by audio processing pipeline
+    //     const extLower = documentExt.toLowerCase();
+    //     console.log(`Checking if alias needed for extension: ${documentExt} (lowercase: ${extLower})`);
+
+    //     if (extLower === ".pdf" || extLower === ".docx") {
+    //         console.log(`Creating alias file for document type: ${extLower}`);
+    //         await createAliasFile(projectID, documentID, documentExt);
+    //     } else {
+    //         console.log(`Skipping alias creation for non-document type: ${extLower}`);
+    //     }
+
+    //     return {successful: true};
+    // } catch (err) {
+    //     console.error("Database insert error:", err);
+    //     throw err;
+    // }
+
+    //its gonna let you see
+    // this is to cater the master, as create alias file did not support audio.
     try {
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
@@ -273,6 +298,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         console.error("Database insert error:", err);
         throw err;
     }
+    
 }
 
 /**
@@ -362,6 +388,7 @@ async function deleteProjectFile(documentID, projectID) {
     }
 }
 
+
 async function listProjectFiles(projectID) {
     return new Promise((resolve, reject) => {
         const sql = `
@@ -424,6 +451,25 @@ async function getFileMetadata(documentID, projectID) {
         });
     });
 }
+
+// async function filePreProcessing(projectID, documentID, fileExt){
+//
+//     switch (fileExt) {
+//         case 'doc':
+//         case 'docx':
+//         // convert to pdf pipeline + extract
+//
+//         case 'pdf':
+//             // extract text from pdf
+//
+//         case 'mp3':
+//             // whisper pipeline
+//
+//         default:
+//             // unrecognized file format
+//     }
+//
+// }
 
 async function saveGeneratedReport(projectID, buffer, kind) {
     console.log(`📊 saveGeneratedReport called: projectID=${projectID}, bufferSize=${buffer.length}, kind=${kind}`);
@@ -642,58 +688,6 @@ async function extractDOCXFromStream(buffer) {
     }
 }
 
-async function createAliasFile(projectID, documentID, documentExt) {
-    // Download the file
-    const stream = await downloadProjectFile(projectID, documentID);
-    const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
-    const buffer = Buffer.concat(chunks);
-
-    // Extract text based on document type
-    let extractedText = "";
-
-    switch (documentExt.toLowerCase()) {
-        case ".docx":
-            extractedText = await extractDOCXFromStream(buffer);
-            break;
-        case ".pdf":
-            extractedText = await extractPDFFromStream(buffer);
-            break;
-        default:
-            throw new Error(`Unsupported document type: ${documentExt}`);
-    }
-
-    // Generate alias ID and path
-    const aliasID = uuid();
-    const textPath = `project/${projectID}/alias/${aliasID}`;
-
-    // Save extracted text to MinIO
-    const textBuffer = Buffer.from(extractedText, 'utf-8');
-    await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
-        'Content-Type': 'text/plain; charset=utf-8'
-    });
-
-    console.log(`Saved extracted text to: ${textPath}`);
-
-    // Update database with alias ID
-    const sql = `UPDATE documents
-                 SET documentAlias = ?
-                 WHERE projectID = ?
-                   AND documentID = ?`;
-
-    await db.run(sql, [aliasID, projectID, documentID]);
-
-    console.log(`Updated database: documentID=${documentID}, aliasID=${aliasID}`);
-
-    return {
-        aliasID: aliasID,
-        minioPath: textPath,
-        textLength: extractedText.length
-    };
-}
-
 async function getFileContext(projectID, documentID) {
     const sql = `SELECT *
                  FROM documents
@@ -759,6 +753,44 @@ async function testConnection() {
     return await minioClient.bucketExists(process.env.MINIO_BUCKET);
 }
 
+async function createAliasFile(projectID, documentID, documentExt) {
+    const stream = await downloadProjectFile(projectID, documentID);
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const data = await documentPreprocessing(buffer, documentExt);
+
+    // Generate alias ID and path
+    const aliasID = uuid();
+    const textPath = `project/${projectID}/alias/${aliasID}`;
+
+    // Save extracted text to MinIO
+    const textBuffer = Buffer.from(data, 'utf-8');
+    await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
+        'Content-Type': 'text/plain; charset=utf-8'
+    });
+
+    console.log(`Saved extracted text to: ${textPath}`);
+
+    // Update database with alias ID
+    const sql = `UPDATE documents
+                 SET documentAlias = ?
+                 WHERE projectID = ?
+                   AND documentID = ?`;
+
+    await db.run(sql, [aliasID, projectID, documentID]);
+
+    console.log(`Updated database: documentID=${documentID}, aliasID=${aliasID}`);
+
+    return {
+        aliasID: aliasID,
+        minioPath: textPath,
+        textLength: data.length
+    };
+}
+
 init()
 
 module.exports = {
@@ -784,6 +816,7 @@ module.exports = {
     saveGeneratedReport,
     testConnection,
     uploadFile,
+    createAliasFile,
     uploadProjectFile,
     updateProfilePic,
     removeProfilePic,

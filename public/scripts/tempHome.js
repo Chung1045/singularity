@@ -631,6 +631,7 @@ const TempHome = ({csrfToken, userInfo}) => {
                                         // Shift+Enter will naturally create a new line
                                     }
                                 }
+
                             },
                             onInput: (e) => {
                                 // Auto-resize textarea based on content

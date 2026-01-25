@@ -81,13 +81,22 @@
                 }
 
                 // Add to existing selected files (for multi-batch selection)
-                setSelectedFiles(prev => [...prev, ...processedFilesList]);
+                // Deduplicate based on file name, size, and type to prevent duplicates
+                setSelectedFiles(prev => {
+                    const existingFileKeys = new Set(prev.map(f => `${f.originalName}-${f.fileSize}-${f.isAudio}`));
+                    const newFiles = processedFilesList.filter(f => {
+                        const fileKey = `${f.originalName}-${f.fileSize}-${f.isAudio}`;
+                        return !existingFileKeys.has(fileKey);
+                    });
+                    console.log('[FileUpload] Adding', newFiles.length, 'new files (', processedFilesList.length - newFiles.length, 'duplicates filtered)');
+                    return [...prev, ...newFiles];
+                });
 
                 // Reset input value to allow selecting the same file again
                 event.target.value = '';
 
                 // DON'T auto-route - stay on initial screen to show files
-                console.log('[FileUpload] Files added to selection. Total:', selectedFiles.length + processedFilesList.length);
+                console.log('[FileUpload] Files added to selection. Total will be:', selectedFiles.length + processedFilesList.length);
             };
 
             // Handle drag and drop
@@ -153,8 +162,16 @@
                     });
                 }
 
-                setSelectedFiles(prev => [...prev, ...processedFilesList]);
-                console.log('[FileUpload] Files dropped. Total:', selectedFiles.length + processedFilesList.length);
+                setSelectedFiles(prev => {
+                    const existingFileKeys = new Set(prev.map(f => `${f.originalName}-${f.fileSize}-${f.isAudio}`));
+                    const newFiles = processedFilesList.filter(f => {
+                        const fileKey = `${f.originalName}-${f.fileSize}-${f.isAudio}`;
+                        return !existingFileKeys.has(fileKey);
+                    });
+                    console.log('[FileUpload] Dropped', newFiles.length, 'new files (', processedFilesList.length - newFiles.length, 'duplicates filtered)');
+                    return [...prev, ...newFiles];
+                });
+                console.log('[FileUpload] Files dropped. Total will be:', selectedFiles.length + processedFilesList.length);
             };
 
             const handleNextClick = () => {
@@ -442,8 +459,16 @@
                                         });
                                     }
 
-                                    setSelectedFiles(prev => [...prev, ...processedFilesList]);
-                                    console.log('[FileUpload] Files dropped on Add More button. Total:', selectedFiles.length + processedFilesList.length);
+                                    setSelectedFiles(prev => {
+                                        const existingFileKeys = new Set(prev.map(f => `${f.originalName}-${f.fileSize}-${f.isAudio}`));
+                                        const newFiles = processedFilesList.filter(f => {
+                                            const fileKey = `${f.originalName}-${f.fileSize}-${f.isAudio}`;
+                                            return !existingFileKeys.has(fileKey);
+                                        });
+                                        console.log('[FileUpload] Adding', newFiles.length, 'new files via Add More (', processedFilesList.length - newFiles.length, 'duplicates filtered)');
+                                        return [...prev, ...newFiles];
+                                    });
+                                    console.log('[FileUpload] Files dropped on Add More button. Total will be:', selectedFiles.length + processedFilesList.length);
                                 },
                                 style: {
                                     padding: '12px',
@@ -951,15 +976,18 @@
 
                     // Add to uploaded files list
                     const allUploaded = [...uploadedFilesList, ...newlyUploaded];
+                    console.log('[FileUpload] Document upload complete. Previously uploaded:', uploadedFilesList.length, 'Newly uploaded:', newlyUploaded.length, 'Total:', allUploaded.length);
                     setUploadedFilesList(allUploaded);
 
                     // Remove uploaded files from selectedFiles to prevent re-showing them
                     const uploadedTempIds = new Set(newlyUploaded.map(f => f.tempID));
                     const remainingFiles = selectedFiles.filter(f => !uploadedTempIds.has(f.tempID));
+                    console.log('[FileUpload] Remaining files after document upload:', remainingFiles.map(f => ({ name: f.originalName, isAudio: f.isAudio, tempID: f.tempID })));
                     setSelectedFiles(remainingFiles);
 
                     // Check if there are audio files remaining (that haven't been uploaded)
                     const remainingAudioFiles = remainingFiles.filter(f => f.isAudio);
+                    console.log('[FileUpload] Remaining audio files:', remainingAudioFiles.length, remainingAudioFiles.map(f => f.originalName));
 
                     if (remainingAudioFiles.length > 0) {
                         console.log('[FileUpload] Documents uploaded. Now showing audio files:', remainingAudioFiles.length);
@@ -1002,7 +1030,7 @@
                         window.showNotification({
                             type: 'success',
                             title: 'Upload Complete!',
-                            message: `All ${allUploaded.length} file(s) have been uploaded successfully.`,
+                            message: `${allUploaded.length} file(s) uploaded successfully.`,
                             actionText: 'Done'
                         }).then(() => {
                             // Close modal AFTER user dismisses notification
@@ -1081,15 +1109,18 @@
 
                     // Add to uploaded files list
                     const allUploaded = [...uploadedFilesList, ...newlyUploaded];
+                    console.log('[FileUpload] Audio upload complete. Previously uploaded:', uploadedFilesList.length, 'Newly uploaded:', newlyUploaded.length, 'Total:', allUploaded.length);
                     setUploadedFilesList(allUploaded);
 
                     // Remove uploaded files from selectedFiles to prevent re-showing them
                     const uploadedTempIds = new Set(newlyUploaded.map(f => f.tempID));
                     const remainingFiles = selectedFiles.filter(f => !uploadedTempIds.has(f.tempID));
+                    console.log('[FileUpload] Remaining files after audio upload:', remainingFiles.map(f => ({ name: f.originalName, isAudio: f.isAudio, tempID: f.tempID })));
                     setSelectedFiles(remainingFiles);
 
                     // Check if there are document files remaining (that haven't been uploaded)
                     const remainingDocumentFiles = remainingFiles.filter(f => !f.isAudio);
+                    console.log('[FileUpload] Remaining document files:', remainingDocumentFiles.length, remainingDocumentFiles.map(f => f.originalName));
 
                     if (remainingDocumentFiles.length > 0) {
                         console.log('[FileUpload] Audio files uploaded. Now showing document files:', remainingDocumentFiles.length);
@@ -1124,7 +1155,8 @@
                             }
                         });
                     } else {
-                        // All files uploaded - show notification first, then close
+                        // All audio files uploaded and no documents remaining
+                        // Close the modal after showing success
                         if (onFilesUploaded) {
                             onFilesUploaded(allUploaded);
                         }
@@ -1132,10 +1164,12 @@
                         window.showNotification({
                             type: 'success',
                             title: 'Upload Complete!',
-                            message: `All ${allUploaded.length} file(s) have been uploaded successfully.`,
+                            message: `${allUploaded.length} file(s) uploaded successfully.`,
                             actionText: 'Done'
                         }).then(() => {
                             // Close modal AFTER user dismisses notification
+                            // This prevents the audio section from showing again with 0 files
+                            console.log('[FileUpload] All uploads complete, closing modal');
                             onClose();
                         });
                     }

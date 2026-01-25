@@ -156,6 +156,7 @@ const USERSTORIES_SCHEMA = () => `
 // `
 
 // FIXED - Corrected data types and foreign key references:
+// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
 const USERSTORIES_SOURCE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS userStorySource
     (
@@ -227,6 +228,7 @@ const REQUIREMENTS_STORY_REF_SCHEMA = () => `
 // `
 
 // FIXED - Added ON DELETE CASCADE:
+// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
 const REQUIREMENTS_SOURCE_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS requirementsSource
     (
@@ -308,6 +310,7 @@ const CONVERSATION_SCHEMA = () => `
 // `
 
 // FIXED - Added column names and ON DELETE CASCADE:
+// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
 const CONVERSATION_DOC_REF_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS conversationDocRef
     (
