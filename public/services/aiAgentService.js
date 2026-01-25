@@ -1311,22 +1311,6 @@ function readFile(filePath) {
     }
 }
 
-async function test(){
-    let data = {
-        requestMessage: "What is time complexity?",
-    };
-
-    console.log('Streaming test...\n');
-
-    // Iterate over the generator
-    for await (const chunk of getStreamingResponse(data, "")) {
-        process.stdout.write(chunk);
-    }
-    console.log('\n--- Stream complete ---');
-}
-
-
-
 module.exports = {
     getResponse,
     getChatSummary,

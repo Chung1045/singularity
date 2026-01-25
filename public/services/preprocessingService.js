@@ -11,35 +11,43 @@ libre.convertAsync = require('util').promisify(libre.convert);
 
 // Environment Setting
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
-const tempWavPath = path.join(__dirname, '../tempfolder/temp_audio.wav');
-const tempPdfPath = path.join(__dirname, '../tempfolder/temp_document.pdf');
+// const tempWavPath = path.join(__dirname, '../tempfolder/temp_audio.wav');
+// const tempPdfPath = path.join(__dirname, '../tempfolder/temp_document.pdf');
+
+function createTempPath(extension) {
+    const tempDir = os.tmpdir();
+    const uniqueName = `${crypto.randomUUID()}${extension}`;
+    return path.join(tempDir, uniqueName);
+}
 
 // MAIN PRE-PROCESSING HELPER FUNCTION - GROUPED
 // CAN USE DIRECTLY
 // InputPath: ALL DOCUMENT, VIDEO, AUDIO TYPE
 // IMPORTANT: Return Raw Text
 async function documentPreprocessing(buffer, documentExt) {
-    const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac'];
+    const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac', '.m4a'];
     const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.txt', '.rtf'];
+
     let tempFilePath = "";
+    let tempWavPath = "";
+    let tempPdfPath = "";
 
     // Create temporary directory
     try {
         const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'docx-'));
         const tempFileName = crypto.randomUUID() + documentExt;
         tempFilePath = path.join(tempDir, tempFileName);
-        await fs.writeFile(tempFilePath, buffer)
-    } catch (error) {
-        console.log(`Error creating buffer temporary directory: ${error}`);
-    }
+        await fs.writeFile(tempFilePath, buffer);
 
-    try {
-        // 1. Check file type
+        // Check file type
         if (supportedVideoAudioFormats.includes(documentExt)) {
-            // 2.1 Convert video/audio to wav file
-            // 2.11 Extract text from video/audio using ffmpeg and Whisper model
+            // Create dynamic temp WAV path
+            tempWavPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.wav`);
+
+            // Convert to WAV
             await convert_ffmpeg(tempFilePath, tempWavPath, 'wav');
 
+            // Read and process WAV file
             const wavBuffer = await fs.readFile(tempWavPath);
             const wav = new WaveFile(wavBuffer);
             wav.toBitDepth('32f');
@@ -67,31 +75,57 @@ async function documentPreprocessing(buffer, documentExt) {
                 }
             }
 
+            // Transcribe audio
             const model = await getTranscriber();
-            const output = await model(audioData, {
+            console.log("Video / audio is now being transcribed")
+            const output = await model(audioData, {  // ✅ output is defined here
                 chunk_length_s: 30,
                 stride_length_s: 5,
             });
 
-            return output.text?.trim();
-        } else if (supportedDocumentFormats.includes(documentExt)) {
-            // 3.1 Convert document to PDF file
-            // 3.11 Convert other document formats to PDF
-            if (documentExt !== '.pdf') {
-                await documentToPdf_libreofficeconvert(tempFilePath, tempPdfPath);
+            console.log("Video / audio transcribe finished")
+            // Cleanup temp files
+            await fs.unlink(tempWavPath).catch(() => {});
+            await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
 
-                // 3.2 Extract text from converted PDF file
-                return await pdfExtracted_pdfjslib(tempPdfPath);
+            return output.text?.trim();  // ✅ Now output exists
+
+        } else if (supportedDocumentFormats.includes(documentExt)) {
+            if (documentExt !== '.pdf') {
+                // Create dynamic temp PDF path
+                tempPdfPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.pdf`);
+
+                await documentToPdf_libreofficeconvert(tempFilePath, tempPdfPath);
+                const result = await pdfExtracted_pdfjslib(tempPdfPath);
+
+                // Cleanup
+                await fs.unlink(tempPdfPath).catch(() => {});
+                await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+
+                return result;
             }
 
-            // 3.12 Extract text from original PDF file
-            return await pdfExtracted_pdfjslib(tempFilePath);
+            // Extract text from original PDF
+            const result = await pdfExtracted_pdfjslib(tempFilePath);
+
+            // Cleanup
+            await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+
+            return result;
         } else {
             console.error('Unsupported file format');
+            await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
             return null;
         }
     } catch (err) {
         console.error('Document preprocessing failed:', err.message);
+        // Cleanup on error
+        if (tempWavPath) await fs.unlink(tempWavPath).catch(() => {});
+        if (tempPdfPath) await fs.unlink(tempPdfPath).catch(() => {});
+        if (tempFilePath) {
+            const tempDir = path.dirname(tempFilePath);
+            await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+        }
         return null;
     }
 }
@@ -126,7 +160,8 @@ async function getTranscriber() {
 
     modelLoading = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/whisper-large-v2',
+        // 'Xenova/whisper-large-v2',
+        'Xenova/whisper-small.en',
         {
             quantized: true,
             cache_dir: path.join(__dirname, '../model_cache')
@@ -197,6 +232,8 @@ async function pdfExtracted_pdfjslib(inputPath){
 // InputPath: Where the video / audio path staying at
 // IMPORTANT: Return Raw Text
 async function videoAudioExtracted_ffmpeg(inputPath) {
+    const tempWavPath = createTempPath('.wav'); // Dynamic path
+
     try {
         await convert_ffmpeg(inputPath, tempWavPath, 'wav');
 
@@ -231,6 +268,7 @@ async function videoAudioExtracted_ffmpeg(inputPath) {
         const output = await model(audioData, {
             chunk_length_s: 30,
             stride_length_s: 5,
+            language: 'en',
         });
 
         return output.text?.trim();
