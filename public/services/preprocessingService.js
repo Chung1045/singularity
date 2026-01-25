@@ -3,7 +3,7 @@ const path = require('path');
 const os = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const { pipeline } = require('@huggingface/transformers');
+const { pipeline, env } = require('@huggingface/transformers');
 const { WaveFile } = require('wavefile');
 const libre = require('libreoffice-convert');
 const crypto = require('crypto');
@@ -77,7 +77,7 @@ async function documentPreprocessing(buffer, documentExt) {
         } else if (supportedDocumentFormats.includes(documentExt)) {
             // 3.1 Convert document to PDF file
             // 3.11 Convert other document formats to PDF
-            if (documentExt !== 'pdf') {
+            if (documentExt !== '.pdf') {
                 await documentToPdf_libreofficeconvert(tempFilePath, tempPdfPath);
 
                 // 3.2 Extract text from converted PDF file
@@ -88,9 +88,11 @@ async function documentPreprocessing(buffer, documentExt) {
             return await pdfExtracted_pdfjslib(tempFilePath);
         } else {
             console.error('Unsupported file format');
+            return null;
         }
     } catch (err) {
         console.error('Document preprocessing failed:', err.message);
+        return null;
     }
 }
 
@@ -99,8 +101,15 @@ async function documentPreprocessing(buffer, documentExt) {
 // Pre-loaded whisper model
 let transcriber = null;
 let modelLoading = null;
+let modelLoadFailed = false;
+env.authToken = process.env.HUGGING_FACE_TOKEN;
 
 async function getTranscriber() {
+    // If model previously failed to load, don't retry
+    if (modelLoadFailed) {
+        throw new Error('Whisper model previously failed to load');
+    }
+
     // If already loaded, return immediately
     if (transcriber) {
         return transcriber;
@@ -115,9 +124,9 @@ async function getTranscriber() {
     console.log('Loading Whisper model (this happens once)...');
     const startTime = Date.now();
 
-    modelLoading = pipeline(
+    modelLoading = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/distil-whisper-large-v2',
+        'Xenova/whisper-large-v2',
         {
             quantized: true,
             cache_dir: path.join(__dirname, '../model_cache')
@@ -128,6 +137,12 @@ async function getTranscriber() {
         const loadTime = ((Date.now() - startTime) / 1000).toFixed(2);
         console.log(`Whisper model loaded in ${loadTime}s and ready for requests`);
         return model;
+    }).catch(err => {
+        console.error(`Failed to load whisper model: ${err.message}`);
+        modelLoading = null;
+        modelLoadFailed = true;
+        transcriber = null;
+        throw err;
     });
 
     return modelLoading;
@@ -146,6 +161,7 @@ async function documentToPdf_libreofficeconvert(inputPath, outputPath) {
         await fs.writeFile(outputPath, pdfBuf);
     } catch (err) {
         console.error('Document to PDF conversion failed:', err.message);
+        return err;
     }
 }
 
@@ -154,22 +170,27 @@ async function documentToPdf_libreofficeconvert(inputPath, outputPath) {
 // InputPath: Where the document path staying at
 // IMPORTANT: Return Raw Text
 async function pdfExtracted_pdfjslib(inputPath){
-    const pdfjsLib = await import('pdfjs-dist');
-    const loadingTask = pdfjsLib.getDocument({
-        url: inputPath,
-        standardFontDataUrl: '/standard_fonts/'
-    });
-    const pdfDocument = await loadingTask.promise;
-    const extractedText = [];
+    try {
+        const pdfjsLib = await import('pdfjs-dist');
+        const loadingTask = pdfjsLib.getDocument({
+            url: inputPath,
+            standardFontDataUrl: '/standard_fonts/'
+        });
+        const pdfDocument = await loadingTask.promise;
+        const extractedText = [];
 
-    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
-        const page = await pdfDocument.getPage(pageNum);
-        const content = await page.getTextContent();
-        const text = content.items.map(item => item.str).join(' ');
-        extractedText.push("Page " + pageNum + ":\n" + text);
+        for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+            const page = await pdfDocument.getPage(pageNum);
+            const content = await page.getTextContent();
+            const text = content.items.map(item => item.str).join(' ');
+            extractedText.push("Page " + pageNum + ":\n" + text);
+        }
+
+        return extractedText.join('\n\n');
+    } catch (err) {
+        console.error('Document to PDF conversion failed:', err.message);
+        return err;
     }
-
-    return extractedText.join('\n\n');
 }
 
 // Extract text from video/audio using ffmpeg and Whisper model
@@ -233,6 +254,7 @@ async function convert_ffmpeg(inputPath, outputPath, convertType) {
             break;
         case 'wav':
             audioCodec_model = 'pcm_s16le';
+            break;
     }
 
     await new Promise((resolve, reject) => {
@@ -247,7 +269,7 @@ async function convert_ffmpeg(inputPath, outputPath, convertType) {
                 resolve();
             })
             .on('error', (err) => {
-                console.error(`${convertType} error:', err);`);
+                console.error(`${convertType} error:`, err);
                 reject(err);
             })
             .save(outputPath);
@@ -282,7 +304,7 @@ async function groupMultipleFile(requirementReports) {
             groupedData += `\n\n==============================
 Report File ${report}
 ==============================\n\n`;
-            groupedData +=  await extracttxtFile(report);
+            groupedData +=  await extractTxtFile(report);
         }
         return groupedData;
     } catch (err) {
