@@ -1428,8 +1428,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
 
             if (!confirmDelete) return;
 
-            // Get projectID from localStorage
-            const projectID = localStorage.getItem('selectedProjectID');
+            const projectID = document.getElementById('select-project-drop-down').value;
+            console.log(`Seelcted Project ID is: ${projectID}`)
 
             if (!projectID) {
                 console.error('No project selected');
@@ -3616,15 +3616,15 @@ window.backToInitialScreen = backToInitialScreen;
 // Function to open requirements panel
 function openRequirementsPanel() {
     console.log('[Requirements] Opening requirements panel');
-    
+
     const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
-    
+
     if (!projectID) {
         console.error('[Requirements] No project selected');
         alert('Please select a project first');
         return;
     }
-    
+
     // Create and show the requirements panel modal
     const event = new CustomEvent('openRequirementsPanel', { detail: { projectID } });
     window.dispatchEvent(event);
