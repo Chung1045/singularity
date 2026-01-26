@@ -465,10 +465,104 @@ const TempHome = ({csrfToken, userInfo}) => {
                         }, 'Say Hello'),
                         React.createElement('button', {
                             className: 'chip',
+                            // OLD CODE (Active):
                             onClick: () => {
                                 const input = document.getElementById('main-message-input');
                                 if (input) input.value = 'Analyze Documents';
                             }
+
+                            // NEW CODE (Commented out - uses requirementAnalysisModel endpoint):
+                            // onClick: async () => {
+                            //     // Get project ID and selected documents
+                            //     const projectDropdown = document.getElementById("select-project-drop-down");
+                            //     const projectID = projectDropdown?.value;
+                            //
+                            //     if (!projectID) {
+                            //         window.showNotification({
+                            //             type: 'error',
+                            //             title: 'No Project Selected',
+                            //             message: 'Please select a project first.',
+                            //             actionText: 'OK'
+                            //         });
+                            //         return;
+                            //     }
+                            //
+                            //     // Get selected documents from sidebar
+                            //     const selectedSource = getSelectedSource();
+                            //
+                            //     if (!selectedSource || selectedSource.length === 0) {
+                            //         window.showNotification({
+                            //             type: 'info',
+                            //             title: 'No Documents Selected',
+                            //             message: 'Please select documents from the Source panel to analyze.',
+                            //             actionText: 'OK'
+                            //         });
+                            //         return;
+                            //     }
+                            //
+                            //     // Get project title
+                            //     const projectNameElem = projectDropdown.options[projectDropdown.selectedIndex];
+                            //     const projectTitle = projectNameElem?.text || 'Project Analysis';
+                            //
+                            //     console.log('=== ANALYZE DOCUMENTS ===');
+                            //     console.log('Project ID:', projectID);
+                            //     console.log('Project Title:', projectTitle);
+                            //     console.log('Document IDs:', selectedSource);
+                            //
+                            //     // Show loading indicator
+                            //     const typingId = showTypingIndicator();
+                            //
+                            //     try {
+                            //         const response = await fetch('/api/agent/analyze-documents', {
+                            //             method: 'POST',
+                            //             headers: {
+                            //                 'Content-Type': 'application/json',
+                            //             },
+                            //             body: JSON.stringify({
+                            //                 projectID: projectID,
+                            //                 documentIDs: selectedSource,
+                            //                 title: projectTitle
+                            //             })
+                            //         });
+                            //
+                            //         removeTypingIndicator(typingId);
+                            //
+                            //         const data = await response.json();
+                            //
+                            //         if (response.ok && data.success) {
+                            //             console.log('Analysis result:', data.analysis);
+                            //
+                            //             // Show the analysis result in a message
+                            //             showChatInterface();
+                            //             addMessage('ai', data.analysis || 'Analysis complete.');
+                            //
+                            //             window.showNotification({
+                            //                 type: 'success',
+                            //                 title: 'Analysis Complete',
+                            //                 message: `Successfully analyzed ${data.documentsAnalyzed} document(s).`,
+                            //                 actionText: 'OK'
+                            //             });
+                            //         } else {
+                            //             addMessage('ai', `Error: ${data.message || 'Analysis failed.'}`);
+                            //             window.showNotification({
+                            //                 type: 'error',
+                            //                 title: 'Analysis Failed',
+                            //                 message: data.message || 'Unable to analyze documents.',
+                            //                 actionText: 'OK'
+                            //             });
+                            //         }
+                            //     } catch (error) {
+                            //         removeTypingIndicator(typingId);
+                            //         console.error('Error analyzing documents:', error);
+                            //         addMessage('ai', 'Sorry, there was an error analyzing the documents.');
+                            //         window.showNotification({
+                            //             type: 'error',
+                            //             title: 'Error',
+                            //             message: 'An error occurred while analyzing documents.',
+                            //             actionText: 'OK'
+                            //         });
+                            //     }
+                            // }
                         }, 'Analyze Documents')
                     ),
                     React.createElement('form', {

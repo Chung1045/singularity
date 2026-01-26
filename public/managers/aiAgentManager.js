@@ -715,6 +715,97 @@ router.post("/agent/document-generation/user-stories", async (req, res) => {
 
 });
 
+/**
+ * Document Analysis API - Analyze documents using requirementAnalysisModel
+ *
+ * @param {string} projectID - UUID of the current project (required)
+ * @param {string[]} documentIDs - Array of document UUIDs to analyze (required)
+ * @param {string} title - Project title for context (required)
+ *
+ * @example
+ * {
+ *   "projectID": "550e8400-e29b-41d4-a716-446655440000",
+ *   "documentIDs": ["f53db65b-2dd1-4293-85b6-a67fefec2951"],
+ *   "title": "E-Commerce Platform Requirements"
+ * }
+ */
+router.post('/agent/analyze-documents', async (req, res) => {
+    try {
+        console.log("New request /agent/analyze-documents");
 
+        const { projectID, documentIDs, title } = req.body;
+
+        // Validate required fields
+        if (!projectID || !documentIDs || !Array.isArray(documentIDs) || documentIDs.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: projectID and documentIDs array are required'
+            });
+        }
+
+        if (!title) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: title is required for analysis context'
+            });
+        }
+
+        // Check authorization
+        if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+        console.log(`Analyzing ${documentIDs.length} document(s) for project ${projectID}`);
+        console.log(`Project title: ${title}`);
+
+        // Get document contents
+        const fss = require('../services/fsServices');
+        let allDocumentData = '';
+
+        for (const docID of documentIDs) {
+            try {
+                console.log(`  Reading document: ${docID}`);
+                const docData = await fss.readDocumentContent(projectID, docID);
+                allDocumentData += `\n\n=== Document ${docID} ===\n${docData}\n`;
+            } catch (error) {
+                console.error(`  Error reading document ${docID}:`, error.message);
+                // Continue with other documents
+            }
+        }
+
+        if (!allDocumentData.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Unable to read any document content'
+            });
+        }
+
+        console.log(`  Total content length: ${allDocumentData.length} characters`);
+        console.log(`  Calling requirementAnalysisModel...`);
+
+        // Call the requirement analysis model
+        const analysisResult = await agent.requirementAnalysisModel(allDocumentData, title);
+
+        console.log(`  Analysis complete, result length: ${analysisResult?.length || 0}`);
+
+        return res.status(200).json({
+            success: true,
+            analysis: analysisResult,
+            documentsAnalyzed: documentIDs.length
+        });
+
+    } catch (error) {
+        console.error('Error in /agent/analyze-documents:', error);
+        return res.status(500).json({
+            success: false,
+            message: `Server error: ${error.message}`
+        });
+    }
+});
+
+// Get a complete chat thread with all conversations
 
 module.exports = router;
