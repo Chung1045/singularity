@@ -150,7 +150,7 @@
                 const uploadAll = await window.showNotification({
                     type: 'confirm',
                     title: 'Upload Selection',
-                    message: `You have selected ${filesToUpload.length} of ${selectedFiles.length} file(s).\n\n✅ Checked (${filesToUpload.length}):\n${selectedList}\n\n❌ Unchecked (${uncheckedFiles.length}):\n${uncheckedList}\n\nChoose:\n• Click "Upload All" to upload all ${selectedFiles.length} files\n• Click "Cancel" to upload only the checked ones`,
+                    message: `You have selected ${filesToUpload.length} of ${selectedFiles.length} file(s).\n\n Checked (${filesToUpload.length}):\n${selectedList}\n\n Unchecked (${uncheckedFiles.length}):\n${uncheckedList}\n\nChoose:\n• Click "Upload All" to upload all ${selectedFiles.length} files\n• Click "Cancel" to upload only the checked ones`,
                     actionText: 'Upload All'
                 });
 
