@@ -1322,5 +1322,7 @@ module.exports = {
     getStreamingResponseThreeStage,
     prepareUpdates,
     executeUpdates,
-    streamResponse
+    streamResponse,
+    // Requirement analysis
+    requirementAnalysisModel
 }
