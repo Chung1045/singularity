@@ -126,7 +126,7 @@ router.post('/agent/chat', async (req, res) => {
                     const trimmedChunk = chunk.trim();
                     if (!useLegacy && trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
                         // Log stage markers but don't send to client as content
-                        console.log(`📊 Stage marker: ${trimmedChunk}`);
+                        console.log(`Stage marker: ${trimmedChunk}`);
 
                         // Handle report generation events
                         if (trimmedChunk.includes('REPORT_GENERATED:')) {
@@ -136,17 +136,17 @@ router.post('/agent/chat', async (req, res) => {
                                 const endIdx = trimmedChunk.lastIndexOf('}');
                                 if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
                                     const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
-                                    console.log(`📊 Report generation marker found, JSON string:`, jsonStr);
+                                    console.log(` Report generation marker found, JSON string:`, jsonStr);
                                     const reportInfo = JSON.parse(jsonStr);
-                                    console.log(`📊 Parsed reportInfo:`, reportInfo);
-                                    console.log(`📊 Sending reportGenerated event to client`);
+                                    console.log(` Parsed reportInfo:`, reportInfo);
+                                    console.log(` Sending reportGenerated event to client`);
                                     res.write(`data: ${JSON.stringify({ 
                                         type: 'reportGenerated', 
                                         reportType: reportInfo.type,
                                         projectID: reportInfo.projectID || projectID
                                     })}\n\n`);
                                 } else {
-                                    console.error('📊 Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
+                                    console.error(' Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
                                 }
                             } catch (parseErr) {
                                 console.error('Failed to parse report info:', parseErr);
@@ -180,7 +180,7 @@ router.post('/agent/chat', async (req, res) => {
                     }
 
                     fullResponse += chunk;
-                    console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+                    console.log(` Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
                 }
 
