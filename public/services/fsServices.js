@@ -403,7 +403,7 @@ async function listProjectFiles(projectID) {
                 console.error('Error in listProjectFiles2 query:', err);
                 return reject(err);
             }
-            console.log(`🔍 Project ID ${projectID} Files:`, rows);
+            console.log(`Project ID ${projectID} Files:`, rows);
             resolve(rows);
         });
     });
