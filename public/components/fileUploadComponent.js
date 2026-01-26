@@ -48,9 +48,13 @@
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }, [menuOpen]);
 
-        // Cancel rename when clicking outside rename controls
+        // Cancel rename when clicking outside rename controls (desktop only)
         useEffect(() => {
             if (editingFile === null) return;
+
+            // Skip click-outside behavior on touch devices to prevent accidental cancels
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            if (isTouchDevice) return;
 
             const handleClickOutsideRename = (event) => {
                 if (renameContainerRef.current && !renameContainerRef.current.contains(event.target)) {
@@ -419,6 +423,7 @@
                 id: 'upload-modal-root',
                 style: {
                     width: '650px',
+                    minWidth: '350px',
                     height: '422px',
                     backgroundColor: '#ffffff',
                     borderRadius: '10px',
@@ -596,7 +601,7 @@
                                         },
                                         React.createElement('img', {
                                             id: `upload-icon-img-${file.tempID}`,
-                                            src: file.isAudio ? './img/paperclip.svg' : './img/folder-svgrepo-com.svg',
+                                            src: file.isAudio ? './img/audio-icon.svg' : './img/document-icon.svg',
                                             style: { width: '18px', height: '18px' }
                                         })
                                     ),
@@ -615,32 +620,65 @@
                                                     if (e.key === 'Escape') cancelRename();
                                                 },
                                                 onFocus: (e) => e.target.select(),
+                                                onTouchStart: (e) => e.stopPropagation(),
                                                 autoFocus: true,
-                                                style: {
-                                                    flex: 1,
-                                                    minWidth: '120px',
-                                                    padding: '1px 8px',
-                                                    fontSize: '13px',
-                                                    fontFamily: '"Inter-Medium", Helvetica',
-                                                    border: '1px solid rgb(30, 41, 59)',
-                                                    borderRadius: '4px',
-                                                    outline: 'none',
-                                                    boxSizing: 'border-box'
-                                                }
+                                                style: (() => {
+                                                    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                                                    return {
+                                                        flex: 1,
+                                                        minWidth: '120px',
+                                                        padding: isMobile ? '6px 8px' : '1px 8px',
+                                                        fontSize: '13px',
+                                                        fontFamily: '"Inter-Medium", Helvetica',
+                                                        border: '1px solid rgb(30, 41, 59)',
+                                                        borderRadius: '4px',
+                                                        outline: 'none',
+                                                        boxSizing: 'border-box'
+                                                    };
+                                                })()
                                             }),
                                             file.fileExt && React.createElement('span', {
                                                 id: `upload-rename-extension-${file.tempID}`,
                                                 style: { color: '#666', fontSize: '13px', whiteSpace: 'nowrap' }
                                             }, `.${file.fileExt}`),
-                                            React.createElement('button', {
+                                            // Only show buttons on mobile, desktop uses Enter/Escape keys
+                                            ('ontouchstart' in window || navigator.maxTouchPoints > 0) && React.createElement('button', {
                                                 id: `upload-rename-save-button-${file.tempID}`,
                                                 onClick: (e) => { e.stopPropagation(); saveRename(); },
-                                                style: { padding: '4px 8px', backgroundColor: 'rgb(30, 41, 59)', color: '#fff', borderRadius: '4px', fontSize: '11px', flexShrink: 0 }
+                                                style: {
+                                                    padding: '6px 12px',
+                                                    minWidth: '36px',
+                                                    minHeight: '36px',
+                                                    backgroundColor: 'rgb(30, 41, 59)',
+                                                    color: '#fff',
+                                                    borderRadius: '6px',
+                                                    fontSize: '14px',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }
                                             }, '✓'),
-                                            React.createElement('button', {
+                                            ('ontouchstart' in window || navigator.maxTouchPoints > 0) && React.createElement('button', {
                                                 id: `upload-rename-cancel-button-${file.tempID}`,
                                                 onClick: (e) => { e.stopPropagation(); cancelRename(); },
-                                                style: { padding: '4px 8px', backgroundColor: '#e4e4e4', color: '#666', borderRadius: '4px', fontSize: '11px', flexShrink: 0 }
+                                                style: {
+                                                    padding: '6px 12px',
+                                                    minWidth: '36px',
+                                                    minHeight: '36px',
+                                                    backgroundColor: '#e4e4e4',
+                                                    color: '#666',
+                                                    borderRadius: '6px',
+                                                    fontSize: '14px',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }
                                             }, '✕')
                                         )
                                         : React.createElement('div', {
