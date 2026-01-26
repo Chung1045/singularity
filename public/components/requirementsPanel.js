@@ -34,11 +34,11 @@
         // Listen for requirementsUpdated event from chat (when AI creates/updates requirements)
         useEffect(() => {
             const handleRequirementsUpdated = (event) => {
-                console.log('📊 [RequirementsPanel] Received requirementsUpdated event');
+                console.log(' [RequirementsPanel] Received requirementsUpdated event');
                 const eventProjectID = event.detail?.projectID;
                 // Refresh if it's for this project or no project specified
                 if (!eventProjectID || eventProjectID === projectID) {
-                    console.log('🔄 [RequirementsPanel] Refreshing data...');
+                    console.log(' [RequirementsPanel] Refreshing data...');
                     fetchData();
                 }
             };
@@ -526,7 +526,7 @@
                             gap: '8px'
                         }
                     },
-                        React.createElement('span', { style: { fontSize: '16px' } }, '⚠'),
+                        React.createElement('span', { style: { fontSize: '16px' } }, ''),
                         error
                     ),
 
@@ -640,7 +640,7 @@
                                 React.createElement('div', {
                                     id: 'requirements-panel-empty-icon',
                                     style: { fontSize: '32px', marginBottom: '12px', opacity: 0.5 }
-                                }, mainTab === 'requirements' ? '📋' : '📝'),
+                                }, mainTab === 'requirements' ? '' : ''),
                                 React.createElement('p', {
                                     id: 'requirements-panel-empty-text',
                                     style: { margin: 0 }

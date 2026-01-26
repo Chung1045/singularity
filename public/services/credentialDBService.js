@@ -71,7 +71,7 @@ async function insertGoogleOAuthUserAccount(profile) {
     const userType  = "google";
 
     console.log(`\n========================================`);
-    console.log(`🔵 NEW OAUTH REQUEST`);
+    console.log(` NEW OAUTH REQUEST`);
     console.log(`Profile ID: ${profile.id}`);
     console.log(`Name: ${firstName} ${lastName}`);
     console.log(`Email: ${email}`);
@@ -255,10 +255,10 @@ async function updatePasskeyLastUsed(keyID) {
     return new Promise((resolve, reject) => {
         db.run(sql, params, function(err) {
             if (err) {
-                console.error(`❌ Error updating passkey lastUsed:`, err);
+                console.error(` Error updating passkey lastUsed:`, err);
                 return reject(err);
             }
-            console.log(`✅ Updated lastUsed for passkey: ${keyID} with device: ${deviceInfo}`);
+            console.log(` Updated lastUsed for passkey: ${keyID} with device: ${deviceInfo}`);
             resolve(true);
         });
     });

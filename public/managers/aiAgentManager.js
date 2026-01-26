@@ -199,7 +199,7 @@ router.post('/agent/chat', async (req, res) => {
                 if (threadName == null) {
                     threadName = await agent.createChatName(JSON.stringify(await aiDB.fetchChatThread(projectID, chatID)));
                     await aiDB.renameChatThread(projectID, chatID, threadName);
-                    console.log('📝 Generated thread name:', threadName);
+                    console.log(' Generated thread name:', threadName);
                 }
 
                 // Send completion event with threadName
@@ -214,7 +214,7 @@ router.post('/agent/chat', async (req, res) => {
                 res.end();
 
             } catch (error) {
-                console.error(`❌ Streaming error in /agent/chat:`, error);
+                console.error(` Streaming error in /agent/chat:`, error);
                 console.error(`Error stack:`, error.stack);
                 console.error(`Error details - projectID: ${projectID}, chatID: ${chatID}`);
 
@@ -299,14 +299,14 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
 
         console.log('chatThreadData type:', typeof chatThreadData);
         console.log('chatThreadData:', JSON.stringify(chatThreadData, null, 2));
-        console.log(`✅ Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
+        console.log(` Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
 
         if (!chatThreadData) {
             console.log('No chat thread data returned');
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
-                projectID: null,  // ✅ Include projectID even if null
+                projectID: null,  //  Include projectID even if null
                 conversations: []
             });
         }
@@ -316,7 +316,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
-                projectID: chatThreadData.projectID || null,  // ✅ Include projectID
+                projectID: chatThreadData.projectID || null,  //  Include projectID
                 conversations: []
             });
         }
@@ -326,7 +326,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
-                projectID: chatThreadData.projectID || null,  // ✅ Include projectID
+                projectID: chatThreadData.projectID || null,  //  Include projectID
                 conversations: []
             });
         }
@@ -348,7 +348,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
         return res.status(200).json({
             success: true,
             chatID: chatID,
-            projectID: chatThreadData.projectID,  // ✅ Include projectID
+            projectID: chatThreadData.projectID,  //  Include projectID
             conversations: conversations
         });
 
@@ -457,7 +457,7 @@ router.post('/agent/all-chat', async (req, res) => {
 router.post('/agent/chat-fetch', async (req, res) => {
 
     if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent chat fetch");
+        console.log(" Unauthorized attempt for agent chat fetch");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
@@ -491,7 +491,7 @@ router.post('/agent/chat-fetch', async (req, res) => {
 router.post('/agent/chat-delete', async (req, res) => {
 
     if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent chat delete");
+        console.log(" Unauthorized attempt for agent chat delete");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 

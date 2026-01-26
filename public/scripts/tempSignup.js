@@ -52,7 +52,7 @@ const TempSignup = ({ csrfToken }) => {
         // 
         // if (errorFields.length > 0 && messageEl && messageTextEl) {
         //     const credentialsList = errorFields.join(', ');
-        //     messageTextEl.textContent = `⚠️ Warning: Please fill in your credentials`;
+        //     messageTextEl.textContent = ` Warning: Please fill in your credentials`;
         //     messageEl.classList.remove('hidden');
         // } else if (messageEl) {
         //     messageEl.classList.add('hidden');

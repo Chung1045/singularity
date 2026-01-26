@@ -303,9 +303,9 @@ async function createUserStoryTable(story, projectID) {
 }
 
 async function generateRequirementsDocument(projectID, requirements) {
-    console.log(`📊 generateRequirementsDocument called: projectID=${projectID}, requirements count=${requirements?.length}`);
+    console.log(` generateRequirementsDocument called: projectID=${projectID}, requirements count=${requirements?.length}`);
     const projectName = await projectDB.fetchProjectName(projectID);
-    console.log(`📊 Project name: ${projectName}`);
+    console.log(` Project name: ${projectName}`);
 
     const requirementDocContent = [
         new Paragraph({
@@ -335,7 +335,7 @@ async function generateRequirementsDocument(projectID, requirements) {
         requirementDocContent.push(new Paragraph("")); // spacing
     }
 
-    console.log(`📊 Creating Word document...`);
+    console.log(` Creating Word document...`);
     const doc = new Document({
         sections: [
             {
@@ -345,20 +345,20 @@ async function generateRequirementsDocument(projectID, requirements) {
         ],
     });
 
-    console.log(`📊 Packing document to buffer...`);
+    console.log(` Packing document to buffer...`);
     const buffer = await Packer.toBuffer(doc);
-    console.log(`📊 Buffer size: ${buffer.length} bytes`);
+    console.log(` Buffer size: ${buffer.length} bytes`);
 
-    console.log(`📊 Calling saveGeneratedReport...`);
-    console.log(`📊 Using report type: ${fss.FSS_REPORT_REQUIREMENTS}`);
+    console.log(` Calling saveGeneratedReport...`);
+    console.log(` Using report type: ${fss.FSS_REPORT_REQUIREMENTS}`);
     let result = await fss.saveGeneratedReport(projectID, buffer, fss.FSS_REPORT_REQUIREMENTS);
-    console.log(`📊 saveGeneratedReport result:`, result);
+    console.log(` saveGeneratedReport result:`, result);
 
     if (result.successful) {
-        console.log(`✅ Requirements report created successfully`);
+        console.log(` Requirements report created successfully`);
         return true
     } else {
-        console.log("❌ Unable to create requirements report");
+        console.log(" Unable to create requirements report");
         return false
     }
 }

@@ -294,25 +294,25 @@ const toolImpls = {
 
     async get_project_file_content(projectID, documentID) {
         try {
-            console.log(`🔍 Fetching file content: projectID=${projectID}, documentID=${documentID}`);
+            console.log(` Fetching file content: projectID=${projectID}, documentID=${documentID}`);
             const content = await fss.getFileContext(projectID, documentID);
 
             if (!content || content === "Context is not available.") {
-                console.warn(`⚠️  File content not available for documentID: ${documentID}`);
+                console.warn(`  File content not available for documentID: ${documentID}`);
                 return {
                     error: "File content is not available. The file may not have been processed yet, or it may be in an unsupported format.",
                     documentID: documentID
                 };
             }
 
-            console.log(`✅ Successfully retrieved file content (${content.length} characters)`);
+            console.log(` Successfully retrieved file content (${content.length} characters)`);
             return {
                 documentID: documentID,
                 content: content,
                 contentLength: content.length
             };
         } catch (error) {
-            console.error(`❌ Error in get_project_file_content:`, error.message);
+            console.error(` Error in get_project_file_content:`, error.message);
             return {
                 error: `Failed to retrieve file content: ${error.message}`,
                 documentID: documentID
@@ -696,45 +696,45 @@ const toolImpls = {
     },
 
     async generate_requirements_report(projectID) {
-        console.log(`📊 ========================================`);
-        console.log(`📊 generate_requirements_report called with projectID: ${projectID}`);
-        console.log(`📊 ========================================`);
+        console.log(` ========================================`);
+        console.log(` generate_requirements_report called with projectID: ${projectID}`);
+        console.log(` ========================================`);
 
         const docGen = require("./docGenerationService");
         try {
             // Test database connectivity first
-            console.log(`📊 Testing database connectivity...`);
+            console.log(` Testing database connectivity...`);
             try {
                 const testQuery = await aiDB.getProjectRequirements(projectID);
-                console.log(`📊 Database test successful, found ${testQuery?.length || 0} requirements`);
+                console.log(` Database test successful, found ${testQuery?.length || 0} requirements`);
             } catch (dbError) {
-                console.error(`❌ Database test failed:`, dbError);
+                console.error(` Database test failed:`, dbError);
                 throw new Error(`Database connection failed: ${dbError.message}`);
             }
 
             const requirementsData = await aiDB.getProjectRequirements(projectID);
-            console.log(`📊 Found ${requirementsData?.length || 0} requirements`);
+            console.log(` Found ${requirementsData?.length || 0} requirements`);
 
             if (!requirementsData || requirementsData.length === 0) {
-                console.warn(`⚠️ No requirements found for project ${projectID}`);
+                console.warn(` No requirements found for project ${projectID}`);
                 return { success: false, message: "No requirements found for this project. Please add requirements first before generating a report." };
             }
 
-            console.log(`📊 ========================================`);
-            console.log(`📊 Starting document generation...`);
-            console.log(`📊 ========================================`);
+            console.log(` ========================================`);
+            console.log(` Starting document generation...`);
+            console.log(` ========================================`);
 
             const result = await docGen.generateRequirementsDocument(projectID, requirementsData);
 
-            console.log(`📊 ========================================`);
-            console.log(`📊 Document generation result: ${result}`);
-            console.log(`📊 ========================================`);
+            console.log(` ========================================`);
+            console.log(` Document generation result: ${result}`);
+            console.log(` ========================================`);
 
             if (result) {
-                console.log(`✅ ========================================`);
-                console.log(`✅ REPORT GENERATED SUCCESSFULLY`);
-                console.log(`✅ Returning success with reportGenerated: true`);
-                console.log(`✅ ========================================`);
+                console.log(` ========================================`);
+                console.log(` REPORT GENERATED SUCCESSFULLY`);
+                console.log(` Returning success with reportGenerated: true`);
+                console.log(` ========================================`);
                 return {
                     success: true,
                     message: `Requirements report generated successfully with ${requirementsData.length} requirement(s). The report is now available for download in the **Requirements List** section of the sidebar.`,
@@ -743,36 +743,36 @@ const toolImpls = {
                     reportType: 'requirements'
                 };
             } else {
-                console.error(`❌ Document generation returned false`);
+                console.error(` Document generation returned false`);
                 return { success: false, message: "Failed to generate requirements report." };
             }
         } catch (error) {
-            console.error(`❌ ========================================`);
-            console.error(`❌ ERROR in generate_requirements_report`);
-            console.error(`❌ Error:`, error);
-            console.error(`❌ Error message:`, error.message);
-            console.error(`❌ Error stack:`, error.stack);
-            console.error(`❌ ========================================`);
+            console.error(` ========================================`);
+            console.error(` ERROR in generate_requirements_report`);
+            console.error(` Error:`, error);
+            console.error(` Error message:`, error.message);
+            console.error(` Error stack:`, error.stack);
+            console.error(` ========================================`);
             return { success: false, message: `Error generating requirements report: ${error.message}` };
         }
     },
 
     async generate_user_stories_report(projectID) {
-        console.log(`📊 generate_user_stories_report called with projectID: ${projectID}`);
+        console.log(` generate_user_stories_report called with projectID: ${projectID}`);
         const docGen = require("./docGenerationService");
         try {
             const userStoriesData = await aiDB.getProjectUserStories(projectID);
-            console.log(`📊 Found ${userStoriesData?.length || 0} user stories`);
+            console.log(` Found ${userStoriesData?.length || 0} user stories`);
             if (!userStoriesData || userStoriesData.length === 0) {
                 return { success: false, message: "No user stories found for this project. Please add user stories first before generating a report." };
             }
 
-            console.log(`📊 Generating user stories document...`);
+            console.log(` Generating user stories document...`);
             const result = await docGen.generateUserStoriesDocument(projectID, userStoriesData);
-            console.log(`📊 Document generation result: ${result}`);
+            console.log(` Document generation result: ${result}`);
 
             if (result) {
-                console.log(`📊 Returning success with reportGenerated: true`);
+                console.log(` Returning success with reportGenerated: true`);
                 return {
                     success: true,
                     message: `User stories report generated successfully with ${userStoriesData.length} user story(ies). The report is now available for download in the **Requirements List** section of the sidebar.`,

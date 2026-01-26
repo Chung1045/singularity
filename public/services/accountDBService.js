@@ -71,7 +71,7 @@ async function findUserNameByUserID(uid) {
                 console.error('Error in findUserNameByUserID:', err);
                 return reject(err);
             }
-            console.log(`🔍 findUserByUserNameID("${uid}"):`, row || 'NOT FOUND');
+            console.log(` findUserByUserNameID("${uid}"):`, row || 'NOT FOUND');
             resolve(row ? row.userName : null);
         });
     });
@@ -86,7 +86,7 @@ async function findUserIDBySessionID(sessionID) {
                 console.error('Error in findUserIDBySessionID:', err);
                 return reject(err);
             }
-            console.log(`🔍 findUserIDBySessionID("${sessionID}"):`, row || 'NOT FOUND');
+            console.log(` findUserIDBySessionID("${sessionID}"):`, row || 'NOT FOUND');
             resolve(row ? row.uid : null);
         });
     });
@@ -101,7 +101,7 @@ async function findUserIDByPasskeyID(passkeyID) {
                 console.error('Error in findUserIDByPasskeyID:', err);
                 return reject(err);
             }
-            console.log(`🔍 findUserIDBySessionID("${passkeyID}"):`, row || 'NOT FOUND');
+            console.log(` findUserIDBySessionID("${passkeyID}"):`, row || 'NOT FOUND');
             resolve(row ? row.uid : null);
         });
     });
@@ -112,16 +112,16 @@ async function getUserInfo(userID) {
         // OLD: db.get(`SELECT uid, firstName, lastName, userEmail, userName, userType FROM user WHERE uid = ?`, [userID], (err, row) => {
         // NEW: Added more detailed logging and avatar fields
         const query = `SELECT uid, firstName, lastName, userEmail, userName, userType, userAvatarPath, googleAvatarUrl FROM user WHERE uid = ?`;
-        console.log(`🔍 getUserInfo: Querying for uid="${userID}"`);
+        console.log(` getUserInfo: Querying for uid="${userID}"`);
         db.get(query, [userID], (err, row) => {
             if (err) {
-                console.error('❌ Error in getting user information:', err);
+                console.error(' Error in getting user information:', err);
                 return reject(err);
             }
             if (!row) {
-                console.error(`❌ getUserInfo: NO USER FOUND for uid="${userID}"`);
+                console.error(` getUserInfo: NO USER FOUND for uid="${userID}"`);
             } else {
-                console.log(`✅ getUserInfo result:`, row);
+                console.log(` getUserInfo result:`, row);
             }
             resolve(row);
         });
@@ -190,20 +190,20 @@ async function logLoginAttempts(data) {
     }
 }
 
-async function listPasskey(data) {  // ✅ Just pass uid directly, not data object
+async function listPasskey(data) {  //  Just pass uid directly, not data object
     const query = `SELECT keyID, keyName, dateCreate
                    FROM passkeys
                    WHERE uid = ?
                    ORDER BY dateCreate DESC`;
 
     return new Promise((resolve, reject) => {
-        db.all(query, [data], (err, rows) => {  // ✅ Use db.all() to get ALL rows
+        db.all(query, [data], (err, rows) => {  //  Use db.all() to get ALL rows
             if (err) {
                 console.error('Error listing passkeys:', err);
                 return reject(err);
             }
             console.log(`Found ${rows.length} passkey(s) for userID ${data}`);
-            resolve(rows || []);  // ✅ Return array of all passkeys
+            resolve(rows || []);  //  Return array of all passkeys
         });
     });
 }
@@ -330,7 +330,7 @@ async function updateUserAvatar(userID, avatarPath) {
                     console.error('Error updating user avatar:', err);
                     return reject(err);
                 }
-                console.log(`✅ Updated avatar for user ${userID}`);
+                console.log(` Updated avatar for user ${userID}`);
                 resolve({ changes: this.changes });
             }
         );
@@ -356,4 +356,3 @@ module.exports = {
     apiAuthUser,
     testConnection
 }
-
