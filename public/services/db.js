@@ -47,7 +47,7 @@ async function migrateDatabase(db) {
     return new Promise((resolve, reject) => {
         db.all("PRAGMA table_info(user)", [], (err, columns) => {
             if (err) {
-                console.error('❌ Error checking table schema:', err);
+                console.error(' Error checking table schema:', err);
                 return reject(err);
             }
 
@@ -62,14 +62,14 @@ async function migrateDatabase(db) {
             const operations = [];
 
             if (!hasUserAvatarPath) {
-                console.log('⚠️  Adding missing column: userAvatarPath');
+                console.log('  Adding missing column: userAvatarPath');
                 operations.push(new Promise((res, rej) => {
                     db.run('ALTER TABLE user ADD COLUMN userAvatarPath TEXT', (err) => {
                         if (err) {
-                            console.error('❌ Error adding userAvatarPath:', err);
+                            console.error(' Error adding userAvatarPath:', err);
                             rej(err);
                         } else {
-                            console.log('✅ Added userAvatarPath column');
+                            console.log(' Added userAvatarPath column');
                             res();
                         }
                     });
@@ -77,14 +77,14 @@ async function migrateDatabase(db) {
             }
 
             if (!hasGoogleAvatarUrl) {
-                console.log('⚠️  Adding missing column: googleAvatarUrl');
+                console.log('  Adding missing column: googleAvatarUrl');
                 operations.push(new Promise((res, rej) => {
                     db.run('ALTER TABLE user ADD COLUMN googleAvatarUrl TEXT', (err) => {
                         if (err) {
-                            console.error('❌ Error adding googleAvatarUrl:', err);
+                            console.error(' Error adding googleAvatarUrl:', err);
                             rej(err);
                         } else {
-                            console.log('✅ Added googleAvatarUrl column');
+                            console.log(' Added googleAvatarUrl column');
                             res();
                         }
                     });
@@ -97,7 +97,7 @@ async function migrateDatabase(db) {
 
             Promise.all(operations)
                 .then(() => {
-                    console.log('✅ Database migration completed');
+                    console.log(' Database migration completed');
                     resolve();
                 })
                 .catch(reject);

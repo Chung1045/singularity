@@ -1,20 +1,22 @@
 
 (function () {
+    //wip: No more mix choice, every type of file will be sent to the same uploadedFilesList window.
+    
     const { useState, useEffect } = React;
 
     console.log('[FileUpload] fileUploadComponent.js loading...');
 
     // Check if dependencies are loaded
     if (!window.DocumentUploadSection) {
-        console.error('[FileUpload] ❌ DocumentUploadSection NOT loaded! Check script order in HTML.');
+        console.error('[FileUpload]  DocumentUploadSection NOT loaded! Check script order in HTML.');
     } else {
-        console.log('[FileUpload] ✅ DocumentUploadSection loaded');
+        console.log('[FileUpload]  DocumentUploadSection loaded');
     }
 
     if (!window.AudioUploadSection) {
-        console.error('[FileUpload] ❌ AudioUploadSection NOT loaded! Check script order in HTML.');
+        console.error('[FileUpload]  AudioUploadSection NOT loaded! Check script order in HTML.');
     } else {
-        console.log('[FileUpload] ✅ AudioUploadSection loaded');
+        console.log('[FileUpload] AudioUploadSection loaded');
     }
 
     // Main File Upload Component
@@ -342,7 +344,7 @@
                                             justifyContent: 'center',
                                             fontSize: '20px'
                                         }
-                                    }, file.isAudio ? '🎵' : '📄'),
+                                    }, file.isAudio ? 'audio' : 'document'),
                                     // File info
                                     React.createElement('div', {
                                         style: {
@@ -535,7 +537,7 @@
                                     fontSize: '48px',
                                     pointerEvents: 'none'
                                 }
-                            }, '☁️'),
+                            }, 'SVG Upload icon'),
                             React.createElement('p', {
                                 id: 'file-upload-prompt-text',
                                 style: {
@@ -688,7 +690,7 @@
                                     justifyContent: 'center',
                                     fontSize: '30px'
                                 }
-                            }, '📄'),
+                            }, ''),
                             React.createElement('div', {
                                 style: {
                                     display: 'flex',
@@ -765,7 +767,7 @@
                                     justifyContent: 'center',
                                     fontSize: '30px'
                                 }
-                            }, '🎵'),
+                            }, ''),
                             React.createElement('div', {
                                 style: {
                                     display: 'flex',
@@ -831,7 +833,7 @@
                         React.createElement('span', {
                             id: 'mixed-choice-edit-icon',
                             style: { fontSize: '16px' }
-                        }, '✏️'),
+                        }, ''),
                         'Edit Selection'
                     ),
 
@@ -1183,11 +1185,9 @@
     };
 
     console.log('[FileUpload] ============================================');
-    console.log('[FileUpload] ✅ FileUploadComponent exported successfully');
+    console.log('[FileUpload]  FileUploadComponent exported successfully');
     console.log('[FileUpload] Component type:', typeof window.FileUploadComponent);
     console.log('[FileUpload] Component available:', !!window.FileUploadComponent);
-    console.log('[FileUpload] VERSION: 2.9 - SYNTAX ERRORS FIXED!');
     console.log('[FileUpload] ============================================');
 })();
-
 

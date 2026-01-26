@@ -53,7 +53,7 @@ async function createProject(data) {
 
 async function deleteProject(projectID) {
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`🗑️  DELETING PROJECT: ${projectID}`);
+    console.log(`DELETING PROJECT: ${projectID}`);
     console.log(`${'='.repeat(60)}\n`);
 
     try {
@@ -66,7 +66,7 @@ async function deleteProject(projectID) {
         });
 
         if (projectInfo) {
-            console.log(`📋 Project Info:`);
+            console.log(`Project Info:`);
             console.log(`   - Name: ${projectInfo.projectName}`);
             console.log(`   - Owner: ${projectInfo.projectOwnerUid}`);
             console.log(`   - Created: ${projectInfo.dateCreate}\n`);
@@ -118,7 +118,7 @@ async function deleteProject(projectID) {
             })
         ]);
 
-        console.log(`📊 Database Records to Delete (CASCADE):`);
+        console.log(`Database Records to Delete (CASCADE):`);
         counts.forEach(({ table, count }) => {
             if (count > 0) {
                 console.log(`   ✓ ${table}: ${count} record(s)`);
@@ -164,19 +164,19 @@ async function deleteProject(projectID) {
         console.log();
 
         // First delete the files from MinIO
-        console.log(`🗄️  Deleting files from MinIO...`);
+        console.log(`Deleting files from MinIO...`);
         await fss.deleteProjectFolder(projectID);
         console.log(`   ✓ MinIO files deleted\n`);
 
         // Manually delete from child tables to avoid foreign key mismatch errors
         // The CASCADE may not work properly due to schema issues with composite keys
-        console.log(`💾 Deleting from database...`);
+        console.log(`Deleting from database...`);
 
         const deleteFromTable = (tableName, whereClause, params) => {
             return new Promise((resolve) => {
                 db.run(`DELETE FROM ${tableName} WHERE ${whereClause}`, params, function(err) {
                     if (err) {
-                        console.log(`   ⚠️ Could not delete from ${tableName}: ${err.message}`);
+                        console.log(`    Could not delete from ${tableName}: ${err.message}`);
                     } else if (this.changes > 0) {
                         console.log(`   ✓ Deleted ${this.changes} record(s) from ${tableName}`);
                     }
@@ -272,18 +272,18 @@ async function deleteProject(projectID) {
         return new Promise((resolve, reject) => {
             db.run(query, [projectID], function (err) {
                 if (err) {
-                    console.error('❌ Error deleting Project from database:', err);
+                    console.error(' Error deleting Project from database:', err);
                     return reject(err);
                 }
-                console.log(`   ✓ Project record deleted`);
+                console.log(` Project record deleted`);
                 console.log(`\n${'='.repeat(60)}`);
-                console.log(`✅ PROJECT DELETION COMPLETE`);
+                console.log(`PROJECT DELETION COMPLETE`);
                 console.log(`${'='.repeat(60)}\n`);
                 resolve(true);
             });
         });
     } catch (err) {
-        console.error(`❌ Error deleting project:`, err);
+        console.error(` Error deleting project:`, err);
         console.log(`${'='.repeat(60)}\n`);
         throw err;
     }

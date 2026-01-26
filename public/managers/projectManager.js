@@ -98,7 +98,7 @@ router.post('/project/delete', async (req, res) => {
         const { projectID } = req.body;
 
         console.log(`\n${'═'.repeat(60)}`);
-        console.log(`📨 DELETE PROJECT REQUEST`);
+        console.log(` DELETE PROJECT REQUEST`);
         console.log(`${'═'.repeat(60)}`);
         console.log(`   Project ID: ${projectID}`);
         console.log(`   User ID: ${req.userID}`);
@@ -106,14 +106,14 @@ router.post('/project/delete', async (req, res) => {
         console.log(`${'═'.repeat(60)}\n`);
 
         if (projectID == null) {
-            console.log(`❌ Validation failed: Project ID is required\n`);
+            console.log(` Validation failed: Project ID is required\n`);
             return res.status(400).json({ success: false, message: "Project ID is required" });
         }
 
         const projectOwner = await projectDBService.queryProjectOwner(projectID);
 
         if (projectOwner !== req.userID) {
-            console.log(`❌ Authorization failed: User ${req.userID} is not the owner of project ${projectID}`);
+            console.log(` Authorization failed: User ${req.userID} is not the owner of project ${projectID}`);
             console.log(`   Project owner: ${projectOwner}\n`);
             return res.status(403).json({ successful: false, message: "Unauthorized" });
         }
@@ -124,16 +124,16 @@ router.post('/project/delete', async (req, res) => {
 
         if (successful) {
             console.log(`\n${'═'.repeat(60)}`);
-            console.log(`✅ API RESPONSE: Project deleted successfully`);
+            console.log(` API RESPONSE: Project deleted successfully`);
             console.log(`${'═'.repeat(60)}\n`);
             return res.status(200).json({ success: true, message: 'Project deleted successfully' });
         } else {
-            console.log(`\n❌ Deletion failed: Unknown error\n`);
+            console.log(`\n Deletion failed: Unknown error\n`);
             return res.status(500).json({ success: false, message: 'Failed to delete project' });
         }
 
     } catch (error) {
-        console.error(`\n❌ SERVER ERROR during project deletion:`, error);
+        console.error(`\n SERVER ERROR during project deletion:`, error);
         console.log(`${'═'.repeat(60)}\n`);
         return res.status(500).json({ success: false, message: `Server Error: ${error}` });
     }

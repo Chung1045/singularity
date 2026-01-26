@@ -84,19 +84,19 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     // Cascading fallback: uploaded avatar → Google avatar → default icon
     // If Google avatar also fails to fetch, fall back to default
     const handleAvatarError = () => {
-        console.log('⚠️ Avatar image failed to load, checking for fallback options');
+        console.log(' Avatar image failed to load, checking for fallback options');
         const currentUrl = avatarUrl;
 
         // If currently showing uploaded avatar, try Google avatar next
         if (currentUrl === userInfo?.userAvatarPath) {
             setAvatarError(true);
             const fallbackUrl = userInfo?.googleAvatarUrl || './img/size-48.svg';
-            console.log('📸 Falling back from uploaded avatar to:', fallbackUrl);
+            console.log(' Falling back from uploaded avatar to:', fallbackUrl);
             setAvatarUrl(fallbackUrl);
         }
         // If currently showing Google avatar (or it failed), use default
         else if (currentUrl === userInfo?.googleAvatarUrl) {
-            console.log('📸 Google avatar also failed, falling back to default icon');
+            console.log(' Google avatar also failed, falling back to default icon');
             setGoogleAvatarError(true);
             setAvatarUrl('./img/size-48.svg');
         }
@@ -190,7 +190,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         const formData = new FormData();
         formData.append('file', file);  // Changed from 'profilePicture' to 'file'
 
-        console.log('🔄 Starting avatar upload...', {
+        console.log(' Starting avatar upload...', {
             fileName: file.name,
             fileSize: file.size,
             fileType: file.type
@@ -205,17 +205,17 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 body: formData
             });
 
-            console.log('📡 Response status:', response.status);
+            console.log(' Response status:', response.status);
 
             let data;
             try {
                 data = await response.json();
             } catch (jsonError) {
-                console.error('❌ Failed to parse response:', jsonError);
+                console.error(' Failed to parse response:', jsonError);
                 throw new Error('Server returned invalid response');
             }
 
-            console.log('📦 Response data:', data);
+            console.log(' Response data:', data);
 
             if (data.success) {
                 await fetchProfilePics();
@@ -226,11 +226,11 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     window.location.reload();
                 }, 1500);
             } else {
-                console.error('❌ Upload failed:', data.message);
+                console.error(' Upload failed:', data.message);
                 showAlert('Upload Failed', data.message || 'Failed to upload profile picture');
             }
         } catch (error) {
-            console.error('❌ Error uploading avatar:', error);
+            console.error(' Error uploading avatar:', error);
             console.error('Error details:', error.message);
             showAlert('Upload Error', `An error occurred: ${error.message || 'Please try again'}`);
         } finally {

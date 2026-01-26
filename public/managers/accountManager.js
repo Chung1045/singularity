@@ -48,7 +48,7 @@ passport.use(new GoogleStrategy({
     passReqToCallback: true
 }, async (req, accessToken, refreshToken, profile, done) => {
     try {
-        console.log("🔍 Google User Profile Info:");
+        console.log(" Google User Profile Info:");
         console.log(JSON.stringify(profile, null, 2));
         console.log(`Checking if google oauth user exists for profile id: ${profile.id} and email: ${profile.emails[0].value}`)
 
@@ -58,7 +58,7 @@ passport.use(new GoogleStrategy({
 
             // Add validation
             if (!uidResponse) {
-                console.error("❌ UID not found despite user existing!");
+                console.error(" UID not found despite user existing!");
                 return done(new Error("Failed to retrieve user ID"), null);
             }
 
@@ -69,15 +69,15 @@ passport.use(new GoogleStrategy({
             const newUser = await credDBService.insertGoogleOAuthUserAccount(profile);
 
             if (!newUser || !newUser.uid) {
-                console.error("❌ Failed to create new user!");
+                console.error(" Failed to create new user!");
                 return done(new Error("Failed to create user account"), null);
             }
 
-            console.log("✅ New user created:", newUser.uid);
+            console.log(" New user created:", newUser.uid);
             return done(null, { uid: newUser.uid });
         }
     } catch (error) {
-        console.error("❌ OAuth error:", error);
+        console.error(" OAuth error:", error);
         return done(error, null);
     }
 }));
@@ -363,11 +363,11 @@ router.post("/passkey/gen-auth-option", async (req, res) => {
 
         req.session.challenge = options.challenge;
 
-        console.log("✅ Auth options generated");
+        console.log(" Auth options generated");
         res.json(options);
 
     } catch (err) {
-        console.error('❌ Error generating auth options:', err);
+        console.error(' Error generating auth options:', err);
         res.status(500).json({ error: err.message });
     }
 })
@@ -388,8 +388,8 @@ router.post("/passkey/verify-register", async (req, res) => {
         console.log(`Credential: ${JSON.stringify(verification.registrationInfo.credential)}`)
 
         if (verification.verified) {
-            console.log("✅ User passkey is verified");
-            console.log("💾 Saving passkey information to database...");
+            console.log(" User passkey is verified");
+            console.log(" Saving passkey information to database...");
 
             const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
             const keyID = verification.registrationInfo.credential.id;
@@ -416,10 +416,10 @@ router.post("/passkey/verify-register", async (req, res) => {
 
             await credDBService.savePasskey(data);
 
-            // ✅ Clear challenge from session
+            //  Clear challenge from session
             delete req.session.challenge;
 
-            console.log("✅ Passkey saved successfully!");
+            console.log(" Passkey saved successfully!");
         }
 
         res.json({ verified: verification.verified });
@@ -445,7 +445,7 @@ router.post("/passkey/verify-authentication", async (req, res) => {
 
         const passkey = await dbService.getPasskey(credential.id);
         if (!passkey) {
-            console.log("❌ Passkey not found");
+            console.log(" Passkey not found");
             return res.status(400).json({
                 verified: false,
                 error: "Passkey not found",
@@ -655,7 +655,7 @@ router.post("/user/search", async (req, res) => {
 router.post("/password/change", async (req, res) => {
     try {
         if (!req.cookies.session_id) {
-            console.log("❌ Unauthorized attempt for changing password");
+            console.log(" Unauthorized attempt for changing password");
             return res.status(403).json({ successful: false, message: "Unauthorized" });
         }
 
@@ -663,10 +663,10 @@ router.post("/password/change", async (req, res) => {
         const userInfo = await dbService.getUserInfo(userID);
         const { currentPassword, newPassword, confirmPassword } = req.body;
 
-        console.log(`🔄 Attempting to change password for UID: ${userID}`);
+        console.log(` Attempting to change password for UID: ${userID}`);
 
         if (userInfo.userType === "google") {
-            console.log("⚠️ Change Password not applicable for Google OAuth users");
+            console.log(" Change Password not applicable for Google OAuth users");
             return res.status(400).json({
                 successful: false,
                 message: "Password change not available for Google OAuth users",
@@ -674,7 +674,7 @@ router.post("/password/change", async (req, res) => {
         }
 
         if (!currentPassword || !newPassword || !confirmPassword) {
-            console.log("⚠️ Missing required fields");
+            console.log(" Missing required fields");
             return res.status(400).json({
                 successful: false,
                 message: "Please fill in all required fields",
@@ -687,7 +687,7 @@ router.post("/password/change", async (req, res) => {
         });
 
         if (!validPassword) {
-            console.log("❌ Current password does not match");
+            console.log(" Current password does not match");
             return res.status(400).json({
                 successful: false,
                 message: "Current password is incorrect",
@@ -695,7 +695,7 @@ router.post("/password/change", async (req, res) => {
         }
 
         if (newPassword !== confirmPassword) {
-            console.log("❌ New password and confirm password do not match");
+            console.log(" New password and confirm password do not match");
             return res.status(400).json({
                 successful: false,
                 message: "New password and confirmation do not match",
@@ -708,21 +708,21 @@ router.post("/password/change", async (req, res) => {
         });
 
         if (!updateResult) {
-            console.log("❌ Failed to update password");
+            console.log(" Failed to update password");
             return res.status(500).json({
                 successful: false,
                 message: "Failed to update user password",
             });
         }
 
-        console.log("✅ Password changed successfully");
+        console.log(" Password changed successfully");
         return res.status(200).json({
             successful: true,
             message: "Password changed successfully",
         });
 
     } catch (error) {
-        console.error("💥 Error changing password:", error);
+        console.error(" Error changing password:", error);
         return res.status(500).json({
             successful: false,
             message: "Internal server error",
