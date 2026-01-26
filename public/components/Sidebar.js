@@ -1,11 +1,11 @@
 (function () {
     const {useState, useEffect, useRef, useCallback} = React;
-    
+
     // Project Options Button Component
     const ProjectOptionsButton = ({selectedProjectID, projects, onProjectDeleted, onProjectRenamed}) => {
         const [menuOpen, setMenuOpen] = useState(false);
         const menuRef = useRef(null);
-        
+
         // Close menu when clicking outside
         useEffect(() => {
             const handleClickOutside = (event) => {
@@ -13,21 +13,21 @@
                     setMenuOpen(false);
                 }
             };
-            
+
             if (menuOpen) {
                 document.addEventListener('mousedown', handleClickOutside);
             }
-            
+
             return () => {
                 document.removeEventListener('mousedown', handleClickOutside);
             };
         }, [menuOpen]);
-        
+
         const currentProject = projects.find(p => p.projectID === selectedProjectID);
-        
+
         const handleRename = async () => {
             setMenuOpen(false);
-            
+
             // Rename modal
             const newName = await new Promise((resolve) => {
                 const modal = document.createElement('div');
@@ -177,7 +177,7 @@
             if (!newName || newName === currentProject?.projectName) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/project/rename', {
                     method: 'POST',
@@ -189,9 +189,9 @@
                         newProjectName: newName
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
@@ -288,10 +288,10 @@
                 alert('An error occurred while renaming the project.');
             }
         };
-        
+
         const handleDelete = async () => {
             setMenuOpen(false);
-            
+
             // First confirmation modal - Warning
             const firstConfirm = await new Promise((resolve) => {
                 const modal = document.createElement('div');
@@ -583,9 +583,9 @@
                         projectID: selectedProjectID
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
@@ -693,11 +693,11 @@
                 alert('An error occurred while deleting the project.');
             }
         };
-        
+
         if (!selectedProjectID || !currentProject) {
             return null;
         }
-        
+
         return React.createElement('div', {
             ref: menuRef,
             style: {
@@ -740,7 +740,7 @@
                     }
                 })
             ),
-            
+
             menuOpen && React.createElement('div', {
                 style: {
                     position: 'absolute',
@@ -1685,7 +1685,7 @@
                             }),
                             React.createElement('span', {
                                 className: 'text-wrapper-2'
-                            }, 'Requirements List'),
+                            }, 'Report'),
                             React.createElement('span', {
                                     className: 'submenu',
                                     'aria-hidden': 'true'
@@ -1715,7 +1715,7 @@
                             },
                             hasProjects && selectedProjectID && React.createElement('button', {
                                 id: 'sidebar-manage-requirements-button',
-                                'aria-label': 'Manage requirements',
+                                'aria-label': 'Manage requirement / stories',
                                 onClick: async () => {
                                     console.log('[Requirements] Manage Requirements button clicked');
                                     const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : selectedProjectID;
@@ -1758,7 +1758,7 @@
                                     src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                     style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)' }
                                 }),
-                                'Manage Requirements'
+                                'Manage Requirements / Stories'
                             ),
                             React.createElement('div', {
                                 id: "div-requirements-list",
@@ -1767,7 +1767,7 @@
                             React.createElement('p', {
                                 id: "p-label-requirements-no-entry",
                                 style: { fontSize: '14px', color: '#666', display: 'block' }
-                            }, 'No requirements yet, you can replace this to show lists')
+                            }, 'No report available')
                         )
                     )
                 ),
