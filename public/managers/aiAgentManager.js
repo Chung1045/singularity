@@ -775,6 +775,10 @@ router.post('/agent/analyze-documents', async (req, res) => {
                     continue;
                 }
                 analyzedDocument.push(analysisResult);
+
+                // Need to jsonify the document and send back to minio server
+                const analyzedDocumentJSON = await agent.parseRequirementsToJSON(docID, analysisResult);
+                await aiDB.updateRequirements(projectID, analyzedDocumentJSON);
             } catch (error) {
                 console.error(`  Error reading document ${docID}:`, error.message);
             }
