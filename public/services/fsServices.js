@@ -261,35 +261,12 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         VALUES (?, ?, ?, ?)
     `;
 
-    // try {
-    //     await db.run(sql, [documentID, projectID, documentName, documentExt]);
-    //     console.log(`Inserted file metadata: ${documentID}`);
-
-    //     // Only create alias for supported document types (PDF and DOCX)
-    //     // Audio files (.mp3, .m4a, .mp4) will be handled separately by audio processing pipeline
-    //     const extLower = documentExt.toLowerCase();
-    //     console.log(`Checking if alias needed for extension: ${documentExt} (lowercase: ${extLower})`);
-
-    //     if (extLower === ".pdf" || extLower === ".docx") {
-    //         console.log(`Creating alias file for document type: ${extLower}`);
-    //         await createAliasFile(projectID, documentID, documentExt);
-    //     } else {
-    //         console.log(`Skipping alias creation for non-document type: ${extLower}`);
-    //     }
-
-    //     return {successful: true};
-    // } catch (err) {
-    //     console.error("Database insert error:", err);
-    //     throw err;
-    // }
-
-    //its gonna let you see
-    // this is to cater the master, as create alias file did not support audio.
+    const supportedExt = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.txt', '.rtf', '.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac', '.m4a'];
     try {
         await db.run(sql, [documentID, projectID, documentName, documentExt]);
         console.log(`Inserted file metadata: ${documentID}`);
 
-        if (documentExt === ".pdf" || documentExt === ".docx" || documentExt === ".mp3" || documentExt === ".m4a" || documentExt === ".mp4") {
+        if (supportedExt.includes(documentExt)) {
             await createAliasFile(projectID, documentID, documentExt)
         }
 

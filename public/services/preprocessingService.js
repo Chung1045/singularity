@@ -11,8 +11,6 @@ libre.convertAsync = require('util').promisify(libre.convert);
 
 // Environment Setting
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
-// const tempWavPath = path.join(__dirname, '../tempfolder/temp_audio.wav');
-// const tempPdfPath = path.join(__dirname, '../tempfolder/temp_document.pdf');
 
 function createTempPath(extension) {
     const tempDir = os.tmpdir();
@@ -78,7 +76,7 @@ async function documentPreprocessing(buffer, documentExt) {
             // Transcribe audio
             const model = await getTranscriber();
             console.log("Video / audio is now being transcribed")
-            const output = await model(audioData, {  // ✅ output is defined here
+            const output = await model(audioData, {
                 chunk_length_s: 30,
                 stride_length_s: 5,
             });
@@ -88,7 +86,7 @@ async function documentPreprocessing(buffer, documentExt) {
             await fs.unlink(tempWavPath).catch(() => {});
             await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
 
-            return output.text?.trim();  // ✅ Now output exists
+            return output.text?.trim();
 
         } else if (supportedDocumentFormats.includes(documentExt)) {
             if (documentExt !== '.pdf') {
