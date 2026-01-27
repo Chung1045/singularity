@@ -9,10 +9,11 @@ const libre = require('libreoffice-convert');
 const crypto = require('crypto');
 libre.convertAsync = require('util').promisify(libre.convert);
 
+const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac', '.m4a'];
+const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.txt', '.rtf'];
+
 // Environment Setting
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
-// const tempWavPath = path.join(__dirname, '../tempfolder/temp_audio.wav');
-// const tempPdfPath = path.join(__dirname, '../tempfolder/temp_document.pdf');
 
 function createTempPath(extension) {
     const tempDir = os.tmpdir();
@@ -25,8 +26,6 @@ function createTempPath(extension) {
 // InputPath: ALL DOCUMENT, VIDEO, AUDIO TYPE
 // IMPORTANT: Return Raw Text
 async function documentPreprocessing(buffer, documentExt) {
-    const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac', '.m4a'];
-    const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.txt', '.rtf'];
 
     let tempFilePath = "";
     let tempWavPath = "";
@@ -351,5 +350,15 @@ Report File ${report}
 }
 
 module.exports = {
-    documentPreprocessing, documentToPdf_libreofficeconvert, pdfExtracted_pdfjslib, videoAudioExtracted_ffmpeg, getTranscriber,  convert_ffmpeg, writeTxtFile, extractTxtFile, groupMultipleFile
+    documentPreprocessing,
+    documentToPdf_libreofficeconvert,
+    pdfExtracted_pdfjslib,
+    videoAudioExtracted_ffmpeg,
+    getTranscriber,
+    convert_ffmpeg,
+    writeTxtFile,
+    extractTxtFile,
+    groupMultipleFile,
+    supportedVideoAudioFormats,
+    supportedDocumentFormats
 };
