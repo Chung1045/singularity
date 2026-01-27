@@ -10,6 +10,8 @@ const {documentPreprocessing} = require("./preprocessingService");
 
 const FSS_REPORT_USERSTORIES = "userStories";
 const FSS_REPORT_REQUIREMENTS = "requirements";
+const FSS_REPORT_USERSTORIES_PDF = "userStories_pdf";
+const FSS_REPORT_REQUIREMENTS_PDF = "requirements_pdf";
 
 const minioClient = new Minio.Client({
     endPoint: process.env.MINIO_END_POINT,
@@ -482,8 +484,12 @@ async function saveGeneratedReport(projectID, buffer, kind) {
         const pathName = `project/${projectID}/reports/${reportID}`;
         console.log(`📊 Saving to MinIO path: ${pathName}`);
 
-        // Only DOCX is supported now
-        const contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        // Determine content type based on report kind
+        const isPdf = kind.endsWith('_pdf');
+        const contentType = isPdf
+            ? 'application/pdf'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
         console.log(`📊 Content type: ${contentType}`);
 
         // Use putObject for buffer data
@@ -544,11 +550,15 @@ async function insertReportRecord(projectID, reportType) {
     console.log(`📊 FSS_REPORT_USERSTORIES = ${FSS_REPORT_USERSTORIES}`);
 
     let reportName;
+    let isPdf = reportType && reportType.endsWith('_pdf');
+    let baseType = isPdf ? reportType.replace('_pdf', '') : reportType;
 
-    if (reportType === FSS_REPORT_REQUIREMENTS) {
-        reportName = "Project Requirements Report";
-    } else if (reportType === FSS_REPORT_USERSTORIES) {
-        reportName = "Project User Stories Report";
+    console.log(`📊 isPdf: ${isPdf}, baseType: ${baseType}`);
+
+    if (baseType === FSS_REPORT_REQUIREMENTS || reportType === FSS_REPORT_REQUIREMENTS_PDF) {
+        reportName = "Project Requirements Report" + (isPdf ? " (PDF)" : "");
+    } else if (baseType === FSS_REPORT_USERSTORIES || reportType === FSS_REPORT_USERSTORIES_PDF) {
+        reportName = "Project User Stories Report" + (isPdf ? " (PDF)" : "");
     } else {
         // Fallback for unknown report types
         reportName = "Generated Report";
@@ -802,7 +812,9 @@ module.exports = {
     downloadProjectFile,
     downloadReport,
     FSS_REPORT_REQUIREMENTS,
+    FSS_REPORT_REQUIREMENTS_PDF,
     FSS_REPORT_USERSTORIES,
+    FSS_REPORT_USERSTORIES_PDF,
     getFileMetadata,
     getFileContext,
     init,

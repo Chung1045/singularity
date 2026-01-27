@@ -770,12 +770,14 @@ async function fetchProjectReports(projectID) {
             console.log(`📊 Cleared reportsListContainer`);
 
             if (data.reports && data.reports.length > 0) {
-                // Categorize reports by type (DOCX only)
+                // Categorize reports by type (including PDF versions)
                 const requirementsReports = data.reports.filter(r =>
-                    r.reportType === 'requirements' || r.reportType === 'Requirements'
+                    r.reportType === 'requirements' || r.reportType === 'Requirements' ||
+                    r.reportType === 'requirements_pdf' || r.reportType === 'Requirements_pdf'
                 );
                 const userStoriesReports = data.reports.filter(r =>
-                    r.reportType === 'userStories' || r.reportType === 'UserStories' || r.reportType === 'user_stories'
+                    r.reportType === 'userStories' || r.reportType === 'UserStories' || r.reportType === 'user_stories' ||
+                    r.reportType === 'userStories_pdf' || r.reportType === 'UserStories_pdf'
                 );
 
                 let hasReports = false;

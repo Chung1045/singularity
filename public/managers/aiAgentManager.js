@@ -131,22 +131,16 @@ router.post('/agent/chat', async (req, res) => {
                         // Handle report generation events
                         if (trimmedChunk.includes('REPORT_GENERATED:')) {
                             try {
-                                // Extract JSON - handle quotes and special characters
-                                const startIdx = trimmedChunk.indexOf('{');
-                                const endIdx = trimmedChunk.lastIndexOf('}');
-                                if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-                                    const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
-                                    console.log(`📊 Report generation marker found, JSON string:`, jsonStr);
-                                    const reportInfo = JSON.parse(jsonStr);
-                                    console.log(`📊 Parsed reportInfo:`, reportInfo);
-                                    console.log(`📊 Sending reportGenerated event to client`);
+                                const jsonMatch = trimmedChunk.match(/REPORT_GENERATED:\s*(\{[^}]+\})/);
+                                console.log(`📊 Report generation marker found, jsonMatch:`, jsonMatch);
+                                if (jsonMatch) {
+                                    const reportInfo = JSON.parse(jsonMatch[1]);
+                                    console.log(`📊 Sending reportGenerated event:`, reportInfo);
                                     res.write(`data: ${JSON.stringify({ 
                                         type: 'reportGenerated', 
                                         reportType: reportInfo.type,
                                         projectID: reportInfo.projectID || projectID
                                     })}\n\n`);
-                                } else {
-                                    console.error('📊 Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
                                 }
                             } catch (parseErr) {
                                 console.error('Failed to parse report info:', parseErr);
@@ -207,9 +201,7 @@ router.post('/agent/chat', async (req, res) => {
                     type: 'done', 
                     chatSeq: chatSeq,
                     conversationID: conversationID,
-                    threadName: threadName || 'Untitled Chat',
-                    refreshReports: true,
-                    projectID: projectID
+                    threadName: threadName || 'Untitled Chat'
                 })}\n\n`);
                 res.end();
 

@@ -3067,10 +3067,6 @@ async function streamChatResponse(data, typingId) {
                 const projectID = jsonData.projectID || data.projectID;
                 console.log('📊 Project ID for refresh:', projectID);
 
-                // Add a small delay to ensure database write completes
-                console.log('📊 Waiting 500ms before fetching reports...');
-                await new Promise(resolve => setTimeout(resolve, 500));
-
                 // Refresh the reports list in sidebar
                 if (typeof window.fetchProjectReports === 'function') {
                     console.log('🔄 Calling fetchProjectReports for project:', projectID);
@@ -3180,10 +3176,8 @@ async function streamChatResponse(data, typingId) {
                 }
 
                 // Always refresh reports after stream completes (in case reports were generated)
-                // Add a small delay to ensure database writes are complete
                 if (typeof window.fetchProjectReports === 'function') {
-                    console.log('🔄 Refreshing reports after stream complete (with 500ms delay)');
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    console.log('🔄 Refreshing reports after stream complete');
                     await window.fetchProjectReports(data.projectID);
                 }
             } else if (jsonData.type === 'error') {
