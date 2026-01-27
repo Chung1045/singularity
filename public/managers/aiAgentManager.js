@@ -10,6 +10,7 @@ const agent = require("../services/aiAgentService");
 const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
 const docGen = require("../services/docGenerationService");
 const {apiAuthUser} = require("../services/accountDBService");
+const fss = require('../services/fsServices');
 
 router.use(dbService.apiAuthUser);
 
@@ -762,38 +763,26 @@ router.post('/agent/analyze-documents', async (req, res) => {
         console.log(`Project title: ${title}`);
 
         // Get document contents
-        const fss = require('../services/fsServices');
-        let allDocumentData = '';
+        let analyzedDocument = [];
 
         for (const docID of documentIDs) {
             try {
                 console.log(`  Reading document: ${docID}`);
-                const docData = await fss.readDocumentContent(projectID, docID);
-                allDocumentData += `\n\n=== Document ${docID} ===\n${docData}\n`;
+                const docData = await fss.getFileContext(projectID, docID);
+                const analysisResult = await agent.requirementAnalysisModel(docData, title);
+                if (analysisResult.trim() == "null"){
+                    console.log(`Document ${docID} doesn't match the document ${title}`);
+                    continue;
+                }
+                analyzedDocument.push(analysisResult);
             } catch (error) {
                 console.error(`  Error reading document ${docID}:`, error.message);
-                // Continue with other documents
             }
         }
 
-        if (!allDocumentData.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Unable to read any document content'
-            });
-        }
-
-        console.log(`  Total content length: ${allDocumentData.length} characters`);
-        console.log(`  Calling requirementAnalysisModel...`);
-
-        // Call the requirement analysis model
-        const analysisResult = await agent.requirementAnalysisModel(allDocumentData, title);
-
-        console.log(`  Analysis complete, result length: ${analysisResult?.length || 0}`);
-
         return res.status(200).json({
             success: true,
-            analysis: analysisResult,
+            analysis: analyzedDocument,
             documentsAnalyzed: documentIDs.length
         });
 

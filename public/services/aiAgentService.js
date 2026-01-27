@@ -39,14 +39,14 @@ function requirementAnalysisPrompt(title) {
 
     Functional Requirement 
     Role: [User/System/Other] 
-    Requirement ID: [ID] 
+    Requirement ID: [FR-ID] 
     Requirement Title: [title]
     Requirement Description: [full description] 
     Citation: [source or reference in the text document] 
 
     Non-Functional Requirement 
     Role: [User/System/Other] 
-    Requirement ID: [ID] 
+    Requirement ID: [NFR-ID] 
     Requirement Title: [title]
     Requirement Description: [full description]
     Citation: [source or reference in the text document] 
@@ -57,7 +57,7 @@ function requirementAnalysisPrompt(title) {
     - Accuracy field must contain detailed, testable expectations
     - No extra text, headings, blank lines or markdown
     - Each requirement on its own single line
-    - If none → output only: No relevant requirements found
+    - If none → output only: No relevant [functional & Non functional] requirements found
     - If no citation available, ignore that requirement
 
     Start immediately.`;
