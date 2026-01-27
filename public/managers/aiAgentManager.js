@@ -127,7 +127,7 @@ router.post('/agent/chat', async (req, res) => {
                     const trimmedChunk = chunk.trim();
                     if (!useLegacy && trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
                         // Log stage markers but don't send to client as content
-                        console.log(`Stage marker: ${trimmedChunk}`);
+                        console.log(`📊 Stage marker: ${trimmedChunk}`);
 
                         // Handle report generation events
                         if (trimmedChunk.includes('REPORT_GENERATED:')) {
@@ -137,17 +137,17 @@ router.post('/agent/chat', async (req, res) => {
                                 const endIdx = trimmedChunk.lastIndexOf('}');
                                 if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
                                     const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
-                                    console.log(` Report generation marker found, JSON string:`, jsonStr);
+                                    console.log(`📊 Report generation marker found, JSON string:`, jsonStr);
                                     const reportInfo = JSON.parse(jsonStr);
-                                    console.log(` Parsed reportInfo:`, reportInfo);
-                                    console.log(` Sending reportGenerated event to client`);
+                                    console.log(`📊 Parsed reportInfo:`, reportInfo);
+                                    console.log(`📊 Sending reportGenerated event to client`);
                                     res.write(`data: ${JSON.stringify({ 
                                         type: 'reportGenerated', 
                                         reportType: reportInfo.type,
                                         projectID: reportInfo.projectID || projectID
                                     })}\n\n`);
                                 } else {
-                                    console.error(' Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
+                                    console.error('📊 Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
                                 }
                             } catch (parseErr) {
                                 console.error('Failed to parse report info:', parseErr);
@@ -300,7 +300,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
 
         console.log('chatThreadData type:', typeof chatThreadData);
         console.log('chatThreadData:', JSON.stringify(chatThreadData, null, 2));
-        console.log(` Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
+        console.log(`✅ Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
 
         if (!chatThreadData) {
             console.log('No chat thread data returned');
@@ -492,7 +492,7 @@ router.post('/agent/chat-fetch', async (req, res) => {
 router.post('/agent/chat-delete', async (req, res) => {
 
     if (!req.cookies.session_id) {
-        console.log(" Unauthorized attempt for agent chat delete");
+        console.log("❌ Unauthorized attempt for agent chat delete");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
