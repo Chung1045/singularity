@@ -268,7 +268,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         console.log(`Inserted file metadata: ${documentID}`);
         console.log(`Ext is ${documentExt}`)
 
-        if (preprocessService.supportedDocumentFormats.includes(documentExt) || preprocessService.supportedVideoAudioFormats.includes(documentExt)){
+        if (preprocessService.supportedDocumentFormats.includes(documentExt) || preprocessService.supportedVideoAudioFormats.includes(documentExt)) {
             await createAliasFile(projectID, documentID, documentExt)
         } else {
             console.log(`Skipping file creation for unsupported format: ${documentExt}`)
@@ -349,7 +349,7 @@ async function deleteProjectFile(documentID, projectID) {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve({ changes: this.changes });
+                    resolve({changes: this.changes});
                 }
             });
         });
@@ -563,7 +563,7 @@ async function insertReportRecord(projectID, reportType) {
 
     try {
         await new Promise((resolve, reject) => {
-            db.run(sql, params, function(err) {
+            db.run(sql, params, function (err) {
                 if (err) {
                     console.error("Error inserting report record:", err);
                     console.error("SQL:", sql);
@@ -706,35 +706,43 @@ async function getFileContext(projectID, documentID) {
     console.log("First row:", result[0]);
 
     const documentAlias = result[0].documentAlias;
+    const documentExt = result[0].documentExt;
     console.log("Document alias:", documentAlias);
 
-    if (!documentAlias) {
+    if (!documentAlias && !documentExt === ".txt") {
         console.log("Document alias is null/empty");
         return `Context is not available.`;
+    } else {
+
+        let objectPath = "";
+
+        if (documentExt === ".txt") {
+            objectPath = `project/${projectID}/${documentID}`
+        } else {
+            // Note: Alias files are stored WITHOUT extension (just the UUID)
+            objectPath = `project/${projectID}/alias/${documentAlias}`;
+        }
+        console.log("Fetching from MinIO:", objectPath);
+
+        let stream;
+        try {
+            stream = await minioClient.getObject(bucket, objectPath);
+        } catch (error) {
+            console.error(`Error fetching file from MinIO:`, error.message);
+            console.error(`Path attempted: ${objectPath}`);
+            throw new Error(`Failed to retrieve file content: ${error.message}`);
+        }
+
+        const chunks = [];
+        for await (const chunk of stream) {
+            chunks.push(chunk);
+        }
+
+        const content = Buffer.concat(chunks).toString('utf-8');
+        console.log("Content length:", content.length);
+
+        return content;
     }
-
-    // Note: Alias files are stored WITHOUT extension (just the UUID)
-    const objectPath = `project/${projectID}/alias/${documentAlias}`;
-    console.log("Fetching from MinIO:", objectPath);
-
-    let stream;
-    try {
-        stream = await minioClient.getObject(bucket, objectPath);
-    } catch (error) {
-        console.error(`Error fetching file from MinIO:`, error.message);
-        console.error(`Path attempted: ${objectPath}`);
-        throw new Error(`Failed to retrieve file content: ${error.message}`);
-    }
-
-    const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
-
-    const content = Buffer.concat(chunks).toString('utf-8');
-    console.log("Content length:", content.length);
-
-    return content;
 }
 
 async function testConnection() {

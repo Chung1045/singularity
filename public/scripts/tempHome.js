@@ -443,7 +443,7 @@ const TempHome = ({csrfToken, userInfo}) => {
                             React.createElement('h2', {
                                 id: 'chat-title',
                                 className: 'chat-title'
-                            }, 'Untitled Chat')
+                            }, 'New Chat')
                         ),
                         React.createElement('div', {
                             id: 'chat-messages',
@@ -1524,7 +1524,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
 
             // Get projectID from localStorage
                         const projectID = document.getElementById('select-project-drop-down').value;
-            console.log(`Seelcted Project ID is: ${projectID}`)            
+            console.log(`Seelcted Project ID is: ${projectID}`)
 
 if (!projectID) {
                 console.error('No project selected');
@@ -1673,7 +1673,7 @@ if (!projectID) {
         return React.createElement('div', {
                 className: 'sidebar-items chat-history-item',
                 'data-chat-id': chatID,
-                'data-thread-name': chatThreadName || 'Untitled Chat',
+                'data-thread-name': chatThreadName || 'New Chat',
                 style: {
                     padding: '8px 12px',
                     cursor: 'pointer',
@@ -1713,7 +1713,7 @@ if (!projectID) {
 
                         const chatTitleElement = document.getElementById('chat-title');
                         if (chatTitleElement) {
-                            const displayName = (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat';
+                            const displayName = (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'New Chat';
                             chatTitleElement.textContent = displayName;
                         }
 
@@ -1730,7 +1730,7 @@ if (!projectID) {
                     whiteSpace: 'nowrap',
                     fontSize: '14px'
                 }
-            }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'Untitled Chat'),
+            }, (chatThreadName && chatThreadName.trim() !== '') ? chatThreadName : 'New Chat'),
             React.createElement('div', {
                     ref: menuRef,
                     className: 'chat-menu',
@@ -3229,12 +3229,12 @@ async function streamChatResponse(data, typingId) {
                 }
 
                 // Get thread name from the done event and update immediately
-                const threadName = jsonData.threadName || 'Untitled Chat';
+                const threadName = jsonData.threadName || 'New Chat';
                 console.log('  Thread name from server:', threadName);
 
                 // Always update the chat title in the header immediately
                 const chatTitleElement = document.getElementById('chat-title');
-                if (chatTitleElement && threadName && threadName !== 'Untitled Chat') {
+                if (chatTitleElement && threadName && threadName !== 'New Chat') {
                     chatTitleElement.textContent = threadName;
                     console.log('  Updated header title to:', threadName);
                 }
@@ -3267,7 +3267,7 @@ async function streamChatResponse(data, typingId) {
                         const nameElement = chatItem.querySelector('.chat-item-name') ||
                                            chatItem.querySelector('span:first-child') ||
                                            chatItem.querySelector('span');
-                        if (nameElement && threadName && threadName !== 'Untitled Chat') {
+                        if (nameElement && threadName && threadName !== 'New Chat') {
                             nameElement.textContent = threadName;
                             console.log('  Updated sidebar title to:', threadName);
                         }
@@ -3415,14 +3415,14 @@ async function loadChatThread(chatID) {
             // Update top bar title from the sidebar item's data attribute
             const chatTitleElement = document.getElementById('chat-title');
             if (chatTitleElement) {
-                const threadName = chatItem.dataset.threadName || 'Untitled Chat';
+                const threadName = chatItem.dataset.threadName || 'New Chat';
                 chatTitleElement.textContent = threadName;
             }
         } else {
             // If chat item not found in sidebar (edge case), use API data as fallback
             const chatTitleElement = document.getElementById('chat-title');
             if (chatTitleElement) {
-                const title = data.chat?.threadName || data.threadName || 'Untitled Chat';
+                const title = data.chat?.threadName || data.threadName || 'New Chat';
                 chatTitleElement.textContent = title;
             }
         }
@@ -3687,7 +3687,7 @@ function backToInitialScreen() {
     // Reset chat title
     const chatTitle = document.getElementById('chat-title');
     if (chatTitle) {
-        chatTitle.textContent = 'Untitled Chat';
+        chatTitle.textContent = 'New Chat';
     }
 
     // Deselect all chat history items in sidebar
@@ -3711,15 +3711,15 @@ window.backToInitialScreen = backToInitialScreen;
 // Function to open requirements panel
 function openRequirementsPanel() {
     console.log('[Requirements] Opening requirements panel');
-    
+
     const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
-    
+
     if (!projectID) {
         console.error('[Requirements] No project selected');
         alert('Please select a project first');
         return;
     }
-    
+
     // Create and show the requirements panel modal
     const event = new CustomEvent('openRequirementsPanel', { detail: { projectID } });
     window.dispatchEvent(event);

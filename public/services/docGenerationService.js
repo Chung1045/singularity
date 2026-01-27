@@ -59,7 +59,7 @@ async function createRequirementTable(requirement, projectID) {
             const metadata = await fss.getFileMetadata(doc.documentID, projectID);
             referencedDocsParagraphs.push(
                 new Paragraph({
-                    text: `${metadata.documentName}.${metadata.documentExt} (${doc.location})`,
+                    text: `${metadata.documentName}${metadata.documentExt} (${doc.location})`,
                     bullet: {level: 0},
                 })
             );
@@ -198,7 +198,7 @@ async function createUserStoryTable(story, projectID) {
             const metadata = await fss.getFileMetadata(doc.documentID, projectID);
             referencedDocsParagraphs.push(
                 new Paragraph({
-                    text: `${metadata.documentName}.${metadata.documentExt} (${doc.location})`,
+                    text: `${metadata.documentName}${metadata.documentExt} (${doc.location})`,
                     bullet: {level: 0},
                 })
             );

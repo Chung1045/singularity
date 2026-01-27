@@ -10,7 +10,7 @@ const crypto = require('crypto');
 libre.convertAsync = require('util').promisify(libre.convert);
 
 const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac', '.m4a'];
-const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.txt', '.rtf'];
+const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.rtf'];
 
 // Environment Setting
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
