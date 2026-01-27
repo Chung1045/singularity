@@ -1,105 +1,284 @@
-
-(function () {
-    const { useState, useEffect } = React;
-
+﻿(function () {
+    const { useState, useEffect, useRef } = React;
     console.log('[FileUpload] fileUploadComponent.js loading...');
 
-    // Check if dependencies are loaded
-    if (!window.DocumentUploadSection) {
-        console.error('[FileUpload] ❌ DocumentUploadSection NOT loaded! Check script order in HTML.');
-    } else {
-        console.log('[FileUpload] ✅ DocumentUploadSection loaded');
-    }
-
-    if (!window.AudioUploadSection) {
-        console.error('[FileUpload] ❌ AudioUploadSection NOT loaded! Check script order in HTML.');
-    } else {
-        console.log('[FileUpload] ✅ AudioUploadSection loaded');
-    }
-
-    // Main File Upload Component
     window.FileUploadComponent = ({ projectID, onClose, onFilesUploaded }) => {
         console.log('[FileUpload] Component rendered with projectID:', projectID);
-        const [uploadStage, setUploadStage] = useState('initial'); // 'initial', 'mixed-choice', 'document', 'audio'
-        const [selectedFiles, setSelectedFiles] = useState([]); // Files selected but not yet uploaded
+        const [uploadStage, setUploadStage] = useState('initial');
+        const [selectedFiles, setSelectedFiles] = useState([]);
         const [isUploading, setIsUploading] = useState(false);
-        const [uploadedFilesList, setUploadedFilesList] = useState([]); // Track all uploaded files
-        const [isDragging, setIsDragging] = useState(false); // Track drag state
+        const [isDragging, setIsDragging] = useState(false);
+        const [checkedTempIDs, setCheckedTempIDs] = useState(new Set());
+        const [menuOpen, setMenuOpen] = useState(null);
+        const [editingFile, setEditingFile] = useState(null);
+        const [editingFilename, setEditingFilename] = useState('');
+        const headerCheckboxRef = useRef(null);
+        const renameContainerRef = useRef(null);
 
-        // Initial upload screen
+        // Header checkbox indeterminate state
+        useEffect(() => {
+            if (headerCheckboxRef.current && selectedFiles.length > 0) {
+                const allChecked = selectedFiles.every(f => checkedTempIDs.has(f.tempID));
+                const someChecked = selectedFiles.some(f => checkedTempIDs.has(f.tempID));
+                headerCheckboxRef.current.indeterminate = someChecked && !allChecked;
+            }
+        }, [checkedTempIDs, selectedFiles]);
+
+        // Close menu when clicking outside
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuOpen !== null && !event.target.closest('.file-menu-container')) {
+                    setMenuOpen(null);
+                }
+            };
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }, [menuOpen]);
+
+        // Cancel rename when clicking outside rename controls (desktop only)
+        useEffect(() => {
+            if (editingFile === null) return;
+
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            if (isTouchDevice) return;
+
+            const handleClickOutsideRename = (event) => {
+                if (renameContainerRef.current && !renameContainerRef.current.contains(event.target)) {
+                    cancelRename();
+                }
+            };
+
+            document.addEventListener('mousedown', handleClickOutsideRename);
+            return () => document.removeEventListener('mousedown', handleClickOutsideRename);
+        }, [editingFile]);
+
+        const toggleChecked = (tempID) => {
+            setCheckedTempIDs(prev => {
+                const newSet = new Set(prev);
+                if (newSet.has(tempID)) {
+                    newSet.delete(tempID);
+                } else {
+                    newSet.add(tempID);
+                }
+                return newSet;
+            });
+        };
+
+        const handleDelete = (tempID) => {
+            const file = selectedFiles.find(f => f.tempID === tempID);
+            if (!file) return;
+
+            window.showNotification({
+                type: 'confirm',
+                title: 'Delete File?',
+                message: `Are you sure you want to remove "${file.originalName}" from the upload list?`,
+                actionText: 'Delete'
+            }).then((confirmed) => {
+                if (confirmed) {
+                    setSelectedFiles(prev => prev.filter(f => f.tempID !== tempID));
+                    setMenuOpen(null);
+                }
+            });
+        };
+
+        const startRename = (tempID) => {
+            const file = selectedFiles.find(f => f.tempID === tempID);
+            if (file) {
+                setEditingFile(tempID);
+                setEditingFilename(file.fileName);
+                setMenuOpen(null);
+            }
+        };
+
+        const saveRename = () => {
+            const trimmed = editingFilename.trim();
+            if (!trimmed) {
+                window.showNotification({
+                    type: 'error',
+                    title: 'Invalid Filename',
+                    message: 'Filename cannot be empty.',
+                    actionText: 'OK'
+                });
+                return;
+            }
+            setSelectedFiles(prev => prev.map(f =>
+                f.tempID === editingFile
+                    ? { ...f, fileName: trimmed, originalName: f.fileExt ? `${trimmed}.${f.fileExt}` : trimmed }
+                    : f
+            ));
+            setEditingFile(null);
+            setEditingFilename('');
+        };
+
+        const cancelRename = () => {
+            setEditingFile(null);
+            setEditingFilename('');
+        };
+
+        // --- UPDATED HANDLE UPLOAD LOGIC ---
+        const handleUpload = async () => {
+            const filesToUpload = selectedFiles.filter(f => checkedTempIDs.has(f.tempID));
+
+            if (filesToUpload.length === 0) {
+                window.showNotification({
+                    type: 'info',
+                    title: 'No Files Selected',
+                    message: 'Please select at least one file to upload by checking the checkbox next to it.',
+                    actionText: 'OK'
+                });
+                return;
+            }
+
+            let uploadThese = filesToUpload;
+            const allChecked = filesToUpload.length === selectedFiles.length;
+
+            if (!allChecked && selectedFiles.length > 1) {
+                const selectedList = filesToUpload.map(f => `• ${f.originalName}`).join('\n');
+                const uncheckedFiles = selectedFiles.filter(f => !checkedTempIDs.has(f.tempID));
+                const uncheckedList = uncheckedFiles.map(f => `• ${f.originalName}`).join('\n');
+
+                // Pass all 3 options: actionText, cancelText, AND backText
+                const decision = await window.showNotification({
+                    type: 'confirm',
+                    title: 'Upload Selection',
+                    message: `You have selected ${filesToUpload.length} of ${selectedFiles.length} file(s).\n\n Checked (${filesToUpload.length}):\n${selectedList}\n\n Unchecked (${uncheckedFiles.length}):\n${uncheckedList}\n\nHow would you like to proceed?`,
+                    actionText: 'Upload All',       // Returns true
+                    cancelText: 'Upload Selected',  // Returns null (defaults to close/cancel action in logic unless we handle 'back')
+                    backText: 'Cancel'              // Returns 'back'
+                });
+
+                // 1. If user clicked "Cancel" (Back button)
+                if (decision === 'back') {
+                    return; // Stop everything, stay on the upload screen
+                }
+
+                // 2. If user clicked "Upload All" (Action button)
+                if (decision === true) {
+                    uploadThese = [...selectedFiles];
+                }
+
+                // 3. If user clicked "Upload Selected" (Middle button), decision is null
+                // We do nothing special here, because 'uploadThese' is already set to 'filesToUpload' at the start
+            }
+
+            setIsUploading(true);
+            const uploadedFiles = [];
+            for (const fileData of uploadThese) {
+                try {
+                    const formData = new FormData();
+                    const renamedFile = new File([fileData.file], fileData.originalName, { type: fileData.file.type });
+                    formData.append('file', renamedFile);
+                    formData.append('projectID', projectID);
+                    const response = await fetch('/api/project/file/upload', { method: 'POST', body: formData });
+                    const data = await response.json();
+                    if (data.successful) {
+                        uploadedFiles.push({ ...fileData, documentID: data.documentID });
+                    }
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    window.showNotification({ type: 'error', title: 'Upload Failed', message: `Failed to upload ${fileData.originalName}.`, actionText: 'OK' });
+                }
+            }
+            setIsUploading(false);
+
+            if (onFilesUploaded) {
+                onFilesUploaded(uploadedFiles);
+            }
+
+            window.showNotification({
+                type: 'success',
+                title: 'Upload Complete!',
+                message: `${uploadedFiles.length} file(s) uploaded successfully.`,
+                actionText: 'Done'
+            }).then(() => { onClose(); });
+        };
+        // -----------------------------------
+
+        const formatFileSize = (bytes) => {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        };
+
+        const getAudioDuration = (file) => {
+            return new Promise((resolve) => {
+                const audio = document.createElement('audio');
+                audio.preload = 'metadata';
+                audio.onloadedmetadata = () => {
+                    window.URL.revokeObjectURL(audio.src);
+                    resolve(Math.round(audio.duration));
+                };
+                audio.onerror = () => resolve(null);
+                audio.src = URL.createObjectURL(file);
+            });
+        };
+
+        const formatDuration = (seconds) => {
+            if (!seconds) return 'N/A';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+        };
+
+        const formatDate = (date) => {
+            const d = new Date(date);
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const year = d.getFullYear();
+            const hours = d.getHours();
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'pm' : 'am';
+            const hour12 = hours % 12 || 12;
+            return `${month}-${day}-${year} ${hour12}:${minutes}${ampm}`;
+        };
+
         const renderInitialScreen = () => {
             const handleFileSelect = async (event) => {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
-
                 const fileArray = Array.from(files);
-
-                // Audio file extensions
                 const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac'];
-
-                // Process files for preview (NOT uploading yet)
                 const processedFilesList = [];
-
                 for (const file of fileArray) {
-                    // Check if this specific file is audio
                     const fileName = file.name.toLowerCase();
                     const isAudio = audioExtensions.some(ext => fileName.endsWith(ext));
-
-                    // Extract extension (without dot)
                     const lastDotIndex = file.name.lastIndexOf('.');
                     const fileExt = lastDotIndex > 0 ? file.name.substring(lastDotIndex + 1) : '';
-
-                    // Extract filename without extension
                     let fileNameWithoutExt = lastDotIndex > 0 ? file.name.substring(0, lastDotIndex) : file.name;
-
-                    // Clean trailing dots (e.g., "file.." → "file")
                     fileNameWithoutExt = fileNameWithoutExt.replace(/\.+$/, '');
-
-                    // Check if filename already ends with extension (e.g., "file.pdf.pdf" case)
                     if (fileExt && fileNameWithoutExt.toLowerCase().endsWith(`.${fileExt.toLowerCase()}`)) {
                         fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.length - fileExt.length - 1);
                         fileNameWithoutExt = fileNameWithoutExt.replace(/\.+$/, '');
                     }
-
-                    // Get audio duration if it's an audio file
                     let duration = null;
                     if (isAudio) {
                         duration = await getAudioDuration(file);
                     }
-
                     processedFilesList.push({
-                        file: file, // Keep the actual File object for later upload
+                        file: file,
                         fileName: fileNameWithoutExt,
-                        originalName: fileExt ? `${fileNameWithoutExt}.${fileExt}` : fileNameWithoutExt, // Only add extension if it exists
+                        originalName: fileExt ? `${fileNameWithoutExt}.${fileExt}` : fileNameWithoutExt,
                         fileExt: fileExt,
                         fileSize: file.size,
                         uploadDate: new Date(),
                         isAudio: isAudio,
                         duration: duration,
-                        tempID: Date.now() + '-' + Math.random() // Temporary ID before upload
+                        tempID: Date.now() + '-' + Math.random()
                     });
                 }
-
-                // Add to existing selected files (for multi-batch selection)
-                // Deduplicate based on file name, size, and type to prevent duplicates
                 setSelectedFiles(prev => {
                     const existingFileKeys = new Set(prev.map(f => `${f.originalName}-${f.fileSize}-${f.isAudio}`));
                     const newFiles = processedFilesList.filter(f => {
                         const fileKey = `${f.originalName}-${f.fileSize}-${f.isAudio}`;
                         return !existingFileKeys.has(fileKey);
                     });
-                    console.log('[FileUpload] Adding', newFiles.length, 'new files (', processedFilesList.length - newFiles.length, 'duplicates filtered)');
                     return [...prev, ...newFiles];
                 });
-
-                // Reset input value to allow selecting the same file again
                 event.target.value = '';
-
-                // DON'T auto-route - stay on initial screen to show files
-                console.log('[FileUpload] Files added to selection. Total will be:', selectedFiles.length + processedFilesList.length);
             };
 
-            // Handle drag and drop
             const handleDragOver = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -116,43 +295,30 @@
                 e.preventDefault();
                 e.stopPropagation();
                 setIsDragging(false);
-
                 const files = e.dataTransfer.files;
                 if (!files || files.length === 0) return;
-
                 const fileArray = Array.from(files);
                 const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac'];
                 const processedFilesList = [];
-
                 for (const file of fileArray) {
                     const fileName = file.name.toLowerCase();
                     const isAudio = audioExtensions.some(ext => fileName.endsWith(ext));
-
-                    // Extract extension (without dot)
                     const lastDotIndex = file.name.lastIndexOf('.');
                     const fileExt = lastDotIndex > 0 ? file.name.substring(lastDotIndex + 1) : '';
-
-                    // Extract filename without extension
                     let fileNameWithoutExt = lastDotIndex > 0 ? file.name.substring(0, lastDotIndex) : file.name;
-
-                    // Clean trailing dots (e.g., "file.." → "file")
                     fileNameWithoutExt = fileNameWithoutExt.replace(/\.+$/, '');
-
-                    // Check if filename already ends with extension (e.g., "file.pdf.pdf" case)
                     if (fileExt && fileNameWithoutExt.toLowerCase().endsWith(`.${fileExt.toLowerCase()}`)) {
                         fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.length - fileExt.length - 1);
                         fileNameWithoutExt = fileNameWithoutExt.replace(/\.+$/, '');
                     }
-
                     let duration = null;
                     if (isAudio) {
                         duration = await getAudioDuration(file);
                     }
-
                     processedFilesList.push({
                         file: file,
                         fileName: fileNameWithoutExt,
-                        originalName: fileExt ? `${fileNameWithoutExt}.${fileExt}` : fileNameWithoutExt, // Only add extension if it exists
+                        originalName: fileExt ? `${fileNameWithoutExt}.${fileExt}` : fileNameWithoutExt,
                         fileExt: fileExt,
                         fileSize: file.size,
                         uploadDate: new Date(),
@@ -161,40 +327,19 @@
                         tempID: Date.now() + '-' + Math.random()
                     });
                 }
-
                 setSelectedFiles(prev => {
                     const existingFileKeys = new Set(prev.map(f => `${f.originalName}-${f.fileSize}-${f.isAudio}`));
                     const newFiles = processedFilesList.filter(f => {
                         const fileKey = `${f.originalName}-${f.fileSize}-${f.isAudio}`;
                         return !existingFileKeys.has(fileKey);
                     });
-                    console.log('[FileUpload] Dropped', newFiles.length, 'new files (', processedFilesList.length - newFiles.length, 'duplicates filtered)');
                     return [...prev, ...newFiles];
                 });
-                console.log('[FileUpload] Files dropped. Total will be:', selectedFiles.length + processedFilesList.length);
             };
 
             const handleNextClick = () => {
-                // Determine which section to show based on selected files
                 if (selectedFiles.length > 0) {
-                    // Check if we have any audio files
-                    const hasAudio = selectedFiles.some(f => f.isAudio);
-                    // Check if we have any document files
-                    const hasDocuments = selectedFiles.some(f => !f.isAudio);
-
-                    console.log('[FileUpload] Navigating to section. Total files:', selectedFiles.length,
-                                'Audio:', hasAudio, 'Documents:', hasDocuments);
-
-                    // Route to appropriate section
-                    if (hasAudio && hasDocuments) {
-                        console.log('[FileUpload] Mixed file types detected. Showing choice screen.');
-                        // Show mixed choice screen - let user choose which type first
-                        setUploadStage('mixed-choice');
-                    } else if (hasAudio) {
-                        setUploadStage('audio');
-                    } else {
-                        setUploadStage('document');
-                    }
+                    setUploadStage('upload');
                 }
             };
 
@@ -207,11 +352,77 @@
                 input.click();
             };
 
+            const removeFile = (tempID) => {
+                setSelectedFiles(prev => prev.filter(f => f.tempID !== tempID));
+            };
+
             return React.createElement('div', {
-                id: 'file-upload-initial-screen-container',
-                'aria-label': 'File upload interface',
+                    id: 'file-upload-modal-root',
+                    style: { width: '650px', height: '422px', maxWidth: '650px', backgroundColor: '#ffffff', borderRadius: '10px', display: 'flex', flexDirection: 'column' }
+                },
+                React.createElement('div', { id: 'import-header-container', style: { padding: '18px 17px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e4e4e4' } },
+                    React.createElement('button', { id: 'import-back-button', onClick: onClose, style: { width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e4e4e4', borderRadius: '10px', backgroundColor: '#ffffff', cursor: 'pointer' } },
+                        React.createElement('img', { id: 'import-back-icon', src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg', style: { width: '20px', height: '20px' } })
+                    ),
+                    React.createElement('div', { id: 'import-title-text', style: { fontFamily: '"SF Pro-Bold", Helvetica', fontWeight: '400', fontSize: '18px', color: '#000000', marginLeft: '10px' } }, 'Import Files'),
+                    React.createElement('button', { id: 'import-next-button', onClick: handleNextClick, disabled: selectedFiles.length === 0, style: { padding: '8px 24px', backgroundColor: selectedFiles.length > 0 ? 'rgb(30, 41, 59)' : '#e4e4e4', borderRadius: '50px', border: 'none', fontFamily: '"Inter-Bold", Helvetica', fontWeight: '700', fontSize: '15px', color: selectedFiles.length > 0 ? '#ffffff' : '#1c1d21', cursor: selectedFiles.length > 0 ? 'pointer' : 'not-allowed', marginLeft: 'auto' } }, 'Next')
+                ),
+                React.createElement('div', { id: 'import-content-container', style: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' } },
+                    selectedFiles.length > 0 ?
+                        React.createElement('div', { id: 'import-file-list-container', style: { width: '100%', maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' } },
+                            selectedFiles.map((file) =>
+                                React.createElement('div', { id: `import-file-item-${file.tempID}`, key: file.tempID, style: { padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' } },
+                                    React.createElement('div', { id: `import-file-icon-bg-${file.tempID}`, style: { width: '40px', height: '40px', backgroundColor: file.isAudio ? '#876fc3' : '#e4e4e4', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontFamily: '"Inter-Bold", Helvetica', color: file.isAudio ? '#fff' : '#666', fontWeight: '600', textTransform: 'uppercase' } }, file.fileExt || '?'),
+                                    React.createElement('div', { id: `import-file-info-container-${file.tempID}`, style: { flex: 1, overflow: 'hidden' } },
+                                        React.createElement('div', { id: `import-file-name-${file.tempID}`, style: { fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', fontWeight: '500', color: '#000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, file.originalName),
+                                        React.createElement('div', { id: `import-file-meta-${file.tempID}`, style: { fontFamily: '"Inter-Regular", Helvetica', fontSize: '11px', color: '#666', marginTop: '2px' } }, `${file.fileExt.toUpperCase()} • ${formatFileSize(file.fileSize)}`)
+                                    ),
+                                    React.createElement('button', { id: `import-remove-button-${file.tempID}`, onClick: () => removeFile(file.tempID), style: { width: '24px', height: '24px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '18px', color: '#999', display: 'flex', alignItems: 'center', justifyContent: 'center' }, onMouseEnter: (e) => e.currentTarget.style.color = '#c1281e', onMouseLeave: (e) => e.currentTarget.style.color = '#999' }, '×')
+                                )
+                            ),
+                            React.createElement('button', {
+                                    id: 'import-add-more-button',
+                                    onClick: triggerFileInput,
+                                    style: { padding: '12px', backgroundColor: '#ffffff', border: '2px dashed rgb(30, 41, 59)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: 'rgb(30, 41, 59)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' },
+                                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f0f4f8'; e.currentTarget.style.borderColor = 'rgb(51, 65, 85)'; },
+                                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.borderColor = 'rgb(30, 41, 59)'; },
+                                    onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.backgroundColor = '#e8f4f8'; e.currentTarget.style.borderColor = 'rgb(51, 65, 85)'; },
+                                    onDragLeave: (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.borderColor = 'rgb(30, 41, 59)'; },
+                                    onDrop: handleDrop
+                                },
+                                React.createElement('span', { id: 'import-add-more-plus-icon', style: { fontSize: '18px' } }, '+'),
+                                React.createElement('span', { id: 'import-add-more-text' }, 'Add More Files')
+                            )
+                        )
+                        :
+                        React.createElement('div', {
+                                id: 'import-empty-drop-zone',
+                                onDragOver: handleDragOver,
+                                onDragLeave: handleDragLeave,
+                                onDrop: handleDrop,
+                                onClick: triggerFileInput,
+                                style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: isDragging ? '3px solid rgb(0,0,0)' : '2px solid #000000', borderRadius: '12px', backgroundColor: isDragging ? 'rgb(225,225,225)' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s', gap: '16px' }
+                            },
+                            React.createElement('div', { id: 'import-empty-icon-bg', style: { width: '85px', height: '85px', backgroundColor: isDragging ? 'rgba(0,0,0,0)' : '#ffffff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' } },
+                                React.createElement('img', { id: 'import-empty-icon-img', src: './img/cloud-upload.svg', style: { width: '85px', height: '85px', filter: isDragging ? 'brightness(0) invert(0)' : 'none' } })
+                            ),
+                            React.createElement('div', { id: 'import-empty-title-text', style: { fontFamily: '"Inter-Bold", Helvetica', fontSize: '16px', fontWeight: '400', color: '#000', textAlign: 'center' } }, isDragging ? 'Drop files here' : 'Import Files for Analysis'),
+                            // React.createElement('div', { id: 'import-empty-subtitle-text', style: { fontFamily: '"Inter-Regular", Helvetica', fontSize: '13px', color: '#666', textAlign: 'center' } }, 'All file types supported')
+                        )
+                )
+            );
+        };
+
+        if (uploadStage === 'initial') {
+            return renderInitialScreen();
+        }
+
+        // Upload stage
+        return React.createElement('div', {
+                id: 'upload-modal-root',
                 style: {
                     width: '650px',
+                    minWidth: '350px',
                     height: '422px',
                     backgroundColor: '#ffffff',
                     borderRadius: '10px',
@@ -220,9 +431,8 @@
                     position: 'relative'
                 }
             },
-                // Header
-                React.createElement('div', {
-                    id: 'file-upload-initial-header',
+            React.createElement('div', {
+                    id: 'upload-header-container',
                     style: {
                         padding: '18px 17px',
                         display: 'flex',
@@ -231,11 +441,9 @@
                         borderBottom: '1px solid #e4e4e4'
                     }
                 },
-                    // Back button
-                    React.createElement('button', {
-                        id: 'file-upload-back-button',
-                        'aria-label': 'Close file upload',
-                        onClick: onClose,
+                React.createElement('button', {
+                        id: 'upload-back-button',
+                        onClick: () => setUploadStage('initial'),
                         style: {
                             width: '35px',
                             height: '35px',
@@ -248,946 +456,320 @@
                             cursor: 'pointer'
                         }
                     },
-                        React.createElement('img', {
-                            id: 'file-upload-back-icon',
-                            src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                            style: { width: '13px', height: '13px' },
-                            alt: 'Back arrow'
-                        })
-                    ),
-                    // Title
-                    React.createElement('div', {
-                        id: 'file-upload-title',
-                        style: {
-                            fontFamily: '"SF Pro-Bold", Helvetica',
-                            fontWeight: '400',
-                            fontSize: '18px',
-                            color: '#000000',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginLeft: '10px'
-                        }
-                    }, 'Import Files'),
-                    // Next button
+                    React.createElement('img', {
+                        id: 'upload-back-icon',
+                        src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                        style: { width: '20px', height: '20px' }
+                    })
+                ),
+                React.createElement('div', {
+                    id: 'upload-title-text',
+                    style: {
+                        fontFamily: '"SF Pro-Bold", Helvetica',
+                        fontWeight: '400',
+                        fontSize: '18px',
+                        color: '#000000',
+                        marginLeft: '10px'
+                    }
+                }, 'Upload Files'),
+                React.createElement('div', {
+                        id: 'upload-header-buttons-container',
+                        style: { display: 'flex', gap: '12px', marginLeft: 'auto' }
+                    },
                     React.createElement('button', {
-                        id: 'file-upload-initial-next-button',
-                        'aria-label': 'Proceed to upload selected files',
-                        onClick: handleNextClick,
-                        disabled: selectedFiles.length === 0,
+                            id: 'upload-reupload-button',
+                            onClick: () => setUploadStage('initial'),
+                            disabled: isUploading,
+                            style: {
+                                padding: '8px 16px',
+                                backgroundColor: '#ffffff',
+                                borderRadius: '50px',
+                                border: '1px solid #e4e4e4',
+                                fontFamily: '"Inter-Medium", Helvetica',
+                                fontWeight: '500',
+                                fontSize: '14px',
+                                color: '#000',
+                                cursor: isUploading ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            },
+                            onMouseEnter: (e) => { if (!isUploading) e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                            onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }
+                        },
+                        React.createElement('img', {
+                            id: 'upload-reupload-icon',
+                            src: './img/reupload-icon.svg',
+                            style: { width: '24px', height: '24px', transform: 'rotate(180deg)' }
+                        }),
+                        React.createElement('span', { id: 'upload-reupload-text' }, 'Reupload')
+                    ),
+                    React.createElement('button', {
+                        id: 'upload-submit-button',
+                        onClick: handleUpload,
+                        disabled: isUploading,
                         style: {
                             padding: '8px 24px',
-                            backgroundColor: selectedFiles.length > 0 ? 'rgb(30, 41, 59)' : '#e4e4e4',
+                            backgroundColor: isUploading ? '#e4e4e4' : 'rgb(30, 41, 59)',
                             borderRadius: '50px',
                             border: 'none',
                             fontFamily: '"Inter-Bold", Helvetica',
                             fontWeight: '700',
                             fontSize: '15px',
-                            color: selectedFiles.length > 0 ? '#ffffff' : '#1c1d21',
-                            cursor: selectedFiles.length > 0 ? 'pointer' : 'not-allowed',
-                            justifyContent: 'right',
-                            marginLeft: 'auto'
+                            color: isUploading ? '#1c1d21' : '#ffffff',
+                            cursor: isUploading ? 'not-allowed' : 'pointer'
                         }
-                    }, 'Next'),
-                    React.createElement('div', {
-                        id: 'file-upload-header-spacer',
-                        style: { width: '12px' }
-                    })
-                ),
-                // Upload area
-                React.createElement('div', {
-                    id: 'file-upload-content-area',
-                    style: {
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '20px'
-                    }
+                    }, isUploading ? 'Uploading...' : 'Upload')
+                )
+            ),
+            React.createElement('div', {
+                    id: 'upload-file-list-outer-container',
+                    style: { flex: 1, overflowY: 'auto', padding: '20px' }
                 },
-                    // Show file list if files are selected, otherwise show upload prompt
-                    selectedFiles.length > 0 ?
-                        // File list view
+                selectedFiles.length === 0
+                    ? React.createElement('div', { id: 'upload-empty-state-container', style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999', fontSize: '14px' } }, 'No files selected')
+                    : React.createElement('div', { id: 'upload-file-list-inner-container' },
                         React.createElement('div', {
-                            id: 'file-upload-file-list-container',
-                            style: {
-                                width: '100%',
-                                maxHeight: '300px',
-                                overflowY: 'auto',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '8px'
-                            }
-                        },
-                            selectedFiles.map((file, index) =>
-                                React.createElement('div', {
+                                id: 'upload-table-header-row',
+                                style: {
+                                    display: 'grid',
+                                    gridTemplateColumns: 'minmax(150px, 1fr) 80px 120px 150px 50px',
+                                    gap: '12px',
+                                    padding: '12px 16px',
+                                    borderBottom: '1px solid #e4e4e4',
+                                    alignItems: 'center'
+                                }
+                            },
+                            React.createElement('div', {
+                                    id: 'upload-header-filename-cell',
+                                    style: { display: 'flex', alignItems: 'center', gap: '8px', fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: '#666' }
+                                },
+                                React.createElement('input', {
+                                    id: 'upload-select-all-checkbox',
+                                    type: 'checkbox',
+                                    ref: headerCheckboxRef,
+                                    checked: selectedFiles.length > 0 && selectedFiles.every(f => checkedTempIDs.has(f.tempID)),
+                                    onChange: () => {
+                                        const allChecked = selectedFiles.every(f => checkedTempIDs.has(f.tempID));
+                                        setCheckedTempIDs(allChecked ? new Set() : new Set(selectedFiles.map(f => f.tempID)));
+                                    },
+                                    style: { width: '18px', height: '18px', accentColor: 'rgb(30, 41, 59)', cursor: 'pointer' }
+                                }),
+                                React.createElement('span', { id: 'upload-header-filename-label' }, 'File Name')
+                            ),
+                            React.createElement('div', { id: 'upload-header-type-cell', style: { fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: '#666' } }, 'Type'),
+                            React.createElement('div', { id: 'upload-header-duration-size-cell', style: { fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: '#666' } }, 'Duration/Size'),
+                            React.createElement('div', { id: 'upload-header-date-cell', style: { fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: '#666' } }, 'Date Uploaded'),
+                            React.createElement('div', { id: 'upload-header-actions-cell' })
+                        ),
+                        selectedFiles.map(file => {
+                            const isChecked = checkedTempIDs.has(file.tempID);
+                            const isEditing = editingFile === file.tempID;
+                            const isMenuOpen = menuOpen === file.tempID;
+
+                            return React.createElement('div', {
+                                    id: `upload-file-row-${file.tempID}`,
                                     key: file.tempID,
                                     style: {
-                                        padding: '12px',
-                                        backgroundColor: '#f5f5f5',
-                                        borderRadius: '8px',
-                                        display: 'flex',
+                                        display: 'grid',
+                                        gridTemplateColumns: 'minmax(150px, 1fr) 80px 120px 150px 50px',
+                                        gap: '12px',
+                                        padding: '12px 16px',
+                                        borderBottom: '1px solid #f0f0f0',
                                         alignItems: 'center',
-                                        gap: '12px'
-                                    }
-                                },
-                                    // File icon
-                                    React.createElement('div', {
-                                        style: {
-                                            width: '40px',
-                                            height: '40px',
-                                            backgroundColor: file.isAudio ? '#c3ab6f' : '#e4e4e4',
-                                            borderRadius: '8px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '20px'
-                                        }
-                                    }, file.isAudio ? '🎵' : '📄'),
-                                    // File info
-                                    React.createElement('div', {
-                                        style: {
-                                            flex: 1,
-                                            overflow: 'hidden'
-                                        }
+                                        backgroundColor: isEditing ? '#f9fafb' : 'transparent',
+                                        transition: 'background-color 0.2s'
                                     },
-                                        React.createElement('div', {
+                                    onMouseEnter: (e) => { if (!isEditing) e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                                    onMouseLeave: (e) => { if (!isEditing) e.currentTarget.style.backgroundColor = 'transparent'; }
+                                },
+                                React.createElement('div', {
+                                        id: `upload-filename-cell-${file.tempID}`,
+                                        style: { display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }
+                                    },
+                                    !isEditing && React.createElement('input', {
+                                        id: `upload-checkbox-${file.tempID}`,
+                                        type: 'checkbox',
+                                        checked: isChecked,
+                                        onChange: () => toggleChecked(file.tempID),
+                                        style: { width: '18px', height: '18px', accentColor: 'rgb(30, 41, 59)', flexShrink: 0 }
+                                    }),
+                                    React.createElement('div', {
+                                            id: `upload-icon-container-${file.tempID}`,
+                                            style: { width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }
+                                        },
+                                        React.createElement('img', {
+                                            id: `upload-icon-img-${file.tempID}`,
+                                            src: file.isAudio ? './img/audio-icon.svg' : './img/document-icon.svg',
+                                            style: { width: '18px', height: '18px' }
+                                        })
+                                    ),
+                                    isEditing
+                                        ? React.createElement('div', {
+                                                ref: renameContainerRef,
+                                                style: { display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }
+                                            },
+                                            React.createElement('input', {
+                                                id: `upload-rename-input-${file.tempID}`,
+                                                type: 'text',
+                                                value: editingFilename,
+                                                onChange: (e) => setEditingFilename(e.target.value),
+                                                onKeyDown: (e) => {
+                                                    if (e.key === 'Enter') saveRename();
+                                                    if (e.key === 'Escape') cancelRename();
+                                                },
+                                                onFocus: (e) => e.target.select(),
+                                                onTouchStart: (e) => e.stopPropagation(),
+                                                autoFocus: true,
+                                                style: (() => {
+                                                    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                                                    return {
+                                                        flex: 1,
+                                                        minWidth: '120px',
+                                                        padding: isMobile ? '6px 8px' : '1px 8px',
+                                                        fontSize: '13px',
+                                                        fontFamily: '"Inter-Medium", Helvetica',
+                                                        border: '1px solid rgb(30, 41, 59)',
+                                                        borderRadius: '4px',
+                                                        outline: 'none',
+                                                        boxSizing: 'border-box'
+                                                    };
+                                                })()
+                                            }),
+                                            file.fileExt && React.createElement('span', {
+                                                id: `upload-rename-extension-${file.tempID}`,
+                                                style: { color: '#666', fontSize: '13px', whiteSpace: 'nowrap' }
+                                            }, `.${file.fileExt}`),
+                                            // Only show buttons on mobile, desktop uses Enter/Escape keys
+                                            ('ontouchstart' in window || navigator.maxTouchPoints > 0) && React.createElement('button', {
+                                                id: `upload-rename-save-button-${file.tempID}`,
+                                                onClick: (e) => { e.stopPropagation(); saveRename(); },
+                                                style: {
+                                                    padding: '6px 12px',
+                                                    minWidth: '36px',
+                                                    minHeight: '36px',
+                                                    backgroundColor: 'rgb(30, 41, 59)',
+                                                    color: '#fff',
+                                                    borderRadius: '6px',
+                                                    fontSize: '14px',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }
+                                            }, '✓'),
+                                            ('ontouchstart' in window || navigator.maxTouchPoints > 0) && React.createElement('button', {
+                                                id: `upload-rename-cancel-button-${file.tempID}`,
+                                                onClick: (e) => { e.stopPropagation(); cancelRename(); },
+                                                style: {
+                                                    padding: '6px 12px',
+                                                    minWidth: '36px',
+                                                    minHeight: '36px',
+                                                    backgroundColor: '#e4e4e4',
+                                                    color: '#666',
+                                                    borderRadius: '6px',
+                                                    fontSize: '14px',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }
+                                            }, '✕')
+                                        )
+                                        : React.createElement('div', {
+                                            id: `upload-filename-text-${file.tempID}`,
                                             style: {
-                                                fontFamily: '"Inter-Medium", Helvetica',
-                                                fontSize: '13px',
-                                                fontWeight: '500',
-                                                color: '#000',
+                                                flex: 1,
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap'
-                                            }
-                                        }, file.originalName),
-                                        React.createElement('div', {
-                                            style: {
-                                                fontFamily: '"Inter-Regular", Helvetica',
-                                                fontSize: '11px',
-                                                color: '#666',
-                                                marginTop: '2px'
-                                            }
-                                        }, `${file.fileExt.toUpperCase()} • ${formatFileSize(file.fileSize)}`)
-                                    ),
-                                    // Remove button
-                                    React.createElement('button', {
-                                        onClick: () => {
-                                            setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-                                        },
-                                        style: {
-                                            width: '24px',
-                                            height: '24px',
-                                            border: 'none',
-                                            backgroundColor: 'transparent',
-                                            cursor: 'pointer',
-                                            fontSize: '18px',
-                                            color: '#999',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        },
-                                        onMouseEnter: (e) => e.currentTarget.style.color = '#c1281e',
-                                        onMouseLeave: (e) => e.currentTarget.style.color = '#999'
-                                    }, '×')
-                                )
-                            ),
-                            // Add more files button - supports both click and drag-and-drop
-                            React.createElement('button', {
-                                id: 'file-upload-add-more-button',
-                                'aria-label': 'Add more files to selection',
-                                onClick: triggerFileInput,
-                                onDragOver: (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.currentTarget.style.backgroundColor = '#e8f4f8';
-                                    e.currentTarget.style.borderColor = 'rgb(51, 65, 85)';
-                                    e.currentTarget.style.borderWidth = '3px';
-                                },
-                                onDragLeave: (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.borderColor = 'rgb(30, 41, 59)';
-                                    e.currentTarget.style.borderWidth = '2px';
-                                },
-                                onDrop: async (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.borderColor = 'rgb(30, 41, 59)';
-                                    e.currentTarget.style.borderWidth = '2px';
-
-                                    // Process dropped files
-                                    const files = e.dataTransfer.files;
-                                    if (!files || files.length === 0) return;
-
-                                    const fileArray = Array.from(files);
-                                    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac'];
-                                    const processedFilesList = [];
-
-                                    for (const file of fileArray) {
-                                        const fileName = file.name.toLowerCase();
-                                        const isAudio = audioExtensions.some(ext => fileName.endsWith(ext));
-
-                                        const lastDotIndex = file.name.lastIndexOf('.');
-                                        const fileExt = lastDotIndex > 0 ? file.name.substring(lastDotIndex + 1) : '';
-
-                                        let fileNameWithoutExt = lastDotIndex > 0 ? file.name.substring(0, lastDotIndex) : file.name;
-                                        fileNameWithoutExt = fileNameWithoutExt.replace(/\.+$/, '');
-
-                                        if (fileExt && fileNameWithoutExt.toLowerCase().endsWith(`.${fileExt.toLowerCase()}`)) {
-                                            fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.length - fileExt.length - 1);
-                                            fileNameWithoutExt = fileNameWithoutExt.replace(/\.+$/, '');
-                                        }
-
-                                        let duration = null;
-                                        if (isAudio) {
-                                            duration = await getAudioDuration(file);
-                                        }
-
-                                        processedFilesList.push({
-                                            file: file,
-                                            fileName: fileNameWithoutExt,
-                                            originalName: fileExt ? `${fileNameWithoutExt}.${fileExt}` : fileNameWithoutExt,
-                                            fileExt: fileExt,
-                                            fileSize: file.size,
-                                            uploadDate: new Date(),
-                                            isAudio: isAudio,
-                                            duration: duration,
-                                            tempID: Date.now() + '-' + Math.random()
-                                        });
-                                    }
-
-                                    setSelectedFiles(prev => {
-                                        const existingFileKeys = new Set(prev.map(f => `${f.originalName}-${f.fileSize}-${f.isAudio}`));
-                                        const newFiles = processedFilesList.filter(f => {
-                                            const fileKey = `${f.originalName}-${f.fileSize}-${f.isAudio}`;
-                                            return !existingFileKeys.has(fileKey);
-                                        });
-                                        console.log('[FileUpload] Adding', newFiles.length, 'new files via Add More (', processedFilesList.length - newFiles.length, 'duplicates filtered)');
-                                        return [...prev, ...newFiles];
-                                    });
-                                    console.log('[FileUpload] Files dropped on Add More button. Total will be:', selectedFiles.length + processedFilesList.length);
-                                },
-                                style: {
-                                    padding: '12px',
-                                    backgroundColor: '#ffffff',
-                                    border: '2px dashed rgb(30, 41, 59)',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    fontFamily: '"Inter-Medium", Helvetica',
-                                    fontSize: '13px',
-                                    color: 'rgb(30, 41, 59)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    transition: 'all 0.2s'
-                                },
-                                onMouseEnter: (e) => {
-                                    e.currentTarget.style.backgroundColor = '#f0f4f8';
-                                    e.currentTarget.style.borderColor = 'rgb(51, 65, 85)';
-                                },
-                                onMouseLeave: (e) => {
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.borderColor = 'rgb(30, 41, 59)';
-                                }
-                            },
-                                React.createElement('span', { style: { fontSize: '18px' } }, '+'),
-                                'Add More Files'
-                            )
-                        )
-                    :
-                        // Upload prompt (empty state)
-                        React.createElement('div', {
-                            id: 'file-upload-prompt-container',
-                            'aria-label': 'Click to select files for upload',
-                            onClick: triggerFileInput,
-                            onDragOver: handleDragOver,
-                            onDragLeave: handleDragLeave,
-                            onDrop: handleDrop,
-                            style: {
-                                width: '570px',
-                                height: '290px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '20px',
-                                backgroundColor: 'rgb(255, 255, 255)',
-                                border: '1px solid rgb(0, 0, 0)',
-                                borderRadius: '10px',
-                                cursor: 'pointer',
-                                transition: '0.2s'
-                            }
-                        },
-                            React.createElement('div', {
-                                id: 'file-upload-cloud-icon',
-                                style: {
-                                    width: '85px',
-                                    height: '85px',
-                                    backgroundColor: 'rgb(228, 228, 228)',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '48px',
-                                    pointerEvents: 'none'
-                                }
-                            }, '☁️'),
-                            React.createElement('p', {
-                                id: 'file-upload-prompt-text',
-                                style: {
-                                    fontFamily: '"SF Pro-Regular", Helvetica',
-                                    fontWeight: '400',
-                                    color: 'rgb(126, 126, 126)',
-                                    fontSize: '20px',
-                                    textAlign: 'center',
-                                    margin: '0px',
-                                    pointerEvents: 'none'
-                                }
-                            }, isDragging ? 'Drop files here' : 'Import Files for Analysis')
-                        )
-                )
-            );
-        };
-
-        // Mixed file type choice screen
-        const renderMixedChoiceScreen = () => {
-            const documentFiles = selectedFiles.filter(f => !f.isAudio);
-            const audioFiles = selectedFiles.filter(f => f.isAudio);
-
-            return React.createElement('div', {
-                id: 'mixed-choice-screen-container',
-                'aria-label': 'Choose upload order screen',
-                style: {
-                    width: '650px',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    position: 'relative',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
-                }
-            },
-                // Header
-                React.createElement('div', {
-                    id: 'mixed-choice-header',
-                    style: {
-                        padding: '18px 17px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        borderBottom: '1px solid #e4e4e4'
-                    }
-                },
-                    // Back button
-                    React.createElement('button', {
-                        id: 'mixed-choice-back-button',
-                        'aria-label': 'Go back to file selection',
-                        onClick: () => setUploadStage('initial'),
-                        style: {
-                            width: '35px',
-                            height: '35px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: '1px solid #e4e4e4',
-                            borderRadius: '10px',
-                            backgroundColor: '#ffffff',
-                            cursor: 'pointer'
-                        }
-                    },
-                        React.createElement('img', {
-                            id: 'mixed-choice-back-icon',
-                            src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                            style: { width: '13px', height: '13px' },
-                            alt: 'Back arrow'
+                                                whiteSpace: 'nowrap',
+                                                fontSize: '13px',
+                                                color: '#000'
+                                            },
+                                            title: file.originalName
+                                        }, file.originalName)
+                                ),
+                                React.createElement('div', { id: `upload-type-cell-${file.tempID}`, style: { fontSize: '13px', color: isEditing ? '#999' : '#666' } }, file.fileExt ? file.fileExt.toLowerCase() : '-'),
+                                React.createElement('div', { id: `upload-duration-size-cell-${file.tempID}`, style: { fontSize: '13px', color: isEditing ? '#999' : '#666' } }, file.isAudio && file.duration ? formatDuration(file.duration) : formatFileSize(file.fileSize)),
+                                React.createElement('div', { id: `upload-date-cell-${file.tempID}`, style: { fontSize: '13px', color: isEditing ? '#999' : '#666' } }, formatDate(file.uploadDate)),
+                                isEditing || !isChecked
+                                    ? React.createElement('div', { id: `upload-menu-placeholder-${file.tempID}` })
+                                    : React.createElement('div', { className: 'file-menu-container', id: `upload-menu-wrapper-${file.tempID}`, style: { position: 'relative', display: 'flex', justifyContent: 'center' } },
+                                        React.createElement('button', {
+                                                id: `upload-menu-toggle-button-${file.tempID}`,
+                                                onClick: () => setMenuOpen(isMenuOpen ? null : file.tempID),
+                                                style: {
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    backgroundColor: isMenuOpen ? '#e4e4e4' : 'transparent',
+                                                    cursor: 'pointer'
+                                                },
+                                                onMouseEnter: (e) => { if (!isMenuOpen) e.currentTarget.style.backgroundColor = '#f0f0f0'; },
+                                                onMouseLeave: (e) => { if (!isMenuOpen) e.currentTarget.style.backgroundColor = 'transparent'; }
+                                            },
+                                            React.createElement('img', { id: `upload-menu-icon-${file.tempID}`, src: './img/more_vert_24.svg', style: { width: '24px', height: '24px' } })
+                                        ),
+                                        isMenuOpen && React.createElement('div', {
+                                                id: `upload-menu-dropdown-${file.tempID}`,
+                                                style: {
+                                                    position: 'absolute',
+                                                    top: '35px',
+                                                    right: '0',
+                                                    width: '150px',
+                                                    backgroundColor: '#ffffff',
+                                                    border: '1px solid #e4e4e4',
+                                                    borderRadius: '8px',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                    zIndex: 1000,
+                                                    overflow: 'hidden'
+                                                }
+                                            },
+                                            React.createElement('button', {
+                                                id: `upload-menu-download-button-${file.tempID}`,
+                                                onClick: () => {
+                                                    const url = URL.createObjectURL(file.file);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = file.originalName;
+                                                    a.click();
+                                                    URL.revokeObjectURL(url);
+                                                    setMenuOpen(null);
+                                                },
+                                                style: { width: '100%', padding: '10px 15px', textAlign: 'left', background: 'transparent', border: 'none', fontSize: '13px', color: '#000' },
+                                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                                                onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                                            }, 'Download'),
+                                            React.createElement('button', {
+                                                id: `upload-menu-rename-button-${file.tempID}`,
+                                                onClick: () => startRename(file.tempID),
+                                                style: { width: '100%', padding: '10px 15px', textAlign: 'left', background: 'transparent', border: 'none', fontSize: '13px', color: '#000' },
+                                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                                                onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                                            }, 'Rename'),
+                                            React.createElement('button', {
+                                                id: `upload-menu-delete-button-${file.tempID}`,
+                                                onClick: () => handleDelete(file.tempID),
+                                                style: { width: '100%', padding: '10px 15px', textAlign: 'left', background: 'transparent', border: 'none', fontSize: '13px', color: '#c1281e' },
+                                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#fff5f5',
+                                                onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                                            }, 'Delete')
+                                        )
+                                    )
+                            );
                         })
-                    ),
-                    // Title
-                    React.createElement('div', {
-                        id: 'mixed-choice-title',
-                        style: {
-                            fontFamily: '"SF Pro-Bold", Helvetica',
-                            fontWeight: '400',
-                            fontSize: '14px',
-                            color: '#000000',
-                            marginLeft: '10px'
-                        }
-                    }, 'Choose Upload Order'),
-                    React.createElement('div', {
-                        id: 'mixed-choice-header-spacer',
-                        style: { width: '47px' }
-                    })
-                ),
-
-                // Content - File type selection
-                React.createElement('div', {
-                    id: 'mixed-choice-content',
-                    style: {
-                        padding: '24px 30px 30px 30px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '16px'
-                    }
-                },
-                    // Info text
-                    React.createElement('div', {
-                        id: 'mixed-choice-info-text',
-                        style: {
-                            fontFamily: '"Inter-Regular", Helvetica',
-                            fontSize: '14px',
-                            color: '#666',
-                            textAlign: 'center',
-                            marginBottom: '10px'
-                        }
-                    }, 'You have selected both documents and audio files. Please choose which type to upload first:'),
-
-                    // Document option
-                    React.createElement('button', {
-                        id: 'upload-order-documents-first-button',
-                        'aria-label': `Upload ${documentFiles.length} document(s) first`,
-                        onClick: () => setUploadStage('document'),
-                        style: {
-                            padding: '20px',
-                            backgroundColor: '#f8f8f8',
-                            border: '2px solid #e4e4e4',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            transition: 'all 0.2s'
-                        },
-                        onMouseEnter: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f0f0f0';
-                            e.currentTarget.style.borderColor = 'rgb(30, 41, 59)';
-                        },
-                        onMouseLeave: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f8f8f8';
-                            e.currentTarget.style.borderColor = '#e4e4e4';
-                        }
-                    },
-                        React.createElement('div', {
-                            style: {
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '15px'
-                            }
-                        },
-                            React.createElement('div', {
-                                style: {
-                                    width: '50px',
-                                    height: '50px',
-                                    backgroundColor: '#e4e4e4',
-                                    borderRadius: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '30px'
-                                }
-                            }, '📄'),
-                            React.createElement('div', {
-                                style: {
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'flex-start',
-                                    gap: '5px'
-                                }
-                            },
-                                React.createElement('div', {
-                                    style: {
-                                        fontFamily: '"Inter-Bold", Helvetica',
-                                        fontSize: '16px',
-                                        fontWeight: '600',
-                                        color: '#000'
-                                    }
-                                }, 'Upload Documents First'),
-                                React.createElement('div', {
-                                    style: {
-                                        fontFamily: '"Inter-Regular", Helvetica',
-                                        fontSize: '13px',
-                                        color: '#666'
-                                    }
-                                }, `${documentFiles.length} document(s) selected`)
-                            )
-                        ),
-                        React.createElement('div', {
-                            style: {
-                                fontSize: '20px',
-                                color: '#666'
-                            }
-                        }, '→')
-                    ),
-
-                    // Audio option
-                    React.createElement('button', {
-                        id: 'upload-order-audio-first-button',
-                        'aria-label': `Upload ${audioFiles.length} audio file(s) first`,
-                        onClick: () => setUploadStage('audio'),
-                        style: {
-                            padding: '20px',
-                            backgroundColor: '#f8f8f8',
-                            border: '2px solid #e4e4e4',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            transition: 'all 0.2s'
-                        },
-                        onMouseEnter: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f0f0f0';
-                            e.currentTarget.style.borderColor = 'rgb(30, 41, 59)';
-                        },
-                        onMouseLeave: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f8f8f8';
-                            e.currentTarget.style.borderColor = '#e4e4e4';
-                        }
-                    },
-                        React.createElement('div', {
-                            style: {
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '15px'
-                            }
-                        },
-                            React.createElement('div', {
-                                style: {
-                                    width: '50px',
-                                    height: '50px',
-                                    backgroundColor: '#c3ab6f',
-                                    borderRadius: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '30px'
-                                }
-                            }, '🎵'),
-                            React.createElement('div', {
-                                style: {
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'flex-start',
-                                    gap: '5px'
-                                }
-                            },
-                                React.createElement('div', {
-                                    style: {
-                                        fontFamily: '"Inter-Bold", Helvetica',
-                                        fontSize: '16px',
-                                        fontWeight: '600',
-                                        color: '#000'
-                                    }
-                                }, 'Upload Audio First'),
-                                React.createElement('div', {
-                                    style: {
-                                        fontFamily: '"Inter-Regular", Helvetica',
-                                        fontSize: '13px',
-                                        color: '#666'
-                                    }
-                                }, `${audioFiles.length} audio file(s) selected`)
-                            )
-                        ),
-                        React.createElement('div', {
-                            style: {
-                                fontSize: '20px',
-                                color: '#666'
-                            }
-                        }, '→')
-                    ),
-
-                    // Edit Selection button
-                    React.createElement('button', {
-                        id: 'mixed-choice-edit-selection-button',
-                        'aria-label': 'Go back to edit file selection',
-                        onClick: () => setUploadStage('initial'),
-                        style: {
-                            padding: '12px 20px',
-                            backgroundColor: '#f5f5f5',
-                            border: '2px solid #e4e4e4',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontFamily: '"Inter-Medium", Helvetica',
-                            fontSize: '13px',
-                            color: '#666',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s'
-                        },
-                        onMouseEnter: (e) => {
-                            e.currentTarget.style.backgroundColor = '#ebebeb';
-                            e.currentTarget.style.borderColor = '#d0d0d0';
-                        },
-                        onMouseLeave: (e) => {
-                            e.currentTarget.style.backgroundColor = '#f5f5f5';
-                            e.currentTarget.style.borderColor = '#e4e4e4';
-                        }
-                    },
-                        React.createElement('span', {
-                            id: 'mixed-choice-edit-icon',
-                            style: { fontSize: '16px' }
-                        }, '✏️'),
-                        'Edit Selection'
-                    ),
-
-                    // Info note
-                    React.createElement('div', {
-                        id: 'mixed-choice-info-note',
-                        style: {
-                            marginTop: '10px',
-                            padding: '15px',
-                            backgroundColor: '#f0f8ff',
-                            border: '1px solid #d0e8ff',
-                            borderRadius: '8px',
-                            fontFamily: '"Inter-Regular", Helvetica',
-                            fontSize: '12px',
-                            color: '#0066cc',
-                            textAlign: 'center'
-                        }
-                    }, 'After uploading the first type, you\'ll be able to upload the remaining files.')
-                )
-            );
-        };
-
-        // Format file size helper
-        const formatFileSize = (bytes) => {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        };
-
-        // Get audio duration
-        const getAudioDuration = (file) => {
-            return new Promise((resolve) => {
-                const audio = document.createElement('audio');
-                audio.preload = 'metadata';
-                audio.onloadedmetadata = function() {
-                    window.URL.revokeObjectURL(audio.src);
-                    const duration = Math.round(audio.duration);
-                    resolve(duration);
-                };
-                audio.onerror = function() {
-                    resolve(null);
-                };
-                audio.src = URL.createObjectURL(file);
-            });
-        };
-
-        // Format date
-        const formatDate = (date) => {
-            const d = new Date(date);
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const year = d.getFullYear();
-            const hours = d.getHours();
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            const ampm = hours >= 12 ? 'pm' : 'am';
-            const hour12 = hours % 12 || 12;
-            return `${month}-${day}-${year} ${hour12}:${minutes}${ampm}`;
-        };
-
-        // Format duration
-        const formatDuration = (seconds) => {
-            if (!seconds) return 'N/A';
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            if (mins > 0) {
-                return `${mins}m ${secs}s`;
-            }
-            return `${secs}s`;
-        };
-
-        // Render stage based on state
-        if (uploadStage === 'initial') {
-            return renderInitialScreen();
-        } else if (uploadStage === 'mixed-choice') {
-            return renderMixedChoiceScreen();
-        } else if (uploadStage === 'document') {
-            // Safety check for DocumentUploadSection
-            if (!window.DocumentUploadSection) {
-                console.error('[FileUpload] DocumentUploadSection is undefined!');
-                return React.createElement('div', {
-                    style: {
-                        padding: '40px',
-                        textAlign: 'center',
-                        color: 'red'
-                    }
-                }, 'Error: DocumentUploadSection not loaded. Please refresh the page.');
-            }
-
-            return React.createElement(window.DocumentUploadSection, {
-                files: selectedFiles,
-                projectID: projectID,
-                onClose: onClose,
-                onReupload: () => setUploadStage('initial'),
-                onNext: async (checkedFiles) => {
-                    // Upload files (confirmation already shown in documentUploadSection)
-                    console.log('[FileUpload] Uploading document files:', checkedFiles);
-                    setIsUploading(true);
-
-                    const newlyUploaded = [];
-                    for (const fileData of checkedFiles) {
-                        try {
-                            const formData = new FormData();
-
-                            // Create a new File object with the renamed filename
-                            // This is necessary because File.name is read-only
-                            const renamedFile = new File(
-                                [fileData.file],
-                                fileData.originalName, // Use the renamed filename
-                                { type: fileData.file.type }
-                            );
-
-                            formData.append('file', renamedFile);
-                            formData.append('projectID', projectID);
-
-                            const response = await fetch('/api/project/file/upload', {
-                                method: 'POST',
-                                body: formData
-                            });
-
-                            const data = await response.json();
-
-                            if (data.successful) {
-                                newlyUploaded.push({
-                                    ...fileData,
-                                    documentID: data.documentID
-                                });
-                            }
-                        } catch (error) {
-                            console.error('Error uploading file:', error);
-                            window.showNotification({
-                                type: 'error',
-                                title: 'Upload Failed',
-                                message: `Failed to upload ${fileData.originalName}. Please try again.`,
-                                actionText: 'OK'
-                            });
-                        }
-                    }
-
-                    setIsUploading(false);
-
-                    // Add to uploaded files list
-                    const allUploaded = [...uploadedFilesList, ...newlyUploaded];
-                    console.log('[FileUpload] Document upload complete. Previously uploaded:', uploadedFilesList.length, 'Newly uploaded:', newlyUploaded.length, 'Total:', allUploaded.length);
-                    setUploadedFilesList(allUploaded);
-
-                    // Remove uploaded files from selectedFiles to prevent re-showing them
-                    const uploadedTempIds = new Set(newlyUploaded.map(f => f.tempID));
-                    const remainingFiles = selectedFiles.filter(f => !uploadedTempIds.has(f.tempID));
-                    console.log('[FileUpload] Remaining files after document upload:', remainingFiles.map(f => ({ name: f.originalName, isAudio: f.isAudio, tempID: f.tempID })));
-                    setSelectedFiles(remainingFiles);
-
-                    // Check if there are audio files remaining (that haven't been uploaded)
-                    const remainingAudioFiles = remainingFiles.filter(f => f.isAudio);
-                    console.log('[FileUpload] Remaining audio files:', remainingAudioFiles.length, remainingAudioFiles.map(f => f.originalName));
-
-                    if (remainingAudioFiles.length > 0) {
-                        console.log('[FileUpload] Documents uploaded. Now showing audio files:', remainingAudioFiles.length);
-
-                        // Ask user if they want to continue with audio or skip
-                        window.showNotification({
-                            type: 'confirm',
-                            title: 'Documents Uploaded!',
-                            message: `${newlyUploaded.length} document(s) uploaded successfully!\n\nYou have ${remainingAudioFiles.length} audio file(s) remaining.\n\nWould you like to upload the audio files now?`,
-                            actionText: 'Upload Audio'
-                        }).then((uploadAudio) => {
-                            if (uploadAudio) {
-                                // User chose to continue with audio
-                                setUploadStage('audio');
-                            } else {
-                                // User chose to skip audio files
-                                console.log('[FileUpload] User skipped audio files');
-
-                                // Show final success for documents only
-                                if (onFilesUploaded) {
-                                    onFilesUploaded(allUploaded);
-                                }
-
-                                window.showNotification({
-                                    type: 'success',
-                                    title: 'Upload Complete!',
-                                    message: `${newlyUploaded.length} document(s) uploaded successfully.\n\n${remainingAudioFiles.length} audio file(s) were skipped.`,
-                                    actionText: 'Done'
-                                }).then(() => {
-                                    onClose();
-                                });
-                            }
-                        });
-                    } else {
-                        // All files uploaded - show notification first, then close
-                        if (onFilesUploaded) {
-                            onFilesUploaded(allUploaded);
-                        }
-
-                        window.showNotification({
-                            type: 'success',
-                            title: 'Upload Complete!',
-                            message: `${allUploaded.length} file(s) uploaded successfully.`,
-                            actionText: 'Done'
-                        }).then(() => {
-                            // Close modal AFTER user dismisses notification
-                            onClose();
-                        });
-                    }
-                },
-                formatFileSize: formatFileSize,
-                formatDate: formatDate,
-                isUploading: isUploading
-            });
-        } else if (uploadStage === 'audio') {
-            // Safety check
-            if (!window.AudioUploadSection) {
-                console.error('[FileUpload] ERROR: window.AudioUploadSection is undefined!');
-                return React.createElement('div', {
-                    style: {
-                        padding: '20px',
-                        color: 'red',
-                        textAlign: 'center'
-                    }
-                }, 'Error: Audio upload section failed to load. Please refresh the page.');
-            }
-
-            return React.createElement(window.AudioUploadSection, {
-                files: selectedFiles,
-                projectID: projectID,
-                onClose: onClose,
-                onReupload: () => setUploadStage('initial'),
-                onNext: async (checkedFiles) => {
-                    // Upload files (confirmation already shown in audioUploadSection)
-                    console.log('[FileUpload] Uploading audio files:', checkedFiles);
-                    setIsUploading(true);
-
-                    const newlyUploaded = [];
-                    for (const fileData of checkedFiles) {
-                        try {
-                            const formData = new FormData();
-
-                            // Create a new File object with the renamed filename
-                            // This is necessary because File.name is read-only
-                            const renamedFile = new File(
-                                [fileData.file],
-                                fileData.originalName, // Use the renamed filename
-                                { type: fileData.file.type }
-                            );
-
-                            formData.append('file', renamedFile);
-                            formData.append('projectID', projectID);
-
-                            const response = await fetch('/api/project/file/upload', {
-                                method: 'POST',
-                                body: formData
-                            });
-
-                            const data = await response.json();
-
-                            if (data.successful) {
-                                newlyUploaded.push({
-                                    ...fileData,
-                                    documentID: data.documentID
-                                });
-                            }
-                        } catch (error) {
-                            console.error('Error uploading file:', error);
-                            window.showNotification({
-                                type: 'error',
-                                title: 'Upload Failed',
-                                message: `Failed to upload ${fileData.originalName}. Please try again.`,
-                                actionText: 'OK'
-                            });
-                        }
-                    }
-
-                    setIsUploading(false);
-
-                    // Add to uploaded files list
-                    const allUploaded = [...uploadedFilesList, ...newlyUploaded];
-                    console.log('[FileUpload] Audio upload complete. Previously uploaded:', uploadedFilesList.length, 'Newly uploaded:', newlyUploaded.length, 'Total:', allUploaded.length);
-                    setUploadedFilesList(allUploaded);
-
-                    // Remove uploaded files from selectedFiles to prevent re-showing them
-                    const uploadedTempIds = new Set(newlyUploaded.map(f => f.tempID));
-                    const remainingFiles = selectedFiles.filter(f => !uploadedTempIds.has(f.tempID));
-                    console.log('[FileUpload] Remaining files after audio upload:', remainingFiles.map(f => ({ name: f.originalName, isAudio: f.isAudio, tempID: f.tempID })));
-                    setSelectedFiles(remainingFiles);
-
-                    // Check if there are document files remaining (that haven't been uploaded)
-                    const remainingDocumentFiles = remainingFiles.filter(f => !f.isAudio);
-                    console.log('[FileUpload] Remaining document files:', remainingDocumentFiles.length, remainingDocumentFiles.map(f => f.originalName));
-
-                    if (remainingDocumentFiles.length > 0) {
-                        console.log('[FileUpload] Audio files uploaded. Now showing document files:', remainingDocumentFiles.length);
-
-                        // Ask user if they want to continue with documents or skip
-                        window.showNotification({
-                            type: 'confirm',
-                            title: 'Audio Files Uploaded!',
-                            message: `${newlyUploaded.length} audio file(s) uploaded successfully!\n\nYou have ${remainingDocumentFiles.length} document(s) remaining.\n\nWould you like to upload the documents now?`,
-                            actionText: 'Upload Documents'
-                        }).then((uploadDocs) => {
-                            if (uploadDocs) {
-                                // User chose to continue with documents
-                                setUploadStage('document');
-                            } else {
-                                // User chose to skip documents
-                                console.log('[FileUpload] User skipped document files');
-
-                                // Show final success for audio only
-                                if (onFilesUploaded) {
-                                    onFilesUploaded(allUploaded);
-                                }
-
-                                window.showNotification({
-                                    type: 'success',
-                                    title: 'Upload Complete!',
-                                    message: `${newlyUploaded.length} audio file(s) uploaded successfully.\n\n${remainingDocumentFiles.length} document(s) were skipped.`,
-                                    actionText: 'Done'
-                                }).then(() => {
-                                    onClose();
-                                });
-                            }
-                        });
-                    } else {
-                        // All audio files uploaded and no documents remaining
-                        // Close the modal after showing success
-                        if (onFilesUploaded) {
-                            onFilesUploaded(allUploaded);
-                        }
-
-                        window.showNotification({
-                            type: 'success',
-                            title: 'Upload Complete!',
-                            message: `${allUploaded.length} file(s) uploaded successfully.`,
-                            actionText: 'Done'
-                        }).then(() => {
-                            // Close modal AFTER user dismisses notification
-                            // This prevents the audio section from showing again with 0 files
-                            console.log('[FileUpload] All uploads complete, closing modal');
-                            onClose();
-                        });
-                    }
-                },
-                formatFileSize: formatFileSize,
-                formatDate: formatDate,
-                formatDuration: formatDuration,
-                isUploading: isUploading
-            });
-        }
+                    )
+            )
+        );
     };
 
-    console.log('[FileUpload] ============================================');
-    console.log('[FileUpload] ✅ FileUploadComponent exported successfully');
-    console.log('[FileUpload] Component type:', typeof window.FileUploadComponent);
-    console.log('[FileUpload] Component available:', !!window.FileUploadComponent);
-    console.log('[FileUpload] VERSION: 2.9 - SYNTAX ERRORS FIXED!');
-    console.log('[FileUpload] ============================================');
+    console.log('[FileUpload] FileUploadComponent exported successfully');
 })();
-
-

@@ -13,11 +13,11 @@ module.exports = async function startupChecks() {
 
         console.log("Checking XAI API Key...");
         if (!process.env.XAI_API_KEY) {
-            console.warn("⚠️  WARNING: XAI_API_KEY environment variable is not set!");
-            console.warn("⚠️  AI chat functionality will not work without a valid API key.");
-            console.warn("⚠️  Please set XAI_API_KEY in your .env file.");
+            console.warn("  WARNING: XAI_API_KEY environment variable is not set!");
+            console.warn("  AI chat functionality will not work without a valid API key.");
+            console.warn("  Please set XAI_API_KEY in your .env file.");
         } else {
-            console.log("✅ XAI API Key found.");
+            console.log("XAI API Key found.");
         }
 
     } catch (err) {

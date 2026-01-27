@@ -1,11 +1,11 @@
 (function () {
     const {useState, useEffect, useRef, useCallback} = React;
-
+    
     // Project Options Button Component
     const ProjectOptionsButton = ({selectedProjectID, projects, onProjectDeleted, onProjectRenamed}) => {
         const [menuOpen, setMenuOpen] = useState(false);
         const menuRef = useRef(null);
-
+        
         // Close menu when clicking outside
         useEffect(() => {
             const handleClickOutside = (event) => {
@@ -13,21 +13,21 @@
                     setMenuOpen(false);
                 }
             };
-
+            
             if (menuOpen) {
                 document.addEventListener('mousedown', handleClickOutside);
             }
-
+            
             return () => {
                 document.removeEventListener('mousedown', handleClickOutside);
             };
         }, [menuOpen]);
-
+        
         const currentProject = projects.find(p => p.projectID === selectedProjectID);
-
+        
         const handleRename = async () => {
             setMenuOpen(false);
-
+            
             // Rename modal
             const newName = await new Promise((resolve) => {
                 const modal = document.createElement('div');
@@ -177,7 +177,7 @@
             if (!newName || newName === currentProject?.projectName) {
                 return;
             }
-
+            
             try {
                 const response = await fetch('/api/project/rename', {
                     method: 'POST',
@@ -189,9 +189,9 @@
                         newProjectName: newName
                     })
                 });
-
+                
                 const data = await response.json();
-
+                
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
@@ -288,10 +288,10 @@
                 alert('An error occurred while renaming the project.');
             }
         };
-
+        
         const handleDelete = async () => {
             setMenuOpen(false);
-
+            
             // First confirmation modal - Warning
             const firstConfirm = await new Promise((resolve) => {
                 const modal = document.createElement('div');
@@ -583,9 +583,9 @@
                         projectID: selectedProjectID
                     })
                 });
-
+                
                 const data = await response.json();
-
+                
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
@@ -693,11 +693,11 @@
                 alert('An error occurred while deleting the project.');
             }
         };
-
+        
         if (!selectedProjectID || !currentProject) {
             return null;
         }
-
+        
         return React.createElement('div', {
             ref: menuRef,
             style: {
@@ -740,7 +740,7 @@
                     }
                 })
             ),
-
+            
             menuOpen && React.createElement('div', {
                 style: {
                     position: 'absolute',
@@ -1085,7 +1085,7 @@
                     const newProjectID = data.projectID;
                     const newProjectName = data.projectName;
 
-                    console.log(`✅ New project created: ${newProjectName} (ID: ${newProjectID})`);
+                    console.log(`New project created: ${newProjectName} (ID: ${newProjectID})`);
 
                     setShowCreateProjectModal(false);
                     setNewProjectName('');
@@ -1119,17 +1119,17 @@
 
                     localStorage.setItem('selectedProjectID', newProjectID);
                     setSelectedProjectID(newProjectID);
-                    console.log(`📌 Auto-selecting new project: ${newProjectID}`);
+                    console.log(`Auto-selecting new project: ${newProjectID}`);
 
                     // Expand Source section for new project
                     setSourceExpanded(true);
                     localStorage.setItem('sourceExpanded', JSON.stringify(true));
-                    console.log(`📂 Expanded Source section for new project`);
+                    console.log(`Expanded Source section for new project`);
 
                     window.skipProjectDataLoad = true;
 
                     const clearSidebarLists = () => {
-                        console.log('🧹 Clearing sidebar lists for new empty project...');
+                        console.log('Clearing sidebar lists for new empty project...');
 
                         const chatHistoryList = document.getElementById('div-chat-history-list');
                         const noChatLabel = document.getElementById('p-label-chat-history-no-entry');
@@ -1142,7 +1142,7 @@
 
                         if (chatHistoryList) {
                             chatHistoryList.innerHTML = '';
-                            console.log('✅ Chat history list cleared');
+                            console.log(' Chat history list cleared');
                             if (noChatLabel) {
                                 noChatLabel.style.display = 'block';
                             }
@@ -1150,7 +1150,7 @@
 
                         if (sourceList) {
                             sourceList.innerHTML = '';
-                            console.log('✅ Source list cleared');
+                            console.log('Source list cleared');
                             if (noSourceLabel) {
                                 noSourceLabel.style.display = 'block';
                             }
@@ -1158,7 +1158,7 @@
 
                         if (requirementsList) {
                             requirementsList.innerHTML = '';
-                            console.log('✅ Requirements list cleared');
+                            console.log('Requirements list cleared');
                             if (noRequirementsLabel) {
                                 noRequirementsLabel.style.display = 'block';
                             }
@@ -1175,13 +1175,13 @@
                         const dropdown = document.getElementById('select-project-drop-down');
                         if (dropdown) {
                             dropdown.value = newProjectID;
-                            console.log(`✅ Dropdown set to: ${newProjectID}`);
+                            console.log(`Dropdown set to: ${newProjectID}`);
                         }
                     }
 
                     setTimeout(() => {
                         window.skipProjectDataLoad = false;
-                        console.log('✅ Skip flag cleared, project data can load normally now');
+                        console.log('Skip flag cleared, project data can load normally now');
                     }, 300);
                 } else {
                     showError(data.message || 'Failed to create project');
@@ -1321,7 +1321,7 @@
                                 }
 
                                 if (window.skipProjectDataLoad) {
-                                    console.log('⏭️ Skipping project data load for new empty project');
+                                    console.log(' Skipping project data load for new empty project');
 
                                     const chatHistoryList = document.getElementById('div-chat-history-list');
                                     const noChatLabel = document.getElementById('p-label-chat-history-no-entry');

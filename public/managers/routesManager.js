@@ -51,7 +51,7 @@ router.get("/home", async (req, res) => {
 
     const active = await sessionDBService.isSessionActive(sessionID);
     if (!active) {
-        console.log("❌ Session expired — redirect login");
+        console.log(" Session expired — redirect login");
         return res.redirect("/login");
     }
 
@@ -59,7 +59,7 @@ router.get("/home", async (req, res) => {
         const userID = await dbService.findUserIDBySessionID(sessionID)
         const userInfo = await dbService.getUserInfo(userID)
 
-        console.log("✅ Session OK — showing home");
+        console.log(" Session OK — showing home");
         res.render("tempHome", { csrfToken: req.csrfToken() || '', userInfo: userInfo });
     } catch(err) {
         console.error(`Error occurred at /home : ${err.message}`)
@@ -141,5 +141,4 @@ router.get("/csrf-token", (req, res) => {
 });
 
 module.exports = router;
-
 

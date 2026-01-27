@@ -22,9 +22,7 @@
     <link rel="stylesheet" href="/components/sidebar.css">
     <!-- Load File Upload Notification Modal (simple version) -->
     <script src="/components/fileUploadNotificationModal.js"></script>
-    <!-- Load File Upload Components - ORDER MATTERS! Dependencies first -->
-    <script src="/components/documentUploadSection.js"></script>
-    <script src="/components/audioUploadSection.js"></script>
+    <!-- Load File Upload Component -->
     <script src="/components/fileUploadComponent.js"></script>
 </head>
 <body>
@@ -42,8 +40,6 @@
 
     console.log("window.Sidebar available?", typeof window.Sidebar);
     console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
-    console.log("window.DocumentUploadSection available?", typeof window.DocumentUploadSection);
-    console.log("window.AudioUploadSection available?", typeof window.AudioUploadSection);
 
 
 

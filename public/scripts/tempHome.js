@@ -465,10 +465,104 @@ const TempHome = ({csrfToken, userInfo}) => {
                         }, 'Say Hello'),
                         React.createElement('button', {
                             className: 'chip',
+                            // OLD CODE (Active):
                             onClick: () => {
                                 const input = document.getElementById('main-message-input');
                                 if (input) input.value = 'Analyze Documents';
                             }
+
+                            // NEW CODE (Commented out - uses requirementAnalysisModel endpoint):
+                            // onClick: async () => {
+                            //     // Get project ID and selected documents
+                            //     const projectDropdown = document.getElementById("select-project-drop-down");
+                            //     const projectID = projectDropdown?.value;
+                            //
+                            //     if (!projectID) {
+                            //         window.showNotification({
+                            //             type: 'error',
+                            //             title: 'No Project Selected',
+                            //             message: 'Please select a project first.',
+                            //             actionText: 'OK'
+                            //         });
+                            //         return;
+                            //     }
+                            //
+                            //     // Get selected documents from sidebar
+                            //     const selectedSource = getSelectedSource();
+                            //
+                            //     if (!selectedSource || selectedSource.length === 0) {
+                            //         window.showNotification({
+                            //             type: 'info',
+                            //             title: 'No Documents Selected',
+                            //             message: 'Please select documents from the Source panel to analyze.',
+                            //             actionText: 'OK'
+                            //         });
+                            //         return;
+                            //     }
+                            //
+                            //     // Get project title
+                            //     const projectNameElem = projectDropdown.options[projectDropdown.selectedIndex];
+                            //     const projectTitle = projectNameElem?.text || 'Project Analysis';
+                            //
+                            //     console.log('=== ANALYZE DOCUMENTS ===');
+                            //     console.log('Project ID:', projectID);
+                            //     console.log('Project Title:', projectTitle);
+                            //     console.log('Document IDs:', selectedSource);
+                            //
+                            //     // Show loading indicator
+                            //     const typingId = showTypingIndicator();
+                            //
+                            //     try {
+                            //         const response = await fetch('/api/agent/analyze-documents', {
+                            //             method: 'POST',
+                            //             headers: {
+                            //                 'Content-Type': 'application/json',
+                            //             },
+                            //             body: JSON.stringify({
+                            //                 projectID: projectID,
+                            //                 documentIDs: selectedSource,
+                            //                 title: projectTitle
+                            //             })
+                            //         });
+                            //
+                            //         removeTypingIndicator(typingId);
+                            //
+                            //         const data = await response.json();
+                            //
+                            //         if (response.ok && data.success) {
+                            //             console.log('Analysis result:', data.analysis);
+                            //
+                            //             // Show the analysis result in a message
+                            //             showChatInterface();
+                            //             addMessage('ai', data.analysis || 'Analysis complete.');
+                            //
+                            //             window.showNotification({
+                            //                 type: 'success',
+                            //                 title: 'Analysis Complete',
+                            //                 message: `Successfully analyzed ${data.documentsAnalyzed} document(s).`,
+                            //                 actionText: 'OK'
+                            //             });
+                            //         } else {
+                            //             addMessage('ai', `Error: ${data.message || 'Analysis failed.'}`);
+                            //             window.showNotification({
+                            //                 type: 'error',
+                            //                 title: 'Analysis Failed',
+                            //                 message: data.message || 'Unable to analyze documents.',
+                            //                 actionText: 'OK'
+                            //             });
+                            //         }
+                            //     } catch (error) {
+                            //         removeTypingIndicator(typingId);
+                            //         console.error('Error analyzing documents:', error);
+                            //         addMessage('ai', 'Sorry, there was an error analyzing the documents.');
+                            //         window.showNotification({
+                            //             type: 'error',
+                            //             title: 'Error',
+                            //             message: 'An error occurred while analyzing documents.',
+                            //             actionText: 'OK'
+                            //         });
+                            //     }
+                            // }
                         }, 'Analyze Documents')
                     ),
                     React.createElement('form', {
@@ -1230,7 +1324,7 @@ async function fetchProjectChats(projectID) {
 
                         if (chatExists) {
                             window.pendingChatRestoration = null; // Clear the flag
-                            console.log('[RESTORE] ✅ Chat belongs to current project. Restoring...');
+                            console.log('[RESTORE]   Chat belongs to current project. Restoring...');
 
                             // Small delay to ensure DOM is ready
                             setTimeout(() => {
@@ -1239,13 +1333,13 @@ async function fetchProjectChats(projectID) {
                                 }
                             }, 100);
                         } else {
-                            console.log('[RESTORE] ❌ Chat not found in current project chat list. Clearing saved state.');
+                            console.log('[RESTORE]   Chat not found in current project chat list. Clearing saved state.');
                             window.pendingChatRestoration = null;
                             localStorage.removeItem('activeChatID');
                             localStorage.removeItem('activeChatProjectID');
                         }
                     } else {
-                        console.log('[RESTORE] ❌ Chat belongs to different project. Clearing saved state.');
+                        console.log('[RESTORE]   Chat belongs to different project. Clearing saved state.');
                         console.log('[RESTORE] Saved chat was for project:', savedProjectID);
                         console.log('[RESTORE] Current project:', projectID);
                         window.pendingChatRestoration = null;
@@ -1428,10 +1522,11 @@ function createChatHistoryItem(chatThreadName, chatID) {
 
             if (!confirmDelete) return;
 
-            const projectID = document.getElementById('select-project-drop-down').value;
-            console.log(`Seelcted Project ID is: ${projectID}`)
+            // Get projectID from localStorage
+                        const projectID = document.getElementById('select-project-drop-down').value;
+            console.log(`Seelcted Project ID is: ${projectID}`)            
 
-            if (!projectID) {
+if (!projectID) {
                 console.error('No project selected');
                 return;
             }
@@ -1915,13 +2010,13 @@ async function submitConversationRequest() {
             if (lastUserMessage) {
                 lastUserMessage.dataset.conversationId = conversationID;
                 lastUserMessage.dataset.chatSeq = chatSeq;
-                console.log('✅ Updated user message with conversation data:', { conversationID, chatSeq });
+                console.log('  Updated user message with conversation data:', { conversationID, chatSeq });
 
                 // Update the existing edit button with the real click handler
                 const editBtn = lastUserMessage.querySelector('.message-edit-btn');
                 if (editBtn) {
                     editBtn.onclick = () => handleEditMessage(userMessage, conversationID, chatSeq);
-                    console.log('✅ Edit button click handler updated with conversation data');
+                    console.log('  Edit button click handler updated with conversation data');
                 }
             }
         }
@@ -1963,7 +2058,7 @@ async function submitConversationRequest() {
             }, 100);
         }
     } catch (error) {
-        console.error("❌ Error in submitConversationRequest:", error);
+        console.error("  Error in submitConversationRequest:", error);
         console.error("Error stack:", error.stack);
         removeTypingIndicator(typingId);
 
@@ -2051,7 +2146,7 @@ function postProcessDownloadLinks(bubble) {
             link.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const fileName = link.dataset.reportDownload;
-                console.log('📥 Download link clicked:', fileName);
+                console.log('  Download link clicked:', fileName);
 
                 // Try to find and download the matching report
                 await downloadReportByName(fileName);
@@ -2102,8 +2197,8 @@ async function downloadReportByName(fileName) {
 
         // Find a report that matches the file name
         const searchName = fileName.replace('.docx', '').toLowerCase();
-        console.log('🔍 Searching for report matching:', searchName);
-        console.log('🔍 Available reports:', data.reports.map(r => `${r.reportName} (${r.reportType})`));
+        console.log('  Searching for report matching:', searchName);
+        console.log('  Available reports:', data.reports.map(r => `${r.reportName} (${r.reportType})`));
 
         // Determine if user is looking for requirements or user stories based on keywords
         const isLookingForRequirements = searchName.includes('requirement') && !searchName.includes('user stor');
@@ -2116,12 +2211,12 @@ async function downloadReportByName(fileName) {
             matchingReport = data.reports.find(r =>
                 r.reportType === 'requirements' || r.reportType === 'Requirements'
             );
-            console.log('🔍 Looking for requirements report, found:', matchingReport?.reportName);
+            console.log('  Looking for requirements report, found:', matchingReport?.reportName);
         } else if (isLookingForUserStories) {
             matchingReport = data.reports.find(r =>
                 r.reportType === 'userStories' || r.reportType === 'UserStories' || r.reportType === 'user_stories'
             );
-            console.log('🔍 Looking for user stories report, found:', matchingReport?.reportName);
+            console.log('  Looking for user stories report, found:', matchingReport?.reportName);
         }
 
         // If no type match, try name matching
@@ -2134,7 +2229,7 @@ async function downloadReportByName(fileName) {
 
         // If still no match, show available options instead of downloading random report
         if (!matchingReport) {
-            console.log('⚠️ No matching report found for:', searchName);
+            console.log('  No matching report found for:', searchName);
             if (window.showNotification) {
                 window.showNotification({
                     type: 'info',
@@ -2146,7 +2241,7 @@ async function downloadReportByName(fileName) {
             return;
         }
 
-        console.log('📥 Downloading report:', matchingReport.reportName);
+        console.log('  Downloading report:', matchingReport.reportName);
 
         // Download the report
         const downloadResponse = await fetch('/api/project/report/download', {
@@ -2198,7 +2293,7 @@ function setBubbleContent(bubble, text, { allowMarkdown = false } = {}) {
 
 // Add a message to chat
 function addMessage(role, text, conversationID = null, chatSeq = null, attachedFileIDs = []) {
-    console.log(`💬 addMessage called:`, {
+    console.log(`  addMessage called:`, {
         role,
         text: text?.substring(0, 50) + '...',
         conversationID,
@@ -2325,7 +2420,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
                     color: #666;
                     font-family: 'Inter', Helvetica;
                 `;
-                fileChip.innerHTML = `📎 ${fileName}`;
+                fileChip.innerHTML = `  ${fileName}`;
                 filesContainer.appendChild(fileChip);
             });
 
@@ -2366,10 +2461,10 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
         if (conversationID && chatSeq) {
             editBtn.onclick = () => handleEditMessage(text, conversationID, chatSeq);
-            console.log('✏️ Edit button added with data:', { conversationID, chatSeq });
+            console.log('  Edit button added with data:', { conversationID, chatSeq });
         } else {
             editBtn.onclick = () => alert('This message cannot be edited yet. Please wait for the message to finish sending.');
-            console.log('⚠️ Edit button added without data (will be updated later)');
+            console.log('  Edit button added without data (will be updated later)');
         }
 
         bottomRow.appendChild(editBtn);
@@ -3062,38 +3157,42 @@ async function streamChatResponse(data, typingId) {
                 }
             } else if (jsonData.type === 'reportGenerated') {
                 // Handle report generation event - refresh sidebar reports
-                console.log('📊 Report generated event received:', jsonData);
-                console.log('📊 Report type:', jsonData.reportType);
+                console.log('  Report generated event received:', jsonData);
+                console.log('  Report type:', jsonData.reportType);
                 const projectID = jsonData.projectID || data.projectID;
-                console.log('📊 Project ID for refresh:', projectID);
+                console.log('  Project ID for refresh:', projectID);
+
+                // Add a small delay to ensure database write completes
+                console.log('  Waiting 500ms before fetching reports...');
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Refresh the reports list in sidebar
                 if (typeof window.fetchProjectReports === 'function') {
-                    console.log('🔄 Calling fetchProjectReports for project:', projectID);
+                    console.log('  Calling fetchProjectReports for project:', projectID);
                     try {
                         await window.fetchProjectReports(projectID);
-                        console.log('✅ fetchProjectReports completed');
+                        console.log('  fetchProjectReports completed');
                     } catch (err) {
-                        console.error('❌ fetchProjectReports error:', err);
+                        console.error('  fetchProjectReports error:', err);
                     }
                 } else {
-                    console.warn('⚠️ window.fetchProjectReports is not a function');
+                    console.warn('  window.fetchProjectReports is not a function');
                 }
 
                 // Also dispatch the event for other listeners
                 window.dispatchEvent(new CustomEvent('reportGenerated', {
                     detail: { projectID, reportType: jsonData.reportType }
                 }));
-                console.log('📊 Dispatched reportGenerated custom event');
+                console.log('  Dispatched reportGenerated custom event');
             } else if (jsonData.type === 'stage') {
                 // Handle stage progress events from 3-stage processing (UI indicator disabled)
-                console.log(`📊 Stage ${jsonData.stage}: ${jsonData.status}`, jsonData.message || '');
+                console.log(`  Stage ${jsonData.stage}: ${jsonData.status}`, jsonData.message || '');
 
                 // Stage UI update disabled - updateProgress(jsonData.stage, jsonData.status, jsonData.message);
 
                 // When Stage 2 completes, refresh requirements panel data
                 if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
-                    console.log('🔄 Stage 2 complete - refreshing requirements data...');
+                    console.log('  Stage 2 complete - refreshing requirements data...');
 
                     // Dispatch event to refresh requirements in the panel
                     window.dispatchEvent(new CustomEvent('requirementsUpdated', {
@@ -3110,9 +3209,9 @@ async function streamChatResponse(data, typingId) {
                 }
             } else if (jsonData.type === 'chunk') {
                 const content = jsonData.content || '';
-                console.log('📦 Received chunk:', content.substring(0, 50) + (content.length > 50 ? '...' : ''));
+                console.log('  Received chunk:', content.substring(0, 50) + (content.length > 50 ? '...' : ''));
                 fullResponse += content;
-                console.log('📝 Full response length:', fullResponse.length);
+                console.log('  Full response length:', fullResponse.length);
 
                 if (content.startsWith('\n\n') && fullResponse.length > content.length) {
                     console.log('🔧 Detected tool response continuation');
@@ -3126,18 +3225,18 @@ async function streamChatResponse(data, typingId) {
                 if (jsonData.conversationID && jsonData.chatSeq) {
                     conversationIDReceived = jsonData.conversationID;
                     chatSeqReceived = jsonData.chatSeq;
-                    console.log('📥 Received conversation data:', { conversationID: conversationIDReceived, chatSeq: chatSeqReceived });
+                    console.log('  Received conversation data:', { conversationID: conversationIDReceived, chatSeq: chatSeqReceived });
                 }
 
                 // Get thread name from the done event and update immediately
                 const threadName = jsonData.threadName || 'Untitled Chat';
-                console.log('📝 Thread name from server:', threadName);
+                console.log('  Thread name from server:', threadName);
 
                 // Always update the chat title in the header immediately
                 const chatTitleElement = document.getElementById('chat-title');
                 if (chatTitleElement && threadName && threadName !== 'Untitled Chat') {
                     chatTitleElement.textContent = threadName;
-                    console.log('📝 Updated header title to:', threadName);
+                    console.log('  Updated header title to:', threadName);
                 }
 
                 // For new chats, also update the sidebar
@@ -3170,18 +3269,20 @@ async function streamChatResponse(data, typingId) {
                                            chatItem.querySelector('span');
                         if (nameElement && threadName && threadName !== 'Untitled Chat') {
                             nameElement.textContent = threadName;
-                            console.log('📝 Updated sidebar title to:', threadName);
+                            console.log('  Updated sidebar title to:', threadName);
                         }
                     }
                 }
 
                 // Always refresh reports after stream completes (in case reports were generated)
+                // Add a small delay to ensure database writes are complete
                 if (typeof window.fetchProjectReports === 'function') {
-                    console.log('🔄 Refreshing reports after stream complete');
+                    console.log('  Refreshing reports after stream complete (with 500ms delay)');
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     await window.fetchProjectReports(data.projectID);
                 }
             } else if (jsonData.type === 'error') {
-                console.error('❌ Stream error received from server:', jsonData.message);
+                console.error('  Stream error received from server:', jsonData.message);
                 removeTypingIndicator(typingId);
                 setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                 bubble.style.color = '#f44336';
@@ -3334,7 +3435,7 @@ async function loadChatThread(chatID) {
         const selectedFilesWrapper = document.getElementById('selected-files-wrapper');
         if (selectedFilesWrapper) {
             selectedFilesWrapper.remove();
-            console.log('🗑️ Cleared selected files from input area (switching chats)');
+            console.log('  Cleared selected files from input area (switching chats)');
         }
 
         // Clear input field text as well
@@ -3366,7 +3467,7 @@ async function loadChatThread(chatID) {
                             const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
                             fileNameMap.set(file.documentID, fullFileName);
                         });
-                        console.log(`📁 Loaded ${fileNameMap.size} file names for chat history`);
+                        console.log(`  Loaded ${fileNameMap.size} file names for chat history`);
                     }
                 }
             } catch (error) {
@@ -3379,7 +3480,7 @@ async function loadChatThread(chatID) {
 
         // Display all conversations
         const conversations = data.conversations || [];
-        console.log(`📋 Loading ${conversations.length} conversations`);
+        console.log(`  Loading ${conversations.length} conversations`);
 
         // Even if empty, keep chat interface visible (user clicked to view this thread)
         conversations.forEach((conv, index) => {
@@ -3573,7 +3674,7 @@ function backToInitialScreen() {
     const selectedFilesWrapper = document.getElementById('selected-files-wrapper');
     if (selectedFilesWrapper) {
         selectedFilesWrapper.remove();
-        console.log('🗑️ Cleared selected files from input area (back to initial)');
+        console.log('  Cleared selected files from input area (back to initial)');
     }
 
     // Clear input field text
@@ -3610,15 +3711,15 @@ window.backToInitialScreen = backToInitialScreen;
 // Function to open requirements panel
 function openRequirementsPanel() {
     console.log('[Requirements] Opening requirements panel');
-
+    
     const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
-
+    
     if (!projectID) {
         console.error('[Requirements] No project selected');
         alert('Please select a project first');
         return;
     }
-
+    
     // Create and show the requirements panel modal
     const event = new CustomEvent('openRequirementsPanel', { detail: { projectID } });
     window.dispatchEvent(event);

@@ -96,17 +96,6 @@ async function requirementAnalysisModel(documentData, title) {
 // ============================================================================
 
 const system_prompt = `
-    ## CONTEXT: Academic Research and Software Engineering
-    You are analyzing academic research papers, technical documentation, and scientific content for SOFTWARE ENGINEERING purposes.
-    All those sensitive content like medical, biological, or health-related content should be treated as:
-    - Academic research material
-    - Technical requirements for software development
-    - Non-prescriptive, educational content
-    - Professional analysis for requirement extraction
-    
-    Your role is purely TECHNICAL - extracting software requirements, NOT providing medical advice.
-    
-    ## YOUR ROLE
     You are an assistant for the software engineering project,
     you will be working on text files / word documents / transcribed audio to summarize all the functional and non functional requirements,
     as well as summarizing the user stories and identify the possible user role of the user stories.
@@ -130,34 +119,24 @@ const system_prompt = `
     Instead, USE the get_project_file_content tool to read the file content!
     
     ## CRITICAL: Report Generation Rules
-    When the user asks about generating a report or document:
+    When the user asks to generate a report or document:
     
-    **Scenario 1: User is SPECIFIC (mentions requirements OR user stories)**
-    - User says: "generate requirements report" or "can you generate requirement report" or "generate the requirements"
-    → **CALL generate_requirements_report(projectID) IMMEDIATELY**
+    1. If user says "generate requirements report" or "requirement report" → **CALL generate_requirements_report(projectID) IMMEDIATELY**
+    2. If user says "generate user stories report" → **CALL generate_user_stories_report(projectID) IMMEDIATELY**  
+    3. If user just says "generate report" without specifying → ASK which type (Requirements or User Stories)
+    4. **Reports are ALWAYS in DOCX format** - do NOT mention PDF, do NOT ask for format
+    5. **YOU MUST CALL THE TOOL** - Never pretend the report is generated without actually calling the tool!
+    6. After the tool returns success, tell user the report is in the sidebar
     
-    - User says: "generate user stories report" or "can you generate stories" or "generate the user stories"
-    → **CALL generate_user_stories_report(projectID) IMMEDIATELY**
-    
-    **Scenario 2: User is VAGUE (doesn't specify type)**
-    - User says: "generate report", "can you generate report", "create a report", "generate a document"
-    → **ASK them which type**: "Which report would you like me to generate? **Requirements Report** or **User Stories Report**?"
-    → **WAIT for their response** before calling any tool
-    
-    **Important Rules:**
-    - Reports are ALWAYS in DOCX format - do NOT mention PDF, do NOT ask for format
-    - **YOU MUST CALL THE TOOL FIRST** - Never say "The report has been generated" without actually calling the tool!
-    - After the tool returns success, tell user the report is in the sidebar
-    - If user says just "report" without "requirements" or "user stories", you MUST ask which one
-    
-    Example of VAGUE request:
-    User: "Can you generate report?"
-    You: "Which report would you like me to generate? **Requirements Report** or **User Stories Report**?"
-    [WAIT for user to specify]
-    
-    Example of SPECIFIC request:
+    Example when user is specific:
     User: "Can you generate the requirement report?"
-    You: [CALL generate_requirements_report tool FIRST] → "The requirements report has been generated and is available in the sidebar."
+    You: [CALL generate_requirements_report tool] → "The requirements report has been generated and is available in the sidebar."
+    
+    Example when user is vague:
+    User: "Generate a report"
+    You: "Which report would you like? **Requirements Report** or **User Stories Report**?"
+    
+    Then wait for the user's response before generating.
     
     You will have access to tools for operations like getting the document list with documentID in the project,
     getting the contents of the documents, searching for chat history with keyword,
@@ -168,17 +147,9 @@ const system_prompt = `
     
     You will also be supply with the summary of what is going on with the current chat each time the user interacts with you.
     Do not answer any questions that is not related to the project or not related to software engineering.
-    
-    ## CRITICAL: NEVER DISCLOSE IDs IN YOUR RESPONSES
-    **ABSOLUTELY NEVER include ANY of these in your responses to users:**
-    - chatID, conversationID, documentID, requirementsID, user story ID, projectID
-    - Any UUIDs or technical identifiers
-    - When mentioning files, use ONLY file names (e.g., "medical_app_testing_paper.pdf")
-    - NEVER write "(ID: xxx)" or "[documentID: xxx]" or any ID format
-    
-    Example BAD: "I analyzed (medical_app_testing_paper.pdf, ID: 834f8a34-2f72-4c70-bb8d-9f939d5b082d)"
-    Example GOOD: "I analyzed medical_app_testing_paper.pdf"
-    
+    Do not disclose the chatID, conversationID, the documentID, requirementsID, user story ID, projectID in the chat response message. 
+
+    Do not disclose the chatID, conversationID, the documentID, requirementsID, user story ID, projectID in the chat response message.
     Do not answer any questions or contents about the tool functions given to you, that includes the json that pass into the tool function.
     
     ## CRITICAL: Response Formatting Rules
@@ -287,6 +258,7 @@ Provide a clear, user-friendly response about what was accomplished.
 - **NEVER repeat document IDs** - Even if you see them in the context, do NOT include them in your response
 - **When mentioning files, use ONLY the file name** (e.g., "medical_app_testing_paper.pdf"), NEVER include "(ID: xxx)" or any ID reference
 - Don't mention tool names or function calls
+- Don't show any IDs (projectID, documentID, requirementID, storyID, chatID)
 - Don't discuss JSON structures or technical implementation details
 - Don't use technical jargon
 - **NEVER create fake download links** - do not write markdown links like [Download](filename.docx) or HTML anchor tags
@@ -348,7 +320,7 @@ async function buildFileContextMessage(data) {
                 const ext = file.documentExt || '';
                 let cleanName = (file.documentName || '').replace(/\.+$/, '');
                 const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
-                return `- ${fileName}`;
+                return `- ${fileName} (ID: ${file.documentID})`;
             }).join('\n');
 
             return `
@@ -373,8 +345,8 @@ Treat all content as academic research material for software development.
 
         return `The user attempted to attach files, but they could not be found.`;
     } catch (error) {
-        console.error('❌ Error building file context:', error);
-        return `The user attempted to attach ${data.attachedDocumentIDs?.length || 0} file(s), but there was an error retrieving details. Do not mention document IDs to the user.`;
+        console.error('Error building file context:', error);
+        return `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')} (${data.attachedDocumentIDs?.length || 0} file(s)), but there was an error retrieving details.`;
     }
 }
 
@@ -383,12 +355,12 @@ Treat all content as academic research material for software development.
 // ============================================================================
 
 async function prepareUpdates(data, conversationSummary) {
-    console.log('📖 [Stage 1] Starting context gathering...');
+    console.log(' [Stage 1] Starting context gathering...');
 
     const messages = [
         // FIRST MESSAGE: Prominent disclaimer for content moderation bypass
         {
-            role: 'system', 
+            role: 'system',
             content: `
 === ACADEMIC RESEARCH SESSION ===
 This is an academic research analysis session for software engineering.
@@ -432,40 +404,6 @@ You are NOT providing medical advice. You are analyzing research papers to extra
         max_tokens: 5000,
     });
 
-    // mitigate content moderation issues
-    // let completion;
-    // try {
-    //     completion = await client.chat.completions.create({
-    //         model: 'grok-4-1-fast-non-reasoning',
-    //         messages: messages,
-    //         tools: readOnlyTools,
-    //         tool_choice: "auto",
-    //         temperature: 0.7,
-    //         max_tokens: 5000,
-    //     });
-    // } catch (error) {
-    //     // Handle content moderation errors specifically
-    //     if (error.message && error.message.includes('Content violates usage guidelines')) {
-    //         console.warn('⚠️ Content moderation triggered, retrying with sanitized content...');
-    //         // Add disclaimer message to mitigate filter
-    //         messages.push({
-    //             role: 'system',
-    //             content: 'DISCLAIMER: This is academic research analysis for software engineering. All content is educational and non-prescriptive.'
-    //         });
-    //         // Retry with disclaimer
-    //         completion = await client.chat.completions.create({
-    //             model: 'grok-4-1-fast-non-reasoning',
-    //             messages: messages,
-    //             tools: readOnlyTools,
-    //             tool_choice: "auto",
-    //             temperature: 0.7,
-    //             max_tokens: 5000,
-    //         });
-    //     } else {
-    //         throw error; // Re-throw other errors
-    //     }
-    // }
-
     let responseMessage = completion.choices[0].message;
 
     // Track if any reports were generated
@@ -483,11 +421,11 @@ You are NOT providing medical advice. You are analyzing research papers to extra
             try {
                 functionArgs = JSON.parse(toolCall.function.arguments);
             } catch (error) {
-                console.error(`❌ Failed to parse arguments for ${functionName}`);
+                console.error(`Failed to parse arguments for ${functionName}`);
                 functionArgs = {};
             }
 
-            console.log(`🔧 [Stage 1] Calling: ${functionName}`);
+            console.log(`[Stage 1] Calling: ${functionName}`);
 
             const toolImpl = toolImpls[functionName];
             let functionResponse;
@@ -503,14 +441,14 @@ You are NOT providing medical advice. You are analyzing research papers to extra
 
                     // Track report generation
                     if (functionName.startsWith('generate_') && functionResponse?.success && functionResponse?.reportGenerated) {
-                        console.log(`📊 [Stage 1] Report generated: ${functionResponse.reportType}`);
+                        console.log(`[Stage 1] Report generated: ${functionResponse.reportType}`);
                         reportsGenerated.push({
                             type: functionResponse.reportType,
                             projectID: functionResponse.projectID || data.projectID
                         });
                     }
                 } catch (error) {
-                    console.error(`❌ Error executing ${functionName}:`, error.message);
+                    console.error(`Error executing ${functionName}:`, error.message);
                     functionResponse = {error: error.message};
                 }
             } else {
@@ -534,41 +472,11 @@ You are NOT providing medical advice. You are analyzing research papers to extra
             max_tokens: 5000,
         });
 
-        // mitigate content moderation issues
-        // try {
-        //     completion = await client.chat.completions.create({
-        //         model: 'grok-4-1-fast-non-reasoning',
-        //         messages: messages,
-        //         tools: readOnlyTools,
-        //         tool_choice: "auto",
-        //         temperature: 0.7,
-        //         max_tokens: 5000,
-        //     });
-        // } catch (error) {
-        //     if (error.message && error.message.includes('Content violates usage guidelines')) {
-        //         console.warn('⚠️ Content moderation in tool follow-up, adding disclaimer...');
-        //         messages.push({
-        //             role: 'system',
-        //             content: 'DISCLAIMER: Academic research analysis for software engineering purposes only.'
-        //         });
-        //         completion = await client.chat.completions.create({
-        //             model: 'grok-4-1-fast-non-reasoning',
-        //             messages: messages,
-        //             tools: readOnlyTools,
-        //             tool_choice: "auto",
-        //             temperature: 0.7,
-        //             max_tokens: 5000,
-        //         });
-        //     } else {
-        //         throw error;
-        //     }
-        // }
-
         responseMessage = completion.choices[0].message;
     }
 
     // Now ask AI to generate the update plan
-    console.log('📋 [Stage 1] Requesting update plan...');
+    console.log(' [Stage 1] Requesting update plan...');
     messages.push({
         role: 'user',
         content: `Based on the information you gathered, generate a complete plan for database updates.
@@ -674,9 +582,9 @@ Return ONLY the JSON object, nothing else.`
             planResponse.match(/```\n([\s\S]*?)\n```/);
         const jsonStr = jsonMatch ? jsonMatch[1] : planResponse.trim();
         updatePlan = JSON.parse(jsonStr);
-        console.log('✅ [Stage 1] Update plan parsed successfully');
+        console.log(' [Stage 1] Update plan parsed successfully');
     } catch (error) {
-        console.error('❌ [Stage 1] Failed to parse update plan:', error.message);
+        console.error('[Stage 1] Failed to parse update plan:', error.message);
         console.error('\n');
         console.error('Raw response:', planResponse);
         console.error('\n');
@@ -689,7 +597,7 @@ Return ONLY the JSON object, nothing else.`
         };
     }
 
-    console.log('📋 [Stage 1] Plan:', JSON.stringify(updatePlan, null, 2));
+    console.log(' [Stage 1] Plan:', JSON.stringify(updatePlan, null, 2));
 
     return {
         updatePlan,
@@ -703,10 +611,10 @@ Return ONLY the JSON object, nothing else.`
 // ============================================================================
 
 async function executeUpdates(updatePlan, projectID) {
-    console.log('⚙️ [Stage 2] Starting update execution...');
+    console.log(' [Stage 2] Starting update execution...');
 
     if (!updatePlan.requiresUpdate) {
-        console.log('ℹ️ [Stage 2] No updates required, skipping execution');
+        console.log('[Stage 2] No updates required, skipping execution');
         return {
             success: true,
             message: 'No database updates needed',
@@ -724,14 +632,14 @@ async function executeUpdates(updatePlan, projectID) {
         // 1. Update requirements first
         if (operations.update_software_requirements?.jsonList?.length > 0) {
             try {
-                console.log(`🔧 [Stage 2] Updating ${operations.update_software_requirements.jsonList.length} requirement(s)...`);
+                console.log(`[Stage 2] Updating ${operations.update_software_requirements.jsonList.length} requirement(s)...`);
                 results.requirements = await toolImpls.update_software_requirements(
                     projectID,
                     operations.update_software_requirements.jsonList
                 );
-                console.log('✅ [Stage 2] Requirements updated');
+                console.log('[Stage 2] Requirements updated');
             } catch (error) {
-                console.error('❌ [Stage 2] Error updating requirements:', error.message);
+                console.error(' [Stage 2] Error updating requirements:', error.message);
                 errors.push(`Requirements update failed: ${error.message}`);
             }
         }
@@ -739,14 +647,14 @@ async function executeUpdates(updatePlan, projectID) {
         // 2. Update user stories
         if (operations.update_user_stories?.jsonList?.length > 0) {
             try {
-                console.log(`🔧 [Stage 2] Updating ${operations.update_user_stories.jsonList.length} user story(ies)...`);
+                console.log(`[Stage 2] Updating ${operations.update_user_stories.jsonList.length} user story(ies)...`);
                 results.userStories = await toolImpls.update_user_stories(
                     projectID,
                     operations.update_user_stories.jsonList
                 );
-                console.log('✅ [Stage 2] User stories updated');
+                console.log('[Stage 2] User stories updated');
             } catch (error) {
-                console.error('❌ [Stage 2] Error updating user stories:', error.message);
+                console.error(' [Stage 2] Error updating user stories:', error.message);
                 errors.push(`User stories update failed: ${error.message}`);
             }
         }
@@ -754,13 +662,13 @@ async function executeUpdates(updatePlan, projectID) {
         // 3. Link requirements to documents
         if (operations.update_requirements_source_ref?.jsonList?.length > 0) {
             try {
-                console.log(`🔧 [Stage 2] Linking ${operations.update_requirements_source_ref.jsonList.length} requirement source(s)...`);
+                console.log(`[Stage 2] Linking ${operations.update_requirements_source_ref.jsonList.length} requirement source(s)...`);
                 results.requirementSources = await toolImpls.update_requirements_source_ref(
                     operations.update_requirements_source_ref.jsonList
                 );
-                console.log('✅ [Stage 2] Requirement sources linked');
+                console.log(' [Stage 2] Requirement sources linked');
             } catch (error) {
-                console.error('❌ [Stage 2] Error linking requirement sources:', error.message);
+                console.error(' [Stage 2] Error linking requirement sources:', error.message);
                 errors.push(`Requirement source linking failed: ${error.message}`);
             }
         }
@@ -768,13 +676,13 @@ async function executeUpdates(updatePlan, projectID) {
         // 4. Link user stories to documents
         if (operations.update_user_stories_source_ref?.jsonList?.length > 0) {
             try {
-                console.log(`🔧 [Stage 2] Linking ${operations.update_user_stories_source_ref.jsonList.length} user story source(s)...`);
+                console.log(`[Stage 2] Linking ${operations.update_user_stories_source_ref.jsonList.length} user story source(s)...`);
                 results.userStorySources = await toolImpls.update_user_stories_source_ref(
                     operations.update_user_stories_source_ref.jsonList
                 );
-                console.log('✅ [Stage 2] User story sources linked');
+                console.log('[Stage 2] User story sources linked');
             } catch (error) {
-                console.error('❌ [Stage 2] Error linking user story sources:', error.message);
+                console.error('[Stage 2] Error linking user story sources:', error.message);
                 errors.push(`User story source linking failed: ${error.message}`);
             }
         }
@@ -782,19 +690,19 @@ async function executeUpdates(updatePlan, projectID) {
         // 5. Link requirements to user stories
         if (operations.update_requirements_story_ref?.jsonList?.length > 0) {
             try {
-                console.log(`🔧 [Stage 2] Linking ${operations.update_requirements_story_ref.jsonList.length} requirement-story link(s)...`);
+                console.log(`[Stage 2] Linking ${operations.update_requirements_story_ref.jsonList.length} requirement-story link(s)...`);
                 results.requirementStoryLinks = await toolImpls.update_requirements_story_ref(
                     operations.update_requirements_story_ref.jsonList
                 );
-                console.log('✅ [Stage 2] Requirements linked to user stories');
+                console.log(' [Stage 2] Requirements linked to user stories');
             } catch (error) {
-                console.error('❌ [Stage 2] Error linking requirements to stories:', error.message);
+                console.error(' [Stage 2] Error linking requirements to stories:', error.message);
                 errors.push(`Requirement-story linking failed: ${error.message}`);
             }
         }
 
         if (errors.length > 0) {
-            console.warn('⚠️ [Stage 2] Completed with errors:', errors);
+            console.warn(' [Stage 2] Completed with errors:', errors);
             return {
                 success: false,
                 message: 'Some updates failed',
@@ -803,7 +711,7 @@ async function executeUpdates(updatePlan, projectID) {
             };
         }
 
-        console.log('✅ [Stage 2] All updates executed successfully');
+        console.log(' [Stage 2] All updates executed successfully');
         return {
             success: true,
             message: 'Database updated successfully',
@@ -811,7 +719,7 @@ async function executeUpdates(updatePlan, projectID) {
         };
 
     } catch (error) {
-        console.error('❌ [Stage 2] Critical error during execution:', error.message);
+        console.error(' [Stage 2] Critical error during execution:', error.message);
         return {
             success: false,
             message: 'Critical error during update execution',
@@ -826,7 +734,7 @@ async function executeUpdates(updatePlan, projectID) {
 // ============================================================================
 
 async function* streamResponse(updatePlan, updateResults, originalMessage, conversationSummary) {
-    console.log('💬 [Stage 3] Starting response generation (streaming)...');
+    console.log(' [Stage 3] Starting response generation (streaming)...');
 
     const messages = [
         {role: 'system', content: system_prompt_stage3},
@@ -865,35 +773,6 @@ async function* streamResponse(updatePlan, updateResults, originalMessage, conve
         stream: true
     });
 
-    // mitigate content moderation issues
-    // let stream;
-    // try {
-    //     stream = await client.chat.completions.create({
-    //         model: 'grok-4-1-fast-non-reasoning',
-    //         messages: messages,
-    //         temperature: 0.7,
-    //         max_tokens: 4500,
-    //         stream: true
-    //     });
-    // } catch (error) {
-    //     if (error.message && error.message.includes('Content violates usage guidelines')) {
-    //         console.warn('⚠️ Content moderation in Stage 3, adding disclaimer...');
-    //         messages.push({
-    //             role: 'system',
-    //             content: 'DISCLAIMER: This is academic research analysis. All content is for software engineering purposes.'
-    //         });
-    //         stream = await client.chat.completions.create({
-    //             model: 'grok-4-1-fast-non-reasoning',
-    //             messages: messages,
-    //             temperature: 0.7,
-    //             max_tokens: 4500,
-    //             stream: true
-    //         });
-    //     } else {
-    //         throw error;
-    //     }
-    // }
-
     let fullResponse = '';
     for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta;
@@ -903,7 +782,7 @@ async function* streamResponse(updatePlan, updateResults, originalMessage, conve
         }
     }
 
-    console.log('✅ [Stage 3] Response streaming complete. Length:', fullResponse.length);
+    console.log(' [Stage 3] Response streaming complete. Length:', fullResponse.length);
 }
 
 // ============================================================================
@@ -912,11 +791,11 @@ async function* streamResponse(updatePlan, updateResults, originalMessage, conve
 
 async function* getStreamingResponseThreeStage(data, conversationSummary) {
     try {
-        console.log('🎬 [Orchestrator] Starting 3-stage streaming process...');
+        console.log(' [Orchestrator] Starting 3-stage streaming process...');
 
         // STAGE 1: Prepare (non-streaming)
         yield '<!-- STAGE_1_START -->\n';
-        console.log('📖 [Orchestrator] Executing Stage 1...');
+        console.log(' [Orchestrator] Executing Stage 1...');
 
         const { updatePlan, conversationContext, reportsGenerated } = await prepareUpdates(data, conversationSummary);
 
@@ -924,43 +803,43 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
         if (reportsGenerated && reportsGenerated.length > 0) {
             for (const report of reportsGenerated) {
                 yield `<!-- REPORT_GENERATED: ${JSON.stringify(report)} -->\n`;
-                console.log(`📊 [Orchestrator] Report generated: ${report.type}`);
+                console.log(`[Orchestrator] Report generated: ${report.type}`);
             }
         }
 
         yield `<!-- STAGE_1_COMPLETE: ${updatePlan.requiresUpdate ? 'Updates planned' : 'No updates needed'} -->\n`;
-        console.log('✅ [Orchestrator] Stage 1 complete');
+        console.log(' [Orchestrator] Stage 1 complete');
 
         // STAGE 2: Execute (non-streaming)
         yield '<!-- STAGE_2_START -->\n';
-        console.log('⚙️ [Orchestrator] Executing Stage 2...');
+        console.log(' [Orchestrator] Executing Stage 2...');
 
         const updateResults = await executeUpdates(updatePlan, data.projectID);
 
         yield `<!-- STAGE_2_COMPLETE: ${updateResults.success ? 'Success' : 'Partial/Failed'} -->\n`;
-        console.log('✅ [Orchestrator] Stage 2 complete');
+        console.log(' [Orchestrator] Stage 2 complete');
 
         // STAGE 3: Respond (streaming)
         yield '<!-- STAGE_3_START -->\n';
-        console.log('💬 [Orchestrator] Executing Stage 3 (streaming)...');
+        console.log(' [Orchestrator] Executing Stage 3 (streaming)...');
 
         for await (const chunk of streamResponse(updatePlan, updateResults, data.requestMessage, conversationSummary)) {
             yield chunk;
         }
 
         yield '\n<!-- STAGE_3_COMPLETE -->\n';
-        console.log('✅ [Orchestrator] Stage 3 complete');
-        console.log('🎉 [Orchestrator] All stages complete!');
+        console.log(' [Orchestrator] Stage 3 complete');
+        console.log(' [Orchestrator] All stages complete!');
 
     } catch (error) {
-        console.error('❌ [Orchestrator] Error in 3-stage process:', error.message);
+        console.error(' [Orchestrator] Error in 3-stage process:', error.message);
         console.error('Stack:', error.stack);
 
         yield '\n\n---\n\n';
 
         // Handle specific error types
         if (error.message && error.message.includes('SAFETY_CHECK')) {
-            yield '⚠️ **Content Moderation Notice**\n\n';
+            yield ' **Content Moderation Notice**\n\n';
             yield 'The AI provider\'s content filter flagged something in this request or the document content.\n\n';
             yield 'This can happen when:\n';
             yield '- The document contains sensitive topics (medical, biological, etc.)\n';
@@ -970,12 +849,12 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
             yield '- If analyzing a document, try asking about specific sections\n';
             yield '- Contact support if this continues\n';
         } else if (error.message && error.message.includes('403')) {
-            yield '🔒 **Access Denied**\n\n';
+            yield ' **Access Denied**\n\n';
             yield 'The request was blocked by the AI provider.\n\n';
             yield `Details: ${error.message}\n\n`;
             yield 'Please try again with a different request.';
         } else {
-            yield '❌ **An error occurred while processing your request.**\n\n';
+            yield ' **An error occurred while processing your request.**\n\n';
             yield `Error: ${error.message}\n\n`;
             yield 'Please try again or contact support if the issue persists.';
         }
@@ -991,32 +870,32 @@ async function getResponse(data, conversationSummary) {
         // Validate API key before making requests
         if (!process.env.XAI_API_KEY) {
             const errorMsg = 'XAI_API_KEY is not configured. Please set the environment variable and restart the server.';
-            console.error('❌', errorMsg);
+            console.error(errorMsg);
             throw new Error(errorMsg);
         }
 
         // Build file context message if files are attached
         let fileContextMessage = '';
         if (data.attachedDocumentIDs && data.attachedDocumentIDs.length > 0) {
-            console.log(`📎 [Non-streaming] Processing ${data.attachedDocumentIDs.length} attached file(s)...`);
+            console.log(`[Non-streaming] Processing ${data.attachedDocumentIDs.length} attached file(s)...`);
 
             // Fetch file metadata from database
             const fss = require('./fsServices');
             try {
-                console.log('📂 Fetching project files for projectID:', data.projectID);
+                console.log(' Fetching project files for projectID:', data.projectID);
                 const allFiles = await fss.listProjectFiles(data.projectID);
-                console.log(`📂 Found ${allFiles?.length || 0} total files in project`);
+                console.log(`Found ${allFiles?.length || 0} total files in project`);
 
                 // Safety check for null/undefined
                 if (!allFiles || !Array.isArray(allFiles)) {
-                    console.warn('⚠️  listProjectFiles returned invalid data:', allFiles);
+                    console.warn('  listProjectFiles returned invalid data:', allFiles);
                     throw new Error('Invalid file list returned from database');
                 }
 
                 const attachedFiles = allFiles.filter(file =>
                     data.attachedDocumentIDs.includes(file.documentID)
                 );
-                console.log(`📎 Matched ${attachedFiles.length} attached files`);
+                console.log(`Matched ${attachedFiles.length} attached files`);
 
                 if (attachedFiles.length > 0) {
                     const fileList = attachedFiles.map(file => {
@@ -1025,23 +904,23 @@ async function getResponse(data, conversationSummary) {
                         const ext = file.documentExt || '';
                         let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
                         const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
-                        console.log(`  ✅ Attached file: ${fileName} (${file.documentID})`);
+                        console.log(`Attached file: ${fileName} (${file.documentID})`);
                         return `- ${fileName} (ID: ${file.documentID})`;
                     }).join('\n');
 
                     fileContextMessage = `The user has attached ${attachedFiles.length} file(s) to this message:\n${fileList}\n\nYou can use the get_project_file_content tool to retrieve the contents of these files using their document IDs.`;
                 } else {
-                    console.warn('⚠️  No matching files found for attached document IDs');
+                    console.warn('No matching files found for attached document IDs');
                     fileContextMessage = `The user attempted to attach files, but they could not be found in the project.`;
                 }
             } catch (error) {
-                console.error('❌ Error fetching file metadata:', error);
-                console.error('❌ Error stack:', error.stack);
+                console.error('Error fetching file metadata:', error);
+                console.error('Error stack:', error.stack);
                 fileContextMessage = `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')}, but there was an error retrieving file details.`;
-                console.log('⚠️  Continuing with error message in context');
+                console.log('Continuing with error message in context');
             }
         } else {
-            console.log('📎 No files attached to this message');
+            console.log('No files attached to this message');
         }
 
         const messages = [
@@ -1138,33 +1017,33 @@ async function* getStreamingResponse(data, conversationSummary) {
     // Validate API key before making requests
     if (!process.env.XAI_API_KEY) {
         const errorMsg = 'XAI_API_KEY is not configured. Please set the environment variable and restart the server.';
-        console.error('❌', errorMsg);
+        console.error(errorMsg);
         throw new Error(errorMsg);
     }
 
     // Build file context message if files are attached
     let fileContextMessage = '';
     if (data.attachedDocumentIDs && data.attachedDocumentIDs.length > 0) {
-        console.log(`📎 Processing ${data.attachedDocumentIDs.length} attached file(s)...`);
-        console.log('📎 Attached document IDs:', data.attachedDocumentIDs);
+        console.log(`Processing ${data.attachedDocumentIDs.length} attached file(s)...`);
+        console.log('Attached document IDs:', data.attachedDocumentIDs);
 
         // Fetch file metadata from database
         const fss = require('./fsServices');
         try {
-            console.log('📂 Fetching project files for projectID:', data.projectID);
+            console.log('Fetching project files for projectID:', data.projectID);
             const allFiles = await fss.listProjectFiles(data.projectID);
-            console.log(`📂 Found ${allFiles?.length || 0} total files in project`);
+            console.log(`Found ${allFiles?.length || 0} total files in project`);
 
             // Safety check for null/undefined
             if (!allFiles || !Array.isArray(allFiles)) {
-                console.warn('⚠️  listProjectFiles returned invalid data:', allFiles);
+                console.warn('listProjectFiles returned invalid data:', allFiles);
                 throw new Error('Invalid file list returned from database');
             }
 
             const attachedFiles = allFiles.filter(file =>
                 data.attachedDocumentIDs.includes(file.documentID)
             );
-            console.log(`📎 Matched ${attachedFiles.length} attached files`);
+            console.log(`Matched ${attachedFiles.length} attached files`);
 
             if (attachedFiles.length > 0) {
                 const fileList = attachedFiles.map(file => {
@@ -1173,30 +1052,30 @@ async function* getStreamingResponse(data, conversationSummary) {
                     const ext = file.documentExt || '';
                     let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
                     const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
-                    console.log(`  ✅ Attached file: ${fileName} (${file.documentID})`);
+                    console.log(`Attached file: ${fileName} (${file.documentID})`);
                     return `- ${fileName} (ID: ${file.documentID})`;
                 }).join('\n');
 
                 fileContextMessage = `The user has attached ${attachedFiles.length} file(s) to this message:\n${fileList}\n\nYou can use the get_project_file_content tool to retrieve the contents of these files using their document IDs.`;
-                console.log('✅ File context message created');
+                console.log('File context message created');
             } else {
-                console.warn('⚠️  No matching files found for attached document IDs');
+                console.warn(' No matching files found for attached document IDs');
                 fileContextMessage = `The user attempted to attach files, but they could not be found in the project.`;
             }
         } catch (error) {
-            console.error('❌ Error fetching file metadata:', error);
-            console.error('❌ Error stack:', error.stack);
-            console.error('❌ Error details:', {
+            console.error(' Error fetching file metadata:', error);
+            console.error('Error stack:', error.stack);
+            console.error('Error details:', {
                 projectID: data.projectID,
                 attachedDocumentIDs: data.attachedDocumentIDs
             });
 
             // Don't throw here - continue with a warning message instead
             fileContextMessage = `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')}, but there was an error retrieving file details.`;
-            console.log('⚠️  Continuing with error message in context');
+            console.log('Continuing with error message in context');
         }
     } else {
-        console.log('📎 No files attached to this message');
+        console.log('No files attached to this message');
     }
 
     const messages = [
@@ -1275,7 +1154,7 @@ async function* getStreamingResponse(data, conversationSummary) {
                     }
                 }));
 
-            console.log(`✅ Collected ${responseMessage.tool_calls.length} tool call(s):`,
+            console.log(`Collected ${responseMessage.tool_calls.length} tool call(s):`,
                 responseMessage.tool_calls.map(tc => tc.function.name));
         }
     }
@@ -1302,11 +1181,11 @@ async function* getStreamingResponse(data, conversationSummary) {
 
             // Safely parse JSON arguments with error handling
             try {
-                console.log(`🔧 Parsing arguments for ${functionName}:`, toolCall.function.arguments);
+                console.log(`Parsing arguments for ${functionName}:`, toolCall.function.arguments);
                 functionArgs = JSON.parse(toolCall.function.arguments);
-                console.log(`✅ Parsed successfully:`, functionArgs);
+                console.log(`Parsed successfully:`, functionArgs);
             } catch (parseError) {
-                console.error(`❌ Failed to parse tool arguments for ${functionName}:`, parseError.message);
+                console.error(`Failed to parse tool arguments for ${functionName}:`, parseError.message);
                 console.error(`Raw arguments string:`, toolCall.function.arguments);
                 functionArgs = {}; // Use empty object as fallback
             }
@@ -1319,7 +1198,7 @@ async function* getStreamingResponse(data, conversationSummary) {
                 try {
                     functionResponse = await toolImpl(...Object.values(functionArgs));
                 } catch (error) {
-                    console.error(`❌ Error executing tool ${functionName}:`, error.message);
+                    console.error(`Error executing tool ${functionName}:`, error.message);
                     functionResponse = {error: error.message};
                 }
             } else {
@@ -1334,10 +1213,10 @@ async function* getStreamingResponse(data, conversationSummary) {
         }
 
         // Validate messages array before final API call
-        console.log('📋 Messages array before final API call:');
+        console.log(' Messages array before final API call:');
         messages.forEach((msg, idx) => {
             if (!msg.role) {
-                console.error(`❌ Message at index ${idx} is missing role field:`, msg);
+                console.error(` Message at index ${idx} is missing role field:`, msg);
             } else {
                 console.log(`  [${idx}] role: ${msg.role}, has content: ${!!msg.content}, has tool_calls: ${!!msg.tool_calls}`);
             }
@@ -1350,7 +1229,7 @@ async function* getStreamingResponse(data, conversationSummary) {
         });
 
         // Final STREAMING call after tools - force text response with tool_choice: "none"
-        console.log('🔄 Making final streaming API call with tool results...');
+        console.log('Making final streaming API call with tool results...');
         const finalStream = await client.chat.completions.create({
             model: 'grok-4-1-fast-reasoning',
             messages: messages,
@@ -1372,10 +1251,10 @@ async function* getStreamingResponse(data, conversationSummary) {
             }
         }
 
-        console.log('✅ Final streaming completed. Total length:', finalContent.length);
+        console.log(' Final streaming completed. Total length:', finalContent.length);
 
         if (!finalContent || !finalContent.trim()) {
-            console.warn('⚠️  AI returned empty response after tool execution!');
+            console.warn('AI returned empty response after tool execution!');
 
             // Extract tool results for fallback display
             const toolResults = messages.filter(m => m.role === 'tool').map(m => {
@@ -1397,7 +1276,7 @@ async function* getStreamingResponse(data, conversationSummary) {
                     const preview = result.content.substring(0, 1000);
                     fallbackResponse += `**Document Content:**\n\n${preview}${result.content.length > 1000 ? '...\n\n*(Content truncated)*' : ''}\n\n`;
                 } else if (result.error) {
-                    fallbackResponse += `⚠️ ${result.error}\n\n`;
+                    fallbackResponse += ` ${result.error}\n\n`;
                 } else if (Array.isArray(result)) {
                     // List of items (requirements, user stories, etc.)
                     fallbackResponse += `Found ${result.length} item(s).\n\n`;
@@ -1408,9 +1287,9 @@ async function* getStreamingResponse(data, conversationSummary) {
             });
 
             yield fallbackResponse;
-            console.log('📤 Yielded fallback with tool data');
+            console.log('Yielded fallback with tool data');
         } else {
-            console.log('✅ Final Message Respond: ' + finalContent.substring(0, 100) + '...');
+            console.log('Final Message Respond: ' + finalContent.substring(0, 100) + '...');
         }
     } else {
         console.log('Message Respond: ' + fullContent);
@@ -1517,7 +1396,8 @@ module.exports = {
     getStreamingResponseThreeStage,
     prepareUpdates,
     executeUpdates,
-    streamResponse
+    streamResponse,
+    // Requirement analysis
+    requirementAnalysisModel
 }
-
 

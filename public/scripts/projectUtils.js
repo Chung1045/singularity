@@ -734,20 +734,20 @@ function createFileItem(fileName, documentID) {
  * @param {string} projectID - The UUID of the project
  */
 async function fetchProjectReports(projectID) {
-    console.log(`📊 fetchProjectReports called with ProjectID: ${projectID}`);
+    console.log(` fetchProjectReports called with ProjectID: ${projectID}`);
 
     const reportsListContainer = document.getElementById("div-requirements-list");
 
     if (!reportsListContainer) {
-        console.warn("⚠️ Reports list container (div-requirements-list) not found on this page");
+        console.warn(" Reports list container (div-requirements-list) not found on this page");
         return;
     }
 
     const noReportsLabel = document.getElementById("p-label-requirements-no-entry");
-    console.log(`📊 Found noReportsLabel:`, noReportsLabel ? 'yes' : 'no');
+    console.log(` Found noReportsLabel:`, noReportsLabel ? 'yes' : 'no');
 
     try {
-        console.log(`📊 Fetching reports from API...`);
+        console.log(` Fetching reports from API...`);
         const response = await fetch('/api/project/report/list', {
             method: 'POST',
             headers: {
@@ -759,15 +759,15 @@ async function fetchProjectReports(projectID) {
             })
         });
 
-        console.log(`📊 API response status: ${response.status}`);
+        console.log(` API response status: ${response.status}`);
 
         if (response.ok) {
             let data = await response.json();
-            console.log(`📊 Reports Response Data:`, data);
-            console.log(`📊 Number of reports: ${data.reports?.length || 0}`);
+            console.log(` Reports Response Data:`, data);
+            console.log(` Number of reports: ${data.reports?.length || 0}`);
 
             reportsListContainer.innerHTML = '';
-            console.log(`📊 Cleared reportsListContainer`);
+            console.log(` Cleared reportsListContainer`);
 
             if (data.reports && data.reports.length > 0) {
                 // Categorize reports by type (including PDF versions)
@@ -785,59 +785,59 @@ async function fetchProjectReports(projectID) {
                 // Requirements section
                 if (requirementsReports.length > 0) {
                     hasReports = true;
-                    console.log(`📊 Rendering ${requirementsReports.length} requirements report(s)`);
+                    console.log(` Rendering ${requirementsReports.length} requirements report(s)`);
                     const reqHeader = document.createElement('div');
                     reqHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-bottom: 8px; font-family: Inter, Helvetica;';
                     reqHeader.textContent = 'Requirements';
                     reportsListContainer.appendChild(reqHeader);
 
                     for (let report of requirementsReports) {
-                        console.log(`📊 Rendering report: ${report.reportName} (ID: ${report.reportID})`);
+                        console.log(` Rendering report: ${report.reportName} (ID: ${report.reportID})`);
                         const reportElement = createReportItem(report.reportName, report.reportID, projectID);
                         const wrapper = document.createElement('div');
                         reportsListContainer.appendChild(wrapper);
                         const root = ReactDOM.createRoot(wrapper);
                         root.render(reportElement);
                     }
-                    console.log(`✅ Requirements reports rendered`);
+                    console.log(` Requirements reports rendered`);
                 }
 
                 // User Stories section
                 if (userStoriesReports.length > 0) {
                     hasReports = true;
-                    console.log(`📊 Rendering ${userStoriesReports.length} user stories report(s)`);
+                    console.log(` Rendering ${userStoriesReports.length} user stories report(s)`);
                     const usHeader = document.createElement('div');
                     usHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-top: 12px; margin-bottom: 8px; font-family: Inter, Helvetica;';
                     usHeader.textContent = 'User Stories';
                     reportsListContainer.appendChild(usHeader);
 
                     for (let report of userStoriesReports) {
-                        console.log(`📊 Rendering report: ${report.reportName} (ID: ${report.reportID})`);
+                        console.log(` Rendering report: ${report.reportName} (ID: ${report.reportID})`);
                         const reportElement = createReportItem(report.reportName, report.reportID, projectID);
                         const wrapper = document.createElement('div');
                         reportsListContainer.appendChild(wrapper);
                         const root = ReactDOM.createRoot(wrapper);
                         root.render(reportElement);
                     }
-                    console.log(`✅ User stories reports rendered`);
+                    console.log(` User stories reports rendered`);
                 }
 
                 if (noReportsLabel) {
                     noReportsLabel.style.display = hasReports ? 'none' : 'block';
-                    console.log(`📊 NoReportsLabel display: ${hasReports ? 'none' : 'block'}`);
+                    console.log(` NoReportsLabel display: ${hasReports ? 'none' : 'block'}`);
                 }
             } else {
-                console.log(`📊 No reports found for this project`);
+                console.log(` No reports found for this project`);
                 if (noReportsLabel) {
                     noReportsLabel.style.display = 'block';
-                    console.log(`📊 Showing "No requirements yet" label`);
+                    console.log(` Showing "No requirements yet" label`);
                 }
             }
         } else {
-            console.error(`📊 API request failed with status: ${response.status}`);
+            console.error(` API request failed with status: ${response.status}`);
         }
     } catch (error) {
-        console.error("❌ Error fetching project reports:", error);
+        console.error(" Error fetching project reports:", error);
     }
 }
 
@@ -1211,4 +1211,3 @@ window.createNewChat = function() {
 };
 
 console.log("projectUtils.js loaded - functions available globally");
-

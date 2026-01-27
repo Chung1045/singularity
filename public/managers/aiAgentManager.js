@@ -126,21 +126,27 @@ router.post('/agent/chat', async (req, res) => {
                     const trimmedChunk = chunk.trim();
                     if (!useLegacy && trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
                         // Log stage markers but don't send to client as content
-                        console.log(`📊 Stage marker: ${trimmedChunk}`);
+                        console.log(`Stage marker: ${trimmedChunk}`);
 
                         // Handle report generation events
                         if (trimmedChunk.includes('REPORT_GENERATED:')) {
                             try {
-                                const jsonMatch = trimmedChunk.match(/REPORT_GENERATED:\s*(\{[^}]+\})/);
-                                console.log(`📊 Report generation marker found, jsonMatch:`, jsonMatch);
-                                if (jsonMatch) {
-                                    const reportInfo = JSON.parse(jsonMatch[1]);
-                                    console.log(`📊 Sending reportGenerated event:`, reportInfo);
+                                // Extract JSON - handle quotes and special characters
+                                const startIdx = trimmedChunk.indexOf('{');
+                                const endIdx = trimmedChunk.lastIndexOf('}');
+                                if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                                    const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
+                                    console.log(` Report generation marker found, JSON string:`, jsonStr);
+                                    const reportInfo = JSON.parse(jsonStr);
+                                    console.log(` Parsed reportInfo:`, reportInfo);
+                                    console.log(` Sending reportGenerated event to client`);
                                     res.write(`data: ${JSON.stringify({ 
                                         type: 'reportGenerated', 
                                         reportType: reportInfo.type,
                                         projectID: reportInfo.projectID || projectID
                                     })}\n\n`);
+                                } else {
+                                    console.error(' Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
                                 }
                             } catch (parseErr) {
                                 console.error('Failed to parse report info:', parseErr);
@@ -174,7 +180,7 @@ router.post('/agent/chat', async (req, res) => {
                     }
 
                     fullResponse += chunk;
-                    console.log(`📤 Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+                    console.log(` Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
                 }
 
@@ -193,7 +199,7 @@ router.post('/agent/chat', async (req, res) => {
                 if (threadName == null) {
                     threadName = await agent.createChatName(JSON.stringify(await aiDB.fetchChatThread(projectID, chatID)));
                     await aiDB.renameChatThread(projectID, chatID, threadName);
-                    console.log('📝 Generated thread name:', threadName);
+                    console.log(' Generated thread name:', threadName);
                 }
 
                 // Send completion event with threadName
@@ -201,12 +207,14 @@ router.post('/agent/chat', async (req, res) => {
                     type: 'done', 
                     chatSeq: chatSeq,
                     conversationID: conversationID,
-                    threadName: threadName || 'Untitled Chat'
+                    threadName: threadName || 'Untitled Chat',
+                    refreshReports: true,
+                    projectID: projectID
                 })}\n\n`);
                 res.end();
 
             } catch (error) {
-                console.error(`❌ Streaming error in /agent/chat:`, error);
+                console.error(` Streaming error in /agent/chat:`, error);
                 console.error(`Error stack:`, error.stack);
                 console.error(`Error details - projectID: ${projectID}, chatID: ${chatID}`);
 
@@ -291,14 +299,14 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
 
         console.log('chatThreadData type:', typeof chatThreadData);
         console.log('chatThreadData:', JSON.stringify(chatThreadData, null, 2));
-        console.log(`✅ Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
+        console.log(` Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
 
         if (!chatThreadData) {
             console.log('No chat thread data returned');
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
-                projectID: null,  // ✅ Include projectID even if null
+                projectID: null,  //  Include projectID even if null
                 conversations: []
             });
         }
@@ -308,7 +316,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
-                projectID: chatThreadData.projectID || null,  // ✅ Include projectID
+                projectID: chatThreadData.projectID || null,  //  Include projectID
                 conversations: []
             });
         }
@@ -318,7 +326,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
             return res.status(200).json({
                 success: true,
                 chatID: chatID,
-                projectID: chatThreadData.projectID || null,  // ✅ Include projectID
+                projectID: chatThreadData.projectID || null,  //  Include projectID
                 conversations: []
             });
         }
@@ -340,7 +348,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
         return res.status(200).json({
             success: true,
             chatID: chatID,
-            projectID: chatThreadData.projectID,  // ✅ Include projectID
+            projectID: chatThreadData.projectID,  //  Include projectID
             conversations: conversations
         });
 
@@ -449,7 +457,7 @@ router.post('/agent/all-chat', async (req, res) => {
 router.post('/agent/chat-fetch', async (req, res) => {
 
     if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent chat fetch");
+        console.log(" Unauthorized attempt for agent chat fetch");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
@@ -483,7 +491,7 @@ router.post('/agent/chat-fetch', async (req, res) => {
 router.post('/agent/chat-delete', async (req, res) => {
 
     if (!req.cookies.session_id) {
-        console.log("❌ Unauthorized attempt for agent chat delete");
+        console.log(" Unauthorized attempt for agent chat delete");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
@@ -707,6 +715,97 @@ router.post("/agent/document-generation/user-stories", async (req, res) => {
 
 });
 
+/**
+ * Document Analysis API - Analyze documents using requirementAnalysisModel
+ *
+ * @param {string} projectID - UUID of the current project (required)
+ * @param {string[]} documentIDs - Array of document UUIDs to analyze (required)
+ * @param {string} title - Project title for context (required)
+ *
+ * @example
+ * {
+ *   "projectID": "550e8400-e29b-41d4-a716-446655440000",
+ *   "documentIDs": ["f53db65b-2dd1-4293-85b6-a67fefec2951"],
+ *   "title": "E-Commerce Platform Requirements"
+ * }
+ */
+router.post('/agent/analyze-documents', async (req, res) => {
+    try {
+        console.log("New request /agent/analyze-documents");
 
+        const { projectID, documentIDs, title } = req.body;
+
+        // Validate required fields
+        if (!projectID || !documentIDs || !Array.isArray(documentIDs) || documentIDs.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: projectID and documentIDs array are required'
+            });
+        }
+
+        if (!title) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: title is required for analysis context'
+            });
+        }
+
+        // Check authorization
+        if (!await projectDBService.isProjectCollaborator(projectID, req.userID)) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+        console.log(`Analyzing ${documentIDs.length} document(s) for project ${projectID}`);
+        console.log(`Project title: ${title}`);
+
+        // Get document contents
+        const fss = require('../services/fsServices');
+        let allDocumentData = '';
+
+        for (const docID of documentIDs) {
+            try {
+                console.log(`  Reading document: ${docID}`);
+                const docData = await fss.readDocumentContent(projectID, docID);
+                allDocumentData += `\n\n=== Document ${docID} ===\n${docData}\n`;
+            } catch (error) {
+                console.error(`  Error reading document ${docID}:`, error.message);
+                // Continue with other documents
+            }
+        }
+
+        if (!allDocumentData.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Unable to read any document content'
+            });
+        }
+
+        console.log(`  Total content length: ${allDocumentData.length} characters`);
+        console.log(`  Calling requirementAnalysisModel...`);
+
+        // Call the requirement analysis model
+        const analysisResult = await agent.requirementAnalysisModel(allDocumentData, title);
+
+        console.log(`  Analysis complete, result length: ${analysisResult?.length || 0}`);
+
+        return res.status(200).json({
+            success: true,
+            analysis: analysisResult,
+            documentsAnalyzed: documentIDs.length
+        });
+
+    } catch (error) {
+        console.error('Error in /agent/analyze-documents:', error);
+        return res.status(500).json({
+            success: false,
+            message: `Server error: ${error.message}`
+        });
+    }
+});
+
+// Get a complete chat thread with all conversations
 
 module.exports = router;

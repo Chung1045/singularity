@@ -87,7 +87,7 @@ async function documentPreprocessing(buffer, documentExt) {
             await fs.unlink(tempWavPath).catch(() => {});
             await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
 
-            return output.text?.trim();  // ✅ Now output exists
+            return output.text?.trim();  // Now output exists
 
         } else if (supportedDocumentFormats.includes(documentExt)) {
             if (documentExt !== '.pdf') {
