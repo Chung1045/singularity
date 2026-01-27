@@ -15,19 +15,6 @@
         const headerCheckboxRef = useRef(null);
         const renameContainerRef = useRef(null);
 
-        // Preserve existing checked state - new files start unchecked
-        useEffect(() => {
-            setCheckedTempIDs(prev => {
-                const newSet = new Set();
-                selectedFiles.forEach(file => {
-                    if (prev.has(file.tempID)) {
-                        newSet.add(file.tempID);
-                    }
-                });
-                return newSet;
-            });
-        }, [selectedFiles]);
-
         // Header checkbox indeterminate state
         useEffect(() => {
             if (headerCheckboxRef.current && selectedFiles.length > 0) {
@@ -52,7 +39,6 @@
         useEffect(() => {
             if (editingFile === null) return;
 
-            // Skip click-outside behavior on touch devices to prevent accidental cancels
             const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
             if (isTouchDevice) return;
 
@@ -129,6 +115,7 @@
             setEditingFilename('');
         };
 
+        // --- UPDATED HANDLE UPLOAD LOGIC ---
         const handleUpload = async () => {
             const filesToUpload = selectedFiles.filter(f => checkedTempIDs.has(f.tempID));
 
@@ -143,7 +130,6 @@
             }
 
             let uploadThese = filesToUpload;
-
             const allChecked = filesToUpload.length === selectedFiles.length;
 
             if (!allChecked && selectedFiles.length > 1) {
@@ -151,16 +137,28 @@
                 const uncheckedFiles = selectedFiles.filter(f => !checkedTempIDs.has(f.tempID));
                 const uncheckedList = uncheckedFiles.map(f => `• ${f.originalName}`).join('\n');
 
-                const uploadAll = await window.showNotification({
+                // Pass all 3 options: actionText, cancelText, AND backText
+                const decision = await window.showNotification({
                     type: 'confirm',
                     title: 'Upload Selection',
-                    message: `You have selected ${filesToUpload.length} of ${selectedFiles.length} file(s).\n\n Checked (${filesToUpload.length}):\n${selectedList}\n\n Unchecked (${uncheckedFiles.length}):\n${uncheckedList}\n\nChoose:\n• Click "Upload All" to upload all ${selectedFiles.length} files\n• Click "Cancel" to upload only the checked ones`,
-                    actionText: 'Upload All'
+                    message: `You have selected ${filesToUpload.length} of ${selectedFiles.length} file(s).\n\n Checked (${filesToUpload.length}):\n${selectedList}\n\n Unchecked (${uncheckedFiles.length}):\n${uncheckedList}\n\nHow would you like to proceed?`,
+                    actionText: 'Upload All',       // Returns true
+                    cancelText: 'Upload Selected',  // Returns null (defaults to close/cancel action in logic unless we handle 'back')
+                    backText: 'Cancel'              // Returns 'back'
                 });
 
-                if (uploadAll) {
+                // 1. If user clicked "Cancel" (Back button)
+                if (decision === 'back') {
+                    return; // Stop everything, stay on the upload screen
+                }
+
+                // 2. If user clicked "Upload All" (Action button)
+                if (decision === true) {
                     uploadThese = [...selectedFiles];
                 }
+
+                // 3. If user clicked "Upload Selected" (Middle button), decision is null
+                // We do nothing special here, because 'uploadThese' is already set to 'filesToUpload' at the start
             }
 
             setIsUploading(true);
@@ -194,6 +192,7 @@
                 actionText: 'Done'
             }).then(() => { onClose(); });
         };
+        // -----------------------------------
 
         const formatFileSize = (bytes) => {
             if (bytes === 0) return '0 Bytes';

@@ -1,56 +1,54 @@
-
 (function () {
     const { useState } = React;
 
     console.log('[FileUploadNotification] fileUploadNotificationModal.js loaded');
 
     // Custom File Upload Notification Modal Component
-    window.FileUploadNotificationModal = ({ type, title, message, onClose, actionText, onAction, showInput, inputValue, inputPlaceholder }) => {
-        // type: 'success', 'error', 'info', 'confirm', 'warning', 'input'
+    window.FileUploadNotificationModal = ({ type, title, message, onClose, actionText, cancelText, backText, onAction, onBack, showInput, inputValue, inputPlaceholder }) => {
         const [inputText, setInputText] = useState(inputValue || '');
 
         return React.createElement('div', {
-            id: 'file-upload-notification-backdrop',
-            role: 'dialog',
-            'aria-modal': 'true',
-            'aria-labelledby': 'file-upload-notification-title',
-            'aria-describedby': 'file-upload-notification-message',
-            style: {
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10002,
-                animation: 'fadeIn 0.2s ease'
-            },
-            onClick: (e) => {
-                if (e.target === e.currentTarget) {
-                    onClose();
+                id: 'file-upload-notification-backdrop',
+                role: 'dialog',
+                'aria-modal': 'true',
+                'aria-labelledby': 'file-upload-notification-title',
+                'aria-describedby': 'file-upload-notification-message',
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10002,
+                    animation: 'fadeIn 0.2s ease'
+                },
+                onClick: (e) => {
+                    if (e.target === e.currentTarget) {
+                        onClose();
+                    }
                 }
-            }
-        },
+            },
             // Modal container
             React.createElement('div', {
-                id: 'file-upload-notification-modal',
-                role: 'document',
-                style: {
-                    backgroundColor: '#ffffff',
-                    borderRadius: '12px',
-                    padding: '30px',
-                    maxWidth: '400px',
-                    width: '90%',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)',
-                    animation: 'slideUp 0.3s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px'
-                }
-            },
+                    id: 'file-upload-notification-modal',
+                    role: 'document',
+                    style: {
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        padding: '30px',
+                        maxWidth: '450px',
+                        width: '90%',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)',
+                        animation: 'slideUp 0.3s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
+                    }
+                },
                 // Title
                 React.createElement('div', {
                     id: 'file-upload-notification-title',
@@ -72,7 +70,7 @@
                         whiteSpace: 'pre-line'
                     }
                 }, message),
-                // Input field (for rename)
+                // Input field
                 showInput && React.createElement('input', {
                     id: 'file-upload-notification-input',
                     type: 'text',
@@ -97,20 +95,51 @@
                         outline: 'none'
                     }
                 }),
-                // Buttons
+                // Buttons Container
                 React.createElement('div', {
-                    id: 'file-upload-notification-actions',
-                    style: {
-                        display: 'flex',
-                        gap: '12px',
-                        justifyContent: 'flex-end',
-                        marginTop: '10px'
-                    }
-                },
-                    // Cancel button (only for confirm type and rename-input)
+                        id: 'file-upload-notification-actions',
+                        style: {
+                            display: 'flex',
+                            gap: '10px',
+                            justifyContent: 'flex-end',
+                            marginTop: '10px',
+                            flexWrap: 'wrap'
+                        }
+                    },
+                    // 1. GO BACK BUTTON
+                    // Renders if onBack is passed (which is now guaranteed if backText exists)
+                    onBack && React.createElement('button', {
+                        id: 'file-upload-notification-back-button',
+                        'aria-label': backText || 'Go Back',
+                        type: 'button',
+                        onClick: onBack,
+                        style: {
+                            padding: '10px 20px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid #e4e4e4',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#666',
+                            cursor: 'pointer',
+                            fontFamily: '"Inter-Bold", Helvetica',
+                            transition: 'all 0.2s',
+                            marginRight: 'auto' // Pushes this button to the far left
+                        },
+                        onMouseEnter: (e) => {
+                            e.currentTarget.style.backgroundColor = '#f9f9f9';
+                            e.currentTarget.style.borderColor = '#ccc';
+                        },
+                        onMouseLeave: (e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.borderColor = '#e4e4e4';
+                        }
+                    }, backText || 'Go Back'),
+
+                    // 2. CANCEL BUTTON
                     ((type === 'confirm' || (showInput && type === 'rename-input'))) && React.createElement('button', {
                         id: 'file-upload-notification-cancel-button',
-                        'aria-label': 'Cancel action',
+                        'aria-label': cancelText || 'Cancel',
                         type: 'button',
                         onClick: onClose,
                         style: {
@@ -131,8 +160,9 @@
                         onMouseLeave: (e) => {
                             e.currentTarget.style.backgroundColor = '#f5f5f5';
                         }
-                    }, 'Cancel'),
-                    // Action button
+                    }, cancelText || 'Cancel'),
+
+                    // 3. ACTION BUTTON (Confirm/OK)
                     React.createElement('button', {
                         id: 'file-upload-notification-action-button',
                         'aria-label': actionText || 'Close notification',
@@ -178,25 +208,35 @@
     };
 
     // Helper function to show file upload notifications
-    window.showNotification = ({ type, title, message, actionText, onAction, showInput, inputValue, inputPlaceholder }) => {
+    window.showNotification = ({ type, title, message, actionText, cancelText, backText, onAction, onBack, showInput, inputValue, inputPlaceholder }) => {
         return new Promise((resolve) => {
             const container = document.createElement('div');
             container.id = 'file-upload-notification-container';
             document.body.appendChild(container);
 
-            const handleClose = () => {
+            const cleanup = () => {
                 ReactDOM.unmountComponentAtNode(container);
                 document.body.removeChild(container);
+            };
+
+            const handleClose = () => {
+                cleanup();
                 resolve(null);
             };
 
             const handleAction = (value) => {
-                if (onAction) {
-                    onAction(value);
-                }
-                ReactDOM.unmountComponentAtNode(container);
-                document.body.removeChild(container);
+                if (onAction) onAction(value);
+                cleanup();
                 resolve(showInput ? value : true);
+            };
+
+            // Handle Back logic
+            const handleBack = () => {
+                cleanup();
+                if (onBack) {
+                    onBack(); // Execute the back logic passed in if it exists
+                }
+                resolve('back'); // Always resolve 'back' string
             };
 
             ReactDOM.render(
@@ -205,8 +245,12 @@
                     title: title,
                     message: message,
                     actionText: actionText,
+                    cancelText: cancelText,
+                    backText: backText,
                     onClose: handleClose,
                     onAction: handleAction,
+                    // FIX: Pass handleBack if onBack OR backText exists
+                    onBack: (onBack || backText) ? handleBack : null,
                     showInput: showInput,
                     inputValue: inputValue,
                     inputPlaceholder: inputPlaceholder
@@ -235,8 +279,9 @@
             }
         }
     `;
-    document.head.appendChild(style);
+    if (!document.getElementById('file-upload-notification-styles')) {
+        document.head.appendChild(style);
+    }
 
     console.log('[FileUploadNotification] Custom file upload notification system ready');
 })();
-
