@@ -770,8 +770,11 @@ router.post('/agent/analyze-documents', async (req, res) => {
                 console.log(`  Reading document: ${docID}`);
                 const docData = await fss.getFileContext(projectID, docID);
                 const analysisResult = await agent.requirementAnalysisModel(docData, title);
+                const fileMeta = await fss.getFileMetadata(docID, projectID);
+                const documentName = fileMeta.documentName;
                 if (analysisResult.trim() == "null"){
                     console.log(`Document ${docID} doesn't match the document ${title}`);
+                    analyzedDocument.push(`Document ${documentName} doesn't match the document ${title}`);
                     continue;
                 }
                 analyzedDocument.push(analysisResult);
