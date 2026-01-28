@@ -159,7 +159,7 @@ async function getTranscriber() {
     modelLoading = await pipeline(
         'automatic-speech-recognition',
         // 'Xenova/whisper-large-v2',
-        'Xenova/whisper-small.en',
+        'Xenova/whisper-base',
         {
             quantized: true,
             cache_dir: path.join(__dirname, '../model_cache')
