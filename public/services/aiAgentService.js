@@ -550,92 +550,244 @@ You are NOT providing medical advice. You are analyzing research papers to extra
     const requirementsToolResponse = messages.find(m => m.role === 'tool' && m.content?.includes('requirementID'));
     const storiesToolResponse = messages.find(m => m.role === 'tool' && m.content?.includes('storyID'));
 
+//     messages.push({
+//         role: 'user',
+//         content: `Based on the information you gathered, generate a complete plan for database updates.
+//
+// Return ONLY a valid JSON object (no markdown, no code blocks) with this exact structure:
+//
+// {
+//   "requiresUpdate": true or false,
+//   "operations": {
+//     "update_software_requirements": {
+//       "projectID": "${data.projectID}",
+//       "jsonList": [ /* array of requirement operations */ ]
+//     },
+//     "update_requirements_source_ref": {
+//       "jsonList": [ /* array of source reference operations for EXISTING requirements only */ ]
+//     },
+//     "update_user_stories": {
+//       "projectID": "${data.projectID}",
+//       "jsonList": [ /* array of user story operations */ ]
+//     },
+//     "update_user_stories_source_ref": {
+//       "jsonList": [ /* array of source reference operations for EXISTING user stories only */ ]
+//     },
+//     "update_requirements_story_ref": {
+//       "jsonList": [ /* array of requirement-story link operations */ ]
+//     }
+//   },
+//   "summary": "Brief description of what will be updated"
+// }
+//
+// IMPORTANT - For INSERT operations, include sourceReference INSIDE the details object:
+//
+// Example for update_software_requirements INSERT:
+// {
+//   "operation": "INSERT",
+//   "requirementID": "",
+//   "details": {
+//     "requirementType": "functional",
+//     "requirementSeq": null,
+//     "title": "User Login",
+//     "description": "Users must be able to log in",
+//     "role": "End User",
+//     "source": "Document",
+//     "sourceReference": [
+//       {
+//         "documentID": "the-document-uuid-from-get_project_file_list",
+//         "remarks": "Extracted from section 2.1",
+//         "location": "Page 5, Section 2.1"
+//       }
+//     ]
+//   }
+// }
+//
+// Example for update_software_requirements UPDATE:
+// {
+//   "operation": "UPDATE",
+//   "requirementID": "existing-requirement-uuid-from-get_software_requirements_list",
+//   "details": {
+//     "requirementType": "functional",
+//     "requirementSeq": 1,
+//     "title": "Enhanced User Login",
+//     "description": "Users must be able to log in with email or username",
+//     "role": "End User",
+//     "source": "Document"
+//   }
+// }
+//
+// Example for update_user_stories INSERT:
+// {
+//   "operation": "INSERT",
+//   "storyID": "",
+//   "details": {
+//     "storySeq": null,
+//     "role": "End User",
+//     "title": "Login Feature",
+//     "description": "As an end user, I want to log in so that I can access my account",
+//     "source": "Document",
+//     "sourceReference": [
+//       {
+//         "documentID": "the-document-uuid-from-get_project_file_list",
+//         "remarks": "User story derived from login requirements",
+//         "location": "Page 5-6"
+//       }
+//     ]
+//   }
+// }
+//
+// Example for update_user_stories UPDATE:
+// {
+//   "operation": "UPDATE",
+//   "storyID": "existing-story-uuid-from-get_user_stories_list",
+//   "details": {
+//     "storySeq": 1,
+//     "role": "End User",
+//     "title": "Enhanced Login Feature",
+//     "description": "As an end user, I want to log in with multiple authentication methods so that I can access my account securely",
+//     "source": "Document"
+//   }
+// }
+//
+// Rules:
+// - Set requiresUpdate to false if the user is just asking a question (no database changes needed)
+// - Only include operation keys that are actually needed
+// - Use the exact formats returned by the get_*_format tools
+// - **CRITICAL: Use UPDATE operation when modifying EXISTING requirements or user stories - use the existing requirementID or storyID from get_software_requirements_list or get_user_stories_list**
+// - **CRITICAL: Use INSERT operation ONLY when creating NEW requirements or user stories - use empty string for IDs and null for sequence numbers**
+// - For INSERT operations extracted from documents, ALWAYS include sourceReference with the documentID from get_project_file_list
+// - For UPDATE operations, do NOT include sourceReference in the details object
+// - The documentID in sourceReference must be a valid UUID from the attached documents
+// - update_requirements_source_ref and update_user_stories_source_ref are ONLY for updating sources on EXISTING items (not for INSERT)
+// - When the user asks to "update", "modify", "edit", or "change" existing items, use UPDATE operation with the existing item's ID
+// - When the user asks to "add" or "create" new items, use INSERT operation with empty ID
+// - Ensure all UUIDs are properly formatted
+// - The summary should be 1-2 sentences describing what will change
+//
+// Return ONLY the JSON object, nothing else.`
+//     });
+
+    // For Testing:
     messages.push({
         role: 'user',
         content: `Based on the information you gathered, generate a complete plan for database updates.
 
-Return ONLY a valid JSON object (no markdown, no code blocks) with this exact structure:
-
-{
-  "requiresUpdate": true or false,
-  "operations": {
-    "update_software_requirements": {
-      "projectID": "${data.projectID}",
-      "jsonList": [ /* array of requirement operations */ ]
-    },
-    "update_requirements_source_ref": {
-      "jsonList": [ /* array of source reference operations for EXISTING requirements only */ ]
-    },
-    "update_user_stories": {
-      "projectID": "${data.projectID}",
-      "jsonList": [ /* array of user story operations */ ]
-    },
-    "update_user_stories_source_ref": {
-      "jsonList": [ /* array of source reference operations for EXISTING user stories only */ ]
-    },
-    "update_requirements_story_ref": {
-      "jsonList": [ /* array of requirement-story link operations */ ]
+    Return ONLY a valid JSON object (no markdown, no code blocks) with this exact structure:
+    
+    {
+      "requiresUpdate": true or false,
+      "operations": {
+        "update_software_requirements": {
+          "projectID": "${data.projectID}",
+          "jsonList": [ /* array of requirement operations */ ]
+        },
+        "update_requirements_source_ref": {
+          "jsonList": [ /* array of source reference operations for EXISTING requirements only */ ]
+        },
+        "update_user_stories": {
+          "projectID": "${data.projectID}",
+          "jsonList": [ /* array of user story operations */ ]
+        },
+        "update_user_stories_source_ref": {
+          "jsonList": [ /* array of source reference operations for EXISTING user stories only */ ]
+        },
+        "update_requirements_story_ref": {
+          "jsonList": [ /* array of requirement-story link operations */ ]
+        }
+      },
+      "summary": "Brief description of what will be updated"
     }
-  },
-  "summary": "Brief description of what will be updated"
-}
-
-IMPORTANT - For INSERT operations, include sourceReference INSIDE the details object:
-
-Example for update_software_requirements INSERT:
-{
-  "operation": "INSERT",
-  "requirementID": "",
-  "details": {
-    "requirementType": "functional",
-    "requirementSeq": null,
-    "title": "User Login",
-    "description": "Users must be able to log in",
-    "role": "End User",
-    "source": "Document",
-    "sourceReference": [
-      {
-        "documentID": "the-document-uuid-from-get_project_file_list",
-        "remarks": "Extracted from section 2.1",
-        "location": "Page 5, Section 2.1"
+    
+    ## OPERATION EXAMPLES:
+    
+    ### INSERT a NEW requirement:
+    {
+      "operation": "INSERT",
+      "requirementID": "",
+      "details": {
+        "requirementType": "functional",
+        "requirementSeq": null,
+        "title": "User Login",
+        "description": "Users must be able to log in",
+        "role": "End User",
+        "source": "Document",
+        "sourceReference": [
+          {
+            "documentID": "the-document-uuid-from-get_project_file_list",
+            "remarks": "Extracted from section 2.1",
+            "location": "Page 5, Section 2.1"
+          }
+        ]
       }
-    ]
-  }
-}
-
-Example for update_user_stories INSERT:
-{
-  "operation": "INSERT",
-  "storyID": "",
-  "details": {
-    "storySeq": null,
-    "role": "End User",
-    "title": "Login Feature",
-    "description": "As an end user, I want to log in so that I can access my account",
-    "source": "Document",
-    "sourceReference": [
-      {
-        "documentID": "the-document-uuid-from-get_project_file_list",
-        "remarks": "User story derived from login requirements",
-        "location": "Page 5-6"
+    }
+    
+    ### UPDATE an EXISTING requirement:
+    {
+      "operation": "UPDATE",
+      "requirementID": "existing-requirement-uuid-from-get_software_requirements_list",
+      "details": {
+        "requirementType": "functional",
+        "requirementSeq": 5,
+        "title": "Updated Requirement Title",
+        "description": "Updated description text here",
+        "role": "End User",
+        "source": "User Input"
       }
-    ]
-  }
-}
-
-Rules:
-- Set requiresUpdate to false if the user is just asking a question (no database changes needed)
-- Only include operation keys that are actually needed
-- Use the exact formats returned by the get_*_format tools
-- For INSERT operations, use empty string for IDs and null for sequence numbers
-- **CRITICAL: For INSERT operations extracted from documents, ALWAYS include sourceReference with the documentID from get_project_file_list**
-- The documentID in sourceReference must be a valid UUID from the attached documents
-- update_requirements_source_ref and update_user_stories_source_ref are ONLY for updating sources on EXISTING items (not for INSERT)
-- Ensure all UUIDs are properly formatted
-- The summary should be 1-2 sentences describing what will change
-
-Return ONLY the JSON object, nothing else.`
+    }
+    
+    ### INSERT a NEW user story:
+    {
+      "operation": "INSERT",
+      "storyID": "",
+      "details": {
+        "storySeq": null,
+        "role": "End User",
+        "title": "Login Feature",
+        "description": "As an end user, I want to log in so that I can access my account",
+        "source": "Document",
+        "sourceReference": [
+          {
+            "documentID": "the-document-uuid-from-get_project_file_list",
+            "remarks": "User story derived from login requirements",
+            "location": "Page 5-6"
+          }
+        ]
+      }
+    }
+    
+    ### UPDATE an EXISTING user story:
+    {
+      "operation": "UPDATE",
+      "storyID": "existing-story-uuid-from-get_user_stories_list",
+      "details": {
+        "storySeq": 3,
+        "role": "Admin",
+        "title": "Updated Story Title",
+        "description": "Updated user story description",
+        "source": "User Input"
+      }
+    }
+    
+    ### DELETE a requirement or user story:
+    {
+      "operation": "DELETE",
+      "requirementID": "existing-requirement-uuid-to-delete"
+    }
+    
+    ## CRITICAL RULES:
+    - **INSERT**: Use empty string "" for IDs, null for sequence numbers
+    - **UPDATE**: You MUST provide the existing UUID from get_software_requirements_list or get_user_stories_list
+    - **DELETE**: You MUST provide the existing UUID to delete
+    - When user says "update", "modify", "change", or "edit" an existing item → use UPDATE operation
+    - When user says "add", "create", or "new" item → use INSERT operation
+    - When user says "remove" or "delete" → use DELETE operation
+    - For INSERT from documents, ALWAYS include sourceReference with the documentID
+    - Set requiresUpdate to false if the user is just asking a question (no database changes needed)
+    
+    Return ONLY the JSON object, nothing else.`
     });
+
 
     // Use fast non-reasoning model for JSON plan generation (structured output)
     const planCompletion = await client.chat.completions.create({
@@ -847,6 +999,33 @@ async function* streamResponse(updatePlan, updateResults, originalMessage, conve
             content: `CURRENT USER STORIES: No user stories have been added yet.`
         });
     }
+
+    // full current state for comparison
+    if (fetchedRequirements && fetchedRequirements.length > 0) {
+        messages.push({
+            role: 'system',
+            content: `FULL CURRENT REQUIREMENTS (for comparison to avoid duplicates):\n${JSON.stringify(fetchedRequirements, null, 2)}`
+        });
+    } else {
+        messages.push({
+            role: 'system',
+            content: `FULL CURRENT REQUIREMENTS: None exist yet.`
+        });
+    }
+
+    if (fetchedUserStories && fetchedUserStories.length > 0) {
+        messages.push({
+            role: 'system',
+            content: `FULL CURRENT USER STORIES (for comparison to avoid duplicates):\n${JSON.stringify(fetchedUserStories, null, 2)}`
+        });
+    } else {
+        messages.push({
+            role: 'system',
+            content: `FULL CURRENT USER STORIES: None exist yet.`
+        });
+    }
+
+
 
     // Add user message
     messages.push({role: 'user', content: originalMessage});
