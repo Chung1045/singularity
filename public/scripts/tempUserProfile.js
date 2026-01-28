@@ -318,6 +318,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
     return React.createElement('div', {
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false),
+        id: 'profile-page-wrapper',
         style: {
             display: 'flex',
             width: '100%',
@@ -326,6 +327,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         }
     },
         React.createElement('div', {
+            id: 'profile-page-container',
             className: 'group',
             style: {
                 display: 'flex',
@@ -348,7 +350,9 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
             }),
 
               React.createElement("div", {
+                  id: 'divider',
                 style: {
+
                 width: '5px',
                 height: 'auto',
                 backgroundColor: '#F7F7F7',
@@ -359,8 +363,10 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 }),
 
             // MAIN CONTENT AREA
-            React.createElement('div', {
-                style: {
+            React.createElement('div', {                    id: 'main-content-area',
+                    id: 'main-content-area',
+
+                    style: {
                     flex: '1',
                     display: 'flex',
                     flexDirection: 'column',
@@ -377,7 +383,9 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
                 // Header
                 React.createElement('div', {
+                    id: 'profile-header',
                     style: {
+
                         fontSize: '24px',
                         fontWeight: '700',
                         fontFamily: 'SF Pro-Bold, Helvetica',
@@ -395,7 +403,9 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
                 // Profile Container
                 React.createElement('div', {
-                    style: {
+                        id: 'profile-container',
+
+                        style: {
                         width: isSmallDesktop ? '400px' : '450px',
                         maxWidth: isSmallDesktop ? '500px' : '100%',
                         display: 'flex',
@@ -415,7 +425,9 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         }
                     },
                         React.createElement('div', {
+                                id: 'profile-avatar-wrapper',
                             style: {
+
                                 position: 'absolute',
                                 top: '1px',
                                 left: '0',
@@ -469,6 +481,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             onClick: uploadingAvatar ? null : triggerAvatarUpload
                         },
                             React.createElement('div', {
+                                id: 'edit-icon-container',
                                 style: {
                                     position: 'relative',
                                     width: '18px',
@@ -479,6 +492,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('img', {
+                                    id: 'edit-icon-image',
                                     src: './img/Edit.svg',
                                     alt: '',
                                     style: {
@@ -491,6 +505,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 })
                             ),
                             React.createElement('span', {
+                                id: 'edit-avatar-text',
                                 style: {
                                     position: 'relative',
                                     width: 'fit-content',
@@ -524,6 +539,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     },
                         // Info Card
                         React.createElement('div', {
+                            id: 'profile-info-card',
                             style: {
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -547,6 +563,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'username-text-container',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -556,6 +573,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('div', {
+                                       id: 'username-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
@@ -566,6 +584,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                         }
                                     }, 'Username'),
                                     React.createElement('div', {
+                                        id: 'username-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
@@ -578,6 +597,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }, `${username}`)
                                 ),
                                 React.createElement('div', {
+                                    id: 'username-icon-container',
                                     style: {
                                         width: '24px',
                                         height: '24px',
@@ -611,6 +631,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             // }),
 
                             React.createElement('hr', {
+                                id: 'divider-username-displayname',
                                 style: {
                                     margin: '0',
                                     border: 'none',
@@ -631,6 +652,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'displayname-text-container',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -640,6 +662,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('div', {
+                                        id: 'displayname-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
@@ -650,6 +673,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                         }
                                     }, 'Display Name'),
                                     React.createElement('div', {
+                                        id: 'displayname-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
@@ -661,6 +685,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }, displayName)
                                 ),
                                 React.createElement('div', {
+                                    id: 'displayname-icon-container',
                                     style: {
                                         width: '24px',
                                         height: '24px',
@@ -695,7 +720,8 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             // }),
 
                             React.createElement('hr', {
-                                    style: {
+                                id: 'divider-displayname-email',
+                                style: {
                                     margin: '0',
                                     border: 'none',
                                     borderTop: '1px solid #000000ff',
@@ -715,6 +741,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'email-text-container',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -724,6 +751,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('div', {
+                                        id: 'email-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: '600',
@@ -734,6 +762,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                         }
                                     }, 'Email address'),
                                     React.createElement('div', {
+                                        id: 'email-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
@@ -745,6 +774,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }, userInfo?.userEmail || userInfo?.email || 'email@example.com')
                                 ),
                                 React.createElement('div', {
+                                    id: 'email-icon-container',
                                     style: {
                                         width: '24px',
                                         height: '24px',
@@ -778,6 +808,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             // }),
 
                             React.createElement('hr', {
+                                id: 'divider-email-accounttype',
                                 style: {
                                     margin: '0',
                                     border: 'none',
@@ -798,6 +829,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'accounttype-text-container',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -807,6 +839,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('div', {
+                                        id: 'accounttype-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
@@ -817,6 +850,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                         }
                                     }, 'Account Type'),
                                     React.createElement('div', {
+                                        id: 'accounttype-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
@@ -857,6 +891,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'change-password-text',
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
@@ -868,6 +903,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 }, 'Change Password'),
                                 React.createElement('div', {
+                                    id: 'change-password-icon-container',
                                     style: {
                                         width: '24px',
                                         height: '24px',
@@ -875,6 +911,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('img', {
+                                        id: 'change-password-icon-image',
                                         src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                                         alt: '',
                                         style: {
@@ -913,13 +950,16 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 }, 'Manage Passkeys'),
                                 React.createElement('div', {
+                                    id: 'manage-passkeys-icon-container',
                                     style: {
+
                                         width: '24px',
                                         height: '24px',
                                         position: 'relative'
                                     }
                                 },
                                     React.createElement('img', {
+                                        id: 'manage-passkeys-icon-image',
                                         src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                                         alt: '',
                                         style: {
@@ -958,6 +998,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 }, 'Manage Login Sessions'),
                                 React.createElement('div', {
+                                    id: 'manage-sessions-icon-container',
                                     style: {
                                         width: '24px',
                                         height: '24px',
@@ -965,6 +1006,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     }
                                 },
                                     React.createElement('img', {
+                                        id: 'manage-sessions-icon-image',
                                         src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                                         alt: '',
                                         style: {
@@ -992,6 +1034,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'delete-account-text',
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
@@ -1010,6 +1053,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 
             // Custom Modal
             modal.isOpen && React.createElement('div', {
+                id: 'custom-modal-overlay',
                 style: {
                     position: 'fixed',
                     top: 0,
@@ -1030,6 +1074,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 }
             },
                 React.createElement('div', {
+                    id: 'custom-modal-content',
                     style: {
                         backgroundColor: '#ffffff',
                         borderRadius: '15px',
@@ -1044,6 +1089,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     onClick: (e) => e.stopPropagation()
                 },
                     React.createElement('div', {
+                        id: 'custom-modal-title',
                         style: {
                             fontFamily: 'Urbanist, Helvetica',
                             fontWeight: 700,
@@ -1053,6 +1099,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         }
                     }, modal.title),
                     React.createElement('div', {
+                        id: 'custom-modal-message',
                         style: {
                             fontFamily: 'Inter, Helvetica',
                             fontWeight: 400,
@@ -1062,6 +1109,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         }
                     }, modal.message),
                     React.createElement('div', {
+                        id: 'custom-modal-buttons',
                         style: {
                             display: 'flex',
                             gap: '10px',
@@ -1070,6 +1118,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                         }
                     },
                         modal.type === 'confirm' && React.createElement('button', {
+                            id: 'custom-modal-cancel-button',
                             style: {
                                 padding: isMobile ? '10px 20px' : '12px 24px',
                                 borderRadius: '10px',
@@ -1087,6 +1136,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                             onClick: handleModalCancel
                         }, 'Cancel'),
                         React.createElement('button', {
+                            id: 'custom-modal-confirm-button',
                             style: {
                                 padding: isMobile ? '10px 20px' : '12px 24px',
                                 borderRadius: '10px',

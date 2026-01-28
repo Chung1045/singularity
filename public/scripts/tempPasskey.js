@@ -239,6 +239,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
 
         return React.createElement('div', {
             key: keyID,
+            ID: 'DIV_PASSKEY_' + keyID,
             style: {
                 display: 'flex',
                 alignItems: 'center',
@@ -252,6 +253,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
         },
             // Icon rectangle
             React.createElement('div', {
+                ID: 'DIV_PASSKEY_ICON_' + keyID,
                 style: {
                     width: isMobile ? '40px' : '48px',
                     height: isMobile ? '40px' : '48px',
@@ -262,6 +264,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
             }),
             // Content wrapper
             React.createElement('div', {
+                ID: 'DIV_PASSKEY_CONTENT_' + keyID,
                 style: {
                     display: 'flex',
                     flexDirection: 'column',
@@ -271,6 +274,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
             },
                 // Passkey name
                 React.createElement('div', {
+                    ID: 'DIV_PASSKEY_NAME_' + keyID,
                     style: {
                         fontFamily: 'SF Pro-Regular, Helvetica',
                         fontWeight: '600',
@@ -281,6 +285,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 }, passkey.keyName || 'Unnamed Passkey'),
                 // Date Created row
                 React.createElement('div', {
+                    ID: 'DIV_PASSKEY_DATECREATED_' + keyID,
                     style: {
                         display: 'flex',
                         gap: isMobile ? '6px' : '8px',
@@ -288,6 +293,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     }
                 },
                     React.createElement('span', {
+                        ID: 'SPAN_PASSKEY_DATECREATED_LABEL_' + keyID,
                         style: {
                             fontFamily: 'SF Pro-Regular, Helvetica',
                             fontWeight: '400',
@@ -295,6 +301,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         }
                     }, 'Date Created:'),
                     React.createElement('span', {
+                        ID: 'SPAN_PASSKEY_DATECREATED_VALUE_' + keyID,
                         style: {
                             fontFamily: 'SF Pro-Regular, Helvetica',
                             fontWeight: '400',
@@ -304,6 +311,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 ),
                 // MODIFIED: Last Used row with date and device info
                 React.createElement('div', {
+                    ID: 'DIV_PASSKEY_LASTUSED_' + keyID,
                     style: {
                         display: 'flex',
                         gap: isMobile ? '6px' : '8px',
@@ -311,6 +319,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     }
                 },
                     React.createElement('span', {
+                        ID: 'SPAN_PASSKEY_LASTUSED_LABEL_' + keyID,
                         style: {
                             fontFamily: 'SF Pro-Regular, Helvetica',
                             fontWeight: '400',
@@ -318,6 +327,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         }
                     }, 'Last Used:'),
                     React.createElement('span', {
+                        ID: 'SPAN_PASSKEY_LASTUSED_VALUE_' + keyID,
                         style: {
                             fontFamily: 'SF Pro-Regular, Helvetica',
                             fontWeight: '400',
@@ -328,6 +338,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
             ),
             // Delete button
             React.createElement('button', {
+                ID: 'BTN_DELETE_PASSKEY_' + keyID,
                 onClick: () => deletePasskey(keyID, passkey.keyName),
                 style: {
                     width: isMobile ? '20px' : '24px',
@@ -343,6 +354,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 }
             },
                 React.createElement('img', {
+                    ID: 'IMG_DELETE_PASSKEY_' + keyID,
                     src: './img/delete_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                     alt: 'Delete',
                     style: {
@@ -354,13 +366,15 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
         );
     });
 
-    return React.createElement('div', { 
+    return React.createElement('div', {
+        ID: 'DIV_SIDEBAR_EXPANDER',
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
-        React.createElement('div', { className: 'group' },
+        React.createElement('div', {  className: 'group' },
             // Sidebar Component
-            React.createElement(window.Sidebar, {
+
+    React.createElement(window.Sidebar, {
                 sidebarCollapsed: sidebarCollapsed,
                 setSidebarCollapsed: setSidebarCollapsed,
                 username: username,
@@ -376,6 +390,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 React.createElement('section', { className: 'main-screen' },
                     // Hidden CSRF
                     React.createElement("input", {
+                        ID: "INPUT_HIDDEN_CSRF",
                         type: "hidden",
                         name: "_csrf",
                         id: "hidden-csrf",
@@ -384,6 +399,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
 
                     // MODIFIED: Container for entire page content
                     React.createElement('div', {
+                        ID: 'DIV_PAGE_CONTAINER',
                         style: {
                             // padding: isMobile ? '15px 12px' : (isTablet ? '20px 20px' : (isSmallLaptop ? '25px 30px' : (isLargeLaptop ? '30px 50px' : '40px 87px'))),
                             width: '100%',
@@ -392,6 +408,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     },
                         // Header with back button and title
                         React.createElement('div', {
+                            ID: 'DIV_PAGE_HEADER',
                             style: {
                                 display: 'flex',
                                 alignItems: 'center',
@@ -401,6 +418,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         },
                             // Back button with square icon
                             React.createElement('button', {
+                                ID: 'BTN_BACK_PROFILE',
                                 onClick: () => window.location.href = '/profile',
                                 style: {
                                     display: 'inline-flex',
@@ -416,6 +434,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                 }
                             },
                                 React.createElement('img', {
+                                    ID: 'IMG_BACK_PROFILE',
                                     src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                     alt: 'Back',
                                     style: {
@@ -426,6 +445,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                             ),
                             // Title
                             React.createElement('div', {
+                                ID: 'DIV_PAGE_TITLE',
                                 style: {
                                     fontFamily: 'SF Pro-Bold, Helvetica',
                                     fontWeight: '400',
@@ -439,6 +459,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
 
                         // Content container with Create button and passkey list
                         React.createElement('div', {
+                            ID: 'DIV_CONTENT_CONTAINER',
                             style: {
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -448,12 +469,14 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         },
                             // Create Passkey button aligned to right
                             React.createElement('div', {
+                                ID: 'DIV_CREATE_PASSKEY_BUTTON_CONTAINER',
                                 style: {
                                     display: 'flex',
                                     justifyContent: isMobile ? 'flex-start' : 'flex-end'
                                 }
                             },
                                 React.createElement('button', {
+                                    ID: 'BTN_CREATE_PASSKEY',
                                     onClick: () => registerPasskey(),
                                     style: {
                                         display: 'inline-flex',
@@ -471,6 +494,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                     }
                                 },
                                     React.createElement('img', {
+                                        ID: 'IMG_CREATE_PASSKEY_ICON',
                                         src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                         alt: 'Add',
                                         style: {
@@ -486,6 +510,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                             // Passkey list or empty state message
                             passkeys.length === 0 
                                 ? React.createElement('div', {
+                                    ID: 'DIV_NO_PASSKEYS_MESSAGE',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -500,6 +525,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                     }
                                 },
                                     React.createElement('div', {
+                                        ID: 'DIV_NO_PASSKEYS_TITLE',
                                         style: {
                                             fontWeight: '600',
                                             fontSize: isMobile ? '18px' : '20px',
@@ -507,10 +533,12 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                                             marginBottom: '10px'
                                         }
                                     }, 'No Passkey'),
-                                    React.createElement('div', null, 
+                                    React.createElement('div', null,
+
                                         'Create new passkey by clicking ',
                                         React.createElement('span', {
                                             onClick: () => registerPasskey(),
+                                            ID: 'SPAN_CREATE_PASSKEY_LINK',
                                             style: {
                                                 color: '#666666',
                                                 cursor: 'pointer',
@@ -527,6 +555,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
 
             // Custom Modal
             modal.isOpen && React.createElement('div', {
+                ID: 'DIV_CUSTOM_MODAL',
                 style: {
                     position: 'fixed',
                     top: 0,
@@ -546,6 +575,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 }
             },
                 React.createElement('div', {
+                    ID: 'DIV_CUSTOM_MODAL_CONTENT',
                     style: {
                         backgroundColor: '#ffffff',
                         borderRadius: '15px',
@@ -560,6 +590,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     onClick: (e) => e.stopPropagation()
                 },
                     React.createElement('div', {
+                        ID: 'DIV_CUSTOM_MODAL_TITLE',
                         style: {
                             fontFamily: 'Urbanist, Helvetica',
                             fontWeight: 700,
@@ -569,6 +600,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         }
                     }, modal.title),
                     React.createElement('div', {
+                        ID: 'DIV_CUSTOM_MODAL_MESSAGE',
                         style: {
                             fontFamily: 'Inter, Helvetica',
                             fontWeight: 400,
@@ -578,6 +610,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         }
                     }, modal.message),
                     React.createElement('div', {
+                        ID: 'DIV_CUSTOM_MODAL_BUTTONS',
                         style: {
                             display: 'flex',
                             gap: '10px',
@@ -586,6 +619,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                         }
                     },
                         modal.type === 'confirm' && React.createElement('button', {
+                            ID: 'BTN_CUSTOM_MODAL_CANCEL',
                             style: {
                                 padding: '12px 24px',
                                 borderRadius: '10px',
@@ -603,6 +637,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                             onClick: handleModalCancel
                         }, 'Cancel'),
                         React.createElement('button', {
+                            ID: 'BTN_CUSTOM_MODAL_OK',
                             style: {
                                 padding: '12px 24px',
                                 borderRadius: '10px',

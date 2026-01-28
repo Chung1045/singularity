@@ -32,39 +32,12 @@ const TempSignup = ({ csrfToken }) => {
 
     // Show validation errors in message notification
     useEffect(() => {
-        // Old code: Show error every time errors change
-        // const errorFields = Object.entries(errors)
-        //     .filter(([_, value]) => value !== '')
-        //     .map(([key, _]) => {
-        //         const fieldNames = {
-        //             username: 'Username',
-        //             email: 'Email',
-        //             firstName: 'First Name',
-        //             lastName: 'Last Name',
-        //             password: 'Password',
-        //             confirmPassword: 'Password Confirmation'
-        //         };
-        //         return fieldNames[key] || key;
-        //     });
-        // 
-        // const messageEl = document.getElementById('message');
-        // const messageTextEl = document.getElementById('messageText');
-        // 
-        // if (errorFields.length > 0 && messageEl && messageTextEl) {
-        //     const credentialsList = errorFields.join(', ');
-        //     messageTextEl.textContent = ` Warning: Please fill in your credentials`;
-        //     messageEl.classList.remove('hidden');
-        // } else if (messageEl) {
-        //     messageEl.classList.add('hidden');
-        // }
-        
-        // New code: Show error only once
         const errorFields = Object.entries(errors)
             .filter(([_, value]) => value !== '');
-        
+
         const messageEl = document.getElementById('message');
         const messageTextEl = document.getElementById('messageText');
-        
+
         if (errorFields.length > 0 && !messageShown && messageEl && messageTextEl) {
             messageTextEl.textContent = `⚠️ Warning: Please fill in your credentials`;
             messageEl.classList.remove('hidden');
@@ -94,37 +67,27 @@ const TempSignup = ({ csrfToken }) => {
             [field]: value
         }));
 
-        // Original logic (commented out):
-        // // Clear error when user starts typing
-        // if (errors[field]) {
-        //     setErrors(prev => ({ ...prev, [field]: '' }));
-        // }
-
-        // New logic: Handle errors dynamically based on field state
-        // If field has value, clear error; if empty, show appropriate error message
         let isValid = false;
         let errorMessage = '';
 
         if (field === 'email') {
-            // isValid = value.trim() !== '' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-            isValid = value.trim() !== ''; // Only check if not empty
+            isValid = value.trim() !== '';
             if (!isValid) {
-                errorMessage = 'Please provide a valid email.'; // Set error when empty
+                errorMessage = 'Please provide a valid email.';
             }
         } else if (field === 'confirmPassword') {
             isValid = value.length > 0 && value === formData.password;
             if (!isValid) {
                 if (value.length === 0) {
-                    errorMessage = 'Please confirm your password.'; // Set error when empty
+                    errorMessage = 'Please confirm your password.';
                 } else {
-                    errorMessage = 'Passwords do not match!'; // Set error when doesn't match
+                    errorMessage = 'Passwords do not match!';
                 }
             }
         } else if (field === 'password') {
-            // isValid = value.length >= 6;
-            isValid = value.length > 0; // Only check if not empty
+            isValid = value.length > 0;
             if (!isValid) {
-                errorMessage = 'Please enter a password.'; // Set error when empty
+                errorMessage = 'Please enter a password.';
             }
             // Also revalidate confirmPassword when password changes
             if (formData.confirmPassword) {
@@ -143,23 +106,23 @@ const TempSignup = ({ csrfToken }) => {
         } else if (field === 'username') {
             isValid = value.trim() !== '';
             if (!isValid) {
-                errorMessage = 'Please choose a username.'; // Set error when empty
+                errorMessage = 'Please choose a username.';
             }
         } else if (field === 'firstName') {
             isValid = value.trim() !== '';
             if (!isValid) {
-                errorMessage = 'Please provide your first name.'; // Set error when empty
+                errorMessage = 'Please provide your first name.';
             }
         } else if (field === 'lastName') {
             isValid = value.trim() !== '';
             if (!isValid) {
-                errorMessage = 'Please provide your last name.'; // Set error when empty
+                errorMessage = 'Please provide your last name.';
             }
         }
 
         // Update validation state
         setValidFields(prev => ({ ...prev, [field]: isValid }));
-        
+
         // Clear error if field is valid, otherwise set/preserve error
         if (isValid) {
             setErrors(prev => ({ ...prev, [field]: '' }));
@@ -182,15 +145,11 @@ const TempSignup = ({ csrfToken }) => {
         // Check required fields
         if (!formData.username.trim()) {
             newErrors.username = 'Please choose a username.';
-        } // else if (formData.username.length < 3) {
-        //     newErrors.username = 'Username must be at least 3 characters.';
-        // }
+        }
 
         if (!formData.email.trim()) {
             newErrors.email = 'Please provide a valid email.';
-        } // else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        //     newErrors.email = 'Please provide a valid email address.';
-        // }
+        }
 
         if (!formData.firstName.trim()) {
             newErrors.firstName = 'Please provide your first name.';
@@ -202,9 +161,7 @@ const TempSignup = ({ csrfToken }) => {
 
         if (!formData.password) {
             newErrors.password = 'Please enter a password.';
-        } // else if (formData.password.length < 6) {
-        //     newErrors.password = 'Password must be at least 6 characters.';
-        // }
+        }
 
         if (!formData.confirmPassword) {
             newErrors.confirmPassword = 'Please confirm your password.';
@@ -233,27 +190,19 @@ const TempSignup = ({ csrfToken }) => {
             const result = await response.json();
 
             if (response.ok) {
-                // Old: Show modal alert for success
-                // showAlert('Success', result.message, () => {
-                //     window.location.href = '/home';
-                // });
-                
-                // New: Show success in message notification
                 const messageEl = document.getElementById('message');
                 const messageTextEl = document.getElementById('messageText');
-                
+
                 if (messageEl && messageTextEl) {
                     messageTextEl.textContent = `✓ ${result.message}, redirecting...`;
                     messageEl.classList.remove('hidden');
-                    
+
                     // Redirect after 2 seconds
                     setTimeout(() => {
                         window.location.href = '/home';
                     }, 2000);
                 }
             } else {
-                // Old: alert(result.message || "An error occurred. Please try again.");
-                // Check if it's a field-specific error
                 if (result.field && newErrors[result.field] !== undefined) {
                     setErrors(prev => ({ ...prev, [result.field]: result.message }));
                 } else {
@@ -262,7 +211,6 @@ const TempSignup = ({ csrfToken }) => {
             }
         } catch (error) {
             console.error('Signup error:', error);
-            // Old: alert("An error occurred. Please try again.");
             showAlert('Error', "An error occurred. Please try again.");
         } finally {
             setIsLoading(false);
@@ -275,172 +223,68 @@ const TempSignup = ({ csrfToken }) => {
         }
     };
 
-    // return React.createElement('div', {
-    //         className: 'flex flex-col gap-2.5 p-4 max-w-md mx-auto mt-8'
-    //     },
-    //     React.createElement('input', {
-    //         type: 'hidden',
-    //         name: '_csrf',
-    //         value: csrfToken
-    //     }),
-
-    //     React.createElement('div', null,
-    //         React.createElement('label', {
-    //             htmlFor: 'input-username',
-    //             className: 'block mb-1 font-medium'
-    //         }, 'Username'),
-    //         React.createElement('input', {
-    //             type: 'text',
-    //             id: 'input-username',
-    //             value: formData.username,
-    //             onChange: handleChange('username'),
-    //             onKeyPress: handleKeyPress,
-    //             disabled: isLoading,
-    //             className: 'w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-    //         })
-    //     ),
-
-    //     React.createElement('div', null,
-    //         React.createElement('label', {
-    //             htmlFor: 'input-email',
-    //             className: 'block mb-1 font-medium'
-    //         }, 'Email Address'),
-    //         React.createElement('input', {
-    //             type: 'email',
-    //             id: 'input-email',
-    //             value: formData.email,
-    //             onChange: handleChange('email'),
-    //             onKeyPress: handleKeyPress,
-    //             disabled: isLoading,
-    //             className: 'w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-    //         })
-    //     ),
-
-    //     React.createElement('div', null,
-    //         React.createElement('label', {
-    //             htmlFor: 'input-firstName',
-    //             className: 'block mb-1 font-medium'
-    //         }, 'First Name'),
-    //         React.createElement('input', {
-    //             type: 'text',
-    //             id: 'input-firstName',
-    //             maxLength: 50,
-    //             value: formData.firstName,
-    //             onChange: handleChange('firstName'),
-    //             onKeyPress: handleKeyPress,
-    //             disabled: isLoading,
-    //             className: 'w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-    //         })
-    //     ),
-
-    //     React.createElement('div', null,
-    //         React.createElement('label', {
-    //             htmlFor: 'input-lastName',
-    //             className: 'block mb-1 font-medium'
-    //         }, 'Last Name'),
-    //         React.createElement('input', {
-    //             type: 'text',
-    //             id: 'input-lastName',
-    //             maxLength: 50,
-    //             value: formData.lastName,
-    //             onChange: handleChange('lastName'),
-    //             onKeyPress: handleKeyPress,
-    //             disabled: isLoading,
-    //             className: 'w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-    //         })
-    //     ),
-
-    //     React.createElement('div', null,
-    //         React.createElement('label', {
-    //             htmlFor: 'input-password',
-    //             className: 'block mb-1 font-medium'
-    //         }, 'Password'),
-    //         React.createElement('input', {
-    //             type: 'password',
-    //             id: 'input-password',
-    //             value: formData.password,
-    //             onChange: handleChange('password'),
-    //             onKeyPress: handleKeyPress,
-    //             disabled: isLoading,
-    //             className: 'w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-    //         })
-    //     ),
-
-    //     React.createElement('div', null,
-    //         React.createElement('label', {
-    //             htmlFor: 'input-confirmPassword',
-    //             className: 'block mb-1 font-medium'
-    //         }, 'Confirm Password'),
-    //         React.createElement('input', {
-    //             type: 'password',
-    //             id: 'input-confirmPassword',
-    //             value: formData.confirmPassword,
-    //             onChange: handleChange('confirmPassword'),
-    //             onKeyPress: handleKeyPress,
-    //             disabled: isLoading,
-    //             className: 'w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-    //         })
-    //     ),
-
-    //     React.createElement('button', {
-    //         id: 'btn-signup',
-    //         onClick: handleSubmit,
-    //         disabled: isLoading,
-    //         className: 'w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-2'
-    //     }, isLoading ? 'Submitting...' : 'Submit')
-    // );
-
-// test signup 
-
     // Check if any validation messages are visible
-    const hasValidationMessages = Object.values(errors).some(error => error !== '') || 
-                                   Object.values(validFields).some(valid => valid === true);
+    const hasValidationMessages = Object.values(errors).some(error => error !== '') ||
+        Object.values(validFields).some(valid => valid === true);
 
-return React.createElement('div', { className: 'frame' },
-        React.createElement('div', { className: hasValidationMessages ? 'sign-up expanded' : 'sign-up' },
-            React.createElement('div', { className: 'login' },
-                React.createElement('div', { className: 'content-background' }),
+    return React.createElement('div', { className: 'frame', id: 'signup-page-frame' },
+        React.createElement('div', {
+                className: hasValidationMessages ? 'sign-up expanded' : 'sign-up',
+                id: 'signup-wrapper'
+            },
+            React.createElement('div', { className: 'login', id: 'signup-main-container' },
+                React.createElement('div', { className: 'content-background', id: 'signup-bg-overlay' }),
 
                 // Right side group (already-have-account)
-                React.createElement('div', { className: hasValidationMessages ? 'right-content expanded' : 'right-content' },
-                    React.createElement('div', { className: 'group' },
-                        React.createElement('div', { className: 'text-wrapper' }, 'Welcome!'),
-                        React.createElement('p', { className: 'div' }, 'If you already have an account.'),
-                        React.createElement('div', { className: 'div-wrapper', onClick: () => window.location.href = '/login', style: { cursor: 'pointer' } },
-                            React.createElement('div', { className: 'text-wrapper-2' }, 'Sign In')
+                React.createElement('div', {
+                        className: hasValidationMessages ? 'right-content expanded' : 'right-content',
+                        id: 'right-panel-welcome'
+                    },
+                    React.createElement('div', { className: 'group', id: 'welcome-group' },
+                        React.createElement('div', { className: 'text-wrapper', id: 'welcome-header-text' }, 'Welcome!'),
+                        React.createElement('p', { className: 'div', id: 'welcome-sub-text' }, 'If you already have an account.'),
+                        React.createElement('div', {
+                                className: 'div-wrapper',
+                                id: 'btn-signin-redirect', // ID Added
+                                onClick: () => window.location.href = '/login',
+                                style: { cursor: 'pointer' }
+                            },
+                            React.createElement('div', { className: 'text-wrapper-2', id: 'text-signin-btn' }, 'Sign In')
                         )
                     )
                 ),
 
                 // Left content (signup form)
-                React.createElement('div', { className: 'left-content' },
-                    React.createElement('div', { className: 'logo' },
-                        React.createElement('div', { className: 'logo-text' },
-                            React.createElement('div', { className: 'text-wrapper-3' }, 'Singularity')
+                React.createElement('div', { className: 'left-content', id: 'left-panel-form' },
+                    React.createElement('div', { className: 'logo', id: 'logo-container' },
+                        React.createElement('div', { className: 'logo-text', id: 'logo-text-wrapper' },
+                            React.createElement('div', { className: 'text-wrapper-3', id: 'logo-text-singularity' }, 'Singularity')
                         ),
-                        React.createElement('img', { className: 'union', src: 'img/union.svg', alt: 'Union' })
+                        React.createElement('img', { className: 'union', src: 'img/union.svg', alt: 'Union', id: 'logo-icon' })
                     ),
 
-                    React.createElement('div', { className: 'content' },
-                        React.createElement('div', { className: 'slogan' },
-                            React.createElement('div', { className: 'text-wrapper-4' }, 'New Joiner?'),
-                            React.createElement('p', { className: 'p' }, 'Simply sign up to use the AI for Software Development')
+                    React.createElement('div', { className: 'content', id: 'form-content-area' },
+                        React.createElement('div', { className: 'slogan', id: 'slogan-container' },
+                            React.createElement('div', { className: 'text-wrapper-4', id: 'slogan-header' }, 'New Joiner?'),
+                            React.createElement('p', { className: 'p', id: 'slogan-sub' }, 'Simply sign up to use the AI for Software Development')
                         ),
 
-                        React.createElement('div', { className: 'div-2' },
+                        React.createElement('div', { className: 'div-2', id: 'signup-form-inputs' },
 
                             // Username
-                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
-                                React.createElement('div', { className: 'text-wrapper-5' }, 'Username'),
-                                React.createElement('div', { 
-                                    className: 'div-wrapper-2',
-                                    style: {
-                                        borderColor: errors.username ? '#dc2626' : validFields.username ? '#22c55e' : '#e4e4e4',
-                                        borderWidth: '2px',
-                                        borderStyle: 'solid'
-                                    }
-                                },
+                            React.createElement('div', { className: 'div-3', id: 'field-container-username', style: { position: 'relative', marginBottom: '8px' } },
+                                React.createElement('div', { className: 'text-wrapper-5', id: 'label-username' }, 'Username'),
+                                React.createElement('div', {
+                                        className: 'div-wrapper-2',
+                                        id: 'input-wrapper-username',
+                                        style: {
+                                            borderColor: errors.username ? '#dc2626' : validFields.username ? '#22c55e' : '#e4e4e4',
+                                            borderWidth: '2px',
+                                            borderStyle: 'solid'
+                                        }
+                                    },
                                     React.createElement('input', {
+                                        id: 'input-username', // ID Added
                                         type: 'text',
                                         placeholder: 'Username',
                                         value: formData.username,
@@ -451,6 +295,7 @@ return React.createElement('div', { className: 'frame' },
                                     })
                                 ),
                                 errors.username && React.createElement('div', {
+                                    id: 'error-msg-username', // ID Added
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -459,6 +304,7 @@ return React.createElement('div', { className: 'frame' },
                                     }
                                 }, errors.username),
                                 validFields.username && !errors.username && React.createElement('div', {
+                                    id: 'success-msg-username', // ID Added
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -469,17 +315,19 @@ return React.createElement('div', { className: 'frame' },
                             ),
 
                             // Email
-                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
-                                React.createElement('div', { className: 'text-wrapper-5' }, 'Email address'),
-                                React.createElement('div', { 
-                                    className: 'div-wrapper-2',
-                                    style: {
-                                        borderColor: errors.email ? '#dc2626' : validFields.email ? '#22c55e' : '#e4e4e4',
-                                        borderWidth: '2px',
-                                        borderStyle: 'solid'
-                                    }
-                                },
+                            React.createElement('div', { className: 'div-3', id: 'field-container-email', style: { position: 'relative', marginBottom: '8px' } },
+                                React.createElement('div', { className: 'text-wrapper-5', id: 'label-email' }, 'Email address'),
+                                React.createElement('div', {
+                                        className: 'div-wrapper-2',
+                                        id: 'input-wrapper-email',
+                                        style: {
+                                            borderColor: errors.email ? '#dc2626' : validFields.email ? '#22c55e' : '#e4e4e4',
+                                            borderWidth: '2px',
+                                            borderStyle: 'solid'
+                                        }
+                                    },
                                     React.createElement('input', {
+                                        id: 'input-email', // ID Added
                                         type: 'email',
                                         placeholder: 'someone@example.com',
                                         value: formData.email,
@@ -490,6 +338,7 @@ return React.createElement('div', { className: 'frame' },
                                     })
                                 ),
                                 errors.email && React.createElement('div', {
+                                    id: 'error-msg-email', // ID Added
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -498,6 +347,7 @@ return React.createElement('div', { className: 'frame' },
                                     }
                                 }, errors.email),
                                 validFields.email && !errors.email && React.createElement('div', {
+                                    id: 'success-msg-email', // ID Added
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -508,17 +358,19 @@ return React.createElement('div', { className: 'frame' },
                             ),
 
                             // First name
-                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
-                                React.createElement('div', { className: 'text-wrapper-8' }, 'First Name'),
-                                React.createElement('div', { 
-                                    className: 'div-wrapper-2',
-                                    style: {
-                                        borderColor: errors.firstName ? '#dc2626' : validFields.firstName ? '#22c55e' : '#e4e4e4',
-                                        borderWidth: '2px',
-                                        borderStyle: 'solid'
-                                    }
-                                },
+                            React.createElement('div', { className: 'div-3', id: 'field-container-firstname', style: { position: 'relative', marginBottom: '8px' } },
+                                React.createElement('div', { className: 'text-wrapper-8', id: 'label-firstname' }, 'First Name'),
+                                React.createElement('div', {
+                                        className: 'div-wrapper-2',
+                                        id: 'input-wrapper-firstname',
+                                        style: {
+                                            borderColor: errors.firstName ? '#dc2626' : validFields.firstName ? '#22c55e' : '#e4e4e4',
+                                            borderWidth: '2px',
+                                            borderStyle: 'solid'
+                                        }
+                                    },
                                     React.createElement('input', {
+                                        id: 'input-firstname', // ID Added
                                         type: 'text',
                                         placeholder: 'First Name',
                                         value: formData.firstName,
@@ -529,6 +381,7 @@ return React.createElement('div', { className: 'frame' },
                                     })
                                 ),
                                 errors.firstName && React.createElement('div', {
+                                    id: 'error-msg-firstname', // ID Added
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -537,6 +390,7 @@ return React.createElement('div', { className: 'frame' },
                                     }
                                 }, errors.firstName),
                                 validFields.firstName && !errors.firstName && React.createElement('div', {
+                                    id: 'success-msg-firstname', // ID Added
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -547,17 +401,19 @@ return React.createElement('div', { className: 'frame' },
                             ),
 
                             // Last name
-                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
-                                React.createElement('div', { className: 'text-wrapper-8' }, 'Last Name'),
-                                React.createElement('div', { 
-                                    className: 'div-wrapper-2',
-                                    style: {
-                                        borderColor: errors.lastName ? '#dc2626' : validFields.lastName ? '#22c55e' : '#e4e4e4',
-                                        borderWidth: '2px',
-                                        borderStyle: 'solid'
-                                    }
-                                },
+                            React.createElement('div', { className: 'div-3', id: 'field-container-lastname', style: { position: 'relative', marginBottom: '8px' } },
+                                React.createElement('div', { className: 'text-wrapper-8', id: 'label-lastname' }, 'Last Name'),
+                                React.createElement('div', {
+                                        className: 'div-wrapper-2',
+                                        id: 'input-wrapper-lastname',
+                                        style: {
+                                            borderColor: errors.lastName ? '#dc2626' : validFields.lastName ? '#22c55e' : '#e4e4e4',
+                                            borderWidth: '2px',
+                                            borderStyle: 'solid'
+                                        }
+                                    },
                                     React.createElement('input', {
+                                        id: 'input-lastname', // ID Added
                                         type: 'text',
                                         placeholder: 'Last Name',
                                         value: formData.lastName,
@@ -568,6 +424,7 @@ return React.createElement('div', { className: 'frame' },
                                     })
                                 ),
                                 errors.lastName && React.createElement('div', {
+                                    id: 'error-msg-lastname', // ID Added
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -576,6 +433,7 @@ return React.createElement('div', { className: 'frame' },
                                     }
                                 }, errors.lastName),
                                 validFields.lastName && !errors.lastName && React.createElement('div', {
+                                    id: 'success-msg-lastname', // ID Added
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -586,17 +444,19 @@ return React.createElement('div', { className: 'frame' },
                             ),
 
                             // Password
-                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
-                                React.createElement('div', { className: 'text-wrapper-8' }, 'Password'),
-                                React.createElement('div', { 
-                                    className: 'div-wrapper-2',
-                                    style: {
-                                        borderColor: errors.password ? '#dc2626' : validFields.password ? '#22c55e' : '#e4e4e4',
-                                        borderWidth: '2px',
-                                        borderStyle: 'solid'
-                                    }
-                                },
+                            React.createElement('div', { className: 'div-3', id: 'field-container-password', style: { position: 'relative', marginBottom: '8px' } },
+                                React.createElement('div', { className: 'text-wrapper-8', id: 'label-password' }, 'Password'),
+                                React.createElement('div', {
+                                        className: 'div-wrapper-2',
+                                        id: 'input-wrapper-password',
+                                        style: {
+                                            borderColor: errors.password ? '#dc2626' : validFields.password ? '#22c55e' : '#e4e4e4',
+                                            borderWidth: '2px',
+                                            borderStyle: 'solid'
+                                        }
+                                    },
                                     React.createElement('input', {
+                                        id: 'input-password', // ID Added
                                         type: 'password',
                                         placeholder: '',
                                         value: formData.password,
@@ -607,6 +467,7 @@ return React.createElement('div', { className: 'frame' },
                                     })
                                 ),
                                 errors.password && React.createElement('div', {
+                                    id: 'error-msg-password', // ID Added
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -615,6 +476,7 @@ return React.createElement('div', { className: 'frame' },
                                     }
                                 }, errors.password),
                                 validFields.password && !errors.password && React.createElement('div', {
+                                    id: 'success-msg-password', // ID Added
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -625,17 +487,19 @@ return React.createElement('div', { className: 'frame' },
                             ),
 
                             // Confirm password
-                            React.createElement('div', { className: 'div-3', style: { position: 'relative', marginBottom: '8px' } },
-                                React.createElement('div', { className: 'text-wrapper-8' }, 'Confirm Password'),
-                                React.createElement('div', { 
-                                    className: 'div-wrapper-2',
-                                    style: {
-                                        borderColor: errors.confirmPassword ? '#dc2626' : validFields.confirmPassword ? '#22c55e' : '#e4e4e4',
-                                        borderWidth: '2px',
-                                        borderStyle: 'solid'
-                                    }
-                                },
+                            React.createElement('div', { className: 'div-3', id: 'field-container-confirm-password', style: { position: 'relative', marginBottom: '8px' } },
+                                React.createElement('div', { className: 'text-wrapper-8', id: 'label-confirm-password' }, 'Confirm Password'),
+                                React.createElement('div', {
+                                        className: 'div-wrapper-2',
+                                        id: 'input-wrapper-confirm-password',
+                                        style: {
+                                            borderColor: errors.confirmPassword ? '#dc2626' : validFields.confirmPassword ? '#22c55e' : '#e4e4e4',
+                                            borderWidth: '2px',
+                                            borderStyle: 'solid'
+                                        }
+                                    },
                                     React.createElement('input', {
+                                        id: 'input-confirm-password', // ID Added
                                         type: 'password',
                                         placeholder: '',
                                         value: formData.confirmPassword,
@@ -646,6 +510,7 @@ return React.createElement('div', { className: 'frame' },
                                     })
                                 ),
                                 errors.confirmPassword && React.createElement('div', {
+                                    id: 'error-msg-confirm-password', // ID Added
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -654,6 +519,7 @@ return React.createElement('div', { className: 'frame' },
                                     }
                                 }, errors.confirmPassword),
                                 validFields.confirmPassword && !errors.confirmPassword && React.createElement('div', {
+                                    id: 'success-msg-confirm-password', // ID Added
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -664,27 +530,28 @@ return React.createElement('div', { className: 'frame' },
                             ),
 
                             // Terms
-                            React.createElement('div', { className: 'by-continuing-you-wrapper' },
-                                React.createElement('p', { className: 'by-continuing-you' },
-                                    React.createElement('span', { className: 'span' },
+                            React.createElement('div', { className: 'by-continuing-you-wrapper', id: 'terms-wrapper' },
+                                React.createElement('p', { className: 'by-continuing-you', id: 'terms-text-container' },
+                                    React.createElement('span', { className: 'span', id: 'terms-span' },
                                         'By continuing, you agree to Singularity\u2019s ',
-                                        React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Privacy Policy'),
+                                        React.createElement('a', { href: '#', id: 'link-privacy-policy', style: { textDecoration: 'underline', color: 'inherit' } }, 'Privacy Policy'),
                                         ' and ',
-                                        React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Terms of Use')
+                                        React.createElement('a', { href: '#', id: 'link-terms-of-use', style: { textDecoration: 'underline', color: 'inherit' } }, 'Terms of Use')
                                     )
                                 )
                             ),
 
-                            React.createElement('hr', { style: { marginBottom: '1px', width: '100%', height: '0.3px', backgroundColor: '#E4E4E4' } }),
+                            React.createElement('hr', { id: 'divider-line', style: { marginBottom: '1px', width: '100%', height: '0.3px', backgroundColor: '#E4E4E4' } }),
 
                             // Submit
-                            React.createElement('div', { className: 'login-wrapper' },
+                            React.createElement('div', { className: 'login-wrapper', id: 'submit-btn-wrapper' },
                                 React.createElement('div', {
-                                    className: 'login-2',
-                                    onClick: handleSubmit,
-                                    style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
-                                },
-                                    React.createElement('div', { className: 'text-wrapper-10' }, isLoading ? 'Submitting...' : 'Sign Up')
+                                        id: 'btn-signup-submit', // ID Added
+                                        className: 'login-2',
+                                        onClick: handleSubmit,
+                                        style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
+                                    },
+                                    React.createElement('div', { className: 'text-wrapper-10', id: 'text-signup-submit' }, isLoading ? 'Submitting...' : 'Sign Up')
                                 )
                             )
                         )
@@ -695,40 +562,43 @@ return React.createElement('div', { className: 'frame' },
 
         // Custom Modal
         modal.isOpen && React.createElement('div', {
-            style: {
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10001,
-                padding: '20px'
-            },
-            onClick: (e) => {
-                if (e.target === e.currentTarget) {
-                    closeModal();
-                }
-            }
-        },
-            React.createElement('div', {
+                id: 'modal-overlay', // ID Added
                 style: {
-                    backgroundColor: '#ffffff',
-                    borderRadius: '15px',
-                    padding: '30px',
-                    maxWidth: '450px',
-                    width: '100%',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px'
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10001,
+                    padding: '20px'
                 },
-                onClick: (e) => e.stopPropagation()
+                onClick: (e) => {
+                    if (e.target === e.currentTarget) {
+                        closeModal();
+                    }
+                }
             },
+            React.createElement('div', {
+                    id: 'modal-content-box', // ID Added
+                    style: {
+                        backgroundColor: '#ffffff',
+                        borderRadius: '15px',
+                        padding: '30px',
+                        maxWidth: '450px',
+                        width: '100%',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
+                    },
+                    onClick: (e) => e.stopPropagation()
+                },
                 React.createElement('div', {
+                    id: 'modal-title', // ID Added
                     style: {
                         fontFamily: 'SF Pro, sans-serif',
                         fontWeight: 700,
@@ -738,6 +608,7 @@ return React.createElement('div', { className: 'frame' },
                     }
                 }, modal.title),
                 React.createElement('div', {
+                    id: 'modal-message', // ID Added
                     style: {
                         fontFamily: 'SF Pro, sans-serif',
                         fontWeight: 400,
@@ -747,14 +618,16 @@ return React.createElement('div', { className: 'frame' },
                     }
                 }, modal.message),
                 React.createElement('div', {
-                    style: {
-                        display: 'flex',
-                        gap: '10px',
-                        justifyContent: 'flex-end',
-                        marginTop: '10px'
-                    }
-                },
+                        id: 'modal-btn-container', // ID Added
+                        style: {
+                            display: 'flex',
+                            gap: '10px',
+                            justifyContent: 'flex-end',
+                            marginTop: '10px'
+                        }
+                    },
                     React.createElement('button', {
+                        id: 'btn-modal-ok', // ID Added
                         style: {
                             padding: '12px 24px',
                             borderRadius: '10px',
