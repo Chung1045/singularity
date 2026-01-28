@@ -10,6 +10,7 @@ const agent = require("../services/aiAgentService");
 const {getProjectRequirements, getProjectUserStories} = require("../services/aiAgentDBService");
 const docGen = require("../services/docGenerationService");
 const {apiAuthUser} = require("../services/accountDBService");
+const fss = require('../services/fsServices');
 
 router.use(dbService.apiAuthUser);
 
@@ -126,7 +127,7 @@ router.post('/agent/chat', async (req, res) => {
                     const trimmedChunk = chunk.trim();
                     if (!useLegacy && trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
                         // Log stage markers but don't send to client as content
-                        console.log(`Stage marker: ${trimmedChunk}`);
+                        console.log(`📊 Stage marker: ${trimmedChunk}`);
 
                         // Handle report generation events
                         if (trimmedChunk.includes('REPORT_GENERATED:')) {
@@ -136,17 +137,17 @@ router.post('/agent/chat', async (req, res) => {
                                 const endIdx = trimmedChunk.lastIndexOf('}');
                                 if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
                                     const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
-                                    console.log(` Report generation marker found, JSON string:`, jsonStr);
+                                    console.log(`📊 Report generation marker found, JSON string:`, jsonStr);
                                     const reportInfo = JSON.parse(jsonStr);
-                                    console.log(` Parsed reportInfo:`, reportInfo);
-                                    console.log(` Sending reportGenerated event to client`);
+                                    console.log(`📊 Parsed reportInfo:`, reportInfo);
+                                    console.log(`📊 Sending reportGenerated event to client`);
                                     res.write(`data: ${JSON.stringify({ 
                                         type: 'reportGenerated', 
                                         reportType: reportInfo.type,
                                         projectID: reportInfo.projectID || projectID
                                     })}\n\n`);
                                 } else {
-                                    console.error(' Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
+                                    console.error('📊 Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
                                 }
                             } catch (parseErr) {
                                 console.error('Failed to parse report info:', parseErr);
@@ -299,7 +300,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
 
         console.log('chatThreadData type:', typeof chatThreadData);
         console.log('chatThreadData:', JSON.stringify(chatThreadData, null, 2));
-        console.log(` Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
+        console.log(`✅ Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
 
         if (!chatThreadData) {
             console.log('No chat thread data returned');
@@ -491,7 +492,7 @@ router.post('/agent/chat-fetch', async (req, res) => {
 router.post('/agent/chat-delete', async (req, res) => {
 
     if (!req.cookies.session_id) {
-        console.log(" Unauthorized attempt for agent chat delete");
+        console.log("❌ Unauthorized attempt for agent chat delete");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
@@ -733,7 +734,7 @@ router.post('/agent/analyze-documents', async (req, res) => {
     try {
         console.log("New request /agent/analyze-documents");
 
-        const { projectID, documentIDs, title } = req.body;
+        const { projectID, documentIDs, title, chatID } = req.body;
 
         // Validate required fields
         if (!projectID || !documentIDs || !Array.isArray(documentIDs) || documentIDs.length === 0) {
@@ -762,38 +763,41 @@ router.post('/agent/analyze-documents', async (req, res) => {
         console.log(`Project title: ${title}`);
 
         // Get document contents
-        const fss = require('../services/fsServices');
-        let allDocumentData = '';
+        let analyzedDocument = [];
 
         for (const docID of documentIDs) {
             try {
                 console.log(`  Reading document: ${docID}`);
-                const docData = await fss.readDocumentContent(projectID, docID);
-                allDocumentData += `\n\n=== Document ${docID} ===\n${docData}\n`;
+                const docData = await fss.getFileContext(projectID, docID);
+                let analysisResult = await agent.requirementAnalysisModel(docData, title);
+                const fileMeta = await fss.getFileMetadata(docID, projectID);
+                const documentName = fileMeta.documentName;
+                if (analysisResult.trim() == "null"){
+                    console.log(`Document ${docID} doesn't match the document ${title}`);
+                    analysisResult = `Document ${documentName} doesn't match the document ${title}`
+                }
+                analyzedDocument.push(analysisResult);
+
+                const data = {
+                    projectID: projectID,
+                    chatID: chatID,
+                    requestMessage: `Analyze Document ${documentName}`,
+                    attachedDocumentIDs: documentIDs
+                }
+
+                let { conversationID, chatSeq } = await aiDB.saveConversationRequest(data);
+                await aiDB.saveConversationResponse(chatSeq, conversationID, analysisResult)
+
+                const analyzedDocumentJSON = await agent.parseRequirementsToJSON(docID, analysisResult);
+                await aiDB.updateRequirements(projectID, analyzedDocumentJSON);
             } catch (error) {
                 console.error(`  Error reading document ${docID}:`, error.message);
-                // Continue with other documents
             }
         }
 
-        if (!allDocumentData.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Unable to read any document content'
-            });
-        }
-
-        console.log(`  Total content length: ${allDocumentData.length} characters`);
-        console.log(`  Calling requirementAnalysisModel...`);
-
-        // Call the requirement analysis model
-        const analysisResult = await agent.requirementAnalysisModel(allDocumentData, title);
-
-        console.log(`  Analysis complete, result length: ${analysisResult?.length || 0}`);
-
         return res.status(200).json({
             success: true,
-            analysis: analysisResult,
+            analysis: analyzedDocument,
             documentsAnalyzed: documentIDs.length
         });
 

@@ -37,14 +37,14 @@ function requirementAnalysisPrompt(title) {
 
     Functional Requirement 
     Role: [User/System/Other] 
-    Requirement ID: [ID] 
+    Requirement ID: [FR-ID] 
     Requirement Title: [title]
     Requirement Description: [full description] 
     Citation: [source or reference in the text document] 
 
     Non-Functional Requirement 
     Role: [User/System/Other] 
-    Requirement ID: [ID] 
+    Requirement ID: [NFR-ID] 
     Requirement Title: [title]
     Requirement Description: [full description]
     Citation: [source or reference in the text document] 
@@ -55,7 +55,7 @@ function requirementAnalysisPrompt(title) {
     - Accuracy field must contain detailed, testable expectations
     - No extra text, headings, blank lines or markdown
     - Each requirement on its own single line
-    - If none → output only: No relevant requirements found
+    - If none → output only: No relevant [functional & Non functional] requirements found
     - If no citation available, ignore that requirement
 
     Start immediately.`;
@@ -88,6 +88,111 @@ async function requirementAnalysisModel(documentData, title) {
     } catch (err) {
         console.error('analysisModel failed:', err.message);
     }
+}
+
+// parse the requirement output to json file
+async function parseRequirementsToJSON(documentID, documentData) {
+    const requirements = [];
+
+    const blocks = documentData.split(/(?=Non-Functional Requirement|Functional Requirement)/i);
+
+    let seqCounter = 1;
+
+    blocks.forEach(block => {
+        if (!block.trim() || block.includes('Title request:') || block.includes('No relevant functional requirements')) {
+            return;
+        }
+
+        // Extract requirement ID first
+        const idMatch = block.match(/Requirement ID:\s*(.+)/i);
+        if (!idMatch) return;
+
+        const requirementID = idMatch[1].trim();
+
+        // Determine requirement type based on ID prefix
+        let requirementType = 'non-functional';
+        if (requirementID.startsWith('FR-')) {
+            requirementType = 'functional';
+        } else if (requirementID.startsWith('NFR-')) {
+            requirementType = 'non-functional';
+        }
+
+        // Extract fields using regex
+        const roleMatch = block.match(/Role:\s*(.+)/);
+        const titleMatch = block.match(/Requirement Title:\s*(.+)/);
+        const descriptionMatch = block.match(/Requirement Description:\s*(.+?)(?=\nCitation:)/s);
+        const citationMatch = block.match(/Citation:\s*(.+)/);
+
+        if (roleMatch && idMatch && titleMatch && descriptionMatch) {
+            let sourceReference = [];
+
+            if (citationMatch) {
+                const citationText = citationMatch[1].trim();
+
+                const citationParts = citationText.split(';').map(part => part.trim());
+
+                const locations = [];
+                const remarks = [];
+
+                citationParts.forEach(part => {
+                    if (part) {
+                        const pageMatch = part.match(/Page\s+(\d+)/i);
+                        const sectionMatch = part.match(/Section\s+([\d.]+)/i);
+                        const locationText = pageMatch && sectionMatch
+                            ? `Page ${pageMatch[1]}, Section ${sectionMatch[1]}`
+                            : part;
+
+                        let remark = "";
+                        if (pageMatch && sectionMatch) {
+                            // Remove page and section info to get remarks
+                            remark = part.replace(new RegExp(`Page\\s+${pageMatch[1]},\\s*Section\\s+${sectionMatch[1]}\\s*`, 'i'), '').trim();
+                        } else {
+                            remark = part;
+                        }
+
+                        if (locationText) locations.push(locationText);
+                        if (remark) remarks.push(remark);
+                    }
+                });
+
+                // Create a single sourceReference entry with all locations and remarks
+                if (locations.length > 0) {
+                    sourceReference.push({
+                        documentID: documentID,
+                        remarks: remarks.join('; '),
+                        location: locations.join('; ')
+                    });
+                }
+            }
+
+            // If no citations were found, provide a default
+            if (sourceReference.length === 0) {
+                sourceReference.push({
+                    documentID: documentID,
+                    remarks: "No specific citation provided",
+                    location: "Unknown"
+                });
+            }
+
+            const requirement = {
+                operation: "INSERT",
+                requirementID: idMatch[1].trim(),
+                details: {
+                    requirementType: requirementType,
+                    requirementSeq: seqCounter++,
+                    title: titleMatch[1].trim(),
+                    description: descriptionMatch[1].trim().replace(/\s+/g, ' '),
+                    role: roleMatch[1].trim(),
+                    source: "document",
+                    sourceReference: sourceReference
+                }
+            };
+
+            requirements.push(requirement);
+        }
+    });
+
+    return requirements;
 }
 
 
@@ -1703,6 +1808,7 @@ module.exports = {
     prepareUpdates,
     executeUpdates,
     streamResponse,
+    parseRequirementsToJSON,
     // Requirement analysis
     requirementAnalysisModel
 }

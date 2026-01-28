@@ -77,7 +77,7 @@ async function documentPreprocessing(buffer, documentExt) {
             // Transcribe audio
             const model = await getTranscriber();
             console.log("Video / audio is now being transcribed")
-            const output = await model(audioData, {  // ✅ output is defined here
+            const output = await model(audioData, {
                 chunk_length_s: 30,
                 stride_length_s: 5,
             });
@@ -87,7 +87,7 @@ async function documentPreprocessing(buffer, documentExt) {
             await fs.unlink(tempWavPath).catch(() => {});
             await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
 
-            return output.text?.trim();  // Now output exists
+            return output.text?.trim();
 
         } else if (supportedDocumentFormats.includes(documentExt)) {
             if (documentExt !== '.pdf') {
@@ -160,7 +160,7 @@ async function getTranscriber() {
     modelLoading = await pipeline(
         'automatic-speech-recognition',
         // 'Xenova/whisper-large-v2',
-        'Xenova/whisper-small.en',
+        'Xenova/whisper-base',
         {
             quantized: true,
             cache_dir: path.join(__dirname, '../model_cache')
