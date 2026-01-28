@@ -299,7 +299,7 @@ const TempChangePassword = ({ csrfToken }) => {
             },
                 React.createElement('div', {
                     className: 'change-password',
-                  ID:  'change-password-text',
+                    id:  'change-password-text',
                     style: {
                         color: '#333438',
                         textAlign: 'left',
@@ -314,7 +314,7 @@ const TempChangePassword = ({ csrfToken }) => {
             // Form Container
             React.createElement('div', {
                 className: 'frame-5',
-                ID: 'change-password-form-container',
+                    id: 'change-password-form-container',
                 style: {
                     display: 'flex',
                     flexDirection: 'column',
@@ -329,7 +329,7 @@ const TempChangePassword = ({ csrfToken }) => {
             },
                 // Old Password
                 React.createElement('div', {
-                    ID: 'old-password-container',
+                        id: 'old-password-container',
                     className: 'old-password',
                     style: {
                         flexShrink: 0,
@@ -339,7 +339,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 },
                     React.createElement('div', {
-                        ID: 'old-password-label',
+                        id: 'old-password-label',
                         className: 'old-password2',
                         style: {
                             color: '#333438',
@@ -381,7 +381,7 @@ const TempChangePassword = ({ csrfToken }) => {
                         }
                     }),
                     errors.currentPassword && React.createElement('div', {
-                        ID: 'current-password-error',
+                        id: 'current-password-error',
                         style: {
 
                             color: '#dc2626',
@@ -398,7 +398,7 @@ const TempChangePassword = ({ csrfToken }) => {
                 // New Password
                 React.createElement('div', {
                     className: 'password',
-                    ID: 'new-password-container',
+                        id: 'new-password-container',
                     style: {
                         alignSelf: 'stretch',
                         flexShrink: 0,
@@ -407,7 +407,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 },
                     React.createElement('div', {
-                        ID: 'new-password-label',
+                        id: 'new-password-label',
                         className: 'new-password',
                         style: {
                             color: '#333438',
@@ -449,7 +449,7 @@ const TempChangePassword = ({ csrfToken }) => {
                         }
                     }),
                     errors.newPassword && React.createElement('div', {
-                        ID: 'new-password-error',
+                        id: 'new-password-error',
                         style: {
                             color: '#dc2626',
                             fontSize: '12px',
@@ -464,7 +464,7 @@ const TempChangePassword = ({ csrfToken }) => {
 
                 // Confirm New Password
                 React.createElement('div', {
-                    ID: 'confirm-new-password-container',
+                        id: 'confirm-new-password-container',
                     className: 'confirm-new-password',
                     style: {
                         alignSelf: 'stretch',
@@ -474,7 +474,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 },
                     React.createElement('div', {
-                        ID: 'confirm-new-password-label',
+                        id: 'confirm-new-password-label',
                         className: 'confirm-new-password2',
                         style: {
                             color: '#333438',
@@ -516,7 +516,7 @@ const TempChangePassword = ({ csrfToken }) => {
                         }
                     }),
                     errors.confirmPassword && React.createElement('div', {
-                        ID: 'confirm-password-error',
+                        id: 'confirm-password-error',
                         style: {
                             color: '#dc2626',
                             fontSize: '12px',
@@ -531,7 +531,7 @@ const TempChangePassword = ({ csrfToken }) => {
 
                 // Confirmation Message
                 React.createElement('div', {
-                    ID: 'please-confirm-new-password',
+                    id: 'please-confirm-new-password',
                     className: 'please-confirm-that-your-new-password-is-correct',
                     style: {
                         color: '#333438',
@@ -553,7 +553,7 @@ const TempChangePassword = ({ csrfToken }) => {
 
                 // Submit Button
                 React.createElement('button', {
-                    ID: 'btn-submit-change-password',
+                        id: 'btn-submit-change-password',
                     className: 'login',
                     onClick: handleSubmit,
                     disabled: isLoading,
@@ -575,7 +575,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 },
                     React.createElement('div', {
-                        ID: 'submit-change-password',
+                        id: 'submit-change-password',
                         className: 'submit',
                         style: {
                             color: '#ffffff',
@@ -596,7 +596,7 @@ const TempChangePassword = ({ csrfToken }) => {
 
                 // Cancel Button
                 React.createElement('button', {
-                    ID: 'btn-cancel-change-password',
+                        id: 'btn-cancel-change-password',
                     className: 'login2',
                     onClick: handleCancel,
                     disabled: isLoading,
@@ -617,7 +617,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 },
                     React.createElement('div', {
-                        ID: 'cancel-change-password',
+                        id: 'cancel-change-password',
                         className: 'cancel',
                         style: {
                             color: '#000000',
@@ -640,7 +640,7 @@ const TempChangePassword = ({ csrfToken }) => {
 
         // Custom Modal
         modal.isOpen && React.createElement('div', {
-            ID: 'custom-modal',
+                id: 'custom-modal',
             style: {
                 position: 'fixed',
                 top: 0,
@@ -661,7 +661,7 @@ const TempChangePassword = ({ csrfToken }) => {
             }
         },
             React.createElement('div', {
-                ID: 'modal-content',
+                    id: 'modal-content',
                 style: {
                     backgroundColor: '#ffffff',
                     borderRadius: '15px',
@@ -676,7 +676,7 @@ const TempChangePassword = ({ csrfToken }) => {
                 onClick: (e) => e.stopPropagation()
             },
                 React.createElement('div', {
-                    ID: 'modal-title',
+                    id: 'modal-title',
                     style: {
                         fontFamily: 'SfPro-Bold, sans-serif',
                         fontWeight: 700,
@@ -686,7 +686,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 }, modal.title),
                 React.createElement('div', {
-                    ID: 'modal-message',
+                    id: 'modal-message',
                     style: {
                         fontFamily: 'SfPro-Regular, sans-serif',
                         fontWeight: 400,
@@ -696,7 +696,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 }, modal.message),
                 React.createElement('div', {
-                    ID: 'modal-actions',
+                        id: 'modal-actions',
                     style: {
                         display: 'flex',
                         gap: '10px',
@@ -705,7 +705,7 @@ const TempChangePassword = ({ csrfToken }) => {
                     }
                 },
                     React.createElement('button', {
-                        ID: 'modal-ok-button',
+                        id: 'modal-ok-button',
                         style: {
                             padding: '12px 24px',
                             borderRadius: '10px',
