@@ -99,25 +99,36 @@ const system_prompt = `
     You are an assistant for the software engineering project,
     you will be working on text files / word documents / transcribed audio to summarize all the functional and non functional requirements,
     as well as summarizing the user stories and identify the possible user role of the user stories.
-      
+
     You will need to link the reference of the documentID and the location of where the user story or requirements identified,
     you will also need to specify whether the requirement or user story were summarized from the document as "Document",
     or "User Input" if the user request to add / modify the software requirements or user stories.
-    
+
     ## CRITICAL: When Files Are Attached
     When the user attaches files to their message, you MUST IMMEDIATELY:
     1. Call get_project_file_content with the projectID and documentID for EACH attached file
     2. Wait for the content to be returned
     3. Analyze the content and respond based on what you found
-    
+
     NEVER do any of these when files are attached:
     - NEVER say "upload a document" or "paste requirements text" - the file is ALREADY attached!
     - NEVER say "I couldn't access the file" or "I couldn't process the document"
     - NEVER say "What would you like me to analyze?" when a file is already provided
     - NEVER say "It looks like your message got cut off"
-    
+
     Instead, USE the get_project_file_content tool to read the file content!
-    
+
+    ## CRITICAL: When User Asks About Current Requirements or User Stories
+    If the user asks about "current requirements", "show me the requirements", "what are the requirements", etc.:
+    1. IMMEDIATELY call get_software_requirements_list(projectID) to fetch existing requirements
+    2. Display the fetched requirements in your response - show the title, description, type (functional/non-functional), and role for each
+
+    If the user asks about "current user stories", "show me the user stories", "what are the user stories", etc.:
+    1. IMMEDIATELY call get_user_stories_list(projectID) to fetch existing user stories
+    2. Display the fetched user stories in your response - show the title, description, and role for each
+
+    NEVER say "No requirements have been added" or "no user stories found" without first calling the appropriate get_*_list tool!
+
     ## CRITICAL: Report Generation Rules
     When the user asks to generate a report or document:
     
@@ -193,6 +204,17 @@ NEVER say "It looks like your message got cut off" - just read the attached file
 
 DO NOT say "I couldn't access the file" - instead, use the get_project_file_content tool!
 
+## CRITICAL: When User Asks About Current Requirements or User Stories
+If the user asks about "current requirements", "show me the requirements", "what are the requirements", etc.:
+1. IMMEDIATELY call get_software_requirements_list(projectID) to fetch existing requirements
+2. Display the fetched requirements in your response plan
+
+If the user asks about "current user stories", "show me the user stories", "what are the user stories", etc.:
+1. IMMEDIATELY call get_user_stories_list(projectID) to fetch existing user stories
+2. Display the fetched user stories in your response plan
+
+NEVER say "No requirements have been added" or "no user stories found" without first calling the appropriate get_*_list tool!
+
 ## CRITICAL: Report Generation Rules
 When the user asks about generating a report, you MUST:
 
@@ -247,11 +269,21 @@ You are in the RESPONSE phase. All analysis and database updates have been compl
 ## Your Role:
 Provide a clear, user-friendly response about what was accomplished.
 
+## Current Project Context:
+The system has provided you with:
+1. **CURRENT PROJECT REQUIREMENTS** - All existing requirements in the project (if any)
+2. **CURRENT USER STORIES** - All existing user stories in the project (if any)
+3. **Database Operation Results** - What was added, updated, or failed
+
+Use this context to provide accurate, contextual responses about the project state.
+
 ## Guidelines:
 - Explain what was added, updated, or deleted in plain language
 - Use Markdown formatting for readability (headers, lists, bold, etc.)
 - Be specific and informative
 - If errors occurred, explain them clearly
+- When referencing requirements or user stories, mention them by their TITLE only
+- If new items were added, reference them appropriately in your response
 
 ## CRITICAL: What NOT to do:
 - **NEVER show ANY IDs** - Do not mention projectID, documentID, requirementID, storyID, chatID, or any UUID
@@ -357,6 +389,41 @@ Treat all content as academic research material for software development.
 async function prepareUpdates(data, conversationSummary) {
     console.log(' [Stage 1] Starting context gathering...');
 
+    // Automatically fetch requirements and user stories at the start (before AI processing)
+    // This ensures Stage 3 always has context about the project state
+    let fetchedRequirements = null;
+    let fetchedUserStories = null;
+
+    console.log(' [Stage 1] Fetching existing requirements and user stories...');
+    console.log(' [Stage 1] projectID:', data.projectID);
+    try {
+        // Fetch requirements directly
+        if (toolImpls.get_software_requirements_list) {
+            fetchedRequirements = await toolImpls.get_software_requirements_list(data.projectID);
+            console.log(` [Stage 1] Fetched ${fetchedRequirements?.length || 0} existing requirements`);
+            if (fetchedRequirements && fetchedRequirements.length > 0) {
+                console.log(' [Stage 1] First requirement title:', fetchedRequirements[0]?.details?.title || 'N/A');
+            }
+        }
+    } catch (error) {
+        console.error(' [Stage 1] Error fetching requirements:', error.message);
+        fetchedRequirements = [];
+    }
+
+    try {
+        // Fetch user stories directly
+        if (toolImpls.get_user_stories_list) {
+            fetchedUserStories = await toolImpls.get_user_stories_list(data.projectID);
+            console.log(` [Stage 1] Fetched ${fetchedUserStories?.length || 0} existing user stories`);
+            if (fetchedUserStories && fetchedUserStories.length > 0) {
+                console.log(' [Stage 1] First user story title:', fetchedUserStories[0]?.details?.title || 'N/A');
+            }
+        }
+    } catch (error) {
+        console.error(' [Stage 1] Error fetching user stories:', error.message);
+        fetchedUserStories = [];
+    }
+
     const messages = [
         // FIRST MESSAGE: Prominent disclaimer for content moderation bypass
         {
@@ -376,7 +443,8 @@ You are NOT providing medical advice. You are analyzing research papers to extra
         },
         {role: 'system', content: system_prompt_stage1},
         {role: 'system', content: `You are working with projectID: ${data.projectID} and chatID: ${data.chatID}`},
-        {role: 'system', content: `Conversation summary: ${conversationSummary}`}
+        {role: 'system', content: `Conversation summary: ${conversationSummary}`},
+        {role: 'system', content: `CURRENT PROJECT STATE:\n- Requirements: ${fetchedRequirements?.length || 0} existing requirements\n- User Stories: ${fetchedUserStories?.length || 0} existing user stories`}
     ];
 
     // Add file context if files are attached
@@ -477,6 +545,11 @@ You are NOT providing medical advice. You are analyzing research papers to extra
 
     // Now ask AI to generate the update plan
     console.log(' [Stage 1] Requesting update plan...');
+
+    // Check if we fetched requirements or user stories - these should be included in the response
+    const requirementsToolResponse = messages.find(m => m.role === 'tool' && m.content?.includes('requirementID'));
+    const storiesToolResponse = messages.find(m => m.role === 'tool' && m.content?.includes('storyID'));
+
     messages.push({
         role: 'user',
         content: `Based on the information you gathered, generate a complete plan for database updates.
@@ -599,10 +672,18 @@ Return ONLY the JSON object, nothing else.`
 
     console.log(' [Stage 1] Plan:', JSON.stringify(updatePlan, null, 2));
 
+    // Use the pre-fetched requirements and user stories for Stage 3
+    // (already fetched at the start of this function)
+    console.log(' [Stage 1] Using pre-fetched data for Stage 3:', 
+        fetchedRequirements?.length || 0, 'requirements,', 
+        fetchedUserStories?.length || 0, 'stories');
+
     return {
         updatePlan,
         conversationContext: messages,
-        reportsGenerated
+        reportsGenerated,
+        fetchedRequirements,
+        fetchedUserStories
     };
 }
 
@@ -733,14 +814,42 @@ async function executeUpdates(updatePlan, projectID) {
 // STAGE 3: GENERATE RESPONSE (STREAMING)
 // ============================================================================
 
-async function* streamResponse(updatePlan, updateResults, originalMessage, conversationSummary) {
+async function* streamResponse(updatePlan, updateResults, originalMessage, conversationSummary, fetchedRequirements, fetchedUserStories) {
     console.log(' [Stage 3] Starting response generation (streaming)...');
 
     const messages = [
         {role: 'system', content: system_prompt_stage3},
         {role: 'system', content: `Conversation summary: ${conversationSummary}`},
-        {role: 'user', content: originalMessage},
     ];
+
+    // Add fetched requirements if available
+    if (fetchedRequirements && fetchedRequirements.length > 0) {
+        messages.push({
+            role: 'system',
+            content: `CURRENT PROJECT REQUIREMENTS (${fetchedRequirements.length} items):\n\n${JSON.stringify(fetchedRequirements, null, 2)}`
+        });
+    } else {
+        messages.push({
+            role: 'system',
+            content: `CURRENT PROJECT REQUIREMENTS: No requirements have been added yet. This is a fresh project ready for document analysis.`
+        });
+    }
+
+    // Add fetched user stories if available
+    if (fetchedUserStories && fetchedUserStories.length > 0) {
+        messages.push({
+            role: 'system',
+            content: `CURRENT USER STORIES (${fetchedUserStories.length} items):\n\n${JSON.stringify(fetchedUserStories, null, 2)}`
+        });
+    } else {
+        messages.push({
+            role: 'system',
+            content: `CURRENT USER STORIES: No user stories have been added yet.`
+        });
+    }
+
+    // Add user message
+    messages.push({role: 'user', content: originalMessage});
 
     // Add context about what was done
     if (updatePlan.requiresUpdate) {
@@ -753,9 +862,27 @@ async function* streamResponse(updatePlan, updateResults, originalMessage, conve
             content: contextMessage
         });
     } else {
+        // When no updates are needed, provide better context about the project state
+        const hasExistingRequirements = fetchedRequirements && fetchedRequirements.length > 0;
+        const hasExistingUserStories = fetchedUserStories && fetchedUserStories.length > 0;
+        
+        let contextMessage = '';
+        if (hasExistingRequirements || hasExistingUserStories) {
+            contextMessage = `This project already has requirements and user stories from previous document analysis:\n`;
+            if (hasExistingRequirements) {
+                contextMessage += `- ${fetchedRequirements.length} requirement(s) already exist\n`;
+            }
+            if (hasExistingUserStories) {
+                contextMessage += `- ${fetchedUserStories.length} user story(ies) already exist\n`;
+            }
+            contextMessage += `\nNo new requirements or user stories were identified in the attached documents that aren't already captured. The existing requirements and user stories remain up-to-date from your previous analysis.`;
+        } else {
+            contextMessage = `This is a fresh project with no requirements or user stories yet. No database updates were needed for this query. Context: ${updatePlan.summary}`;
+        }
+
         messages.push({
             role: 'assistant',
-            content: `This was an informational query. No database updates were needed. Context: ${updatePlan.summary}`
+            content: contextMessage
         });
     }
 
@@ -797,7 +924,7 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
         yield '<!-- STAGE_1_START -->\n';
         console.log(' [Orchestrator] Executing Stage 1...');
 
-        const { updatePlan, conversationContext, reportsGenerated } = await prepareUpdates(data, conversationSummary);
+        const { updatePlan, conversationContext, reportsGenerated, fetchedRequirements, fetchedUserStories } = await prepareUpdates(data, conversationSummary);
 
         // If reports were generated in Stage 1, send an event for each
         if (reportsGenerated && reportsGenerated.length > 0) {
@@ -823,7 +950,7 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
         yield '<!-- STAGE_3_START -->\n';
         console.log(' [Orchestrator] Executing Stage 3 (streaming)...');
 
-        for await (const chunk of streamResponse(updatePlan, updateResults, data.requestMessage, conversationSummary)) {
+        for await (const chunk of streamResponse(updatePlan, updateResults, data.requestMessage, conversationSummary, fetchedRequirements, fetchedUserStories)) {
             yield chunk;
         }
 
