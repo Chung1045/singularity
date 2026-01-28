@@ -734,7 +734,7 @@ router.post('/agent/analyze-documents', async (req, res) => {
     try {
         console.log("New request /agent/analyze-documents");
 
-        const { projectID, documentIDs, title } = req.body;
+        const { projectID, documentIDs, title, chatID } = req.body;
 
         // Validate required fields
         if (!projectID || !documentIDs || !Array.isArray(documentIDs) || documentIDs.length === 0) {
@@ -769,17 +769,25 @@ router.post('/agent/analyze-documents', async (req, res) => {
             try {
                 console.log(`  Reading document: ${docID}`);
                 const docData = await fss.getFileContext(projectID, docID);
-                const analysisResult = await agent.requirementAnalysisModel(docData, title);
+                let analysisResult = await agent.requirementAnalysisModel(docData, title);
                 const fileMeta = await fss.getFileMetadata(docID, projectID);
                 const documentName = fileMeta.documentName;
                 if (analysisResult.trim() == "null"){
                     console.log(`Document ${docID} doesn't match the document ${title}`);
-                    analyzedDocument.push(`Document ${documentName} doesn't match the document ${title}`);
-                    continue;
+                    analysisResult = `Document ${documentName} doesn't match the document ${title}`
                 }
                 analyzedDocument.push(analysisResult);
 
-                // Need to jsonify the document and send back to minio server
+                const data = {
+                    projectID: projectID,
+                    chatID: chatID,
+                    requestMessage: `Analyze Document ${documentName}`,
+                    attachedDocumentIDs: documentIDs
+                }
+
+                let { conversationID, chatSeq } = await aiDB.saveConversationRequest(data);
+                await aiDB.saveConversationResponse(chatSeq, conversationID, analysisResult)
+
                 const analyzedDocumentJSON = await agent.parseRequirementsToJSON(docID, analysisResult);
                 await aiDB.updateRequirements(projectID, analyzedDocumentJSON);
             } catch (error) {

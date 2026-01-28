@@ -521,7 +521,8 @@ const TempHome = ({csrfToken, userInfo}) => {
                                         body: JSON.stringify({
                                             projectID: projectID,
                                             documentIDs: selectedSource,
-                                            title: projectTitle
+                                            title: projectTitle,
+                                            chatID: localStorage.getItem("activeChatID")
                                         })
                                     });
 
@@ -536,7 +537,6 @@ const TempHome = ({csrfToken, userInfo}) => {
                                         showChatInterface();
                                         for (const analysis of data.analysis) {
                                             addMessage('ai', analysis || 'Analysis complete.');
-
                                         }
                                         window.showNotification({
                                             type: 'success',
