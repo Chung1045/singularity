@@ -458,13 +458,6 @@ const TempHome = ({csrfToken, userInfo}) => {
                         },
                         React.createElement('button', {
                             className: 'chip',
-                            onClick: () => {
-                                const input = document.getElementById('main-message-input');
-                                if (input) input.value = 'Say Hello';
-                            }
-                        }, 'Say Hello'),
-                        React.createElement('button', {
-                            className: 'chip',
                             // OLD CODE (Active):
                             // onClick: () => {
                             //     const input = document.getElementById('main-message-input');
@@ -3074,7 +3067,7 @@ async function streamChatResponse(data, typingId) {
 <!--            <div id="stage-dot-2" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>-->
 <!--            <div id="stage-dot-3" style="width: 10px; height: 10px; border-radius: 50%; background: #dee2e6; transition: all 0.3s;"></div>-->
 <!--        </div>-->
-        <span id="stage-message" style="flex: 1;">Initializing...</span>
+        <span id="stage-message" style="flex: 1;">Working on it...</span>
         <div class="spinner-small" style="width: 16px; height: 16px; border: 2px solid #dee2e6; border-top-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     `;
 
