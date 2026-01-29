@@ -963,16 +963,18 @@ function createReportItem(reportName, reportID, projectID) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '8px 12px',
-                marginLeft: '-20px',
+                // padding: '8px 12px',
+                // marginLeft: '-20px',
                 cursor: 'pointer',
                 borderRadius: '6px',
                 transition: 'background-color 0.2s',
                 fontSize: '12px',
                 color: '#1c1d21',
-                marginBottom: '4px',
+                // marginBottom: '4px',
                 fontFamily: 'Inter, Helvetica',
-                position: 'relative'
+                position: 'relative',
+                width: 'calc(100% + 50px)',
+                // margin: '0 -20px 0 -20px'
             },
             onMouseEnter: (e) => {
                 e.currentTarget.style.backgroundColor = '#f5f5f5';
@@ -1014,7 +1016,20 @@ function createReportItem(reportName, reportID, projectID) {
                     textOverflow: 'ellipsis',
                     flex: 1,
                     fontSize: '14px',
-                    paddingLeft: '10px'
+                     // paddingLeft: '10px',
+
+                    justifyContent: 'space-between',
+                     padding: '8px 10px',
+                    // marginLeft: '-20px',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    transition: 'background-color 0.2s',
+                    color: '#1c1d21',
+                    marginBottom: '4px',
+                    fontFamily: 'Inter, Helvetica',
+                    position: 'relative',
+                    width: 'calc(100% + 50px)',
+                    // margin: '0 -20px 0 -20px'
                 },
                 title: reportName // Tooltip shows full name on hover
             }, reportName),

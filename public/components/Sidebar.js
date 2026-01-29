@@ -1414,12 +1414,14 @@
                         'aria-label': 'Search files',
                         style: {
                             marginBottom: '20px',
-                            // --- NEW: Dynamic Width ---
-                            width: !sidebarCollapsed ? 'calc(100% - 46px)' : 'auto',
-                            marginLeft: '21px',
+                            // --- Collapsed: let CSS handle positioning ---
+                            ...(sidebarCollapsed ? {} : {
+                                width: 'calc(100% - 46px)',
+                                marginLeft: '21px'
+                            }),
                             marginRight: '25px',
                             boxSizing: 'border-box',
-                            display: !sidebarCollapsed ? 'flex' : 'none'
+                            display: 'flex'
                         }
                     },
                     React.createElement('img', {
@@ -1469,8 +1471,13 @@
                                     setHistoryExpanded(newState);
                                     localStorage.setItem('historyExpanded', JSON.stringify(newState));
                                 },
-                                // --- NEW: Button Stretches ---
-                                style: {
+                                // --- Collapsed: center content, Expanded: space-between ---
+                                style: sidebarCollapsed ? {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxSizing: 'border-box'
+                                } : {
                                     width: '100%',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -1479,7 +1486,7 @@
                                     paddingRight: '20px'
                                 }
                             },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, overflow: 'hidden' } },
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
                                 React.createElement('img', {
                                     className: 'slash-circle',
                                     src: './img/slash-circle-1.svg',
@@ -1529,7 +1536,7 @@
                             },
                             React.createElement('div', {
                                 id: "div-chat-history-list",
-                                style: { display: "flex", flexDirection: "column", gap: "5px", width: '100%', margin: '0 0 0 -20px' }
+                                style: { display: "flex", flexDirection: "column", gap: "5px", width: 'calc(100% + 40px)', margin: '0 50px 0 -20px' }
                             }),
                             React.createElement('p', {
                                 id: "p-label-chat-history-no-entry",
@@ -1554,8 +1561,13 @@
                                     setSourceExpanded(newState);
                                     localStorage.setItem('sourceExpanded', JSON.stringify(newState));
                                 },
-                                // --- NEW: Button Stretches ---
-                                style: {
+                                // --- Collapsed: center content, Expanded: space-between ---
+                                style: sidebarCollapsed ? {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxSizing: 'border-box'
+                                } : {
                                     width: '100%',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -1564,7 +1576,7 @@
                                     paddingRight: '20px'
                                 }
                             },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, overflow: 'hidden' } },
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
                                 React.createElement('img', {
                                     className: 'slash-circle',
                                     src: './img/slash-circle-1.svg',
@@ -1651,7 +1663,7 @@
                             ),
                             React.createElement('div', {
                                 id: "div-project-source-list",
-                                style: { display: "flex", flexDirection: "column", gap: "5px", width: 'calc(100% + 40px)', margin: '0 0 0 -20px' }
+                                style: { display: "flex", flexDirection: "column", gap: "5px", width: 'calc(100% + 40px)', margin: '0 -20px 0 -20px' }
                             }),
                             React.createElement('p', {
                                 id: "p-label-source-no-entry",
@@ -1676,8 +1688,13 @@
                                     setRequirementsExpanded(newState);
                                     localStorage.setItem('requirementsExpanded', JSON.stringify(newState));
                                 },
-                                // --- NEW: Button Stretches ---
-                                style: {
+                                // --- Collapsed: center content, Expanded: space-between ---
+                                style: sidebarCollapsed ? {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxSizing: 'border-box'
+                                } : {
                                     width: '100%',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -1686,7 +1703,7 @@
                                     paddingRight: '20px'
                                 }
                             },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, overflow: 'hidden' } },
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
                                 React.createElement('img', {
                                     className: 'slash-circle',
                                     src: './img/slash-circle-1.svg',
@@ -1771,7 +1788,7 @@
                             ),
                             React.createElement('div', {
                                 id: "div-requirements-list",
-                                style: { display: "flex", flexDirection: "column", gap: "5px", width: '100%', margin: '0 0 0 -20px' }
+                                style: { display: "flex", flexDirection: "column", gap: "0", width: '100%', margin: '0 -20px 0 -20px' }
                             }),
                             React.createElement('p', {
                                 id: "p-label-requirements-no-entry",

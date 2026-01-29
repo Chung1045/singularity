@@ -254,9 +254,9 @@ a {
 }
 .sidebar-expand .img {
     position: relative;
-    width: 18px;
-    height: 18px;
-    margin-top: -0.13px;
+    width: 20px;
+    height: 20px;
+    margin-top: 2.87px;
     margin-bottom: -0.13px;
-    aspect-ratio: 1.19;
+    aspect-ratio: 3;
 }

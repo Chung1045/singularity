@@ -737,7 +737,7 @@ const TempHome = ({csrfToken, userInfo}) => {
                                     submitConversationRequest();
                                 }
                             },
-                            React.createElement('img', {className: 'img', src: './img/vector-3.svg', alt: ''})
+                            React.createElement('img', {className: 'img', src: './img/Send.svg', alt: ''})
                         )
                     )
                 )
