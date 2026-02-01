@@ -4,8 +4,9 @@
     /**
      * RightSidebar Component
      * A draggable right sidebar with resizable width (matches left sidebar)
+     * Contains the Requirements/Report section moved from left sidebar
      */
-    window.RightSidebar = function RightSidebar() {
+    window.RightSidebar = function RightSidebar({ selectedProjectID }) {
         // --- Resizing Logic (matching left sidebar) ---
         const [sidebarWidth, setSidebarWidth] = useState(() => {
             const saved = localStorage.getItem('rightSidebarWidth');
@@ -98,16 +99,189 @@
                     gap: '16px'
                 }
             },
-                // Placeholder content - will be populated later
+                // Reports section (moved from left sidebar, redesigned)
                 React.createElement('div', {
-                    style: {
-                        fontFamily: 'Inter, Helvetica',
-                        fontSize: '14px',
-                        color: '#666',
-                        textAlign: 'center',
-                        marginTop: '40px'
-                    }
-                }, 'Right sidebar content will go here')
+                        id: 'right-sidebar-requirements-wrapper',
+                        style: { width: '100%', display: 'flex', flexDirection: 'column', gap: '0px' }
+                    },
+                    // Header "Reports"
+                    React.createElement('h2', {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: '700',
+                                fontSize: '14px',
+                                color: '#000000',
+                                margin: '0 0 20px 0',
+                                padding: '0'
+                            }
+                        }, 'Reports'
+                    ),
+
+                    // Generate User Stories Report Button
+                    selectedProjectID && React.createElement('button', {
+                            id: 'btn-generate-user-stories',
+                            'aria-label': 'Generate User Stories Report',
+                            onClick: async () => {
+                                if (typeof window.generateUserStoryReport === 'function') {
+                                    await window.generateUserStoryReport();
+                                }
+                            },
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px 16px',
+                                backgroundColor: '#ffffff',
+                                border: '1.67px solid #e4e4e4',
+                                borderRadius: '15px',
+                                cursor: 'pointer',
+                                marginBottom: '10px',
+                                transition: 'background-color 0.2s, border-color 0.2s',
+                                width: '100%',
+                                boxSizing: 'border-box'
+                            },
+                            onMouseEnter: (e) => {
+                                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                e.currentTarget.style.borderColor = '#d0d0d0';
+                            },
+                            onMouseLeave: (e) => {
+                                e.currentTarget.style.backgroundColor = '#ffffff';
+                                e.currentTarget.style.borderColor = '#e4e4e4';
+                            }
+                        },
+                        React.createElement('img', {
+                            src: './img/UserStoriesIcon.svg',
+                            alt: '',
+                            style: { width: '18px', height: '18px', flexShrink: 0 }
+                        }),
+                        React.createElement('span', {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                color: '#000000',
+                                flex: 1,
+                                textAlign: 'left'
+                            }
+                        }, 'Generate User Stories Report')
+                    ),
+
+                    // Generate Requirement Report Button
+                    selectedProjectID && React.createElement('button', {
+                            id: 'btn-generate-requirements',
+                            'aria-label': 'Generate Requirement Report',
+                            onClick: async () => {
+                                if (typeof window.generateRequirementsReport === 'function') {
+                                    await window.generateRequirementsReport();
+                                }
+                            },
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px 16px',
+                                backgroundColor: '#ffffff',
+                                border: '1.67px solid #e4e4e4',
+                                borderRadius: '15px',
+                                cursor: 'pointer',
+                                marginBottom: '20px',
+                                transition: 'background-color 0.2s, border-color 0.2s',
+                                width: '100%',
+                                boxSizing: 'border-box'
+                            },
+                            onMouseEnter: (e) => {
+                                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                e.currentTarget.style.borderColor = '#d0d0d0';
+                            },
+                            onMouseLeave: (e) => {
+                                e.currentTarget.style.backgroundColor = '#ffffff';
+                                e.currentTarget.style.borderColor = '#e4e4e4';
+                            }
+                        },
+                        React.createElement('img', {
+                            src: './img/RequirementsIcon.svg',
+                            alt: '',
+                            style: { width: '18px', height: '18px', flexShrink: 0 }
+                        }),
+                        React.createElement('span', {
+                            style: {
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                color: '#000000',
+                                flex: 1,
+                                textAlign: 'left'
+                            }
+                        }, 'Generate Requirement Report')
+                    ),
+
+                    // Horizontal divider
+                    React.createElement('hr', {
+                        style: {
+                            width: '100%',
+                            border: 'none',
+                            borderTop: '2px solid #e4e4e4',
+                            margin: '0 0 20px 0'
+                        }
+                    }),
+
+                    // Manage Requirements Panel Button
+                    selectedProjectID && React.createElement('button', {
+                            id: 'right-sidebar-manage-requirements-button',
+                            'aria-label': 'Manage requirement / stories',
+                            onClick: async () => {
+                                if (typeof window.openRequirementsPanel === 'function') {
+                                    window.openRequirementsPanel();
+                                }
+                            },
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 14px',
+                                backgroundColor: 'rgb(30, 41, 59)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                color: '#ffffff',
+                                fontSize: '13px',
+                                fontFamily: 'Inter, Helvetica',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                marginBottom: '15px',
+                                transition: 'background-color 0.2s',
+                                width: '100%',
+                                boxSizing: 'border-box'
+                            },
+                            onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)'; },
+                            onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
+                        },
+                        React.createElement('img', {
+                            src: './img/edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
+                            alt: '',
+                            style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)', flexShrink: 0 }
+                        }),
+                        'Manage Requirements / Stories'
+                    ),
+
+                    // Requirements List
+                    React.createElement('div', {
+                        id: "div-requirements-list-right",
+                        style: { display: "flex", flexDirection: "column", gap: "8px", width: '100%' }
+                    }),
+
+                    // No requirements label
+                    React.createElement('p', {
+                        id: "p-label-requirements-no-entry-right",
+                        style: {
+                            fontSize: '14px',
+                            color: '#999',
+
+                            textAlign: 'left',
+                            marginTop: '20px',
+                            fontFamily: 'Inter, Helvetica'
+                        }
+                    }, 'No reports yet')
+                )
             )
         );
     };

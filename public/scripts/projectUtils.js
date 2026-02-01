@@ -737,14 +737,17 @@ async function fetchProjectReports(projectID) {
     console.log(` fetchProjectReports called with ProjectID: ${projectID}`);
 
     const reportsListContainer = document.getElementById("div-requirements-list");
+    const reportsListContainerRight = document.getElementById("div-requirements-list-right");
 
-    if (!reportsListContainer) {
-        console.warn(" Reports list container (div-requirements-list) not found on this page");
+    if (!reportsListContainer && !reportsListContainerRight) {
+        console.warn(" Reports list containers not found on this page");
         return;
     }
 
     const noReportsLabel = document.getElementById("p-label-requirements-no-entry");
-    console.log(` Found noReportsLabel:`, noReportsLabel ? 'yes' : 'no');
+    const noReportsLabelRight = document.getElementById("p-label-requirements-no-entry-right");
+    console.log(` Found noReportsLabel (left):`, noReportsLabel ? 'yes' : 'no');
+    console.log(` Found noReportsLabel (right):`, noReportsLabelRight ? 'yes' : 'no');
 
     try {
         console.log(` Fetching reports from API...`);
@@ -766,8 +769,9 @@ async function fetchProjectReports(projectID) {
             console.log(` Reports Response Data:`, data);
             console.log(` Number of reports: ${data.reports?.length || 0}`);
 
-            reportsListContainer.innerHTML = '';
-            console.log(` Cleared reportsListContainer`);
+            if (reportsListContainer) reportsListContainer.innerHTML = '';
+            if (reportsListContainerRight) reportsListContainerRight.innerHTML = '';
+            console.log(` Cleared reports containers`);
 
             if (data.reports && data.reports.length > 0) {
                 // Categorize reports by type (including PDF versions)
@@ -786,18 +790,39 @@ async function fetchProjectReports(projectID) {
                 if (requirementsReports.length > 0) {
                     hasReports = true;
                     console.log(` Rendering ${requirementsReports.length} requirements report(s)`);
-                    const reqHeader = document.createElement('div');
-                    reqHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-bottom: 8px; font-family: Inter, Helvetica;';
-                    reqHeader.textContent = 'Requirements';
-                    reportsListContainer.appendChild(reqHeader);
 
-                    for (let report of requirementsReports) {
-                        console.log(` Rendering report: ${report.reportName} (ID: ${report.reportID})`);
-                        const reportElement = createReportItem(report.reportName, report.reportID, projectID);
-                        const wrapper = document.createElement('div');
-                        reportsListContainer.appendChild(wrapper);
-                        const root = ReactDOM.createRoot(wrapper);
-                        root.render(reportElement);
+                    // Render to left sidebar (if exists)
+                    if (reportsListContainer) {
+                        const reqHeader = document.createElement('div');
+                        reqHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-bottom: 8px; font-family: Inter, Helvetica;';
+                        reqHeader.textContent = 'Requirements';
+                        reportsListContainer.appendChild(reqHeader);
+
+                        for (let report of requirementsReports) {
+                            console.log(` Rendering report (left): ${report.reportName} (ID: ${report.reportID})`);
+                            const reportElement = createReportItem(report.reportName, report.reportID, projectID, report.reportType);
+                            const wrapper = document.createElement('div');
+                            reportsListContainer.appendChild(wrapper);
+                            const root = ReactDOM.createRoot(wrapper);
+                            root.render(reportElement);
+                        }
+                    }
+
+                    // Render to right sidebar (if exists)
+                    if (reportsListContainerRight) {
+                        const reqHeaderRight = document.createElement('div');
+                        reqHeaderRight.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-bottom: 8px; font-family: Inter, Helvetica;';
+                        reqHeaderRight.textContent = 'Requirements';
+                        reportsListContainerRight.appendChild(reqHeaderRight);
+
+                        for (let report of requirementsReports) {
+                            console.log(` Rendering report (right): ${report.reportName} (ID: ${report.reportID})`);
+                            const reportElement = createReportItem(report.reportName, report.reportID, projectID, report.reportType);
+                            const wrapper = document.createElement('div');
+                            reportsListContainerRight.appendChild(wrapper);
+                            const root = ReactDOM.createRoot(wrapper);
+                            root.render(reportElement);
+                        }
                     }
                     console.log(` Requirements reports rendered`);
                 }
@@ -806,32 +831,55 @@ async function fetchProjectReports(projectID) {
                 if (userStoriesReports.length > 0) {
                     hasReports = true;
                     console.log(` Rendering ${userStoriesReports.length} user stories report(s)`);
-                    const usHeader = document.createElement('div');
-                    usHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-top: 12px; margin-bottom: 8px; font-family: Inter, Helvetica;';
-                    usHeader.textContent = 'User Stories';
-                    reportsListContainer.appendChild(usHeader);
 
-                    for (let report of userStoriesReports) {
-                        console.log(` Rendering report: ${report.reportName} (ID: ${report.reportID})`);
-                        const reportElement = createReportItem(report.reportName, report.reportID, projectID);
-                        const wrapper = document.createElement('div');
-                        reportsListContainer.appendChild(wrapper);
-                        const root = ReactDOM.createRoot(wrapper);
-                        root.render(reportElement);
+                    // Render to left sidebar (if exists)
+                    if (reportsListContainer) {
+                        const usHeader = document.createElement('div');
+                        usHeader.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-top: 12px; margin-bottom: 8px; font-family: Inter, Helvetica;';
+                        usHeader.textContent = 'User Stories';
+                        reportsListContainer.appendChild(usHeader);
+
+                        for (let report of userStoriesReports) {
+                            console.log(` Rendering report (left): ${report.reportName} (ID: ${report.reportID})`);
+                            const reportElement = createReportItem(report.reportName, report.reportID, projectID, report.reportType);
+                            const wrapper = document.createElement('div');
+                            reportsListContainer.appendChild(wrapper);
+                            const root = ReactDOM.createRoot(wrapper);
+                            root.render(reportElement);
+                        }
+                    }
+
+                    // Render to right sidebar (if exists)
+                    if (reportsListContainerRight) {
+                        const usHeaderRight = document.createElement('div');
+                        usHeaderRight.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-top: 12px; margin-bottom: 8px; font-family: Inter, Helvetica;';
+                        usHeaderRight.textContent = 'User Stories';
+                        reportsListContainerRight.appendChild(usHeaderRight);
+
+                        for (let report of userStoriesReports) {
+                            console.log(` Rendering report (right): ${report.reportName} (ID: ${report.reportID})`);
+                            const reportElement = createReportItem(report.reportName, report.reportID, projectID, report.reportType);
+                            const wrapper = document.createElement('div');
+                            reportsListContainerRight.appendChild(wrapper);
+                            const root = ReactDOM.createRoot(wrapper);
+                            root.render(reportElement);
+                        }
                     }
                     console.log(` User stories reports rendered`);
                 }
 
-                if (noReportsLabel) {
-                    noReportsLabel.style.display = hasReports ? 'none' : 'block';
-                    console.log(` NoReportsLabel display: ${hasReports ? 'none' : 'block'}`);
-                }
+                if (noReportsLabel) noReportsLabel.style.display = hasReports ? 'none' : 'block';
+                if (noReportsLabelRight) noReportsLabelRight.style.display = hasReports ? 'none' : 'block';
+                console.log(` NoReportsLabel display: ${hasReports ? 'none' : 'block'}`);
             } else {
                 console.log(` No reports found for this project`);
                 if (noReportsLabel) {
                     noReportsLabel.style.display = 'block';
-                    console.log(` Showing "No requirements yet" label`);
                 }
+                if (noReportsLabelRight) {
+                    noReportsLabelRight.style.display = 'block';
+                }
+                console.log(` Showing "No requirements yet" labels`);
             }
         } else {
             console.error(` API request failed with status: ${response.status}`);
@@ -846,14 +894,23 @@ async function fetchProjectReports(projectID) {
  * @param {string} reportName - The name of the report
  * @param {string} reportID - The UUID of the report
  * @param {string} projectID - The UUID of the project
+ * @param {string} reportType - The type of report ('requirements' or 'userStories')
  */
-function createReportItem(reportName, reportID, projectID) {
+function createReportItem(reportName, reportID, projectID, reportType) {
     const { useState, useRef, useEffect } = React;
 
     const ReportItemComponent = () => {
         const [menuOpen, setMenuOpen] = useState(false);
         const [isChecked, setIsChecked] = useState(false);
         const menuRef = useRef(null);
+
+        // Determine icon based on report type
+        const isUserStories = reportType && (
+            reportType.toLowerCase().includes('userstories') ||
+            reportType.toLowerCase().includes('user_stories') ||
+            reportType.toLowerCase().includes('user stories')
+        );
+        const iconSrc = isUserStories ? './img/UserStoriesIcon.svg' : './img/RequirementsIcon.svg';
 
         // Close menu when clicking outside
         useEffect(() => {
@@ -963,18 +1020,17 @@ function createReportItem(reportName, reportID, projectID) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                // padding: '8px 12px',
-                // marginLeft: '-20px',
+                padding: '8px 12px',
                 cursor: 'pointer',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 transition: 'background-color 0.2s',
-                fontSize: '12px',
+                fontSize: '14px',
                 color: '#1c1d21',
-                // marginBottom: '4px',
+                marginBottom: '4px',
                 fontFamily: 'Inter, Helvetica',
                 position: 'relative',
-                width: 'calc(100% + 50px)',
-                // margin: '0 -20px 0 -20px'
+                width: '100%',
+                boxSizing: 'border-box'
             },
             onMouseEnter: (e) => {
                 e.currentTarget.style.backgroundColor = '#f5f5f5';
@@ -985,21 +1041,27 @@ function createReportItem(reportName, reportID, projectID) {
                 }
             },
             onClick: (e) => {
-                // Download the report on click (unless clicking checkbox or menu)
+                // Download the report on click (unless clicking checkbox or menu button)
                 if (e.target.type !== 'checkbox' && e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
                     handleDownload(e);
                 }
             }
         },
-            // Checkbox - click to show/hide menu
+            // Checkbox - click to show/hide three-dot menu
             React.createElement('input', {
                 type: 'checkbox',
                 className: 'report-checkbox',
-                style: { width: "16px", height: "16px", flexShrink: 0, cursor: 'pointer' },
+                checked: isChecked,
+                style: {
+                    width: '16px',
+                    height: '16px',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    marginRight: '12px'
+                },
                 onChange: (e) => {
                     e.stopPropagation();
                     const checked = e.target.checked;
-                    console.log(`Report checkbox ${checked ? 'checked' : 'unchecked'} for ${reportName}`);
                     setIsChecked(checked);
                     if (!checked) {
                         setMenuOpen(false);
@@ -1007,6 +1069,19 @@ function createReportItem(reportName, reportID, projectID) {
                 },
                 onClick: (e) => e.stopPropagation()
             }),
+
+            // Document icon - different for Requirements vs User Stories
+            React.createElement('img', {
+                src: iconSrc,
+                alt: '',
+                style: {
+                    width: '18px',
+                    height: '18px',
+                    flexShrink: 0,
+                    marginRight: '12px'
+                }
+            }),
+
             // Report name with tooltip on hover
             React.createElement('span', {
                 id: `sidebar-report-name-${reportID}`,
@@ -1016,20 +1091,8 @@ function createReportItem(reportName, reportID, projectID) {
                     textOverflow: 'ellipsis',
                     flex: 1,
                     fontSize: '14px',
-                     // paddingLeft: '10px',
-
-                    justifyContent: 'space-between',
-                     padding: '8px 10px',
-                    // marginLeft: '-20px',
-                    cursor: 'pointer',
-                    borderRadius: '6px',
-                    transition: 'background-color 0.2s',
                     color: '#1c1d21',
-                    marginBottom: '4px',
-                    fontFamily: 'Inter, Helvetica',
-                    position: 'relative',
-                    width: 'calc(100% + 50px)',
-                    // margin: '0 -20px 0 -20px'
+                    fontFamily: 'Inter, Helvetica'
                 },
                 title: reportName // Tooltip shows full name on hover
             }, reportName),
@@ -1037,20 +1100,20 @@ function createReportItem(reportName, reportID, projectID) {
             // Options menu container - only visible when checkbox is checked
             isChecked && React.createElement('div', {
                 ref: menuRef,
-                style: { position: 'relative' }
+                style: { position: 'relative', marginLeft: '8px' }
             },
-                // Options button (three dots) - 30x30 fixed size
+                // Options button (three dots) - always visible
                 React.createElement('img', {
                     id: `sidebar-report-options-btn-${reportID}`,
                     className: 'report-menu-btn',
                     src: './img/more_vert_24.svg',
                     alt: 'Options',
                     style: {
-                        width: '30px',
-                        height: '30px',
+                        width: '24px',
+                        height: '24px',
                         padding: '4px',
                         flexShrink: 0,
-                        borderRadius: '5px',
+                        borderRadius: '4px',
                         transition: 'background-color 0.2s',
                         backgroundColor: 'transparent',
                         cursor: 'pointer'

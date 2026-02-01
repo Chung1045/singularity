@@ -33,6 +33,9 @@ const TempHome = ({csrfToken, userInfo}) => {
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
 
+    // Track selected project ID for right sidebar
+    const [selectedProjectID, setSelectedProjectID] = useState(null);
+
     React.useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
@@ -68,6 +71,22 @@ const TempHome = ({csrfToken, userInfo}) => {
         }
 
         fetchAvatar();
+    }, []);
+
+    // Sync selected project ID from sidebar
+    React.useEffect(() => {
+        const syncProjectID = () => {
+            const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+            setSelectedProjectID(projectID);
+        };
+
+        // Initial sync
+        syncProjectID();
+
+        // Poll for changes (sidebar updates this function)
+        const interval = setInterval(syncProjectID, 500);
+
+        return () => clearInterval(interval);
     }, []);
 
     const isMobile = windowWidth <= 480;
@@ -744,7 +763,7 @@ const TempHome = ({csrfToken, userInfo}) => {
             ),
 
             // Right Sidebar Component
-            React.createElement(window.RightSidebar)
+            React.createElement(window.RightSidebar, { selectedProjectID: selectedProjectID })
         )
     );
 };
@@ -3508,42 +3527,144 @@ async function loadChatThread(chatID) {
 }
 
 async function generateUserStoryReport(projectID){
-    // your logic here
-    const response = await fetch('/api/agent/document-generation/user-stories', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            projectID: projectID
-        })
-    });
+    // Get projectID if not provided
+    if (!projectID) {
+        projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+    }
 
-    if (response.ok) {
-        await fetchProjectReports()
-    } else {
+    if (!projectID) {
+        console.error('No project selected');
+        if (window.showNotification) {
+            await window.showNotification({
+                type: 'error',
+                title: 'No Project',
+                message: 'Please select a project first.',
+                actionText: 'OK'
+            });
+        }
+        return;
+    }
 
+    try {
+        const response = await fetch('/api/agent/document-generation/user-stories', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                projectID: projectID
+            })
+        });
+
+        if (response.ok) {
+            if (typeof window.fetchProjectReports === 'function') {
+                await window.fetchProjectReports(projectID);
+            }
+            if (window.showNotification) {
+                await window.showNotification({
+                    type: 'success',
+                    title: 'Report Generated',
+                    message: 'User Stories report has been generated successfully.',
+                    actionText: 'OK'
+                });
+            }
+        } else {
+            const errorData = await response.json();
+            console.error('Generation failed:', errorData);
+            if (window.showNotification) {
+                await window.showNotification({
+                    type: 'error',
+                    title: 'Generation Failed',
+                    message: errorData.message || 'Failed to generate User Stories report.',
+                    actionText: 'OK'
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error generating User Stories report:', error);
+        if (window.showNotification) {
+            await window.showNotification({
+                type: 'error',
+                title: 'Error',
+                message: 'An error occurred while generating the report.',
+                actionText: 'OK'
+            });
+        }
     }
 }
+
+// Make it globally available
+window.generateUserStoryReport = generateUserStoryReport;
 
 async function generateRequirementsReport(projectID){
-    // your logic here
-    const response = await fetch('/api/agent/document-generation/requirements', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            projectID: projectID
-        })
-    });
+    // Get projectID if not provided
+    if (!projectID) {
+        projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+    }
 
-    if (response.ok) {
-        await fetchProjectReports()
-    } else {
+    if (!projectID) {
+        console.error('No project selected');
+        if (window.showNotification) {
+            await window.showNotification({
+                type: 'error',
+                title: 'No Project',
+                message: 'Please select a project first.',
+                actionText: 'OK'
+            });
+        }
+        return;
+    }
 
+    try {
+        const response = await fetch('/api/agent/document-generation/requirements', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                projectID: projectID
+            })
+        });
+
+        if (response.ok) {
+            if (typeof window.fetchProjectReports === 'function') {
+                await window.fetchProjectReports(projectID);
+            }
+            if (window.showNotification) {
+                await window.showNotification({
+                    type: 'success',
+                    title: 'Report Generated',
+                    message: 'Requirements report has been generated successfully.',
+                    actionText: 'OK'
+                });
+            }
+        } else {
+            const errorData = await response.json();
+            console.error('Generation failed:', errorData);
+            if (window.showNotification) {
+                await window.showNotification({
+                    type: 'error',
+                    title: 'Generation Failed',
+                    message: errorData.message || 'Failed to generate Requirements report.',
+                    actionText: 'OK'
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error generating Requirements report:', error);
+        if (window.showNotification) {
+            await window.showNotification({
+                type: 'error',
+                title: 'Error',
+                message: 'An error occurred while generating the report.',
+                actionText: 'OK'
+            });
+        }
     }
 }
+
+// Make it globally available
+window.generateRequirementsReport = generateRequirementsReport;
 
 async function downloadReport(projectID, reportID) {
 

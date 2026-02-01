@@ -148,6 +148,11 @@ a {
   margin: 0;
   padding: 0;
 }
+
+/* Hide requirements section from left sidebar on home page */
+#sidebar-requirements-wrapper {
+  display: none !important;
+}
 .sidebar-expand .input-field {
   margin: 0 auto;
   width: 90%;

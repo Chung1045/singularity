@@ -1788,7 +1788,7 @@
                             ),
                             React.createElement('div', {
                                 id: "div-requirements-list",
-                                style: { display: "flex", flexDirection: "column", gap: "0", width: '100%', margin: '0 -20px 0 -20px' }
+                                style: { display: "flex", flexDirection: "column", gap: "0", margin: '0 -20px 0 -20px' }
                             }),
                             React.createElement('p', {
                                 id: "p-label-requirements-no-entry",
