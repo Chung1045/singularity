@@ -2552,7 +2552,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
             display: flex;
             flex-direction: column;
             gap: 8px;
-            max-width: 600px;
+            /* max-width: 600px; */
         `;
 
         contentWrapper.appendChild(bubble);
