@@ -228,6 +228,23 @@
     align-items: flex-end;
 }
 
+/* Message timestamp styling */
+.message-timestamp {
+    font-size: 11px;
+    color: #999;
+    font-family: 'Inter', Helvetica;
+}
+
+/* AI message timestamp alignment */
+.ai-message .message-timestamp {
+    text-align: left;
+}
+
+/* User message timestamp alignment */
+.user-message .message-timestamp {
+    text-align: right;
+}
+
 /* File chips in user messages */
 .user-message .message-bottom-row {
     justify-content: flex-end;
@@ -239,8 +256,8 @@
     border: 1px solid #e0e0e0;
 }
 
-/* Message Edit Button - positioned outside bubble with inline styles in tempHome.js */
-/* Show edit button only on hover of the message content wrapper */
+/* Message Edit Button - positioned under avatar */
+/* Show edit button only on hover of the message */
 .user-message:hover .message-edit-btn {
     opacity: 1 !important;
 }
@@ -318,6 +335,7 @@
     transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-left: 45px;
 }
 
 .chip:hover {

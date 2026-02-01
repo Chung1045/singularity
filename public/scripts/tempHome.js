@@ -2360,7 +2360,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         bubble.appendChild(textNode);
     }
 
-    // For user messages, create a content wrapper that includes bubble + files + edit button
+    // For user messages, create a content wrapper that includes bubble + timestamp + files
     if (role === 'user') {
         // Create wrapper for bubble and additional elements
         const contentWrapper = document.createElement('div');
@@ -2374,7 +2374,22 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         // Add the bubble to wrapper
         contentWrapper.appendChild(bubble);
 
-        // Create a row container for files and edit button (below bubble, same row)
+        // Add timestamp under the bubble
+        const timestamp = document.createElement('div');
+        timestamp.className = 'message-timestamp';
+        timestamp.style.cssText = `
+            font-size: 12px;
+            color: #999;
+            padding-left: 12px;
+            font-family: 'Inter', Helvetica;
+        `;
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        timestamp.textContent = `${hours}:${minutes}`;
+        contentWrapper.appendChild(timestamp);
+
+        // Create a row container for files (below timestamp)
         const bottomRow = document.createElement('div');
         bottomRow.className = 'message-bottom-row';
         bottomRow.style.cssText = `
@@ -2442,14 +2457,22 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
             });
 
             bottomRow.appendChild(filesContainer);
-        } else {
-            // Add spacer to push edit button to the left even when no files
-            const spacer = document.createElement('div');
-            spacer.style.flex = '1';
-            bottomRow.appendChild(spacer);
         }
 
-        // Add edit button to the right side of bottom row (only shows on hover via CSS)
+        contentWrapper.appendChild(bottomRow);
+
+        // Create avatar wrapper to hold avatar and edit button
+        const avatarWrapper = document.createElement('div');
+        avatarWrapper.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        `;
+
+        avatarWrapper.appendChild(avatar);
+
+        // Add edit button under the avatar (only shows on hover via CSS)
         const editBtn = document.createElement('button');
         editBtn.className = 'message-edit-btn';
         editBtn.innerHTML = 'Edit';
@@ -2465,6 +2488,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
             transition: background-color 0.2s ease, color 0.2s ease;
             opacity: 0;
             flex-shrink: 0;
+            margin-top: 9px;
         `;
 
         editBtn.onmouseenter = () => {
@@ -2484,9 +2508,9 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
             console.log('  Edit button added without data (will be updated later)');
         }
 
-        bottomRow.appendChild(editBtn);
+        avatarWrapper.appendChild(editBtn);
 
-        // Add cancel button next to edit button (hidden by default, shown in edit mode)
+        // Add cancel button under edit button (hidden by default, shown in edit mode)
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'message-cancel-btn';
         cancelBtn.innerHTML = 'Cancel';
@@ -2502,6 +2526,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
             transition: background-color 0.2s ease, color 0.2s ease;
             flex-shrink: 0;
             display: none;
+            margin-top: 8px;
         `;
 
         cancelBtn.onmouseenter = () => {
@@ -2515,16 +2540,40 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
         cancelBtn.onclick = () => cancelEditMode();
 
-        bottomRow.appendChild(cancelBtn);
-        contentWrapper.appendChild(bottomRow);
+        avatarWrapper.appendChild(cancelBtn);
 
-        // Now add avatar and contentWrapper to messageDiv
-        messageDiv.appendChild(avatar);
+        // Now add avatarWrapper and contentWrapper to messageDiv
+        messageDiv.appendChild(avatarWrapper);
         messageDiv.appendChild(contentWrapper);
     } else {
-        // AI message - simple structure (avatar + bubble)
+        // AI message - create wrapper for bubble and timestamp
+        const contentWrapper = document.createElement('div');
+        contentWrapper.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 600px;
+        `;
+
+        contentWrapper.appendChild(bubble);
+
+        // Add timestamp under the bubble
+        const timestamp = document.createElement('div');
+        timestamp.className = 'message-timestamp';
+        timestamp.style.cssText = `
+            font-size: 12px;
+            color: #999;
+            padding-left: 12px;
+            font-family: 'Inter', Helvetica;
+        `;
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        timestamp.textContent = `${hours}:${minutes}`;
+        contentWrapper.appendChild(timestamp);
+
         messageDiv.appendChild(avatar);
-        messageDiv.appendChild(bubble);
+        messageDiv.appendChild(contentWrapper);
     }
 
     messagesContainer.appendChild(messageDiv);

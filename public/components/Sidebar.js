@@ -1200,7 +1200,7 @@
                     height: '100%',
                     cursor: 'col-resize',
                     zIndex: 9999,
-                    backgroundColor: isResizing ? '#4a90e2' : 'transparent',
+                    backgroundColor: isResizing ? 'rgba(74,144,226,0)' : 'transparent',
                     transition: 'background-color 0.2s',
                     borderRight: '1px solid transparent'
                 },

@@ -78,8 +78,8 @@
                     width: '5px',
                     height: '100%',
                     cursor: 'col-resize',
-                    zIndex: 9999,
-                    backgroundColor: isResizing ? '#4a90e2' : 'transparent',
+                    // zIndex: 9999,
+                    backgroundColor: isResizing ? 'rgba(74,144,226,0)' : 'transparent',
                     transition: 'background-color 0.2s',
                     borderLeft: '1px solid transparent'
                 },
