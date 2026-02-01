@@ -40,7 +40,7 @@
     overflow: visible;
     position: relative;
     transition: width 220ms ease, flex 220ms ease;
-    z-index: 2;
+    z-index: var(--z-sidebar, 10);
 }
 
 .sidebar-expand .side-bar nav {

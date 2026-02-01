@@ -566,7 +566,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 10001
+                    zIndex: window.ZIndex?.MODAL_BACKDROP || 30
                 },
                 onClick: (e) => {
                     if (e.target === e.currentTarget) {

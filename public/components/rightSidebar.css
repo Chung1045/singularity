@@ -1,0 +1,34 @@
+/* RIGHT SIDEBAR STYLES - Matches left sidebar exactly */
+
+.right-sidebar {
+    /* Base styles are in inline styles for dynamic width */
+    /* Matches left sidebar design */
+}
+
+.right-sidebar-resizer {
+    /* Resize handle - matches left sidebar behavior */
+    /* Shows border on hover, blue background when dragging */
+}
+
+.right-sidebar-content {
+    /* Base styles are in inline styles */
+}
+
+/* Scrollbar styling for right sidebar - matches left sidebar */
+.right-sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.right-sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.right-sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.2);
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.right-sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.4);
+}

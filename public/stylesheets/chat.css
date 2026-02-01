@@ -55,7 +55,7 @@
     left: 0; /* Sidebar width (302px) + gap (5px) */
     right: 0;
     /*! width: calc(100% - 7px); */ /* Full width minus sidebar and gap */
-    z-index: 100;
+    z-index: var(--z-chat-topbar, 12);
     flex-shrink: 0;
     transition: left 220ms ease, width 220ms ease; /* Match sidebar transition */
 }
@@ -109,7 +109,7 @@
     right: 0;
     /*! height: 5px; */
     pointer-events: none;
-    z-index: 10;
+    z-index: var(--z-base, 0);
     transition: opacity 0.3s ease;
     bottom: 0;
     /*! background: linear-gradient(to top, rgb(248, 250, 252) 0%, rgba(248, 250, 252, 0.95) 30%, rgba(248, 250, 252, 0.7) 50%, transparent 100% ); */
@@ -124,7 +124,7 @@
     flex-direction: column;
     gap: 20px;
     position: relative;
-    z-index: 1;
+    z-index: var(--z-background, 1);
 }
 
 

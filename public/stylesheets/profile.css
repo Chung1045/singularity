@@ -46,7 +46,7 @@ a {
     display: flex;
     position: relative;
     background: #fff;
-    z-index: 1;
+    z-index: var(--z-background, 1);
 }
 .sidebar-expand .main-screen {
     flex: 1 1 auto;

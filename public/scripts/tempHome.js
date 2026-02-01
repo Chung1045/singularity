@@ -256,7 +256,7 @@ const TempHome = ({csrfToken, userInfo}) => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 10001,
+                        zIndex: window.ZIndex?.MODAL_BACKDROP || 30,
                         padding: '20px'
                     },
                     onClick: (e) => {
@@ -338,7 +338,7 @@ const TempHome = ({csrfToken, userInfo}) => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 10002,
+                        zIndex: window.ZIndex?.MODAL || 31,
                         padding: '20px'
                     },
                     onClick: (e) => {
@@ -374,7 +374,7 @@ const TempHome = ({csrfToken, userInfo}) => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 10002,
+                        zIndex: window.ZIndex?.MODAL || 31,
                         padding: '20px'
                     },
                     onClick: (e) => {
@@ -601,7 +601,7 @@ const TempHome = ({csrfToken, userInfo}) => {
                                         borderRadius: '11.12px',
                                         boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
                                         minWidth: '180px',
-                                        zIndex: 1000,
+                                        zIndex: window.ZIndex?.DROPDOWN || 20,
                                         overflow: 'hidden'
                                     }
                                 },
@@ -741,7 +741,10 @@ const TempHome = ({csrfToken, userInfo}) => {
                         )
                     )
                 )
-            )
+            ),
+
+            // Right Sidebar Component
+            React.createElement(window.RightSidebar)
         )
     );
 };

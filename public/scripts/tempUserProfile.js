@@ -1064,7 +1064,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 10001,
+                    zIndex: window.ZIndex?.MODAL_BACKDROP || 30,
                     padding: '20px'
                 },
                 onClick: (e) => {
