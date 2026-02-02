@@ -848,6 +848,8 @@
                 const newWidth = Math.max(320, Math.min(400, mouseEvent.clientX));
                 setSidebarWidth(newWidth);
                 localStorage.setItem('sidebarWidth', newWidth);
+                // Dispatch event for other components to listen
+                window.dispatchEvent(new CustomEvent('sidebarResized', { detail: { width: newWidth } }));
             }
         }, [isResizing]);
 
@@ -887,6 +889,33 @@
         const [successMessage, setSuccessMessage] = useState('');
         const [showErrorNotification, setShowErrorNotification] = useState(false);
         const [errorMessage, setErrorMessage] = useState('');
+
+        // Notification panel state
+        const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+        const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+
+        // Check for unread notifications on mount
+        useEffect(() => {
+            const checkUnreadNotifications = async () => {
+                try {
+                    const response = await fetch('/api/notifications/unread-count', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setHasUnreadNotifications(data.count > 0);
+                    }
+                } catch (error) {
+                    console.error('Error checking notifications:', error);
+                }
+            };
+            checkUnreadNotifications();
+            // Check every 60 seconds
+            const interval = setInterval(checkUnreadNotifications, 60000);
+            return () => clearInterval(interval);
+        }, []);
 
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
@@ -1809,6 +1838,141 @@
                     },
                     React.createElement('hr', null)
                 ),
+
+                // Notification trigger (expanded view)
+                !sidebarCollapsed && React.createElement('div', {
+                        id: 'notification-trigger-wrapper-expanded',
+                        style: {
+                            padding: '0 0 0 0',
+                            marginLeft: '0',
+                            marginBottom: '0'
+                        }
+                    },
+                    React.createElement('button', {
+                        id: 'notification-trigger-btn',
+                        onClick: () => setNotificationPanelOpen(!notificationPanelOpen),
+                        style: {
+                            position: 'relative',
+                            width: '100%',
+                            height: '40px',
+                            padding: '8px 0',
+                            border: 'none',
+                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-start',
+                            gap: '10px',
+                            outline: 'none',
+                            marginLeft: '0',
+                            transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                    },
+                        React.createElement('svg', {
+                            width: '20',
+                            height: '20',
+                            viewBox: '0 0 24 24',
+                            fill: 'none',
+                            stroke: '#333',
+                            strokeWidth: '2',
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round',
+                            style: { marginLeft: '30px' }
+                        },
+                            React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                            React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                        ),
+                        hasUnreadNotifications && React.createElement('span', {
+                            style: {
+                                position: 'absolute',
+                                top: '8px',
+                                left: '24px',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#e53935',
+                                borderRadius: '50%'
+                            }
+                        }),
+                        React.createElement('span', {
+                            style: {
+                                fontSize: '14px',
+                                color: '#333',
+                                fontWeight: '500'
+                            }
+                        }, 'Notifications')
+                    )
+                ),
+
+                // Notification trigger (collapsed view)
+                sidebarCollapsed && React.createElement('div', {
+                        id: 'notification-trigger-wrapper-collapsed',
+                        style: {
+                            display: 'flex',
+                            justifyContent: 'center',
+                            padding: '0 0 10px 0'
+                        }
+                    },
+                    React.createElement('button', {
+                        id: 'notification-trigger-btn-collapsed',
+                        onClick: () => setNotificationPanelOpen(!notificationPanelOpen),
+                        title: 'Notifications',
+                        style: {
+                            position: 'relative',
+                            width: '40px',
+                            height: '40px',
+                            padding: '8px',
+                            border: 'none',
+                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            outline: 'none',
+                            transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                    },
+                        React.createElement('svg', {
+                            width: '20',
+                            height: '20',
+                            viewBox: '0 0 24 24',
+                            fill: 'none',
+                            stroke: '#333',
+                            strokeWidth: '2',
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round'
+                        },
+                            React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                            React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                        ),
+                        hasUnreadNotifications && React.createElement('span', {
+                            style: {
+                                position: 'absolute',
+                                top: '6px',
+                                right: '8px',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#e53935',
+                                borderRadius: '50%'
+                            }
+                        })
+                    )
+                ),
+
+                // Notification Panel
+                window.NotificationPanel && React.createElement(window.NotificationPanel, {
+                    isOpen: notificationPanelOpen,
+                    onClose: () => {
+                        setNotificationPanelOpen(false);
+                        setHasUnreadNotifications(false);
+                    },
+                    sidebarCollapsed: sidebarCollapsed
+                }),
 
                 // Username section
                 React.createElement('div', {
