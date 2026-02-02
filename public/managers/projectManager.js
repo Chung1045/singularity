@@ -2,6 +2,7 @@ const credDBService = require("../services/credentialDBService");
 const uuid = require("uuid-v4");
 const dbService = require("../services/accountDBService");
 const projectDBService = require("../services/projectDBService");
+const notificationDBService = require("../services/notificationDBService");
 const fss = require("../services/fsServices")
 const express = require('express');
 const {json} = require("express");
@@ -73,6 +74,14 @@ router.post('/project/create', async (req, res) => {
 
         if (successful) {
             console.log("Project is created with ID:", data.projectID)
+
+            // Create notification for project creation
+            await notificationDBService.createProjectCreationNotification(
+                data.projectID,
+                req.userID,
+                data.projectName
+            );
+
             // Return the new projectID and projectName so frontend can use it
             return res.status(200).json({
                 success: true,
@@ -120,9 +129,19 @@ router.post('/project/delete', async (req, res) => {
 
         console.log(`✓ Authorization passed: User is project owner\n`);
 
+        // Get project name before deletion for notification
+        const projectName = await projectDBService.fetchProjectName(projectID);
+
         const successful = await projectDBService.deleteProject(projectID);
 
         if (successful) {
+            // Create notification for project deletion
+            await notificationDBService.createProjectDeletionNotification(
+                projectID,
+                req.userID,
+                projectName
+            );
+
             console.log(`\n${'═'.repeat(60)}`);
             console.log(` API RESPONSE: Project deleted successfully`);
             console.log(`${'═'.repeat(60)}\n`);

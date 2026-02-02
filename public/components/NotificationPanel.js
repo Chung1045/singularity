@@ -10,7 +10,19 @@
         const [notifications, setNotifications] = useState([]);
         const [loading, setLoading] = useState(false);
         const [sidebarWidth, setSidebarWidth] = useState(302);
+        const [refreshKey, setRefreshKey] = useState(0); // Force re-render for time updates
         const panelRef = useRef(null);
+
+        // Auto-refresh timestamps every 30 seconds
+        useEffect(() => {
+            if (!isOpen) return;
+
+            const interval = setInterval(() => {
+                setRefreshKey(prev => prev + 1); // Trigger re-render to update time displays
+            }, 30000); // Update every 30 seconds
+
+            return () => clearInterval(interval);
+        }, [isOpen]);
 
         // Track sidebar width changes
         useEffect(() => {
@@ -123,15 +135,20 @@
 
         const handleClearAll = async () => {
             try {
-                const response = await fetch('/api/notifications/clear-all', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
+                // Remove all notifications from UI
+                const notificationIds = notifications.map(n => n.notificationID);
 
-                if (response.ok) {
-                    setNotifications([]);
-                }
+                // Call API to remove each notification
+                const promises = notificationIds.map(id =>
+                    fetch('/api/notification/remove', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ notifID: id })
+                    })
+                );
+
+                await Promise.all(promises);
+                setNotifications([]);
             } catch (error) {
                 console.error('Error clearing notifications:', error);
             }
@@ -139,10 +156,10 @@
 
         const handleDismiss = async (notificationId) => {
             try {
-                const response = await fetch('/api/notifications/dismiss', {
+                const response = await fetch('/api/notification/remove', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notificationId })
+                    body: JSON.stringify({ notifID: notificationId })
                 });
 
                 if (response.ok) {
@@ -237,7 +254,7 @@
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
-                            padding: '8px 12px',
+                            padding: '5px 10px',
                             border: '1px solid #e0e0e0',
                             borderRadius: '8px',
                             backgroundColor: '#fff',
@@ -247,7 +264,11 @@
                             fontWeight: '500'
                         }
                     },
-                        React.createElement('span', null, '×'),
+                        React.createElement('img', {
+                            src: '/img/clear_all_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
+                            alt: 'Clear all',
+                            style: { width: '16px', height: '16px' }
+                        }),
                         'Clear All'
                     ),
                     // Close button
@@ -260,13 +281,25 @@
                             borderRadius: '8px',
                             backgroundColor: '#fff',
                             cursor: 'pointer',
-                            fontSize: '25px',
-                            color: '#666',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'
                         }
-                    }, '×')
+                    },
+                        React.createElement('svg', {
+                            width: '20',
+                            height: '20',
+                            viewBox: '0 0 24 24',
+                            fill: 'none',
+                            stroke: '#666',
+                            strokeWidth: '2',
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round'
+                        },
+                            React.createElement('line', { x1: '18', y1: '6', x2: '6', y2: '18' }),
+                            React.createElement('line', { x1: '6', y1: '6', x2: '18', y2: '18' })
+                        )
+                    )
                 )
             ),
 
@@ -286,7 +319,7 @@
                 }, 'No notifications') :
                 notifications.map(notification =>
                     React.createElement(NotificationItem, {
-                        key: notification.notificationID,
+                        key: `${notification.notificationID}-${refreshKey}`,
                         notification: notification,
                         onAccept: handleAccept,
                         onDecline: handleDecline,
@@ -306,7 +339,7 @@
 
         return React.createElement('div', {
             style: {
-                backgroundColor: '#fff',
+                backgroundColor: 'rgb(242, 242, 242)',
                 borderRadius: '12px',
                 padding: '16px',
                 marginBottom: '12px',
