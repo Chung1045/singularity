@@ -334,7 +334,12 @@
 
     // Individual notification item component
     const NotificationItem = ({ notification, onAccept, onDecline, onDismiss, formatTimeAgo }) => {
-        const isNew = notification.isRead === 0 || notification.isRead === false;
+        // Check if notification is new (unread AND created within last 5 minutes)
+        const notificationAge = new Date() - new Date(notification.createdAt);
+        const isUnread = notification.isRead === 0 || notification.isRead === false;
+        const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes in milliseconds
+        const isNew = isUnread && isRecent;
+
         const isInvitation = notification.notificationType === 'collaboration_invite';
 
         return React.createElement('div', {
