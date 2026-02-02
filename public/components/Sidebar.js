@@ -2031,7 +2031,16 @@
                                     padding: '10px',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '25px'
+                                    gap: '25px',
+                                    pointerEvents: 'auto'
+                                },
+                                onMouseEnter: (e) => {
+                                    e.stopPropagation();
+                                    e.currentTarget.style.backgroundColor = '#fff';
+                                },
+                                onMouseLeave: (e) => {
+                                    e.stopPropagation();
+                                    e.currentTarget.style.backgroundColor = '#fff';
                                 }
                             },
                             React.createElement('button', {
@@ -2041,7 +2050,7 @@
                                     width: '100%',
                                     padding: '0',
                                     border: 'none',
-                                    backgroundColor: 'transparent',
+                                    // backgroundColor: 'transparent',
                                     textAlign: 'left',
                                     cursor: 'pointer',
                                     fontSize: '14px',
@@ -2062,14 +2071,14 @@
                                     width: '100%',
                                     padding: '0',
                                     border: 'none',
-                                    backgroundColor: 'transparent',
+                                    // backgroundColor: 'transparent',
                                     textAlign: 'left',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                     fontFamily: 'Urbanist-SemiBold, Helvetica',
                                     fontWeight: '600',
                                     color: '#b62e2e',
-                                    transition: 'background-color 0.2s'
+                                    // transition: 'background-color 0.2s'
                                 },
                                 onClick: (e) => {
                                     e.stopPropagation();

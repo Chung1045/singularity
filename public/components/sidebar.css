@@ -450,7 +450,7 @@
     transition: all 220ms ease;
 }
 .sidebar-expand .username-display:hover {
-    opacity: 0.8;
+    /* opacity: 0.8; */ /* Removed to prevent dropdown menu from becoming transparent */
 }
 .sidebar-expand .username-display:focus {
     outline: 2px solid #4a90e2;
