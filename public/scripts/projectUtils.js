@@ -1109,8 +1109,8 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                     src: './img/more_vert_24.svg',
                     alt: 'Options',
                     style: {
-                        width: '24px',
-                        height: '24px',
+                        width: '28px',
+                        height: '28px',
                         padding: '4px',
                         flexShrink: 0,
                         borderRadius: '4px',

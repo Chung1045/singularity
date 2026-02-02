@@ -1,0 +1,226 @@
+/**
+ * ChatUtils - Utility functions for chat
+ */
+
+const ChatUtils = {
+    /**
+     * Render markdown to HTML
+     * @param {string} text
+     * @returns {string}
+     */
+    renderMarkdown(text) {
+        const source = text || '';
+        if (window.marked && typeof window.marked.parse === 'function') {
+            try {
+                const rawHtml = window.marked.parse(source, { breaks: true });
+                if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+                    return window.DOMPurify.sanitize(rawHtml);
+                }
+                return rawHtml;
+            } catch (e) {
+                console.error('Error rendering markdown:', e);
+                return source.replace(/\n/g, '<br>');
+            }
+        }
+        return source.replace(/\n/g, '<br>');
+    },
+
+    /**
+     * Scroll chat to bottom
+     */
+    scrollToBottom() {
+        const chatInterface = document.getElementById('chat-interface');
+        if (chatInterface) {
+            chatInterface.scrollTop = chatInterface.scrollHeight;
+        }
+    },
+
+    /**
+     * Show typing indicator
+     * @returns {string} Indicator ID
+     */
+    showTypingIndicator() {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return null;
+
+        const id = 'typing-indicator-' + Date.now();
+        const typingDiv = document.createElement('div');
+        typingDiv.id = id;
+        typingDiv.className = 'message ai-message';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble typing-bubble';
+        bubble.innerHTML = `
+            <div class="typing-indicator">
+                <span></span><span></span><span></span>
+            </div>
+        `;
+
+        typingDiv.appendChild(avatar);
+        typingDiv.appendChild(bubble);
+        messagesContainer.appendChild(typingDiv);
+        this.scrollToBottom();
+
+        return id;
+    },
+
+    /**
+     * Remove typing indicator
+     * @param {string} id
+     */
+    removeTypingIndicator(id) {
+        const typing = document.getElementById(id);
+        if (typing) typing.remove();
+    },
+
+    /**
+     * Show chat interface
+     */
+    showChatInterface() {
+        const chatInterface = document.getElementById('chat-interface');
+        const chatTopBar = document.getElementById('chat-top-bar');
+        const suggestionChips = document.getElementById('suggestion-chips');
+        const mainScreenTitle = document.querySelector('.main-screen-title');
+
+        if (chatInterface) chatInterface.style.display = 'flex';
+        if (chatTopBar) chatTopBar.style.display = 'flex';
+        if (suggestionChips) suggestionChips.style.display = 'flex';
+        if (mainScreenTitle) mainScreenTitle.style.display = 'none';
+    },
+
+    /**
+     * Hide chat interface
+     */
+    hideChatInterface() {
+        const chatInterface = document.getElementById('chat-interface');
+        const chatTopBar = document.getElementById('chat-top-bar');
+        const suggestionChips = document.getElementById('suggestion-chips');
+        const mainScreenTitle = document.querySelector('.main-screen-title');
+
+        if (chatInterface) chatInterface.style.display = 'none';
+        if (chatTopBar) chatTopBar.style.display = 'none';
+        if (suggestionChips) suggestionChips.style.display = 'none';
+        if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
+    },
+
+    /**
+     * Post-process download links in AI messages
+     * @param {HTMLElement} bubble
+     */
+    postProcessDownloadLinks(bubble) {
+        if (!bubble) return;
+
+        const html = bubble.innerHTML;
+        const docxPattern = /([A-Za-z0-9_\-\s]+\.docx)/gi;
+
+        const processedHtml = html.replace(docxPattern, (match) => {
+            if (html.includes(`data-report-download="${match}"`)) {
+                return match;
+            }
+            return `<a href="#" class="report-download-link" data-report-download="${match}" style="color: #007bff; text-decoration: underline; cursor: pointer;">${match}</a>`;
+        });
+
+        if (processedHtml !== html) {
+            bubble.innerHTML = processedHtml;
+
+            const downloadLinks = bubble.querySelectorAll('.report-download-link');
+            downloadLinks.forEach(link => {
+                link.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const fileName = link.dataset.reportDownload;
+                    await ReportService.downloadByName(fileName);
+                });
+            });
+        }
+    },
+
+    /**
+     * Set bubble content with optional markdown
+     * @param {HTMLElement} bubble
+     * @param {string} text
+     * @param {Object} options
+     */
+    setBubbleContent(bubble, text, { allowMarkdown = false } = {}) {
+        if (!bubble) return;
+        if (allowMarkdown) {
+            bubble.innerHTML = this.renderMarkdown(text);
+            this.postProcessDownloadLinks(bubble);
+        } else {
+            bubble.textContent = text;
+        }
+    },
+
+    /**
+     * Get selected source documents from sidebar
+     * @returns {Array<string>}
+     */
+    getSelectedSource() {
+        const selectedSource = [];
+        const sourceElements = document.querySelectorAll(".sidebar-items.source-item");
+
+        for (let sourceElement of sourceElements) {
+            const checkbox = sourceElement.querySelector('input[type="checkbox"]');
+            if (checkbox?.checked) {
+                selectedSource.push(sourceElement.dataset.documentId);
+            }
+        }
+
+        console.log("Selected sources:", selectedSource);
+        return selectedSource;
+    },
+
+    /**
+     * Get selected file IDs from chips
+     * @returns {Array<string>}
+     */
+    getChipFileIDs() {
+        const chips = document.querySelectorAll('#selected-files-container [data-file-id]');
+        return Array.from(chips).map(chip => chip.getAttribute('data-file-id'));
+    },
+
+    /**
+     * Merge attached documents (dedupe)
+     * @param {Array<string>} selectedSource
+     * @param {Array<string>} chipFileIDs
+     * @returns {Array<string>}
+     */
+    mergeAttachedDocuments(selectedSource = [], chipFileIDs = []) {
+        return Array.from(new Set([...selectedSource, ...chipFileIDs].filter(Boolean)));
+    },
+
+    /**
+     * Clear selected files wrapper
+     */
+    clearSelectedFiles() {
+        const wrapper = document.getElementById('selected-files-wrapper');
+        if (wrapper) wrapper.remove();
+    },
+
+    /**
+     * Clear input field
+     */
+    clearInput() {
+        const input = document.getElementById('main-message-input');
+        if (input) {
+            input.value = '';
+            input.style.height = 'auto';
+        }
+    }
+};
+
+// Export
+Object.assign(window, {
+    ChatUtils,
+    // Aliases for backward compatibility
+    renderMarkdownContent: ChatUtils.renderMarkdown.bind(ChatUtils),
+    scrollToBottom: ChatUtils.scrollToBottom.bind(ChatUtils),
+    showTypingIndicator: ChatUtils.showTypingIndicator.bind(ChatUtils),
+    removeTypingIndicator: ChatUtils.removeTypingIndicator.bind(ChatUtils),
+    showChatInterface: ChatUtils.showChatInterface.bind(ChatUtils),
+    hideChatInterface: ChatUtils.hideChatInterface.bind(ChatUtils),
+    getSelectedSource: ChatUtils.getSelectedSource.bind(ChatUtils)
+});

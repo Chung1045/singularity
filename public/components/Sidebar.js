@@ -1483,7 +1483,8 @@
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     boxSizing: 'border-box',
-                                    paddingRight: '20px'
+                                    paddingRight: '20px',
+                                    outline: 'none'
                                 }
                             },
                             React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
@@ -1573,7 +1574,8 @@
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     boxSizing: 'border-box',
-                                    paddingRight: '20px'
+                                    paddingRight: '20px',
+                                    outline: 'none'
                                 }
                             },
                             React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
@@ -1831,7 +1833,7 @@
                                 textDecoration: 'none',
                                 width: 'auto',
                                 padding: '0px',
-                                margin: '20px 20px 0 0'
+                                outline: 'none'
                             },
                             onClick: (e) => e.preventDefault()
                         },
@@ -1856,7 +1858,7 @@
                                     bottom: '100%',
                                     left: '0',
                                     marginBottom: '10px',
-                                    backgroundColor: '#eeeeee',
+                                    backgroundColor: '#fff',
                                     border: '1px solid #e4e4e4',
                                     borderRadius: '10px',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -1927,7 +1929,9 @@
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 transition: 'all 220ms ease',
-                                margin: '0 auto'
+                                margin: '9.5px auto',
+                                // border: 'none',
+                                outline: 'none'
                             }
                         },
                         React.createElement('img', {
@@ -1945,9 +1949,9 @@
                                 id: 'sidebar-user-menu-collapsed',
                                 style: {
                                     position: 'fixed',
-                                    bottom: 'calc(50px + 30px + 20px)',
-                                    left: '35px',
-                                    backgroundColor: '#eeeeee',
+                                    bottom: '10px',
+                                    left: '70px',
+                                    backgroundColor: '#fff',
                                     border: '1px solid #e4e4e4',
                                     borderRadius: '10px',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -2045,7 +2049,7 @@
                         'aria-label': 'Toggle sidebar',
                         'aria-expanded': !sidebarCollapsed,
                         onClick: toggleSidebar,
-                        style: {marginBottom: '20px'}
+                        style: {marginBottom: '20px', outline: 'none'}
                     },
                     React.createElement('img', {
                         src: './img/double-arrow-right-svgrepo-com.svg',

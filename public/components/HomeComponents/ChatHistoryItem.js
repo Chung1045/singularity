@@ -1,0 +1,209 @@
+/**
+ * ChatHistoryItem Component
+ * Renders a chat history item in the sidebar
+ */
+
+function createChatHistoryItem(chatThreadName, chatID) {
+    const ChatHistoryItemComponent = () => {
+        const [menuOpen, setMenuOpen] = React.useState(false);
+        const menuRef = React.useRef(null);
+
+        // Close menu when clicking outside
+        React.useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setMenuOpen(false);
+                }
+            };
+
+            if (menuOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
+            }
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }, [menuOpen]);
+
+        const handleDelete = async () => {
+            setMenuOpen(false);
+
+            const confirmDelete = await ConfirmModal.show({
+                title: 'Warning',
+                message: 'Are you sure you want to delete this chat? This cannot be reversed!',
+                confirmText: 'Delete',
+                cancelText: 'Cancel'
+            });
+
+            if (!confirmDelete) return;
+
+            const projectID = document.getElementById('select-project-drop-down')?.value;
+            if (!projectID) {
+                console.error('No project selected');
+                return;
+            }
+
+            try {
+                const data = await ChatService.deleteChat(projectID, chatID);
+
+                if (data.success) {
+                    await AlertModal.show({
+                        title: 'Success',
+                        message: 'Chat successfully deleted',
+                        autoClose: 5000
+                    });
+
+                    await window.fetchProjectChats?.(projectID);
+
+                    if (window.currentChatID === chatID) {
+                        window.currentChatID = null;
+                        localStorage.removeItem('activeChatID');
+                        localStorage.removeItem('activeChatProjectID');
+                        window.backToInitialScreen?.();
+
+                        const currentUrl = new URL(window.location);
+                        if (currentUrl.searchParams.has('chatID')) {
+                            currentUrl.searchParams.delete('chatID');
+                            window.history.replaceState({}, '', currentUrl);
+                        }
+                    }
+                } else {
+                    console.error('Failed to delete chat:', data.message);
+                    alert('Failed to delete chat. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error deleting chat:', error);
+                alert('An error occurred while deleting the chat.');
+            }
+        };
+
+        const handleClick = (e) => {
+            if (e.target.tagName === 'IMG' || e.target.closest('.chat-menu')) return;
+
+            document.querySelectorAll('.chat-history-item').forEach(item => {
+                item.classList.remove('selected');
+                item.style.backgroundColor = 'transparent';
+            });
+
+            e.currentTarget.classList.add('selected');
+            e.currentTarget.style.backgroundColor = '#e0e0e0';
+
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('chatID', chatID);
+            window.history.pushState({ chatID }, '', newUrl);
+
+            const chatTitleElement = document.getElementById('chat-title');
+            if (chatTitleElement) {
+                chatTitleElement.textContent = (chatThreadName?.trim() || 'New Chat');
+            }
+
+            window.loadChatThread?.(chatID);
+        };
+
+        const displayName = (chatThreadName?.trim() || 'New Chat');
+
+        return React.createElement('div', {
+            className: 'sidebar-items chat-history-item',
+            'data-chat-id': chatID,
+            'data-thread-name': displayName,
+            style: {
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderRadius: '5px',
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                position: 'relative'
+            },
+            onMouseEnter: (e) => {
+                if (!e.currentTarget.classList.contains('selected')) {
+                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                }
+            },
+            onMouseLeave: (e) => {
+                if (!e.currentTarget.classList.contains('selected')) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                }
+            },
+            onClick: handleClick
+        },
+            React.createElement('p', {
+                style: {
+                    flexGrow: 1,
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '14px'
+                }
+            }, displayName),
+            React.createElement('div', {
+                ref: menuRef,
+                className: 'chat-menu',
+                style: {
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center'
+                }
+            },
+                React.createElement('img', {
+                    style: {
+                        padding: "4px",
+                        flexShrink: 0,
+                        borderRadius: '5px',
+                        transition: 'background-color 0.2s',
+                        cursor: 'pointer'
+                    },
+                    src: './img/more_vert_24.svg',
+                    alt: '',
+                    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#8e8e8e',
+                    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    }
+                }),
+                menuOpen && React.createElement('div', {
+                    style: {
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '4px',
+                        backgroundColor: '#ffffff',
+                        border: '1.67px solid #e4e4e4',
+                        borderRadius: '11.12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        minWidth: '120px',
+                        zIndex: 1000,
+                        overflow: 'hidden'
+                    }
+                },
+                    React.createElement('button', {
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            color: '#c1281e',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            handleDelete();
+                        }
+                    }, 'Delete')
+                )
+            )
+        );
+    };
+
+    return React.createElement(ChatHistoryItemComponent);
+}
+
+// Export
+Object.assign(window, { createChatHistoryItem });
