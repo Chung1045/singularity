@@ -13,9 +13,14 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <!-- <link rel="stylesheet" href="/stylesheets/test/session.css"> -->
     <link rel="stylesheet" href="/stylesheets/session.css">
+    <link rel="stylesheet" href="/stylesheets/z-index.css">
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <!-- Load z-index helper -->
+    <script src="/scripts/zIndexHelper.js"></script>
     <!-- Load shared utilities first -->
     <script src="/scripts/projectUtils.js"></script>
+    <!-- Load Notification Panel component -->
+    <script src="/components/NotificationPanel.js"></script>
     <!-- Load Sidebar component -->
     <script src="/components/Sidebar.js"></script>
     <link rel="stylesheet" href="/components/sidebar.css">
@@ -23,6 +28,8 @@
     <script src="/components/fileUploadNotificationModal.js"></script>
     <!-- Load File Upload Component -->
     <script src="/components/fileUploadComponent.js"></script>
+    <script src="/components/requirementsPanel.js"></script>
+    <link rel="stylesheet" href="/stylesheets/requirementsPanel.css">
 </head>
 <body>
 <div id="root"></div>
@@ -60,7 +67,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 10002;
+                z-index: ${window.ZIndex?.MODAL || 31};
                 padding: 20px;
             `;
             modalContainer.onclick = (e) => {

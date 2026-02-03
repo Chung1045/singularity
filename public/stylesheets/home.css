@@ -54,7 +54,7 @@ a {
     rgba(248, 250, 252, 0.88) 70%,
     rgba(248, 250, 252, 0.85) 100%
   );
-  z-index: 1;
+  z-index: var(--z-background, 1);
   transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
   overflow: hidden;
 }
@@ -102,7 +102,7 @@ a {
   -webkit-backdrop-filter: blur(10px);
   justify-content: flex-end;
   padding: 20px 24px 24px 24px;
-  z-index: 100;
+  z-index: var(--z-chat-input, 13);
 }
 
 .sidebar-expand .main-screen.chat-mode .main-screen-title {
@@ -147,6 +147,11 @@ a {
   line-height: normal;
   margin: 0;
   padding: 0;
+}
+
+/* Hide requirements section from left sidebar on home page */
+#sidebar-requirements-wrapper {
+  display: none !important;
 }
 .sidebar-expand .input-field {
   margin: 0 auto;
@@ -254,9 +259,9 @@ a {
 }
 .sidebar-expand .img {
     position: relative;
-    width: 18px;
-    height: 18px;
-    margin-top: -0.13px;
+    width: 20px;
+    height: 20px;
+    margin-top: 2.87px;
     margin-bottom: -0.13px;
-    aspect-ratio: 1.19;
+    aspect-ratio: 3;
 }

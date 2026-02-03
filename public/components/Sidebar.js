@@ -1,11 +1,11 @@
 (function () {
     const {useState, useEffect, useRef, useCallback} = React;
-    
+
     // Project Options Button Component
     const ProjectOptionsButton = ({selectedProjectID, projects, onProjectDeleted, onProjectRenamed}) => {
         const [menuOpen, setMenuOpen] = useState(false);
         const menuRef = useRef(null);
-        
+
         // Close menu when clicking outside
         useEffect(() => {
             const handleClickOutside = (event) => {
@@ -13,21 +13,21 @@
                     setMenuOpen(false);
                 }
             };
-            
+
             if (menuOpen) {
                 document.addEventListener('mousedown', handleClickOutside);
             }
-            
+
             return () => {
                 document.removeEventListener('mousedown', handleClickOutside);
             };
         }, [menuOpen]);
-        
+
         const currentProject = projects.find(p => p.projectID === selectedProjectID);
-        
+
         const handleRename = async () => {
             setMenuOpen(false);
-            
+
             // Rename modal
             const newName = await new Promise((resolve) => {
                 const modal = document.createElement('div');
@@ -41,7 +41,7 @@
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    z-index: 10001;
+                    z-index: ${window.ZIndex?.MODAL_BACKDROP || 30};
                     padding: 20px;
                 `;
 
@@ -177,7 +177,7 @@
             if (!newName || newName === currentProject?.projectName) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/project/rename', {
                     method: 'POST',
@@ -189,9 +189,9 @@
                         newProjectName: newName
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
@@ -288,10 +288,10 @@
                 alert('An error occurred while renaming the project.');
             }
         };
-        
+
         const handleDelete = async () => {
             setMenuOpen(false);
-            
+
             // First confirmation modal - Warning
             const firstConfirm = await new Promise((resolve) => {
                 const modal = document.createElement('div');
@@ -583,9 +583,9 @@
                         projectID: selectedProjectID
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
@@ -693,44 +693,44 @@
                 alert('An error occurred while deleting the project.');
             }
         };
-        
+
         if (!selectedProjectID || !currentProject) {
             return null;
         }
-        
+
         return React.createElement('div', {
-            ref: menuRef,
-            style: {
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center'
-            }
-        },
-            React.createElement('button', {
-                type: 'button',
-                'aria-label': 'Project options',
-                onClick: (e) => {
-                    e.stopPropagation();
-                    setMenuOpen(!menuOpen);
-                },
+                ref: menuRef,
                 style: {
-                    padding: '6px',
-                    borderRadius: '5px',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    cursor: 'pointer',
+                    position: 'relative',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'background-color 0.2s'
-                },
-                onMouseEnter: (e) => {
-                    e.currentTarget.style.backgroundColor = '#f0f0f0';
-                },
-                onMouseLeave: (e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                    alignItems: 'center'
                 }
             },
+            React.createElement('button', {
+                    type: 'button',
+                    'aria-label': 'Project options',
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    },
+                    style: {
+                        padding: '6px',
+                        borderRadius: '5px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'background-color 0.2s'
+                    },
+                    onMouseEnter: (e) => {
+                        e.currentTarget.style.backgroundColor = '#f0f0f0';
+                    },
+                    onMouseLeave: (e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                },
                 React.createElement('img', {
                     src: './img/more_vert_24.svg',
                     alt: 'Options',
@@ -740,22 +740,22 @@
                     }
                 })
             ),
-            
+
             menuOpen && React.createElement('div', {
-                style: {
-                    position: 'absolute',
-                    top: '100%',
-                    right: 0,
-                    marginTop: '4px',
-                    backgroundColor: '#ffffff',
-                    border: '1.67px solid #e4e4e4',
-                    borderRadius: '11.12px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                    minWidth: '160px',
-                    zIndex: 1000,
-                    overflow: 'hidden'
-                }
-            },
+                    style: {
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '4px',
+                        backgroundColor: '#ffffff',
+                        border: '1.67px solid #e4e4e4',
+                        borderRadius: '11.12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        minWidth: '160px',
+                        zIndex: 1000,
+                        overflow: 'hidden'
+                    }
+                },
                 // Rename option
                 React.createElement('button', {
                     style: {
@@ -825,7 +825,48 @@
                          setUserMenuOpen,
                          userInfo
                      }) => {
-        // Persist sidebar section states in localStorage
+        // --- Resizing Logic ---
+        const [sidebarWidth, setSidebarWidth] = useState(() => {
+            const saved = localStorage.getItem('sidebarWidth');
+            return saved ? parseInt(saved, 10) : 320;
+        });
+        const [isResizing, setIsResizing] = useState(false);
+        const sidebarRef = useRef(null);
+
+        const startResizing = useCallback((e) => {
+            e.preventDefault();
+            setIsResizing(true);
+        }, []);
+
+        const stopResizing = useCallback(() => {
+            setIsResizing(false);
+        }, []);
+
+        const resize = useCallback((mouseEvent) => {
+            if (isResizing) {
+                // Limit width between 320px and 400px
+                const newWidth = Math.max(320, Math.min(400, mouseEvent.clientX));
+                setSidebarWidth(newWidth);
+                localStorage.setItem('sidebarWidth', newWidth);
+                // Dispatch event for other components to listen
+                window.dispatchEvent(new CustomEvent('sidebarResized', { detail: { width: newWidth } }));
+            }
+        }, [isResizing]);
+
+        useEffect(() => {
+            if (isResizing) {
+                window.addEventListener('mousemove', resize);
+                window.addEventListener('mouseup', stopResizing);
+            }
+            return () => {
+                window.removeEventListener('mousemove', resize);
+                window.removeEventListener('mouseup', stopResizing);
+            };
+        }, [isResizing, resize, stopResizing]);
+        // -----------------------
+
+
+        // Persist sidebar section states
         const [historyExpanded, setHistoryExpanded] = useState(() => {
             const saved = localStorage.getItem('historyExpanded');
             return saved !== null ? JSON.parse(saved) : false;
@@ -839,10 +880,9 @@
             return saved !== null ? JSON.parse(saved) : false;
         });
 
-        // Add state for avatar URL
         const [avatarUrl, setAvatarUrl] = useState('./img/user.svg');
 
-        // Add state for create project modal
+        // Create project modal state
         const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
         const [newProjectName, setNewProjectName] = useState('');
         const [showSuccessNotification, setShowSuccessNotification] = useState(false);
@@ -850,7 +890,34 @@
         const [showErrorNotification, setShowErrorNotification] = useState(false);
         const [errorMessage, setErrorMessage] = useState('');
 
-        // Add state for selected project (persisted in localStorage)
+        // Notification panel state
+        const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+        const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+
+        // Check for unread notifications on mount
+        useEffect(() => {
+            const checkUnreadNotifications = async () => {
+                try {
+                    const response = await fetch('/api/notifications/unread-count', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setHasUnreadNotifications(data.count > 0);
+                    }
+                } catch (error) {
+                    console.error('Error checking notifications:', error);
+                }
+            };
+            checkUnreadNotifications();
+            // Check every 60 seconds
+            const interval = setInterval(checkUnreadNotifications, 60000);
+            return () => clearInterval(interval);
+        }, []);
+
+        // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
             return localStorage.getItem('selectedProjectID') || null;
         });
@@ -863,13 +930,11 @@
             };
         }, [selectedProjectID]);
 
-        // Add state to track if projects exist
+        // Projects state
         const [hasProjects, setHasProjects] = useState(false);
-
-        // Add state to store projects array
         const [projects, setProjects] = useState([]);
 
-        // Fetch projects from API and populate dropdown
+        // Fetch projects
         const fetchProjects = useCallback(async () => {
             console.log("Fetching projects...");
             try {
@@ -883,7 +948,6 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(`Project Data: ${JSON.stringify(data)}`);
 
                     if (data.projects && data.projects.length > 0) {
                         setHasProjects(true);
@@ -898,14 +962,12 @@
 
                         return defaultProjectID;
                     } else {
-                        console.warn("No projects found");
                         setHasProjects(false);
                         setProjects([]);
                         populateProjectDropdown([]);
                         return null;
                     }
                 } else {
-                    console.error("Failed to fetch projects:", response.status);
                     return null;
                 }
             } catch (error) {
@@ -914,23 +976,15 @@
             }
         }, []);
 
-        // Populate the project dropdown with projects
+        // Populate dropdown
         const populateProjectDropdown = useCallback((projects) => {
             const dropdown = document.getElementById('select-project-drop-down');
-
-            if (!dropdown) {
-                console.warn("Project dropdown not found in DOM");
-                return;
-            }
+            if (!dropdown) return;
 
             if (!projects || projects.length === 0) {
                 dropdown.innerHTML = '<option value="">No projects available</option>';
-
-                // Clear selected project when no projects exist
                 setSelectedProjectID(null);
                 localStorage.removeItem('selectedProjectID');
-                console.log('Cleared selectedProjectID because no projects exist');
-
                 return;
             }
 
@@ -938,10 +992,8 @@
             const projectExists = projects.some(p => p.projectID === savedProjectID);
             const selectedID = (savedProjectID && projectExists) ? savedProjectID : projects[0]?.projectID;
 
-            // Clear invalid saved project ID
             if (savedProjectID && !projectExists) {
                 localStorage.removeItem('selectedProjectID');
-                console.log('Cleared invalid selectedProjectID from localStorage');
             }
 
             const options = projects.map((project) =>
@@ -957,15 +1009,11 @@
             }
         }, []);
 
-        // Load projects when component mounts and restore selected project
+        // Load projects & history
         useEffect(() => {
             const loadProjectsAndHistory = async () => {
                 const projectID = await fetchProjects();
-
-                if (!projectID) {
-                    console.log('No project ID available, skipping history load');
-                    return;
-                }
+                if (!projectID) return;
 
                 const waitForFunction = (funcName, maxAttempts = 50, delayMs = 100) => {
                     return new Promise((resolve) => {
@@ -976,7 +1024,6 @@
                                 resolve(true);
                             } else if (attempts >= maxAttempts) {
                                 clearInterval(interval);
-                                console.warn(`Function ${funcName} not available after ${maxAttempts * delayMs}ms`);
                                 resolve(false);
                             }
                             attempts++;
@@ -988,41 +1035,24 @@
                 await Promise.all(functionsToWait.map(func => waitForFunction(func)));
 
                 try {
-                    if (typeof window.fetchProjectChats === 'function') {
-                        console.log('Loading chat history for project:', projectID);
-                        await window.fetchProjectChats(projectID);
-                    }
-
-                    if (typeof window.fetchProjectFiles === 'function') {
-                        console.log('Loading files for project:', projectID);
-                        await window.fetchProjectFiles(projectID);
-                    }
-
-                    if (typeof window.fetchProjectReports === 'function') {
-                        console.log('Loading reports for project:', projectID);
-                        await window.fetchProjectReports(projectID);
-                    }
+                    if (typeof window.fetchProjectChats === 'function') await window.fetchProjectChats(projectID);
+                    if (typeof window.fetchProjectFiles === 'function') await window.fetchProjectFiles(projectID);
+                    if (typeof window.fetchProjectReports === 'function') await window.fetchProjectReports(projectID);
                 } catch (error) {
                     console.error('Error loading project data:', error);
                 }
             };
-
             loadProjectsAndHistory();
         }, [fetchProjects]);
 
-        // Make fetchProjects available globally for create project button
         useEffect(() => {
             window.fetchProjects = fetchProjects;
-            return () => {
-                delete window.fetchProjects;
-            };
+            return () => { delete window.fetchProjects; };
         }, [fetchProjects]);
 
-        // Listen for report generation events to refresh the reports list
         useEffect(() => {
             const handleReportGenerated = (event) => {
                 const projectID = event.detail?.projectID || selectedProjectID;
-                console.log('[Sidebar] Report generated event received, refreshing reports for project:', projectID);
                 if (projectID && typeof window.fetchProjectReports === 'function') {
                     window.fetchProjectReports(projectID);
                 }
@@ -1049,17 +1079,13 @@
         const showError = (message) => {
             setErrorMessage(message);
             setShowErrorNotification(true);
-            setTimeout(() => {
-                setShowErrorNotification(false);
-            }, 3000);
+            setTimeout(() => { setShowErrorNotification(false); }, 3000);
         };
 
         const showSuccess = (message) => {
             setSuccessMessage(message);
             setShowSuccessNotification(true);
-            setTimeout(() => {
-                setShowSuccessNotification(false);
-            }, 3000);
+            setTimeout(() => { setShowSuccessNotification(false); }, 3000);
         };
 
         const handleCreateProject = async () => {
@@ -1067,45 +1093,32 @@
                 showError('Please enter a project name');
                 return;
             }
-
             try {
                 const response = await fetch('/api/project/create', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        projectName: newProjectName.trim()
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectName: newProjectName.trim() })
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
                     const newProjectID = data.projectID;
-                    const newProjectName = data.projectName;
-
-                    console.log(`New project created: ${newProjectName} (ID: ${newProjectID})`);
-
                     setShowCreateProjectModal(false);
                     setNewProjectName('');
-
                     showSuccess('Project created successfully!');
-
                     setHasProjects(true);
 
                     window.currentChatID = null;
                     localStorage.removeItem('activeChatID');
                     localStorage.removeItem('activeChatProjectID');
                     localStorage.setItem('wentBackToInitial', 'true');
-
                     window.pendingChatRestoration = null;
 
                     const currentUrl = new URL(window.location);
                     if (currentUrl.searchParams.has('chatID')) {
                         currentUrl.searchParams.delete('chatID');
                         window.history.replaceState({}, '', currentUrl);
-                        console.log('[URL] Removed chatID from URL due to new project creation');
                     }
 
                     if (typeof window.backToInitialScreen === 'function') {
@@ -1119,49 +1132,29 @@
 
                     localStorage.setItem('selectedProjectID', newProjectID);
                     setSelectedProjectID(newProjectID);
-                    console.log(`Auto-selecting new project: ${newProjectID}`);
-
-                    // Expand Source section for new project
                     setSourceExpanded(true);
                     localStorage.setItem('sourceExpanded', JSON.stringify(true));
-                    console.log(`Expanded Source section for new project`);
-
                     window.skipProjectDataLoad = true;
 
                     const clearSidebarLists = () => {
-                        console.log('Clearing sidebar lists for new empty project...');
-
                         const chatHistoryList = document.getElementById('div-chat-history-list');
                         const noChatLabel = document.getElementById('p-label-chat-history-no-entry');
-
                         const sourceList = document.getElementById('div-project-source-list');
                         const noSourceLabel = document.getElementById('p-label-source-no-entry');
-
                         const requirementsList = document.getElementById('div-requirements-list');
                         const noRequirementsLabel = document.getElementById('p-label-requirements-no-entry');
 
                         if (chatHistoryList) {
                             chatHistoryList.innerHTML = '';
-                            console.log(' Chat history list cleared');
-                            if (noChatLabel) {
-                                noChatLabel.style.display = 'block';
-                            }
+                            if (noChatLabel) noChatLabel.style.display = 'block';
                         }
-
                         if (sourceList) {
                             sourceList.innerHTML = '';
-                            console.log('Source list cleared');
-                            if (noSourceLabel) {
-                                noSourceLabel.style.display = 'block';
-                            }
+                            if (noSourceLabel) noSourceLabel.style.display = 'block';
                         }
-
                         if (requirementsList) {
                             requirementsList.innerHTML = '';
-                            console.log('Requirements list cleared');
-                            if (noRequirementsLabel) {
-                                noRequirementsLabel.style.display = 'block';
-                            }
+                            if (noRequirementsLabel) noRequirementsLabel.style.display = 'block';
                         }
                     };
 
@@ -1171,18 +1164,11 @@
 
                     if (typeof fetchProjects === 'function') {
                         await fetchProjects();
-
                         const dropdown = document.getElementById('select-project-drop-down');
-                        if (dropdown) {
-                            dropdown.value = newProjectID;
-                            console.log(`Dropdown set to: ${newProjectID}`);
-                        }
+                        if (dropdown) dropdown.value = newProjectID;
                     }
 
-                    setTimeout(() => {
-                        window.skipProjectDataLoad = false;
-                        console.log('Skip flag cleared, project data can load normally now');
-                    }, 300);
+                    setTimeout(() => { window.skipProjectDataLoad = false; }, 300);
                 } else {
                     showError(data.message || 'Failed to create project');
                 }
@@ -1197,39 +1183,60 @@
             setNewProjectName('');
         };
 
-        // Fetch avatar URL on component mount
+        // Fetch avatar URL
         useEffect(() => {
             async function fetchAvatar() {
                 try {
                     let response = await fetch('/api/profile-pic/fetch', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({})
                     });
 
                     let profileImgData = await response.json();
-
                     if (profileImgData.success && profileImgData.data) {
                         const imageData = profileImgData.data[0]?.image;
-                        if (imageData) {
-                            setAvatarUrl(imageData);
-                        }
+                        if (imageData) setAvatarUrl(imageData);
                     }
                 } catch (error) {
                     console.error('Error fetching avatar:', error);
                 }
             }
-
             fetchAvatar();
         }, []);
 
         return React.createElement('aside', {
                 id: 'sidebar',
+                ref: sidebarRef,
                 className: 'side-bar',
-                'aria-label': 'Sidebar navigation'
+                'aria-label': 'Sidebar navigation',
+                // Dynamic width style
+                style: {
+                    width: sidebarCollapsed ? 'auto' : `${sidebarWidth}px`,
+                    minWidth: sidebarCollapsed ? 'auto' : `${sidebarWidth}px`,
+                    position: 'relative',
+                }
             },
+            // Resizing Handle
+            !sidebarCollapsed && React.createElement('div', {
+                className: 'sidebar-resizer',
+                onMouseDown: startResizing,
+                style: {
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '5px',
+                    height: '100%',
+                    cursor: 'col-resize',
+                    zIndex: 9999,
+                    backgroundColor: isResizing ? 'rgba(74,144,226,0)' : 'transparent',
+                    transition: 'background-color 0.2s',
+                    borderRight: '1px solid transparent'
+                },
+                onMouseEnter: (e) => e.target.style.borderRight = '2px solid #e4e4e4',
+                onMouseLeave: (e) => e.target.style.borderRight = '1px solid transparent'
+            }),
+
             React.createElement('nav', null,
                 React.createElement('div', {
                         style: { display: "flex" }
@@ -1254,26 +1261,27 @@
                     )
                 ),
 
-                // Project dropdown and create button container
+                // Project dropdown
                 React.createElement('div', {
-                    style: {
-                        display: !sidebarCollapsed ? 'flex' : 'none',
-                        alignItems: 'center',
-                        gap: '10px',
-                        marginLeft: '21px',
-                        marginRight: '25px',
-                        marginBottom: '15px'
-                    }
-                },
-                    React.createElement('div', {
                         style: {
-                            position: 'relative',
-                            flex: '1',
-                            display: 'flex',
+                            display: !sidebarCollapsed ? 'flex' : 'none',
                             alignItems: 'center',
-                            gap: '8px'
+                            gap: '10px',
+                            marginLeft: '21px',
+                            marginRight: '25px',
+                            marginBottom: '15px'
                         }
                     },
+                    React.createElement('div', {
+                            style: {
+                                position: 'relative',
+                                flex: '1',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                minWidth: 0
+                            }
+                        },
                         React.createElement('select', {
                             id: "select-project-drop-down",
                             style: {
@@ -1288,27 +1296,28 @@
                                 fontWeight: '600',
                                 fontSize: '14px',
                                 color: '#1c1d21',
-                                backgroundColor: 'transparent'
+                                backgroundColor: 'transparent',
+                                // Text truncation
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                maxWidth: '100%'
                             },
                             onChange: async (e) => {
                                 const projectID = e.target.value;
-                                console.log('Project dropdown changed to:', projectID);
-
                                 localStorage.setItem('selectedProjectID', projectID);
                                 setSelectedProjectID(projectID);
-
+                                // ... reset logic ...
                                 window.currentChatID = null;
                                 localStorage.removeItem('activeChatID');
                                 localStorage.removeItem('activeChatProjectID');
                                 localStorage.setItem('wentBackToInitial', 'true');
-
                                 window.pendingChatRestoration = null;
 
                                 const currentUrl = new URL(window.location);
                                 if (currentUrl.searchParams.has('chatID')) {
                                     currentUrl.searchParams.delete('chatID');
                                     window.history.pushState({}, '', currentUrl);
-                                    console.log('[URL] Removed chatID from URL due to project switch');
                                 }
 
                                 if (typeof window.backToInitialScreen === 'function') {
@@ -1321,43 +1330,19 @@
                                 }
 
                                 if (window.skipProjectDataLoad) {
-                                    console.log(' Skipping project data load for new empty project');
-
+                                    // ... clear lists ...
                                     const chatHistoryList = document.getElementById('div-chat-history-list');
-                                    const noChatLabel = document.getElementById('p-label-chat-history-no-entry');
+                                    if (chatHistoryList) chatHistoryList.innerHTML = '';
                                     const sourceList = document.getElementById('div-project-source-list');
-                                    const noSourceLabel = document.getElementById('p-label-source-no-entry');
+                                    if (sourceList) sourceList.innerHTML = '';
                                     const requirementsList = document.getElementById('div-requirements-list');
-                                    const noRequirementsLabel = document.getElementById('p-label-requirements-no-entry');
-
-                                    if (chatHistoryList) {
-                                        chatHistoryList.innerHTML = '';
-                                        if (noChatLabel) noChatLabel.style.display = 'block';
-                                    }
-                                    if (sourceList) {
-                                        sourceList.innerHTML = '';
-                                        if (noSourceLabel) noSourceLabel.style.display = 'block';
-                                    }
-                                    if (requirementsList) {
-                                        requirementsList.innerHTML = '';
-                                        if (noRequirementsLabel) noRequirementsLabel.style.display = 'block';
-                                    }
-
+                                    if (requirementsList) requirementsList.innerHTML = '';
                                     return;
                                 }
 
-                                if (typeof fetchProjectFiles === 'function') {
-                                    console.log('Calling fetchProjectFiles...');
-                                    await fetchProjectFiles(projectID);
-                                }
-                                if (typeof fetchProjectReports === 'function') {
-                                    console.log('Calling fetchProjectReports...');
-                                    await fetchProjectReports(projectID);
-                                }
-                                if (typeof fetchProjectChats === 'function') {
-                                    console.log('Calling fetchProjectChats...');
-                                    await fetchProjectChats(projectID);
-                                }
+                                if (typeof fetchProjectFiles === 'function') await fetchProjectFiles(projectID);
+                                if (typeof fetchProjectReports === 'function') await fetchProjectReports(projectID);
+                                if (typeof fetchProjectChats === 'function') await fetchProjectChats(projectID);
                             },
                             onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
                             onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
@@ -1372,26 +1357,27 @@
                     ),
 
                     React.createElement('button', {
-                        id: 'btn-create-project',
-                        type: 'button',
-                        'aria-label': 'Create new project',
-                        onClick: () => setShowCreateProjectModal(true),
-                        style: {
-                            padding: '10px',
-                            borderRadius: '10px',
-                            border: '1.67px solid #e4e4e4',
-                            backgroundColor: 'transparent',
-                            cursor: 'pointer',
-                            transition: 'all 220ms ease',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '40px',
-                            height: '40px'
+                            id: 'btn-create-project',
+                            type: 'button',
+                            'aria-label': 'Create new project',
+                            onClick: () => setShowCreateProjectModal(true),
+                            style: {
+                                padding: '10px',
+                                borderRadius: '10px',
+                                border: '1.67px solid #e4e4e4',
+                                backgroundColor: 'transparent',
+                                cursor: 'pointer',
+                                transition: 'all 220ms ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '40px',
+                                height: '40px',
+                                flexShrink: 0
+                            },
+                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                            onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
                         },
-                        onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
-                        onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
-                    },
                         React.createElement('img', {
                             src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                             alt: 'Create project',
@@ -1400,45 +1386,39 @@
                     )
                 ),
 
-                // New Chat Button - Only show when projects exist
+                // New Chat Button
                 hasProjects && React.createElement('button', {
-                    id: 'btn-new-chat',
-                    type: 'button',
-                    'aria-label': 'Create new chat',
-                    onClick: () => {
-                        if (typeof window.createNewChat === 'function') {
-                            window.createNewChat();
-                        }
+                        id: 'btn-new-chat',
+                        type: 'button',
+                        'aria-label': 'Create new chat',
+                        onClick: () => {
+                            if (typeof window.createNewChat === 'function') window.createNewChat();
+                        },
+                        style: {
+                            display: !sidebarCollapsed ? 'flex' : 'none',
+                            width: 'calc(100% - 46px)', // Match margins
+                            marginLeft: '21px',
+                            marginRight: '25px',
+                            padding: '10px 14px',
+                            marginBottom: '15px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            background: 'rgb(30, 41, 59)',
+                            cursor: 'pointer',
+                            transition: 'all 220ms ease',
+                            fontFamily: 'Inter, Helvetica',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#ffffff',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            position: 'relative',
+                            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.2)'
+                        },
+                        onMouseEnter: (e) => { e.target.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.3)'; },
+                        onMouseLeave: (e) => { e.target.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.2)'; }
                     },
-                    style: {
-                        display: !sidebarCollapsed ? 'flex' : 'none',
-                        width: 'calc(100% - 46px)',
-                        padding: '10px 14px',
-                        marginLeft: '21px',
-                        marginRight: '25px',
-                        marginBottom: '15px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        background: 'rgb(30, 41, 59)',
-                        cursor: 'pointer',
-                        transition: 'all 220ms ease',
-                        fontFamily: 'Inter, Helvetica',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#ffffff',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        position: 'relative',
-                        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.2)'
-                    },
-                    onMouseEnter: (e) => {
-                        e.target.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.3)';
-                    },
-                    onMouseLeave: (e) => {
-                        e.target.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.2)';
-                    }
-                },
                     React.createElement('img', {
                         src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                         alt: '',
@@ -1461,7 +1441,17 @@
                         className: 'search-file-field',
                         role: 'search',
                         'aria-label': 'Search files',
-                        style: {marginBottom: '20px'}
+                        style: {
+                            marginBottom: '20px',
+                            // --- Collapsed: let CSS handle positioning ---
+                            ...(sidebarCollapsed ? {} : {
+                                width: 'calc(100% - 46px)',
+                                marginLeft: '21px'
+                            }),
+                            marginRight: '25px',
+                            boxSizing: 'border-box',
+                            display: 'flex'
+                        }
                     },
                     React.createElement('img', {
                         id: 'sidebar-search-icon',
@@ -1478,11 +1468,18 @@
                         id: 'search-files-input',
                         className: 'text-wrapper-4',
                         placeholder: 'Search files',
-                        'aria-label': 'Search files'
+                        'aria-label': 'Search files',
+                        style: {
+                            // --- NEW: Input Stretches ---
+                            width: '100%',
+                            flex: 1,
+                            minWidth: 0,
+                            boxSizing: 'border-box'
+                        }
                     })
                 ),
 
-                // Scrollable wrapper for the three sections
+                // Scrollable wrapper
                 React.createElement('div', {
                         className: 'sidebar-scrollable-content',
                         id: 'sidebar-scrollable-wrapper'
@@ -1490,7 +1487,7 @@
                     // History section
                     React.createElement('div', {
                             id: 'sidebar-history-wrapper',
-                            style: {marginBottom: '10px'}
+                            style: {marginBottom: '10px', width: 'calc(100% - 40px)'}
                         },
                         React.createElement('button', {
                                 id: 'sidebar-history',
@@ -1502,19 +1499,45 @@
                                     const newState = !historyExpanded;
                                     setHistoryExpanded(newState);
                                     localStorage.setItem('historyExpanded', JSON.stringify(newState));
+                                },
+                                // --- Collapsed: center content, Expanded: space-between ---
+                                style: sidebarCollapsed ? {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxSizing: 'border-box'
+                                } : {
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    boxSizing: 'border-box',
+                                    paddingRight: '20px',
+                                    outline: 'none'
                                 }
                             },
-                            React.createElement('img', {
-                                className: 'slash-circle',
-                                src: './img/slash-circle-1.svg',
-                                alt: ''
-                            }),
-                            React.createElement('span', {
-                                className: 'text-wrapper-2'
-                            }, 'History'),
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
+                                React.createElement('img', {
+                                    className: 'slash-circle',
+                                    src: './img/slash-circle-1.svg',
+                                    alt: ''
+                                }),
+                                React.createElement('span', {
+                                    className: 'text-wrapper-2',
+                                    // --- NEW: Text Truncation ---
+                                    style: {
+                                        flex: 1,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        textAlign: 'left'
+                                    }
+                                }, 'History')
+                            ),
                             React.createElement('span', {
                                     className: 'submenu',
-                                    'aria-hidden': 'true'
+                                    'aria-hidden': 'true',
+                                    style: { flexShrink: 0 }
                                 },
                                 React.createElement('img', {
                                     className: 'text-wrapper-3',
@@ -1525,7 +1548,7 @@
                                         transition: 'transform 0.2s',
                                         width: '24px',
                                         height: '24px',
-                                        marginRight: '4px'
+                                        marginRight: '0'
                                     }
                                 })
                             )
@@ -1536,12 +1559,14 @@
                                     paddingLeft: '40px',
                                     paddingTop: '10px',
                                     paddingBottom: '10px',
-                                    display: historyExpanded && !sidebarCollapsed ? 'block' : 'none'
+                                    display: historyExpanded && !sidebarCollapsed ? 'block' : 'none',
+                                    width: '100%', // Ensure submenu takes width
+                                    boxSizing: 'border-box'
                                 }
                             },
                             React.createElement('div', {
                                 id: "div-chat-history-list",
-                                style: { display: "flex", flexDirection: "column", gap: "5px" }
+                                style: { display: "flex", flexDirection: "column", gap: "5px", width: 'calc(100% + 40px)', margin: '0 50px 0 -20px' }
                             }),
                             React.createElement('p', {
                                 id: "p-label-chat-history-no-entry",
@@ -1553,7 +1578,7 @@
                     // Source section
                     React.createElement('div', {
                             id: 'sidebar-source-wrapper',
-                            style: {marginBottom: '10px'}
+                            style: {marginBottom: '10px', width: 'calc(100% - 40px)'}
                         },
                         React.createElement('button', {
                                 id: 'sidebar-source',
@@ -1565,19 +1590,44 @@
                                     const newState = !sourceExpanded;
                                     setSourceExpanded(newState);
                                     localStorage.setItem('sourceExpanded', JSON.stringify(newState));
+                                },
+                                // --- Collapsed: center content, Expanded: space-between ---
+                                style: sidebarCollapsed ? {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxSizing: 'border-box'
+                                } : {
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    boxSizing: 'border-box',
+                                    paddingRight: '20px',
+                                    outline: 'none'
                                 }
                             },
-                            React.createElement('img', {
-                                className: 'slash-circle',
-                                src: './img/slash-circle-1.svg',
-                                alt: ''
-                            }),
-                            React.createElement('span', {
-                                className: 'text-wrapper-2'
-                            }, 'Source'),
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
+                                React.createElement('img', {
+                                    className: 'slash-circle',
+                                    src: './img/slash-circle-1.svg',
+                                    alt: ''
+                                }),
+                                React.createElement('span', {
+                                    className: 'text-wrapper-2',
+                                    style: {
+                                        flex: 1,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        textAlign: 'left'
+                                    }
+                                }, 'Source')
+                            ),
                             React.createElement('span', {
                                     className: 'submenu',
-                                    'aria-hidden': 'true'
+                                    'aria-hidden': 'true',
+                                    style: { flexShrink: 0 }
                                 },
                                 React.createElement('img', {
                                     className: 'text-wrapper-3',
@@ -1588,7 +1638,7 @@
                                         transition: 'transform 0.2s',
                                         width: '24px',
                                         height: '24px',
-                                        marginRight: '4px'
+                                        marginRight: '0'
                                     }
                                 })
                             )
@@ -1599,49 +1649,43 @@
                                     paddingLeft: '40px',
                                     paddingTop: '10px',
                                     paddingBottom: '10px',
-                                    display: sourceExpanded && !sidebarCollapsed ? 'block' : 'none'
+                                    display: sourceExpanded && !sidebarCollapsed ? 'block' : 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
                                 }
                             },
-                            // Upload button - only when a project is selected
                             hasProjects && selectedProjectID && React.createElement('button', {
-                                id: 'sidebar-source-upload-button',
-                                'aria-label': 'Upload files to project',
-                                onClick: async () => {
-                                    console.log('[FileUpload] Sidebar upload button clicked');
-                                    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : selectedProjectID;
-                                    console.log('[FileUpload] Sidebar projectID:', projectID);
-                                    if (projectID) {
-                                        const event = new CustomEvent('openFileUpload', { detail: { projectID } });
-                                        window.dispatchEvent(event);
-                                        console.log('[FileUpload] Event dispatched');
-                                    }
+                                    id: 'sidebar-source-upload-button',
+                                    'aria-label': 'Upload files to project',
+                                    onClick: async () => {
+                                        const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : selectedProjectID;
+                                        if (projectID) {
+                                            const event = new CustomEvent('openFileUpload', { detail: { projectID } });
+                                            window.dispatchEvent(event);
+                                        }
+                                    },
+                                    style: {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        boxSizing: 'border-box',
+                                        padding: '8px 12px',
+                                        backgroundColor: 'rgb(30, 41, 59)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#ffffff',
+                                        fontSize: '12px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        marginBottom: '10px',
+                                        transition: 'background-color 0.2s',
+                                        width: 'calc(40px + 100%)', // Ensure this stretches too
+                                        marginLeft: '-20px'
+                                    },
+                                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)'; },
+                                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
                                 },
-                                style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    boxSizing: 'border-box',
-                                    padding: '8px 12px',
-                                    backgroundColor: 'rgb(30, 41, 59)',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#ffffff',
-                                    fontSize: '12px',
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    marginBottom: '10px',
-                                    transition: 'background-color 0.2s',
-                                    width: 'calc(100%)',
-                                    marginLeft: '-20px'
-                                },
-                                onMouseEnter: (e) => {
-                                    e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
-                                },
-                                onMouseLeave: (e) => {
-                                    e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
-                                }
-                            },
                                 React.createElement('img', {
                                     src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                     style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)' }
@@ -1650,7 +1694,7 @@
                             ),
                             React.createElement('div', {
                                 id: "div-project-source-list",
-                                style: { display: "flex", flexDirection: "column", gap: "5px" }
+                                style: { display: "flex", flexDirection: "column", gap: "5px", width: 'calc(100% + 40px)', margin: '0 -20px 0 -20px' }
                             }),
                             React.createElement('p', {
                                 id: "p-label-source-no-entry",
@@ -1662,7 +1706,7 @@
                     // Requirements section
                     React.createElement('div', {
                             id: 'sidebar-requirements-wrapper',
-                            style: { marginBottom: '10px' }
+                            style: { marginBottom: '10px', width: 'calc(100% - 40px)' }
                         },
                         React.createElement('button', {
                                 id: 'sidebar-requirements',
@@ -1674,19 +1718,43 @@
                                     const newState = !requirementsExpanded;
                                     setRequirementsExpanded(newState);
                                     localStorage.setItem('requirementsExpanded', JSON.stringify(newState));
+                                },
+                                // --- Collapsed: center content, Expanded: space-between ---
+                                style: sidebarCollapsed ? {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxSizing: 'border-box'
+                                } : {
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    boxSizing: 'border-box',
+                                    paddingRight: '20px'
                                 }
                             },
-                            React.createElement('img', {
-                                className: 'slash-circle',
-                                src: './img/slash-circle-1.svg',
-                                alt: ''
-                            }),
-                            React.createElement('span', {
-                                className: 'text-wrapper-2'
-                            }, 'Report'),
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
+                                React.createElement('img', {
+                                    className: 'slash-circle',
+                                    src: './img/slash-circle-1.svg',
+                                    alt: ''
+                                }),
+                                React.createElement('span', {
+                                    className: 'text-wrapper-2',
+                                    style: {
+                                        flex: 1,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        textAlign: 'left'
+                                    }
+                                }, 'Report')
+                            ),
                             React.createElement('span', {
                                     className: 'submenu',
-                                    'aria-hidden': 'true'
+                                    'aria-hidden': 'true',
+                                    style: { flexShrink: 0 }
                                 },
                                 React.createElement('img', {
                                     className: 'text-wrapper-3',
@@ -1697,7 +1765,7 @@
                                         transition: 'transform 0.2s',
                                         width: '24px',
                                         height: '24px',
-                                        marginRight: '4px'
+                                        marginRight: '0'
                                     }
                                 })
                             )
@@ -1708,50 +1776,41 @@
                                     paddingLeft: '40px',
                                     paddingTop: '10px',
                                     paddingBottom: '10px',
-                                    display: requirementsExpanded && !sidebarCollapsed ? 'block' : 'none'
+                                    display: requirementsExpanded && !sidebarCollapsed ? 'block' : 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
                                 }
                             },
                             hasProjects && selectedProjectID && React.createElement('button', {
-                                id: 'sidebar-manage-requirements-button',
-                                'aria-label': 'Manage requirement / stories',
-                                onClick: async () => {
-                                    console.log('[Requirements] Manage Requirements button clicked');
-                                    const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : selectedProjectID;
-                                    console.log('[Requirements] Sidebar projectID:', projectID);
-                                    if (projectID) {
+                                    id: 'sidebar-manage-requirements-button',
+                                    'aria-label': 'Manage requirement / stories',
+                                    onClick: async () => {
                                         if (typeof window.openRequirementsPanel === 'function') {
                                             window.openRequirementsPanel();
-                                        } else {
-                                            console.error('[Requirements] openRequirementsPanel function not available');
                                         }
-                                    }
+                                    },
+                                    style: {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        boxSizing: 'border-box',
+                                        padding: '8px 12px',
+                                        backgroundColor: 'rgb(30, 41, 59)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#ffffff',
+                                        fontSize: '12px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        marginBottom: '10px',
+                                        transition: 'background-color 0.2s',
+                                        width: 'calc(40px + 100%)',
+                                        marginLeft: '-20px'
+                                    },
+                                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)'; },
+                                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
                                 },
-                                style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    boxSizing: 'border-box',
-                                    padding: '8px 12px',
-                                    backgroundColor: 'rgb(30, 41, 59)',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#ffffff',
-                                    fontSize: '12px',
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    marginBottom: '10px',
-                                    transition: 'background-color 0.2s',
-                                    width: 'calc(100%)',
-                                    marginLeft: '-20px'
-                                },
-                                onMouseEnter: (e) => {
-                                    e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
-                                },
-                                onMouseLeave: (e) => {
-                                    e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
-                                }
-                            },
                                 React.createElement('img', {
                                     src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                     style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)' }
@@ -1760,7 +1819,7 @@
                             ),
                             React.createElement('div', {
                                 id: "div-requirements-list",
-                                style: { display: "flex", flexDirection: "column", gap: "5px" }
+                                style: { display: "flex", flexDirection: "column", gap: "0", margin: '0 -20px 0 -20px' }
                             }),
                             React.createElement('p', {
                                 id: "p-label-requirements-no-entry",
@@ -1779,6 +1838,141 @@
                     },
                     React.createElement('hr', null)
                 ),
+
+                // Notification trigger (expanded view)
+                !sidebarCollapsed && React.createElement('div', {
+                        id: 'notification-trigger-wrapper-expanded',
+                        style: {
+                            padding: '0 0 0 0',
+                            marginLeft: '0',
+                            marginBottom: '0'
+                        }
+                    },
+                    React.createElement('button', {
+                        id: 'notification-trigger-btn',
+                        onClick: () => setNotificationPanelOpen(!notificationPanelOpen),
+                        style: {
+                            position: 'relative',
+                            width: '100%',
+                            height: '40px',
+                            padding: '8px 0',
+                            border: 'none',
+                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-start',
+                            gap: '10px',
+                            outline: 'none',
+                            marginLeft: '0',
+                            transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                    },
+                        React.createElement('svg', {
+                            width: '20',
+                            height: '20',
+                            viewBox: '0 0 24 24',
+                            fill: 'none',
+                            stroke: '#333',
+                            strokeWidth: '2',
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round',
+                            style: { marginLeft: '30px' }
+                        },
+                            React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                            React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                        ),
+                        hasUnreadNotifications && React.createElement('span', {
+                            style: {
+                                position: 'absolute',
+                                top: '8px',
+                                left: '24px',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#e53935',
+                                borderRadius: '50%'
+                            }
+                        }),
+                        React.createElement('span', {
+                            style: {
+                                fontSize: '14px',
+                                color: '#333',
+                                fontWeight: '500'
+                            }
+                        }, 'Notifications')
+                    )
+                ),
+
+                // Notification trigger (collapsed view)
+                sidebarCollapsed && React.createElement('div', {
+                        id: 'notification-trigger-wrapper-collapsed',
+                        style: {
+                            display: 'flex',
+                            justifyContent: 'center',
+                            padding: '0 0 10px 0'
+                        }
+                    },
+                    React.createElement('button', {
+                        id: 'notification-trigger-btn-collapsed',
+                        onClick: () => setNotificationPanelOpen(!notificationPanelOpen),
+                        title: 'Notifications',
+                        style: {
+                            position: 'relative',
+                            width: '40px',
+                            height: '40px',
+                            padding: '8px',
+                            border: 'none',
+                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            outline: 'none',
+                            transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                    },
+                        React.createElement('svg', {
+                            width: '20',
+                            height: '20',
+                            viewBox: '0 0 24 24',
+                            fill: 'none',
+                            stroke: '#333',
+                            strokeWidth: '2',
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round'
+                        },
+                            React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                            React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                        ),
+                        hasUnreadNotifications && React.createElement('span', {
+                            style: {
+                                position: 'absolute',
+                                top: '6px',
+                                right: '8px',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#e53935',
+                                borderRadius: '50%'
+                            }
+                        })
+                    )
+                ),
+
+                // Notification Panel
+                window.NotificationPanel && React.createElement(window.NotificationPanel, {
+                    isOpen: notificationPanelOpen,
+                    onClose: () => {
+                        setNotificationPanelOpen(false);
+                        setHasUnreadNotifications(false);
+                    },
+                    sidebarCollapsed: sidebarCollapsed
+                }),
 
                 // Username section
                 React.createElement('div', {
@@ -1803,7 +1997,7 @@
                                 textDecoration: 'none',
                                 width: 'auto',
                                 padding: '0px',
-                                margin: '20px 20px 0 0'
+                                outline: 'none'
                             },
                             onClick: (e) => e.preventDefault()
                         },
@@ -1819,9 +2013,7 @@
                                 objectFit: 'cover'
                             }
                         }),
-                        React.createElement('span', {
-                            className: 'text-wrapper-6'
-                        }, username),
+                        React.createElement('span', { className: 'text-wrapper-6' }, username),
 
                         userMenuOpen && React.createElement('div', {
                                 id: 'sidebar-user-menu-expanded',
@@ -1830,16 +2022,25 @@
                                     bottom: '100%',
                                     left: '0',
                                     marginBottom: '10px',
-                                    backgroundColor: '#eeeeee',
+                                    backgroundColor: '#fff',
                                     border: '1px solid #e4e4e4',
                                     borderRadius: '10px',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                                     zIndex: 3,
-                                    minWidth: '234px',
+                                    minWidth: 'calc(100% - 35px)',
                                     padding: '10px',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '25px'
+                                    gap: '25px',
+                                    pointerEvents: 'auto'
+                                },
+                                onMouseEnter: (e) => {
+                                    e.stopPropagation();
+                                    e.currentTarget.style.backgroundColor = '#fff';
+                                },
+                                onMouseLeave: (e) => {
+                                    e.stopPropagation();
+                                    e.currentTarget.style.backgroundColor = '#fff';
                                 }
                             },
                             React.createElement('button', {
@@ -1849,7 +2050,7 @@
                                     width: '100%',
                                     padding: '0',
                                     border: 'none',
-                                    backgroundColor: 'transparent',
+                                    // backgroundColor: 'transparent',
                                     textAlign: 'left',
                                     cursor: 'pointer',
                                     fontSize: '14px',
@@ -1870,14 +2071,14 @@
                                     width: '100%',
                                     padding: '0',
                                     border: 'none',
-                                    backgroundColor: 'transparent',
+                                    // backgroundColor: 'transparent',
                                     textAlign: 'left',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                     fontFamily: 'Urbanist-SemiBold, Helvetica',
                                     fontWeight: '600',
                                     color: '#b62e2e',
-                                    transition: 'background-color 0.2s'
+                                    // transition: 'background-color 0.2s'
                                 },
                                 onClick: (e) => {
                                     e.stopPropagation();
@@ -1901,7 +2102,9 @@
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 transition: 'all 220ms ease',
-                                margin: '0 auto'
+                                margin: '9.5px auto',
+                                // border: 'none',
+                                outline: 'none'
                             }
                         },
                         React.createElement('img', {
@@ -1919,9 +2122,9 @@
                                 id: 'sidebar-user-menu-collapsed',
                                 style: {
                                     position: 'fixed',
-                                    bottom: 'calc(50px + 30px + 20px)',
-                                    left: '35px',
-                                    backgroundColor: '#eeeeee',
+                                    bottom: '10px',
+                                    left: '70px',
+                                    backgroundColor: '#fff',
                                     border: '1px solid #e4e4e4',
                                     borderRadius: '10px',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -2019,7 +2222,7 @@
                         'aria-label': 'Toggle sidebar',
                         'aria-expanded': !sidebarCollapsed,
                         onClick: toggleSidebar,
-                        style: {marginBottom: '20px'}
+                        style: {marginBottom: '20px', outline: 'none'}
                     },
                     React.createElement('img', {
                         src: './img/double-arrow-right-svgrepo-com.svg',
@@ -2031,32 +2234,32 @@
 
             // Create Project Modal
             showCreateProjectModal && React.createElement('div', {
-                id: 'create-new-project-modal',
-                style: {
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 10000
-                },
-                onClick: handleSkipCreateProject
-            },
-                React.createElement('div', {
+                    id: 'create-new-project-modal',
                     style: {
-                        backgroundColor: '#ffffff',
-                        borderRadius: '15px',
-                        padding: '30px',
-                        minWidth: '400px',
-                        maxWidth: '500px',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10000
                     },
-                    onClick: (e) => e.stopPropagation()
+                    onClick: handleSkipCreateProject
                 },
+                React.createElement('div', {
+                        style: {
+                            backgroundColor: '#ffffff',
+                            borderRadius: '15px',
+                            padding: '30px',
+                            minWidth: '400px',
+                            maxWidth: '500px',
+                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+                        },
+                        onClick: (e) => e.stopPropagation()
+                    },
                     React.createElement('h2', {
                         style: {
                             margin: '0 0 10px 0',
@@ -2097,12 +2300,12 @@
                         }
                     }),
                     React.createElement('div', {
-                        style: {
-                            display: 'flex',
-                            gap: '10px',
-                            justifyContent: 'flex-end'
-                        }
-                    },
+                            style: {
+                                display: 'flex',
+                                gap: '10px',
+                                justifyContent: 'flex-end'
+                            }
+                        },
                         React.createElement('button', {
                             onClick: handleSkipCreateProject,
                             style: {
@@ -2143,25 +2346,25 @@
 
             // Success Notification
             showSuccessNotification && React.createElement('div', {
-                style: {
-                    position: 'fixed',
-                    top: '20px',
-                    right: '20px',
-                    backgroundColor: '#4CAF50',
-                    color: '#ffffff',
-                    padding: '16px 24px',
-                    borderRadius: '10px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                    zIndex: 10001,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    fontFamily: 'Inter, Helvetica',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    animation: 'slideInRight 0.3s ease-out'
-                }
-            },
+                    style: {
+                        position: 'fixed',
+                        top: '20px',
+                        right: '20px',
+                        backgroundColor: '#4CAF50',
+                        color: '#ffffff',
+                        padding: '16px 24px',
+                        borderRadius: '10px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        zIndex: 10001,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        fontFamily: 'Inter, Helvetica',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        animation: 'slideInRight 0.3s ease-out'
+                    }
+                },
                 React.createElement('span', {
                     style: { fontSize: '20px', fontWeight: 'bold' }
                 }, '✓'),
@@ -2170,25 +2373,25 @@
 
             // Error Notification
             showErrorNotification && React.createElement('div', {
-                style: {
-                    position: 'fixed',
-                    top: '20px',
-                    right: '20px',
-                    backgroundColor: '#f44336',
-                    color: '#ffffff',
-                    padding: '16px 24px',
-                    borderRadius: '10px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                    zIndex: 10001,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    fontFamily: 'Inter, Helvetica',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    animation: 'slideInRight 0.3s ease-out'
-                }
-            },
+                    style: {
+                        position: 'fixed',
+                        top: '20px',
+                        right: '20px',
+                        backgroundColor: '#f44336',
+                        color: '#ffffff',
+                        padding: '16px 24px',
+                        borderRadius: '10px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        zIndex: 10001,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        fontFamily: 'Inter, Helvetica',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        animation: 'slideInRight 0.3s ease-out'
+                    }
+                },
                 React.createElement('span', {
                     style: { fontSize: '20px', fontWeight: 'bold' }
                 }, '✕'),

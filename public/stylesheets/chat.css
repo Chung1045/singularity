@@ -55,7 +55,7 @@
     left: 0; /* Sidebar width (302px) + gap (5px) */
     right: 0;
     /*! width: calc(100% - 7px); */ /* Full width minus sidebar and gap */
-    z-index: 100;
+    z-index: var(--z-chat-topbar, 12);
     flex-shrink: 0;
     transition: left 220ms ease, width 220ms ease; /* Match sidebar transition */
 }
@@ -109,7 +109,7 @@
     right: 0;
     /*! height: 5px; */
     pointer-events: none;
-    z-index: 10;
+    z-index: var(--z-base, 0);
     transition: opacity 0.3s ease;
     bottom: 0;
     /*! background: linear-gradient(to top, rgb(248, 250, 252) 0%, rgba(248, 250, 252, 0.95) 30%, rgba(248, 250, 252, 0.7) 50%, transparent 100% ); */
@@ -124,7 +124,7 @@
     flex-direction: column;
     gap: 20px;
     position: relative;
-    z-index: 1;
+    z-index: var(--z-background, 1);
 }
 
 
@@ -228,6 +228,23 @@
     align-items: flex-end;
 }
 
+/* Message timestamp styling */
+.message-timestamp {
+    font-size: 11px;
+    color: #999;
+    font-family: 'Inter', Helvetica;
+}
+
+/* AI message timestamp alignment */
+.ai-message .message-timestamp {
+    text-align: left;
+}
+
+/* User message timestamp alignment */
+.user-message .message-timestamp {
+    text-align: right;
+}
+
 /* File chips in user messages */
 .user-message .message-bottom-row {
     justify-content: flex-end;
@@ -239,8 +256,8 @@
     border: 1px solid #e0e0e0;
 }
 
-/* Message Edit Button - positioned outside bubble with inline styles in tempHome.js */
-/* Show edit button only on hover of the message content wrapper */
+/* Message Edit Button - positioned under avatar */
+/* Show edit button only on hover of the message */
 .user-message:hover .message-edit-btn {
     opacity: 1 !important;
 }
@@ -318,6 +335,7 @@
     transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-left: 45px;
 }
 
 .chip:hover {

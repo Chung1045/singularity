@@ -449,7 +449,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                 position: 'sticky',
                                 top: '0',
                                 backgroundColor: '#ffffff',
-                                zIndex: 100,
+                                zIndex: window.ZIndex?.CHAT_TOPBAR || 12,
                                 paddingTop: isMobile ? '20px' : isTablet ? '30px' : '38px',
                                 paddingBottom: isMobile ? '10px' : isTablet ? '15px' : '20px',
                                 alignItems: 'center',
@@ -729,7 +729,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 10001,
+                    zIndex: window.ZIndex?.MODAL_BACKDROP || 30,
                     padding: '20px'
                 },
                 onClick: (e) => {

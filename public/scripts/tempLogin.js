@@ -189,14 +189,17 @@ const Message = ({ text, visible, onClose, showClose = true, emoji = '👋' }) =
     return React.createElement(
         'div',
         {
+            // MUST keep 'message' here for the useEffect logic to work
             id: 'message',
-            // Start with hidden to let useEffect control visibility
-            className: 'hidden' 
+            className: 'hidden'
         },
         `${emoji} ${text}`,
         showClose ? React.createElement(
             'span',
-            { id: 'close', onClick: onClose },
+            {
+                id: 'message-close-btn', // Added ID
+                onClick: onClose
+            },
             'x'
         ) : null
     );
@@ -212,7 +215,6 @@ const TempLogin = ({ csrfToken }) => {
 
     const showSlideUpMessage = (text, showClose = true, autoHideDuration = 5000, emoji = '⚠️') => {
         setMessage({ text, visible: true, showClose, emoji });
-        // Automatically hide the message after some time (if autoHideDuration is set)
         if (autoHideDuration > 0) {
             setTimeout(() => {
                 hideSlideUpMessage();
@@ -232,12 +234,11 @@ const TempLogin = ({ csrfToken }) => {
     };
 
     const handleLogin = async () => {
-        // Validation
         if (!usernameEmail.trim()) {
             showSlideUpMessage('Please enter your username or email address', true, 5000, '⚠️');
             return;
         }
-        
+
         if (!password.trim()) {
             showSlideUpMessage('Please enter your password', true, 5000, '⚠️');
             return;
@@ -255,11 +256,6 @@ const TempLogin = ({ csrfToken }) => {
             });
 
             if (response.ok) {
-                // Old code:
-                // showSlideUpMessage('Login successful! Redirecting...', false, 0, '✅');
-                // setTimeout(() => {
-                //     window.location.href = '/home';
-                // }, 2000);
                 handleLoginSuccess();
             } else {
                 const data = await response.json();
@@ -308,11 +304,6 @@ const TempLogin = ({ csrfToken }) => {
 
             const verifyResult = await verifyResp.json();
             if (verifyResult.successful) {
-                // Old code:
-                // showSlideUpMessage('Verification successful! Redirecting...', false, 0, '✅');
-                // setTimeout(() => {
-                //     window.location.href = '/home';
-                // }, 2000);
                 handleLoginSuccess();
             } else {
                 showSlideUpMessage(verifyResult.message || 'Passkey login failed. Please try again.');
@@ -332,32 +323,34 @@ const TempLogin = ({ csrfToken }) => {
         }
     };
 
-    return React.createElement('div', { className: 'frame' },
+    return React.createElement('div', { className: 'frame', id: 'login-page-frame' },
         React.createElement(Message, { text: message.text, visible: message.visible, showClose: message.showClose, emoji: message.emoji, onClose: hideSlideUpMessage }),
-        React.createElement('div', { className: 'login' },
-            React.createElement('div', { className: 'content-background' }),
-            
+
+        React.createElement('div', { className: 'login', id: 'login-component-container' },
+            React.createElement('div', { className: 'content-background', id: 'login-background-overlay' }),
+
             // Right Content
-            React.createElement('div', { className: 'right-content' },
-                React.createElement('div', { className: 'logo' },
-                    React.createElement('div', { className: 'logo-text' },
-                        React.createElement('div', { className: 'text-wrapper' }, 'Singularity')
+            React.createElement('div', { className: 'right-content', id: 'right-content-panel' },
+                React.createElement('div', { className: 'logo', id: 'singularity-logo-container' },
+                    React.createElement('div', { className: 'logo-text', id: 'singularity-logo-text-wrapper' },
+                        React.createElement('div', { className: 'text-wrapper', id: 'singularity-logo-text' }, 'Singularity')
                     ),
-                    React.createElement('img', { className: 'union', src: 'img/Union.svg', alt: 'Union' })
+                    React.createElement('img', { className: 'union', src: 'img/Union.svg', alt: 'Union', id: 'singularity-logo-icon' })
                 ),
 
-                React.createElement('div', { className: 'content' },
-                    React.createElement('div', { className: 'slogan' },
-                        React.createElement('div', { className: 'div' }, 'Requirements? Just got easier'),
-                        React.createElement('div', { className: 'text-wrapper-2' }, 'AI for Software Development')
+                React.createElement('div', { className: 'content', id: 'login-form-area' },
+                    React.createElement('div', { className: 'slogan', id: 'slogan-container' },
+                        React.createElement('div', { className: 'div', id: 'slogan-text-main' }, 'Requirements? Just got easier'),
+                        React.createElement('div', { className: 'text-wrapper-2', id: 'slogan-text-sub' }, 'AI for Software Development')
                     ),
 
-                    React.createElement('div', { className: 'div-2' },
+                    React.createElement('div', { className: 'div-2', id: 'form-input-group' },
                         // Username/Email Input
-                        React.createElement('div', { className: 'div-3' },
-                            React.createElement('div', { className: 'text-wrapper-3' }, 'Username or email address'),
-                            React.createElement('div', { className: 'div-wrapper' },
+                        React.createElement('div', { className: 'div-3', id: 'username-field-container' },
+                            React.createElement('div', { className: 'text-wrapper-3', id: 'label-username' }, 'Username or email address'),
+                            React.createElement('div', { className: 'div-wrapper', id: 'username-input-wrapper' },
                                 React.createElement('input', {
+                                    id: 'input-username', // ID ADDED
                                     type: 'text',
                                     className: 'text-wrapper-4',
                                     value: usernameEmail,
@@ -378,10 +371,11 @@ const TempLogin = ({ csrfToken }) => {
                         ),
 
                         // Password Input
-                        React.createElement('div', { className: 'div-3' },
-                            React.createElement('div', { className: 'text-wrapper-3' }, 'Password'),
-                            React.createElement('div', { className: 'div-wrapper', style: { position: 'relative' } },
+                        React.createElement('div', { className: 'div-3', id: 'password-field-container' },
+                            React.createElement('div', { className: 'text-wrapper-3', id: 'label-password' }, 'Password'),
+                            React.createElement('div', { className: 'div-wrapper', id: 'password-input-wrapper', style: { position: 'relative' } },
                                 React.createElement('input', {
+                                    id: 'input-password', // ID ADDED
                                     type: showPassword ? 'text' : 'password',
                                     className: 'text-wrapper-4',
                                     value: password,
@@ -400,24 +394,26 @@ const TempLogin = ({ csrfToken }) => {
                                     }
                                 }),
                                 React.createElement('button', {
-                                    type: 'button',
-                                    onClick: () => setShowPassword(!showPassword),
-                                    style: {
-                                        position: 'absolute',
-                                        right: '1px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: '5px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
+                                        id: 'btn-toggle-password', // ID ADDED
+                                        type: 'button',
+                                        onClick: () => setShowPassword(!showPassword),
+                                        style: {
+                                            position: 'absolute',
+                                            right: '1px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '5px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        },
+                                        'aria-label': showPassword ? 'Hide password' : 'Show password'
                                     },
-                                    'aria-label': showPassword ? 'Hide password' : 'Show password'
-                                },
                                     React.createElement('img', {
+                                        id: 'icon-toggle-password', // ID ADDED
                                         src: showPassword ? './img/eye-open.svg' : './img/eye-closed.svg',
                                         alt: showPassword ? 'Hide password' : 'Show password',
                                         style: { width: '14px', height: '14px', opacity: 0.6 }
@@ -427,62 +423,66 @@ const TempLogin = ({ csrfToken }) => {
                         ),
 
                         // Terms & Privacy
-                        React.createElement('p', { className: 'by-continuing-you' },
-                                    React.createElement('span', { className: 'span' },
-                                        'By continuing, you agree to Singularity\u2019s ',
-                                        React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Privacy Policy'),
-                                        ' and ',
-                                        React.createElement('a', { href: '#', style: { textDecoration: 'underline', color: 'inherit' } }, 'Terms of Use')
-                                    )
+                        React.createElement('p', { className: 'by-continuing-you', id: 'text-legal-disclaimer-container' },
+                            React.createElement('span', { className: 'span', id: 'text-legal-disclaimer' },
+                                'By continuing, you agree to Singularity\u2019s ',
+                                React.createElement('a', { href: '#', id: 'link-privacy-policy', style: { textDecoration: 'underline', color: 'inherit' } }, 'Privacy Policy'),
+                                ' and ',
+                                React.createElement('a', { href: '#', id: 'link-terms-of-use', style: { textDecoration: 'underline', color: 'inherit' } }, 'Terms of Use')
+                            )
                         ),
 
                         // Login Button
-                        React.createElement('div', { 
-                            className: 'login-2',
-                            onClick: handleLogin,
-                            style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
-                        },
-                            React.createElement('div', { className: 'text-wrapper-6' }, isLoading ? 'Loading...' : 'Login')
+                        React.createElement('div', {
+                                id: 'btn-login-submit', // ID ADDED
+                                className: 'login-2',
+                                onClick: handleLogin,
+                                style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
+                            },
+                            React.createElement('div', { className: 'text-wrapper-6', id: 'text-login-btn' }, isLoading ? 'Loading...' : 'Login')
                         ),
 
                         // Divider
-                        React.createElement('hr', { className: 'divider', src: 'img/divider.svg', alt: 'Divider' }),
+                        React.createElement('hr', { className: 'divider', src: 'img/divider.svg', alt: 'Divider', id: 'divider-or' }),
 
                         // Continue with Google
-                        React.createElement('div', { 
-                            className: 'div-wrapper-2',
-                            onClick: handleGoogleOAuth,
-                            style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
-                        },
-                            React.createElement('div', { className: 'text-wrapper-7' }, 'Continue with Google')
+                        React.createElement('div', {
+                                id: 'btn-google-auth', // ID ADDED
+                                className: 'div-wrapper-2',
+                                onClick: handleGoogleOAuth,
+                                style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
+                            },
+                            React.createElement('div', { className: 'text-wrapper-7', id: 'text-google-btn' }, 'Continue with Google')
                         ),
 
                         // Sign in with Passkey
-                        React.createElement('div', { 
-                            className: 'div-wrapper-2',
-                            onClick: handlePasskeyLogin,
-                            style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
-                        },
-                            React.createElement('div', { className: 'text-wrapper-7' }, 'Sign in with Passkey')
+                        React.createElement('div', {
+                                id: 'btn-passkey-auth', // ID ADDED
+                                className: 'div-wrapper-2',
+                                onClick: handlePasskeyLogin,
+                                style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
+                            },
+                            React.createElement('div', { className: 'text-wrapper-7', id: 'text-passkey-btn' }, 'Sign in with Passkey')
                         )
                     )
                 )
             ),
 
             // Left Content (Sign Up)
-            React.createElement('div', { className: 'left-content' },
-                React.createElement('div', { className: 'group' },
-                    React.createElement('div', { className: 'login-wrapper' },
-                        React.createElement('div', { 
-                            className: 'sign-in-wrapper',
-                            onClick: handleSignup,
-                            style: { cursor: 'pointer' }
-                        },
-                            React.createElement('div', { className: 'sign-in' }, 'Sign Up')
+            React.createElement('div', { className: 'left-content', id: 'left-content-panel' },
+                React.createElement('div', { className: 'group', id: 'left-panel-content-group' },
+                    React.createElement('div', { className: 'login-wrapper', id: 'wrapper-signup-btn' },
+                        React.createElement('div', {
+                                id: 'btn-signup-redirect', // ID ADDED
+                                className: 'sign-in-wrapper',
+                                onClick: handleSignup,
+                                style: { cursor: 'pointer' }
+                            },
+                            React.createElement('div', { className: 'sign-in', id: 'text-signup-btn' }, 'Sign Up')
                         )
                     ),
-                    React.createElement('div', { className: 'if-you-already-have' }, "Didn't have an account?"),
-                    React.createElement('div', { className: 'welcome' }, 'Greetings!')
+                    React.createElement('div', { className: 'if-you-already-have', id: 'text-no-account' }, "Didn't have an account?"),
+                    React.createElement('div', { className: 'welcome', id: 'text-greetings' }, 'Greetings!')
                 )
             )
         )

@@ -1,0 +1,43 @@
+/**
+ * Z-Index Management System
+ * Centralized z-index values for consistent stacking context
+ *
+ * Layer Structure:
+ * 1. Base (0-9): Background elements and base containers
+ * 2. Content (10-19): Main content, sidebar, chat interface
+ * 3. Overlays (20-29): Dropdowns, tooltips, menus
+ * 4. Modals (30-39): Modal dialogs, popups
+ * 5. Notifications (40-49): Toast notifications, alerts
+ * 6. Critical (50+): Critical UI that must always be on top
+ */
+
+:root {
+    /* Base Layer (0-9) */
+    --z-base: 0;
+    --z-background: 1;
+
+    /* Content Layer (10-19) */
+    --z-sidebar: 10;
+    --z-main-content: 11;
+    --z-chat-topbar: 12;
+    --z-chat-input: 13;
+
+    /* Overlay Layer (20-29) */
+    --z-dropdown: 20;
+    --z-tooltip: 21;
+    --z-menu: 22;
+
+    /* Modal Layer (30-39) */
+    --z-modal-backdrop: 30;
+    --z-modal: 31;
+    --z-modal-nested: 32;
+
+    /* Notification Layer (40-49) */
+    --z-notification: 40;
+
+    /* Critical Layer (50+) */
+    --z-critical: 50;
+}
+
+/* Helper comment for reference - do not remove */
+/* Usage: Use CSS variable in your styles, e.g., z-index: var(--z-modal); */
