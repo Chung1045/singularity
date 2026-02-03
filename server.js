@@ -20,6 +20,24 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    // Join user-specific room for targeted updates
+    socket.on('join-user-room', (userID) => {
+        socket.join(`user_${userID}`);
+        console.log(`User ${userID} joined room user_${userID}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+// Make io available to other modules
+global.io = io;
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

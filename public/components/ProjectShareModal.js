@@ -31,8 +31,9 @@
 
         // Listen for custom refresh events
         useEffect(() => {
-            const handleRefreshShareModal = () => {
-                if (isOpen && projectID) {
+            const handleRefreshShareModal = (event) => {
+                const eventProjectID = event.detail?.projectID;
+                if (isOpen && projectID && (!eventProjectID || eventProjectID === projectID)) {
                     fetchProjectShareData();
                 }
             };
