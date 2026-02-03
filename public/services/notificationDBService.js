@@ -214,43 +214,6 @@ async function getAllNotifications(userID) {
 
 }
 
-async function createProjectCreationNotification(projectID, userID, projectName) {
-    const sql = `
-        INSERT INTO notification
-            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    try {
-        const now = Date.now(); // Use milliseconds timestamp
-
-        const params = [
-            uuid(),
-            userID,
-            now,
-            "create",
-            projectID,
-            `Project "${projectName}" has been created successfully`,
-            false
-        ];
-
-        return new Promise((resolve, reject) => {
-            db.run(sql, params, (err) => {
-                if (err) {
-                    console.error("Error inserting project creation notification:", err);
-                    return reject(err);
-                }
-                console.log("Project creation notification created successfully");
-                resolve(true);
-            });
-        });
-
-    } catch (err) {
-        console.error("Project creation notification setup failed:", err);
-        return false;
-    }
-}
-
 async function createProjectDeletionNotification(projectID, userID, projectName) {
     const sql = `
         INSERT INTO notification
@@ -298,6 +261,5 @@ module.exports = {
     removeNotification,
     getNotificationRecipient,
     getAllNotifications,
-    createProjectCreationNotification,
     createProjectDeletionNotification
 }

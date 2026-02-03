@@ -75,13 +75,6 @@ router.post('/project/create', async (req, res) => {
         if (successful) {
             console.log("Project is created with ID:", data.projectID)
 
-            // Create notification for project creation
-            await notificationDBService.createProjectCreationNotification(
-                data.projectID,
-                req.userID,
-                data.projectName
-            );
-
             // Return the new projectID and projectName so frontend can use it
             return res.status(200).json({
                 success: true,
