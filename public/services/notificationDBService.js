@@ -87,7 +87,7 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID, owne
             collaboratorID,
             Date.now(),
             "removal",
-            projectID,
+            null, // Set to null so removed users can still see the notification
             `You have been removed from ${projectName} by ${ownerName}`,
             false
         ];
