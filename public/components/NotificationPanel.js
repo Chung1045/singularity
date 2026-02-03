@@ -8,6 +8,13 @@
 
     // Move sub-components here so they are in scope and not unreachable
     const NotificationItem = ({ notification, onAccept, onDecline, onDismiss, formatTimeAgo }) => {
+        console.log('[NotificationItem] Rendering notification:', {
+            id: notification.notificationID,
+            type: notification.notificationType,
+            title: notification.notificationTitle,
+            message: notification.notificationMessage
+        });
+
         // Check if notification is new (unread AND created within last 5 minutes)
         const notificationAge = new Date() - new Date(notification.createdAt);
         const isUnread = notification.isRead === 0 || notification.isRead === false;
@@ -15,6 +22,13 @@
         const isNew = isUnread && isRecent;
 
         const isInvitation = notification.notificationType === 'collaboration_invite';
+
+        console.log('[NotificationItem] Notification details:', {
+            isNew,
+            isInvitation,
+            age: `${Math.round(notificationAge / 1000)}s`,
+            willShowDismiss: !isInvitation
+        });
 
         return React.createElement('div', {
                 style: {
@@ -241,14 +255,15 @@
 
         // Check for removal/deletion notifications and handle kick-out
         useEffect(() => {
-            const removalNotif = notifications.find(n => n.notificationType === 'removal');
+            // NOTE: Removal notifications are now handled by the real-time socket event
+            // which shows CustomAlertModal. This code is kept for deletion notifications only.
+
             const deleteNotif = notifications.find(n => n.notificationType === 'delete');
 
-            if (removalNotif || deleteNotif) {
+            if (deleteNotif) {
                 const currentProjectID = localStorage.getItem('selectedProjectID');
-                const affectedProjectID = removalNotif?.projectID || deleteNotif?.projectID;
+                const affectedProjectID = deleteNotif?.projectID;
 
-                // Show alert and handle removal after user acknowledges
                 const handleRemoval = () => {
                     if (currentProjectID === affectedProjectID) {
                         window.location.href = '/';
@@ -257,13 +272,8 @@
                     }
                 };
 
-                if (removalNotif) {
-                    alert(removalNotif.notificationMessage);
-                    handleRemoval();
-                } else if (deleteNotif) {
-                    alert(deleteNotif.notificationMessage);
-                    handleRemoval();
-                }
+                alert(deleteNotif.notificationMessage);
+                handleRemoval();
             }
 
             const ownerNotif = notifications.find(n =>
@@ -298,6 +308,7 @@
         }, [isOpen, onClose]);
 
         const fetchNotifications = async () => {
+            console.log('[NotificationPanel] Fetching notifications...');
             try {
                 const response = await fetch('/api/notifications/list', {
                     method: 'POST',
@@ -307,14 +318,46 @@
 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('[NotificationPanel] Received notifications:', data.notifications);
+                    console.log('[NotificationPanel] Number of notifications:', data.notifications?.length || 0);
+                    console.log('[NotificationPanel] Full API response:', data);
+
+                    // Log each notification type and check for duplicates
+                    const notifIds = {};
+                    data.notifications?.forEach((notif, index) => {
+                        console.log(`[NotificationPanel] Notification ${index + 1}:`, {
+                            id: notif.notificationID,
+                            type: notif.notificationType,
+                            title: notif.notificationTitle,
+                            message: notif.notificationMessage,
+                            isRead: notif.isRead
+                        });
+
+                        // Check for duplicate IDs
+                        if (notifIds[notif.notificationID]) {
+                            console.error('[NotificationPanel] DUPLICATE NOTIFICATION ID FOUND:', notif.notificationID);
+                        } else {
+                            notifIds[notif.notificationID] = true;
+                        }
+                    });
+
+                    console.log('[NotificationPanel] Unique notification IDs:', Object.keys(notifIds).length);
+
                     setNotifications(data.notifications || []);
+                } else {
+                    console.error('[NotificationPanel] Failed to fetch notifications:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('[NotificationPanel] Error response:', errorText);
                 }
             } catch (error) {
-                console.error('Error fetching notifications:', error);
+                console.error('[NotificationPanel] Error fetching notifications:', error);
             } finally {
                 setLoading(false);
             }
         };
+
+        // Expose fetchNotifications for manual debugging
+        window.debugFetchNotifications = fetchNotifications;
 
         const handleAccept = async (notificationId, projectId) => {
             try {
@@ -348,7 +391,7 @@
                 const response = await fetch('/api/notifications/decline-invitation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON557.stringify({ notificationId })
+                    body: JSON.stringify({ notificationId })
                 });
 
                 if (response.ok) {

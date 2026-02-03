@@ -246,25 +246,64 @@ router.post('/project/editShare', async (req, res) => {
         } else {
             await projectDBService.updateProjectShare(projectID, shareOptions);
 
+            // Deduplicate shareOptions to prevent duplicate notifications
+            const processedUsers = new Set();
+
             // Send notifications to owner for each operation
             for (const option of shareOptions) {
                 const { uid, operation } = option;
 
+                // Create unique key for this operation+user combination
+                const operationKey = `${operation}_${uid}`;
+
+                // Skip if we've already processed this operation for this user
+                if (processedUsers.has(operationKey)) {
+                    console.log(`[ProjectManager] Skipping duplicate notification: ${operation} for user ${uid}`);
+                    continue;
+                }
+
+                // Mark as processed
+                processedUsers.add(operationKey);
+
                 if (operation === "invite") {
                     await notificationDBService.notifyOwnerInviteSent(projectID, ownerID, uid);
                 } else if (operation === "remove") {
-                    await notificationDBService.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
-                    // Also notify the removed collaborator
-                    await notificationDBService.setProjectShareRemoveNotification(projectID, uid, ownerID);
+                    console.log('====================================');
+                    console.log('[ProjectManager] Processing REMOVE operation');
+                    console.log('[ProjectManager] Collaborator UID:', uid);
+                    console.log('[ProjectManager] Owner UID:', ownerID);
+                    console.log('[ProjectManager] Project ID:', projectID);
+
+                    try {
+                        console.log('[ProjectManager] Calling notifyOwnerRemovedCollaborator...');
+                        await notificationDBService.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
+                        console.log('[ProjectManager] Owner notified');
+
+                        console.log('[ProjectManager] Calling setProjectShareRemoveNotification...');
+                        await notificationDBService.setProjectShareRemoveNotification(projectID, uid, ownerID);
+                        console.log('[ProjectManager] Collaborator notification created');
+                    } catch (notifError) {
+                        console.error('[ProjectManager] ERROR creating notifications:', notifError);
+                        console.error('[ProjectManager] Error stack:', notifError.stack);
+                    }
 
                     // Emit real-time notification to the removed collaborator
+                    console.log('[ProjectManager] global.io available?', !!global.io);
+
                     if (global.io) {
-                        global.io.to(`user_${uid}`).emit('collaborator-removed', {
+                        const targetRoom = `user_${uid}`;
+                        console.log('[ProjectManager] Emitting to room:', targetRoom);
+
+                        global.io.to(targetRoom).emit('collaborator-removed', {
                             projectID: projectID,
                             message: 'You have been removed from this project'
                         });
-                        console.log(`Emitted collaborator-removed to user ${uid} for project ${projectID}`);
+
+                        console.log(`[ProjectManager] Emitted collaborator-removed to user ${uid}`);
+                    } else {
+                        console.error('[ProjectManager] global.io is not available');
                     }
+                    console.log('[ProjectManager] ====================================');
                 }
             }
 

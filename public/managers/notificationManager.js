@@ -197,8 +197,20 @@ router.post('/notifications/list', async (req, res) => {
     const userID = req.userID;
 
     try {
-        console.log(`Attempt to fetch notifications for user ${userID}`)
+        console.log(`[NotificationAPI] Fetching notifications for user ${userID}`)
         const notifications = await notifDB.getAllNotifications(userID);
+
+        console.log(`[NotificationAPI] Raw notifications from DB:`, notifications.length);
+        notifications.forEach((notif, index) => {
+            console.log(`[NotificationAPI] Raw notification ${index + 1}:`, {
+                notifID: notif.notifID,
+                kind: notif.kind,
+                projectID: notif.projectID,
+                message: notif.message,
+                dateReceive: notif.dateReceive,
+                isRead: notif.isRead
+            });
+        });
 
         // Transform notifications to match frontend expectations
         const transformedNotifications = notifications.map(notif => {
@@ -221,13 +233,24 @@ router.post('/notifications/list', async (req, res) => {
 
             return {
                 notificationID: notif.notifID,
-                notificationTitle: getNotificationTitle(notif.kind),
+                notificationTitle: getNotificationTitle(notif.kind, notif.message),
                 notificationMessage: notif.message,
                 notificationType: notif.kind === 'invitation' ? 'collaboration_invite' : notif.kind,
                 projectID: notif.projectID,
                 createdAt: createdAt,
                 isRead: notif.isRead
             };
+        });
+
+        console.log(`[NotificationAPI] Transformed notifications:`, transformedNotifications.length);
+        transformedNotifications.forEach((notif, index) => {
+            console.log(`[NotificationAPI] Transformed notification ${index + 1}:`, {
+                notificationID: notif.notificationID,
+                notificationType: notif.notificationType,
+                notificationTitle: notif.notificationTitle,
+                message: notif.notificationMessage,
+                isRead: notif.isRead
+            });
         });
 
         console.log("Notification is fetched")
@@ -242,18 +265,22 @@ router.post('/notifications/list', async (req, res) => {
 })
 
 // Helper function to generate notification titles based on type
-function getNotificationTitle(kind) {
+function getNotificationTitle(kind, message = '') {
     switch (kind) {
         case 'invitation':
-            return 'Project Invitation';
+            return 'Project Collaboration Invitation';
         case 'create':
-            return 'Project Created';
+            // Check message content to determine if it's a state change or collaboration change
+            if (message.includes('renamed') || message.includes('created successfully')) {
+                return 'Project State';
+            }
+            return 'Project Collaboration Changes';
         case 'delete':
-            return 'Project Deleted';
+            return 'Project State Change';
         case 'removal':
-            return 'Removed from Project';
+            return 'Project Collaboration Changes';
         case 'leaving':
-            return 'Left Project';
+            return 'Project Collaboration Changes';
         default:
             return 'Notification';
     }

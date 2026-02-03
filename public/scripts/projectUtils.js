@@ -12,6 +12,235 @@
  * This file should be loaded on all pages that use the Sidebar component
  */
 
+// ===== GLOBAL UTILITIES (Socket.IO + Alerts) =====
+
+/**
+ * Custom alert function - available globally
+ * Requires CustomAlertModal component to be loaded
+ */
+window.showCustomAlert = function(options) {
+    if (!window.CustomAlertModal) {
+        console.error('[ProjectUtils] CustomAlertModal component not loaded');
+        alert(options.message || 'Alert'); // Fallback
+        return;
+    }
+
+    let alertContainer = document.getElementById('custom-alert-container');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'custom-alert-container';
+        document.body.appendChild(alertContainer);
+    }
+
+    const root = ReactDOM.createRoot(alertContainer);
+    root.render(React.createElement(window.CustomAlertModal, {
+        isOpen: true,
+        onClose: () => {
+            root.unmount();
+            alertContainer.remove();
+        },
+        ...options
+    }));
+};
+
+/**
+ * Global event dispatcher for refreshing various components
+ */
+window.dispatchGlobalEvent = function(eventName, detail = {}) {
+    window.dispatchEvent(new CustomEvent(eventName, { detail }));
+};
+
+/**
+ * Socket.IO connection setup (if available)
+ * Call this once on page load with userInfo
+ */
+window.initializeSocketConnection = function(userInfo) {
+    console.log('[ProjectUtils] initializeSocketConnection called with userInfo:', userInfo);
+
+    if (typeof io === 'undefined') {
+        console.error('[ProjectUtils] Socket.IO not loaded - io is undefined');
+        return null;
+    }
+    console.log('[ProjectUtils] Socket.IO library is loaded');
+
+    if (!userInfo || !userInfo.uid) {
+        console.error('[ProjectUtils]  No user info or uid provided:', userInfo);
+        return null;
+    }
+    console.log('[ProjectUtils] Valid userInfo with uid:', userInfo.uid);
+
+    console.log('[ProjectUtils] Creating socket connection...');
+    const socket = io();
+
+    // Socket connection events
+    socket.on('connect', () => {
+        console.log('[ProjectUtils] Socket connected! Socket ID:', socket.id);
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.log('[ProjectUtils] Socket disconnected. Reason:', reason);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('[ProjectUtils] Socket connection error:', error);
+    });
+
+    // Join user-specific room for real-time updates
+    socket.emit('join-user-room', userInfo.uid);
+    console.log(`[ProjectUtils] Emitted join-user-room for user: ${userInfo.uid}`);
+
+    // Listen for project share updates
+    socket.on('project-share-updated', (data) => {
+        console.log('[ProjectUtils] Received project-share-updated:', data);
+        if (data.action === 'collaborator-accepted') {
+            window.dispatchGlobalEvent('refreshProjectShare', { projectID: data.projectID });
+        }
+    });
+
+    // Listen for collaborator removal notifications
+    socket.on('collaborator-removed', (data) => {
+        console.log('====================================');
+        console.log('[ProjectUtils] COLLABORATOR REMOVED EVENT RECEIVED');
+        console.log('[ProjectUtils] Event data:', data);
+        console.log('[ProjectUtils] Current page:', window.location.pathname);
+        console.log('[ProjectUtils] CustomAlertModal available?', typeof window.CustomAlertModal !== 'undefined');
+        console.log('====================================');
+
+        window.showCustomAlert({
+            title: 'Project Access Removed',
+            message: data.message,
+            confirmText: 'OK',
+            onConfirm: () => {
+                console.log('[ProjectUtils] User clicked OK on removal alert');
+                console.log('[ProjectUtils] Waiting 500ms before fetching notifications...');
+
+                // Small delay to allow database write to complete before fetching
+                setTimeout(() => {
+                    console.log('[ProjectUtils] Delay complete, now opening panel and refreshing projects');
+
+                    // Refresh projects list (collaborator was removed)
+                    window.dispatchGlobalEvent('refreshProjects');
+
+                    // Open notification panel (will automatically fetch notifications when it opens)
+                    window.dispatchGlobalEvent('openNotificationPanel');
+
+                    console.log('[ProjectUtils] Notification panel opened to show removal notification');
+                }, 500); // 500ms delay to allow DB write to complete
+            }
+        });
+    });
+
+    // Make socket available globally
+    window.socket = socket;
+    return socket;
+};
+
+/**
+ * Initialize file upload event listener
+ * Requires FileUploadComponent to be loaded
+ */
+window.initializeFileUploadListener = function() {
+    const handleOpenFileUpload = (event) => {
+        const { projectID } = event.detail;
+        console.log('[ProjectUtils] Opening file upload modal for project:', projectID);
+
+        if (!window.FileUploadComponent) {
+            alert('File upload component is not ready. Please refresh the page.');
+            return;
+        }
+
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'file-upload-modal-container';
+        modalContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: ${window.ZIndex?.MODAL || 31};
+            padding: 20px;
+        `;
+        modalContainer.onclick = (e) => {
+            if (e.target === modalContainer) {
+                document.body.removeChild(modalContainer);
+            }
+        };
+        document.body.appendChild(modalContainer);
+
+        const modalRoot = ReactDOM.createRoot(modalContainer);
+        modalRoot.render(
+            React.createElement(window.FileUploadComponent, {
+                projectID: projectID,
+                onClose: () => {
+                    modalRoot.unmount();
+                    if (document.body.contains(modalContainer)) {
+                        document.body.removeChild(modalContainer);
+                    }
+                },
+                onFilesUploaded: (files) => {
+                    console.log('[ProjectUtils] Files uploaded:', files);
+                    // Refresh the source list in sidebar
+                    if (typeof window.fetchProjectFiles === 'function') {
+                        window.fetchProjectFiles(projectID);
+                    }
+                }
+            })
+        );
+    };
+
+    window.addEventListener('openFileUpload', handleOpenFileUpload);
+    console.log('[ProjectUtils] File upload listener initialized');
+};
+
+/**
+ * Open Project Share Modal
+ * Requires ProjectShareModal component to be loaded
+ * @param {string} projectID - The project UUID
+ * @param {string} projectName - The project name
+ */
+window.openProjectShareModal = function(projectID, projectName) {
+    console.log('[ProjectUtils] Opening project share modal for:', projectID, projectName);
+
+    if (!window.ProjectShareModal) {
+        console.error('[ProjectUtils] ProjectShareModal component not loaded');
+        alert('Project share modal is not available. Please refresh the page.');
+        return;
+    }
+
+    // Create modal container
+    let modalContainer = document.getElementById('project-share-modal-container');
+    if (!modalContainer) {
+        modalContainer = document.createElement('div');
+        modalContainer.id = 'project-share-modal-container';
+        document.body.appendChild(modalContainer);
+    }
+
+    // Render the modal
+    const root = ReactDOM.createRoot(modalContainer);
+    root.render(
+        React.createElement(window.ProjectShareModal, {
+            isOpen: true,
+            projectID: projectID,
+            projectName: projectName,
+            onClose: () => {
+                console.log('[ProjectUtils] Closing project share modal');
+                root.unmount();
+                if (document.body.contains(modalContainer)) {
+                    modalContainer.remove();
+                }
+            }
+        })
+    );
+
+    console.log('[ProjectUtils] Project share modal rendered successfully');
+};
+
+// ===== PROJECT DATA UTILITIES =====
+
 /**
  * Fetch and display project chat history
  * @param {string} projectID - The UUID of the project

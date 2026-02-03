@@ -1,6 +1,5 @@
 const uuid = require("uuid-v4");
 const db = require("./db");
-const projectDB = require("./projectDBService")
 
 async function setupProjectShareNotification(projectID, collaboratorID) {
     const sql = `
@@ -61,6 +60,12 @@ async function removeProjectInvitationNotification(projectID, collaboratorID) {
 
 
 async function setProjectShareRemoveNotification(projectID, collaboratorID, ownerID) {
+    console.log('[NotificationDB] ====================================');
+    console.log('[NotificationDB] Creating removal notification');
+    console.log('[NotificationDB] ProjectID:', projectID);
+    console.log('[NotificationDB] CollaboratorID:', collaboratorID);
+    console.log('[NotificationDB] OwnerID:', ownerID);
+
     const sql = `
         INSERT INTO notification
             (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
@@ -68,7 +73,14 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID, owne
     `;
 
     try {
-        const projectName = await projectDB.fetchProjectName(projectID);
+        // Fetch project name directly to avoid circular dependency issues
+        const projectName = await new Promise((resolve, reject) => {
+            db.get('SELECT projectName FROM project WHERE projectID = ?', [projectID], (err, row) => {
+                if (err) return reject(err);
+                resolve(row ? row.projectName : 'Unknown Project');
+            });
+        });
+        console.log('[NotificationDB] Project name:', projectName);
 
         // Get owner info for the notification message
         const ownerInfo = await new Promise((resolve, reject) => {
@@ -82,28 +94,66 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID, owne
             ? `${ownerInfo.firstName} ${ownerInfo.lastName}`
             : ownerInfo?.userName || 'Project owner';
 
+        console.log('[NotificationDB] Owner name:', ownerName);
+
+        const notifID = uuid();
+        const timestamp = Date.now();
+        const message = `You have been removed from "${projectName}" by ${ownerName}`;
+
         const params = [
-            uuid(),
+            notifID,
             collaboratorID,
-            Date.now(),
+            timestamp,
             "removal",
             null, // Set to null so removed users can still see the notification
-            `You have been removed from ${projectName} by ${ownerName}`,
-            false
+            message,
+            0  // SQLite expects INTEGER, not boolean
         ];
+
+        console.log('[NotificationDB] Notification params:', {
+            notifID,
+            receiveUid: collaboratorID,
+            dateReceive: timestamp,
+            kind: 'removal',
+            projectID: null,
+            message,
+            isRead: 0
+        });
 
         return new Promise((resolve, reject) => {
             db.run(sql, params, (err) => {
                 if (err) {
-                    console.error("Error inserting notification:", err);
+                    console.error("[NotificationDB] Error inserting notification:", err);
+                    console.log('[NotificationDB] ====================================');
                     return reject(err);
                 }
+                console.log('[NotificationDB] Removal notification created successfully');
+
+                // Verify the notification was actually saved
+                db.get('SELECT * FROM notification WHERE notifID = ?', [notifID], (err, row) => {
+                    if (err) {
+                        console.error('[NotificationDB] Error verifying notification:', err);
+                    } else if (row) {
+                        console.log('[NotificationDB] VERIFICATION: Notification found in database:', {
+                            notifID: row.notifID,
+                            receiveUid: row.receiveUid,
+                            kind: row.kind,
+                            message: row.message,
+                            isRead: row.isRead
+                        });
+                    } else {
+                        console.error('[NotificationDB] VERIFICATION FAILED: Notification not found in database!');
+                    }
+                });
+
+                console.log('[NotificationDB] ====================================');
                 resolve(true);
             });
         });
 
     } catch (err) {
-        console.error("Notification setup failed:", err);
+        console.error("[NotificationDB] Notification setup failed:", err);
+        console.log('[NotificationDB] ====================================');
         return false;
     }
 }
@@ -258,7 +308,13 @@ async function notifyCollaboratorJoined(projectID, collaboratorID) {
     `;
 
     try {
-        const projectName = await projectDB.fetchProjectName(projectID);
+        // Fetch project name directly to avoid circular dependency issues
+        const projectName = await new Promise((resolve, reject) => {
+            db.get('SELECT projectName FROM project WHERE projectID = ?', [projectID], (err, row) => {
+                if (err) return reject(err);
+                resolve(row ? row.projectName : 'Unknown Project');
+            });
+        });
 
         const params = [
             uuid(),
@@ -552,18 +608,55 @@ async function getNotificationRecipient(notifID) {
 }
 
 async function getAllNotifications(userID) {
+    console.log('[NotificationDB] ====================================');
+    console.log('[NotificationDB] getAllNotifications called for user:', userID);
+
     const sql = `SELECT * FROM notification WHERE receiveUid = ?`;
 
     try {
-        return await new Promise((resolve, reject) => {
+        const results = await new Promise((resolve, reject) => {
             db.all(sql, [userID], (err, results) => {
-                if (err) return reject(err);
+                if (err) {
+                    console.error('[NotificationDB] Error querying notifications:', err);
+                    return reject(err);
+                }
+                console.log('[NotificationDB] Query executed successfully');
+                console.log('[NotificationDB] Raw results from DB:', results);
+                console.log('[NotificationDB] Number of notifications found:', results?.length || 0);
+
+                if (results && results.length > 0) {
+                    const notifIds = {};
+                    results.forEach((notif, index) => {
+                        console.log(`[NotificationDB] Notification ${index + 1}:`, {
+                            notifID: notif.notifID,
+                            kind: notif.kind,
+                            receiveUid: notif.receiveUid,
+                            projectID: notif.projectID,
+                            message: notif.message,
+                            isRead: notif.isRead
+                        });
+
+                        // Check for duplicate IDs
+                        if (notifIds[notif.notifID]) {
+                            console.error('[NotificationDB] DUPLICATE notifID IN DATABASE:', notif.notifID);
+                        } else {
+                            notifIds[notif.notifID] = true;
+                        }
+                    });
+                    console.log('[NotificationDB] Unique notification IDs:', Object.keys(notifIds).length);
+                }
+
                 resolve(results);
             });
         });
 
+        console.log('[NotificationDB] Returning', results?.length || 0, 'notifications');
+        console.log('[NotificationDB] ====================================');
+        return results;
+
     } catch (err) {
-        console.error("Error fetching notification recipient:", err);
+        console.error("[NotificationDB] Error fetching notifications:", err);
+        console.log('[NotificationDB] ====================================');
         return { successful: false, error: err };
     }
 
