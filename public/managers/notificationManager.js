@@ -15,7 +15,8 @@ router.post('/notification/invite/respond', async (req, res) => {
         return res.status(400).json({ successful: false, message: "Bad request: Missing notificationID or response" });
     }
 
-    if (await notifDB.getNotificationRecipient(notificationID) !== req.userID) {
+    const recipientResult = await notifDB.getNotificationRecipient(notificationID);
+    if (!recipientResult.successful || recipientResult.receiveUid !== req.userID) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
@@ -55,6 +56,48 @@ router.post('/notification/remove', async (req, res) => {
         res.status(200).json({ successful: true });
     } else {
         res.status(500).json({ successful: false, message: "Server Error: Failed to remove notification"});
+    }
+});
+
+router.post('/notifications/accept-invitation', async (req, res) => {
+    console.log("New requests /notifications/accept-invitation")
+
+    const { notificationId, projectId } = req.body;
+    if (!notificationId) {
+        return res.status(400).json({ successful: false, message: "Bad request: Missing notificationId" });
+    }
+
+    const recipientResult = await notifDB.getNotificationRecipient(notificationId);
+    if (!recipientResult.successful || recipientResult.receiveUid !== req.userID) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const result = await notifDB.processProjectInvitationResponse(notificationId, 'accept');
+    if (result.successful) {
+        res.status(200).json({ successful: true });
+    } else {
+        res.status(500).json({ successful: false, message: "Server Error: Failed to accept invitation"});
+    }
+});
+
+router.post('/notifications/decline-invitation', async (req, res) => {
+    console.log("New requests /notifications/decline-invitation")
+
+    const { notificationId } = req.body;
+    if (!notificationId) {
+        return res.status(400).json({ successful: false, message: "Bad request: Missing notificationId" });
+    }
+
+    const recipientResult = await notifDB.getNotificationRecipient(notificationId);
+    if (!recipientResult.successful || recipientResult.receiveUid !== req.userID) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    const result = await notifDB.processProjectInvitationResponse(notificationId, 'reject');
+    if (result.successful) {
+        res.status(200).json({ successful: true });
+    } else {
+        res.status(500).json({ successful: false, message: "Server Error: Failed to decline invitation"});
     }
 });
 

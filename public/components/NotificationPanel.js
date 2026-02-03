@@ -6,6 +6,182 @@
 (function() {
     const { useState, useEffect, useRef } = React;
 
+    // Move sub-components here so they are in scope and not unreachable
+    const NotificationItem = ({ notification, onAccept, onDecline, onDismiss, formatTimeAgo }) => {
+        // Check if notification is new (unread AND created within last 5 minutes)
+        const notificationAge = new Date() - new Date(notification.createdAt);
+        const isUnread = notification.isRead === 0 || notification.isRead === false;
+        const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes in milliseconds
+        const isNew = isUnread && isRecent;
+
+        const isInvitation = notification.notificationType === 'collaboration_invite';
+
+        return React.createElement('div', {
+                style: {
+                    backgroundColor: 'rgb(242, 242, 242)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+                }
+            },
+            // Header with NEW badge and time
+            React.createElement('div', {
+                    style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '8px'
+                    }
+                },
+                isNew && React.createElement('span', {
+                    style: {
+                        backgroundColor: '#1a1a1a',
+                        color: '#fff',
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        textTransform: 'uppercase'
+                    }
+                }, 'NEW'),
+                React.createElement('span', {
+                    style: { fontSize: '12px', color: '#999' }
+                }, formatTimeAgo(notification.createdAt))
+            ),
+
+            // Title
+            React.createElement('h3', {
+                style: {
+                    margin: '0 0 6px 0',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    color: '#000'
+                }
+            }, notification.notificationTitle || 'Notification'),
+
+            // Message
+            React.createElement('p', {
+                style: {
+                    margin: '0 0 12px 0',
+                    fontSize: '13px',
+                    color: '#666',
+                    lineHeight: '1.4'
+                }
+            }, notification.notificationMessage),
+
+            // Action buttons for invitations
+            isInvitation && React.createElement('div', {
+                    style: {
+                        display: 'flex',
+                        gap: '16px',
+                        marginTop: '12px'
+                    }
+                },
+                React.createElement('button', {
+                    onClick: () => onAccept(notification.notificationID, notification.projectID),
+                    style: {
+                        border: 'none',
+                        background: 'none',
+                        padding: 0,
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#000',
+                        cursor: 'pointer'
+                    }
+                }, 'Accept'),
+                React.createElement('button', {
+                    onClick: () => onDecline(notification.notificationID),
+                    style: {
+                        border: 'none',
+                        background: 'none',
+                        padding: 0,
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#e53935',
+                        cursor: 'pointer'
+                    }
+                }, 'Decline')
+            ),
+
+            // Dismiss button for non-invitation notifications
+            !isInvitation && React.createElement('button', {
+                onClick: () => onDismiss(notification.notificationID),
+                style: {
+                    border: 'none',
+                    background: 'none',
+                    padding: 0,
+                    fontSize: '13px',
+                    color: '#999',
+                    cursor: 'pointer',
+                    marginTop: '8px'
+                }
+            }, 'Dismiss')
+        );
+    };
+
+    const NotificationTrigger = ({ onClick, hasUnread, sidebarCollapsed }) => {
+        return React.createElement('button', {
+                id: 'notification-trigger-btn',
+                onClick: onClick,
+                title: 'Notifications',
+                style: {
+                    position: 'relative',
+                    width: sidebarCollapsed ? '40px' : 'auto',
+                    height: '40px',
+                    padding: sidebarCollapsed ? '8px' : '8px 16px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                    gap: '10px',
+                    outline: 'none',
+                    transition: 'background-color 0.2s'
+                },
+                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+            },
+            // Bell icon (using SVG)
+            React.createElement('svg', {
+                    width: '20',
+                    height: '20',
+                    viewBox: '0 0 24 24',
+                    fill: 'none',
+                    stroke: '#333',
+                    strokeWidth: '2',
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round'
+                },
+                React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+            ),
+            // Unread indicator dot
+            hasUnread && React.createElement('span', {
+                style: {
+                    position: 'absolute',
+                    top: sidebarCollapsed ? '6px' : '8px',
+                    right: sidebarCollapsed ? '8px' : 'auto',
+                    left: sidebarCollapsed ? 'auto' : '24px',
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: '#e53935',
+                    borderRadius: '50%'
+                }
+            }),
+            // Label (only when expanded)
+            !sidebarCollapsed && React.createElement('span', {
+                style: {
+                    fontSize: '14px',
+                    color: '#333',
+                    fontWeight: '500'
+                }
+            }, 'Notifications')
+        );
+    };
+
     const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed }) => {
         const [notifications, setNotifications] = useState([]);
         const [loading, setLoading] = useState(false);
@@ -18,8 +194,8 @@
             if (!isOpen) return;
 
             const interval = setInterval(() => {
-                setRefreshKey(prev => prev + 1); // Trigger re-render to update time displays
-            }, 30000); // Update every 30 seconds
+                setRefreshKey(prev => prev + 1);
+            }, 30000);
 
             return () => clearInterval(interval);
         }, [isOpen]);
@@ -30,18 +206,12 @@
                 const savedWidth = localStorage.getItem('sidebarWidth');
                 const expandedWidth = savedWidth ? parseInt(savedWidth, 10) : 302;
                 const collapsedWidth = 77;
-                // When expanded, add offset to position after the ::after dark bar element
                 const effectiveWidth = sidebarCollapsed ? collapsedWidth : expandedWidth + 5;
                 setSidebarWidth(effectiveWidth);
             };
 
-            // Initial update
             updateSidebarWidth();
-
-            // Listen for localStorage changes (sidebar resize)
             window.addEventListener('storage', updateSidebarWidth);
-
-            // Listen for custom event from sidebar resize
             window.addEventListener('sidebarResized', updateSidebarWidth);
 
             return () => {
@@ -56,6 +226,56 @@
                 fetchNotifications();
             }
         }, [isOpen]);
+
+        // Listen for refresh events
+        useEffect(() => {
+            const handleRefreshNotifications = () => {
+                fetchNotifications();
+            };
+
+            window.addEventListener('refreshNotifications', handleRefreshNotifications);
+            return () => {
+                window.removeEventListener('refreshNotifications', handleRefreshNotifications);
+            };
+        }, []);
+
+        // Check for removal/deletion notifications and handle kick-out
+        useEffect(() => {
+            const removalNotif = notifications.find(n => n.notificationType === 'removal');
+            const deleteNotif = notifications.find(n => n.notificationType === 'delete');
+
+            if (removalNotif || deleteNotif) {
+                const currentProjectID = localStorage.getItem('selectedProjectID');
+                const affectedProjectID = removalNotif?.projectID || deleteNotif?.projectID;
+
+                if (removalNotif) {
+                    alert(removalNotif.notificationMessage);
+                } else if (deleteNotif) {
+                    alert(deleteNotif.notificationMessage);
+                }
+
+                if (currentProjectID === affectedProjectID) {
+                    window.location.href = '/';
+                } else {
+                    window.dispatchEvent(new CustomEvent('refreshProjects'));
+                }
+            }
+
+            const ownerNotif = notifications.find(n =>
+                    n.notificationMessage && (
+                        n.notificationMessage.includes('has accepted your invite request') ||
+                        n.notificationMessage.includes('has declined your invite request') ||
+                        n.notificationMessage.includes('You have added') ||
+                        n.notificationMessage.includes('You have removed')
+                    )
+            );
+
+            if (ownerNotif) {
+                window.dispatchEvent(new CustomEvent('refreshProjectShare', {
+                    detail: { projectID: ownerNotif.projectID }
+                }));
+            }
+        }, [notifications]);
 
         // Close panel when clicking outside
         useEffect(() => {
@@ -73,7 +293,6 @@
         }, [isOpen, onClose]);
 
         const fetchNotifications = async () => {
-            setLoading(true);
             try {
                 const response = await fetch('/api/notifications/list', {
                     method: 'POST',
@@ -101,7 +320,6 @@
                 });
 
                 if (response.ok) {
-                    // Remove from list
                     setNotifications(prev => prev.filter(n => n.notificationID !== notificationId));
                     window.showNotification?.({
                         type: 'success',
@@ -109,8 +327,11 @@
                         message: 'You have joined the project.',
                         actionText: 'OK'
                     });
-                    // Refresh projects in sidebar
                     window.dispatchEvent(new CustomEvent('refreshProjects'));
+
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                    }, 500);
                 }
             } catch (error) {
                 console.error('Error accepting invitation:', error);
@@ -122,11 +343,15 @@
                 const response = await fetch('/api/notifications/decline-invitation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notificationId })
+                    body: JSON557.stringify({ notificationId })
                 });
 
                 if (response.ok) {
                     setNotifications(prev => prev.filter(n => n.notificationID !== notificationId));
+
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                    }, 500);
                 }
             } catch (error) {
                 console.error('Error declining invitation:', error);
@@ -135,10 +360,8 @@
 
         const handleClearAll = async () => {
             try {
-                // Remove all notifications from UI
                 const notificationIds = notifications.map(n => n.notificationID);
 
-                // Call API to remove each notification
                 const promises = notificationIds.map(id =>
                     fetch('/api/notification/remove', {
                         method: 'POST',
@@ -188,10 +411,10 @@
         if (!isOpen) return null;
 
         const panelLeft = `${sidebarWidth}px`;
-        const backdropLeft = `${sidebarWidth + 400}px`; // sidebar + panel width
+        const backdropLeft = `${sidebarWidth + 400}px`;
 
         return React.createElement(React.Fragment, null,
-            // Backdrop (only on the right side, after the panel)
+            // Backdrop
             React.createElement('div', {
                 id: 'notification-backdrop',
                 onClick: onClose,
@@ -207,310 +430,127 @@
             }),
             // Panel
             React.createElement('div', {
-                ref: panelRef,
-                id: 'notification-panel',
-                style: {
-                    position: 'fixed',
-                    top: '0',
-                    left: panelLeft,
-                    width: '400px',
-                    height: '100vh',
-                    backgroundColor: '#fff',
-                    borderRadius: '0',
-                    // boxShadow: '4px 0 20px rgba(0, 0, 0, 0.15)',
-                    zIndex: 9999,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    fontFamily: "'Inter', Helvetica, sans-serif"
-                }
-            },
-            // Header
-            React.createElement('div', {
-                style: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '20px',
-                    // borderBottom: '1px solid #e0e0e0',
-                    backgroundColor: '#fff'
-                }
-            },
-                React.createElement('h2', {
+                    ref: panelRef,
+                    id: 'notification-panel',
                     style: {
-                        margin: 0,
-                        fontSize: '20px',
-                        fontWeight: '700',
-                        color: '#000'
+                        position: 'fixed',
+                        top: '0',
+                        left: panelLeft,
+                        width: '400px',
+                        height: '100vh',
+                        backgroundColor: '#fff',
+                        zIndex: 9999,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        fontFamily: "'Inter', Helvetica, sans-serif"
                     }
-                }, 'Notifications'),
-                React.createElement('div', {
-                    style: { display: 'flex', alignItems: 'center', gap: '8px' }
                 },
-                    // Clear All button
-                    notifications.length > 0 && React.createElement('button', {
-                        onClick: handleClearAll,
+                // Header
+                React.createElement('div', {
                         style: {
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            padding: '5px 10px',
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '8px',
-                            backgroundColor: '#fff',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            color: '#333',
-                            fontWeight: '500'
+                            justifyContent: 'space-between',
+                            padding: '20px',
+                            backgroundColor: '#fff'
                         }
                     },
-                        React.createElement('img', {
-                            src: '/img/clear_all_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                            alt: 'Clear all',
-                            style: { width: '16px', height: '16px' }
-                        }),
-                        'Clear All'
-                    ),
-                    // Close button
-                    React.createElement('button', {
-                        onClick: onClose,
+                    React.createElement('h2', {
                         style: {
-                            width: '32px',
-                            height: '32px',
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '8px',
-                            backgroundColor: '#fff',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            margin: 0,
+                            fontSize: '20px',
+                            fontWeight: '700',
+                            color: '#000'
                         }
-                    },
-                        React.createElement('svg', {
-                            width: '20',
-                            height: '20',
-                            viewBox: '0 0 24 24',
-                            fill: 'none',
-                            stroke: '#666',
-                            strokeWidth: '2',
-                            strokeLinecap: 'round',
-                            strokeLinejoin: 'round'
+                    }, 'Notifications'),
+                    React.createElement('div', {
+                            style: { display: 'flex', alignItems: 'center', gap: '8px' }
                         },
-                            React.createElement('line', { x1: '18', y1: '6', x2: '6', y2: '18' }),
-                            React.createElement('line', { x1: '6', y1: '6', x2: '18', y2: '18' })
+                        notifications.length > 0 && React.createElement('button', {
+                                onClick: handleClearAll,
+                                style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '5px 10px',
+                                    border: '1px solid #e0e0e0',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#fff',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    color: '#333',
+                                    fontWeight: '500'
+                                }
+                            },
+                            React.createElement('img', {
+                                src: '/img/clear_all_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
+                                alt: 'Clear all',
+                                style: { width: '16px', height: '16px' }
+                            }),
+                            'Clear All'
+                        ),
+                        React.createElement('button', {
+                                onClick: onClose,
+                                style: {
+                                    width: '32px',
+                                    height: '32px',
+                                    border: '1px solid #e0e0e0',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#fff',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }
+                            },
+                            React.createElement('svg', {
+                                    width: '20',
+                                    height: '20',
+                                    viewBox: '0 0 24 24',
+                                    fill: 'none',
+                                    stroke: '#666',
+                                    strokeWidth: '2',
+                                    strokeLinecap: 'round',
+                                    strokeLinejoin: 'round'
+                                },
+                                React.createElement('line', { x1: '18', y1: '6', x2: '6', y2: '18' }),
+                                React.createElement('line', { x1: '6', y1: '6', x2: '18', y2: '18' })
+                            )
                         )
                     )
-                )
-            ),
+                ),
 
-            // Notifications list
-            React.createElement('div', {
-                style: {
-                    flex: 1,
-                    overflowY: 'auto',
-                    padding: '12px'
-                }
-            },
-                loading ? React.createElement('div', {
-                    style: { textAlign: 'center', padding: '40px', color: '#666' }
-                }, 'Loading...') :
-                notifications.length === 0 ? React.createElement('div', {
-                    style: { textAlign: 'center', padding: '40px', color: '#666' }
-                }, 'No notifications') :
-                notifications.map(notification =>
-                    React.createElement(NotificationItem, {
-                        key: `${notification.notificationID}-${refreshKey}`,
-                        notification: notification,
-                        onAccept: handleAccept,
-                        onDecline: handleDecline,
-                        onDismiss: handleDismiss,
-                        formatTimeAgo: formatTimeAgo
-                    })
+                // Notifications list
+                React.createElement('div', {
+                        style: {
+                            flex: 1,
+                            overflowY: 'auto',
+                            padding: '12px'
+                        }
+                    },
+                    loading ? React.createElement('div', {
+                            style: { textAlign: 'center', padding: '40px', color: '#666' }
+                        }, 'Loading...') :
+                        notifications.length === 0 ? React.createElement('div', {
+                                style: { textAlign: 'center', padding: '40px', color: '#666' }
+                            }, 'No notifications') :
+                            notifications.map(notification =>
+                                React.createElement(NotificationItem, {
+                                    key: `${notification.notificationID}-${refreshKey}`,
+                                    notification: notification,
+                                    onAccept: handleAccept,
+                                    onDecline: handleDecline,
+                                    onDismiss: handleDismiss,
+                                    formatTimeAgo: formatTimeAgo
+                                })
+                            )
                 )
             )
-        )
         );
     };
 
-    // Individual notification item component
-    const NotificationItem = ({ notification, onAccept, onDecline, onDismiss, formatTimeAgo }) => {
-        // Check if notification is new (unread AND created within last 5 minutes)
-        const notificationAge = new Date() - new Date(notification.createdAt);
-        const isUnread = notification.isRead === 0 || notification.isRead === false;
-        const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes in milliseconds
-        const isNew = isUnread && isRecent;
-
-        const isInvitation = notification.notificationType === 'collaboration_invite';
-
-        return React.createElement('div', {
-            style: {
-                backgroundColor: 'rgb(242, 242, 242)',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '12px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
-            }
-        },
-            // Header with NEW badge and time
-            React.createElement('div', {
-                style: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '8px'
-                }
-            },
-                isNew && React.createElement('span', {
-                    style: {
-                        backgroundColor: '#1a1a1a',
-                        color: '#fff',
-                        fontSize: '10px',
-                        fontWeight: '700',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        textTransform: 'uppercase'
-                    }
-                }, 'NEW'),
-                React.createElement('span', {
-                    style: { fontSize: '12px', color: '#999' }
-                }, formatTimeAgo(notification.createdAt))
-            ),
-
-            // Title
-            React.createElement('h3', {
-                style: {
-                    margin: '0 0 6px 0',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    color: '#000'
-                }
-            }, notification.notificationTitle || 'Notification'),
-
-            // Message
-            React.createElement('p', {
-                style: {
-                    margin: '0 0 12px 0',
-                    fontSize: '13px',
-                    color: '#666',
-                    lineHeight: '1.4'
-                }
-            }, notification.notificationMessage),
-
-            // Action buttons for invitations
-            isInvitation && React.createElement('div', {
-                style: {
-                    display: 'flex',
-                    gap: '16px',
-                    marginTop: '12px'
-                }
-            },
-                React.createElement('button', {
-                    onClick: () => onAccept(notification.notificationID, notification.projectID),
-                    style: {
-                        border: 'none',
-                        background: 'none',
-                        padding: 0,
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#000',
-                        cursor: 'pointer'
-                    }
-                }, 'Accept'),
-                React.createElement('button', {
-                    onClick: () => onDecline(notification.notificationID),
-                    style: {
-                        border: 'none',
-                        background: 'none',
-                        padding: 0,
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#e53935',
-                        cursor: 'pointer'
-                    }
-                }, 'Decline')
-            ),
-
-            // Dismiss button for non-invitation notifications
-            !isInvitation && React.createElement('button', {
-                onClick: () => onDismiss(notification.notificationID),
-                style: {
-                    border: 'none',
-                    background: 'none',
-                    padding: 0,
-                    fontSize: '13px',
-                    color: '#999',
-                    cursor: 'pointer',
-                    marginTop: '8px'
-                }
-            }, 'Dismiss')
-        );
-    };
-
-    // Notification trigger button component (bell icon)
-    const NotificationTrigger = ({ onClick, hasUnread, sidebarCollapsed }) => {
-        return React.createElement('button', {
-            id: 'notification-trigger-btn',
-            onClick: onClick,
-            title: 'Notifications',
-            style: {
-                position: 'relative',
-                width: sidebarCollapsed ? '40px' : 'auto',
-                height: '40px',
-                padding: sidebarCollapsed ? '8px' : '8px 16px',
-                border: 'none',
-                borderRadius: '8px',
-                backgroundColor: 'transparent',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                gap: '10px',
-                outline: 'none',
-                transition: 'background-color 0.2s',
-
-            },
-            onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
-            onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-        },
-            // Bell icon (using SVG)
-            React.createElement('svg', {
-                width: '20',
-                height: '20',
-                viewBox: '0 0 24 24',
-                fill: 'none',
-                stroke: '#333',
-                strokeWidth: '2',
-                strokeLinecap: 'round',
-                strokeLinejoin: 'round'
-            },
-                React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
-                React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
-            ),
-            // Unread indicator dot
-            hasUnread && React.createElement('span', {
-                style: {
-                    position: 'absolute',
-                    top: sidebarCollapsed ? '6px' : '8px',
-                    right: sidebarCollapsed ? '8px' : 'auto',
-                    left: sidebarCollapsed ? 'auto' : '24px',
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: '#e53935',
-                    borderRadius: '50%'
-                }
-            }),
-            // Label (only when expanded)
-            !sidebarCollapsed && React.createElement('span', {
-                style: {
-                    fontSize: '14px',
-                    color: '#333',
-                    fontWeight: '500'
-                }
-            }, 'Notifications')
-        );
-    };
-
-    // Export components
+    // Export components to window
     Object.assign(window, {
         NotificationPanel,
         NotificationTrigger,

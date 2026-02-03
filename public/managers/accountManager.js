@@ -809,6 +809,78 @@ router.post("/profile-pic/fetch", apiAuthUser, async(req, res) => {
 
 })
 
+/** POST Search for users by username or email
+ * @param {string} query - Search query (username or email)
+ * @example
+ * // Request body:
+ * {
+ *   "query": "john"
+ * }
+ *
+ * // Success response:
+ * {
+ *   "success": true,
+ *   "users": [
+ *     {
+ *       "uid": "user-id-1",
+ *       "username": "john_doe",
+ *       "displayName": "John Doe",
+ *       "email": "john@example.com"
+ *     }
+ *   ]
+ * }
+ */
+router.post('/account/search', apiAuthUser, async (req, res) => {
+    try {
+        console.log("New request /account/search");
+        console.log("Request body:", req.body);
+        const { query } = req.body;
+
+        if (!query || query.trim().length < 1) {
+            console.log("Search query missing");
+            return res.status(400).json({
+                success: false,
+                message: "Search query is required"
+            });
+        }
+
+        const currentUserID = req.userID;
+        console.log("Current user ID:", currentUserID);
+        const searchTerm = query.trim();
+        console.log("Search term:", searchTerm);
+
+        // Search by username using existing function
+        const users = await dbService.findUserByUsername(searchTerm, currentUserID);
+        console.log("Raw users from DB:", users);
+
+        // Transform results to match frontend expectations
+        const transformedUsers = users.map(user => ({
+            uid: user.uid,
+            username: user.userName,
+            displayName: user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : user.userName,
+            email: user.userEmail || '',
+            firstName: user.firstName || '',
+            lastName: user.lastName || ''
+        }));
+
+        console.log(`Found ${transformedUsers.length} users matching "${searchTerm}"`);
+        console.log("Transformed users:", transformedUsers);
+        return res.status(200).json({
+            success: true,
+            users: transformedUsers
+        });
+
+    } catch (error) {
+        console.error('Error in /account/search:', error);
+        return res.status(500).json({
+            success: false,
+            message: `Server Error: ${error.message}`
+        });
+    }
+});
+
 function inferProviderName(transports, userAgent) {
     const ua = userAgent.toLowerCase();
     const parser = new UAParser(userAgent);

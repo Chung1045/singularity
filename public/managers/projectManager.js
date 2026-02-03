@@ -132,10 +132,13 @@ router.post('/project/delete', async (req, res) => {
         // Get project name before deletion for notification
         const projectName = await projectDBService.fetchProjectName(projectID);
 
+        // Notify all collaborators before deleting
+        await notifDB.notifyProjectDeleted(projectID, projectName, req.userID);
+
         const successful = await projectDBService.deleteProject(projectID);
 
         if (successful) {
-            // Create notification for project deletion
+            // Create notification for project deletion (for owner)
             await notificationDBService.createProjectDeletionNotification(
                 projectID,
                 req.userID,
@@ -177,6 +180,8 @@ router.post('/project/rename', async (req, res) => {
         const successful = await projectDBService.renameProject(projectID, newProjectName);
 
         if (successful) {
+            // Notify all collaborators about the rename
+            await notifDB.notifyProjectRenamed(projectID, newProjectName);
             console.log("Project renamed successfully");
             return res.status(200).json({ success: true, message: 'Project renamed successfully' });
         } else {
@@ -226,7 +231,7 @@ router.post('/project/editShare', async (req, res) => {
         let {projectID, shareOptions} = req.body
         // shareOptions = [{
         // uid: xxxxxxxx,
-        // operation: "invite" / "remove", "remove-invite"
+        // operation: "invite" / "remove" / "cancel-invite" / "remove-invite"
         // }]
 
         if (projectID == null || shareOptions == null) {
@@ -234,10 +239,25 @@ router.post('/project/editShare', async (req, res) => {
         }
 
         const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
-        if (await projectDBService.queryProjectOwner(projectID) !== userID) {
+        const ownerID = await projectDBService.queryProjectOwner(projectID);
+
+        if (ownerID !== userID) {
             return res.status(403).json({ successful: false, message: "Unauthorized" });
         } else {
-            await projectDBService.updateProjectShare(projectID, shareOptions)
+            await projectDBService.updateProjectShare(projectID, shareOptions);
+
+            // Send notifications to owner for each operation
+            for (const option of shareOptions) {
+                const { uid, operation } = option;
+
+                if (operation === "invite") {
+                    await notifDB.notifyOwnerInviteSent(projectID, ownerID, uid);
+                } else if (operation === "remove") {
+                    await notifDB.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
+                }
+            }
+
+            return res.status(200).json({ success: true, message: "Project sharing updated successfully" });
         }
 
     } catch (error) {
@@ -246,6 +266,65 @@ router.post('/project/editShare', async (req, res) => {
     }
 
 })
+
+/** POST Get project share details
+ * @param {string} projectID - UUID of the project (required)
+ * @example
+ * // Request body:
+ * {
+ *   "projectID": "f3342960-06b7-4875-8081-e962c83b23a4"
+ * }
+ *
+ * // Success response:
+ * {
+ *   "success": true,
+ *   "owner": {
+ *     "uid": "owner-id",
+ *     "username": "john_doe",
+ *     "displayName": "John Doe",
+ *     "email": "john@example.com"
+ *   },
+ *   "collaborators": [...],
+ *   "pendingInvites": [...]
+ * }
+ */
+router.post('/project/share/details', async (req, res) => {
+    try {
+        console.log("New request /project/share/details");
+        const { projectID } = req.body;
+
+        if (!projectID) {
+            return res.status(400).json({ success: false, message: "projectID is required" });
+        }
+
+        const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+        // Verify user is either project owner or collaborator
+        const isCollaborator = await projectDBService.isProjectCollaborator(projectID, userID);
+        if (!isCollaborator) {
+            return res.status(403).json({ success: false, message: "Unauthorized - must be project owner or collaborator" });
+        }
+
+        // Get project share details
+        const shareDetails = await projectDBService.getProjectShareDetails(projectID);
+
+        // Check if user is the owner to determine if they can edit
+        const projectOwnerID = await projectDBService.queryProjectOwner(projectID);
+        const isOwner = projectOwnerID === userID;
+
+        return res.status(200).json({
+            success: true,
+            owner: shareDetails.owner,
+            collaborators: shareDetails.collaborators,
+            pendingInvites: shareDetails.pendingInvites,
+            isOwner: isOwner  // Let frontend know if user can edit
+        });
+
+    } catch (error) {
+        console.error('Error in /project/share/details:', error);
+        return res.status(500).json({ success: false, message: `Server Error: ${error.message}` });
+    }
+});
 
 
 /** POST Upload a file to a project
