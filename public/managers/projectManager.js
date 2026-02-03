@@ -10,7 +10,7 @@ const multer = require('multer');
 const path = require('path');
 const {apiAuthUser} = require("../services/accountDBService");
 const fs = require('fs').promises;
-const agentDB = require("../services/aiAgentDBService")
+const agentDB = require("../services/aiAgentService/aiAgentDBService")
 
 router.use(dbService.apiAuthUser);
 

@@ -1,4 +1,4 @@
-const db = require("./db")
+const db = require("../db")
 const uuid = require("uuid-v4")
 
 // Helper function to promisify db.run
@@ -306,7 +306,11 @@ async function fetchChatThread(projectID, chatID) {
 
 async function getProjectRequirements(projectID) {
     console.log(`[DB] getProjectRequirements called with projectID: ${projectID}`);
-    const sql = `SELECT * FROM requirements WHERE projectID = ?`;
+    const sql = `
+        SELECT * FROM requirements
+        WHERE projectID = ?
+        ORDER BY requirementType ASC, requirementSeq ASC
+    `;
     console.log(`[DB] Executing SQL: ${sql} with param: ${projectID}`);
     const rows = await dbAll(sql, [projectID]);
     console.log(`[DB] getProjectRequirements returned ${rows?.length || 0} rows`);
@@ -595,13 +599,12 @@ async function updateUserStorySourceRef(jsonList){
 }
 
 async function getProjectUserStories(projectID) {
-    const sql = `SELECT * FROM userStories WHERE projectID = ?`
+    const sql = `SELECT * FROM userStories WHERE projectID = ? ORDER BY storySeq ASC`
     const rows = await dbAll(sql, [projectID]);
 
     return await Promise.all(
         rows.map(async (story) => {
             const sources = await getUserStoriesSource(story.storyID)
-
             return {
                 storyID: story.storyID,
                 details: {

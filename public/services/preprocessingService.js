@@ -12,6 +12,11 @@ libre.convertAsync = require('util').promisify(libre.convert);
 const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac', '.m4a'];
 const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods', '.rtf'];
 
+let transcriber = null
+async function init(){
+    transcriber = await getTranscriber()
+}
+
 // Environment Setting
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
@@ -43,8 +48,14 @@ async function documentPreprocessing(buffer, documentExt) {
             // Create dynamic temp WAV path
             tempWavPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.wav`);
 
+            // Benchmark WAV conversion
+            const conversionStart = Date.now();
+
             // Convert to WAV
             await convert_ffmpeg(tempFilePath, tempWavPath, 'wav');
+
+            const conversionTime = ((Date.now() - conversionStart) / 1000).toFixed(2);
+            console.log(`WAV conversion completed in ${conversionTime}s`);
 
             // Read and process WAV file
             const wavBuffer = await fs.readFile(tempWavPath);
@@ -74,21 +85,26 @@ async function documentPreprocessing(buffer, documentExt) {
                 }
             }
 
+            // Benchmark transcription
+            const transcriptionStart = Date.now();
+
             // Transcribe audio
-            const model = await getTranscriber();
-            console.log("Video / audio is now being transcribed")
+            const model = transcriber;
+            console.log("Video / audio is now being transcribed");
+
             const output = await model(audioData, {
                 chunk_length_s: 30,
                 stride_length_s: 5,
             });
 
-            console.log("Video / audio transcribe finished")
+            const transcriptionTime = ((Date.now() - transcriptionStart) / 1000).toFixed(2);
+            console.log(`Video / audio transcription completed in ${transcriptionTime}s`);
+
             // Cleanup temp files
             await fs.unlink(tempWavPath).catch(() => {});
             await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
 
             return output.text?.trim();
-
         } else if (supportedDocumentFormats.includes(documentExt)) {
             if (documentExt !== '.pdf') {
                 // Create dynamic temp PDF path
@@ -132,7 +148,6 @@ async function documentPreprocessing(buffer, documentExt) {
 // SMALL HELPER FUNCTION FOR REFERENCES
 
 // Pre-loaded whisper model
-let transcriber = null;
 let modelLoading = null;
 let modelLoadFailed = false;
 env.authToken = process.env.HUGGING_FACE_TOKEN;
@@ -163,6 +178,10 @@ async function getTranscriber() {
         'Xenova/whisper-base',
         {
             quantized: true,
+            dtype: {
+                encoder_model: 'q8',
+                decoder_model_merged: 'q8'
+            },
             cache_dir: path.join(__dirname, '../model_cache')
         }
     ).then(model => {
@@ -234,6 +253,9 @@ async function videoAudioExtracted_ffmpeg(inputPath) {
     const tempWavPath = createTempPath('.wav'); // Dynamic path
 
     try {
+        // Benchmark WAV conversion
+        const conversionStart = Date.now();
+
         await convert_ffmpeg(inputPath, tempWavPath, 'wav');
 
         const wavBuffer = await fs.readFile(tempWavPath);
@@ -263,12 +285,25 @@ async function videoAudioExtracted_ffmpeg(inputPath) {
             }
         }
 
-        const model = await getTranscriber();
+        const conversionTime = ((Date.now() - conversionStart) / 1000).toFixed(2);
+        console.log(`WAV conversion done in ${conversionTime}s`);
+
+        // Benchmark transcription
+        const transcriptionStart = Date.now();
+
+        const model = transcriber;
         const output = await model(audioData, {
             chunk_length_s: 30,
             stride_length_s: 5,
             language: 'en',
         });
+
+        const transcriptionTime = ((Date.now() - transcriptionStart) / 1000).toFixed(2);
+        console.log(`Transcription done in ${transcriptionTime}s`);
+
+        // Total time
+        const totalTime = ((Date.now() - conversionStart) / 1000).toFixed(2);
+        console.log(`Total processing time: ${totalTime}s`);
 
         return output.text?.trim();
     } catch (err) {
@@ -348,6 +383,8 @@ Report File ${report}
         console.error('Grouping report failed:', err.message);
     }
 }
+
+init()
 
 module.exports = {
     documentPreprocessing,
