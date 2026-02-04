@@ -1,7 +1,7 @@
 const db = require("./db");
 const fss = require("./fsServices")
 const uuid = require("uuid-v4")
-const notificationDBService = require("./notificationDBService");
+const notifDB = require("./notificationDBService");
 
 async function listProjects(uid) {
     return new Promise((resolve, reject) => {
@@ -393,7 +393,7 @@ async function updateProjectShare(projectID, shareOptions) {
 
                 // Notify owner that they added a collaborator
                 if (ownerID) {
-                await notificationDBService.notifyOwnerInviteSent(projectID, ownerID, uid);
+                    await notifDB.notifyOwnerInviteSent(projectID, ownerID, uid);
                 }
 
                 console.log("invite", uid);
@@ -422,9 +422,9 @@ async function updateProjectShare(projectID, shareOptions) {
                 });
                 if (operation === "remove") {
                     if (ownerID) {
-                        await notificationDBService.setProjectShareRemoveNotification(projectID, uid, ownerID);
+                        await notifDB.setProjectShareRemoveNotification(projectID, uid, ownerID);
                         // Notify owner that they removed a collaborator
-                        await notificationDBService.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
+                        await notifDB.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
                     }
                 }
                 console.log("remove", uid);

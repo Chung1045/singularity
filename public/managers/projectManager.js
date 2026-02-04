@@ -133,7 +133,7 @@ router.post('/project/delete', async (req, res) => {
         const projectName = await projectDBService.fetchProjectName(projectID);
 
         // Notify all collaborators before deleting
-        await notificationDBService.notifyProjectDeleted(projectID, projectName, req.userID);
+        await notifDB.notifyProjectDeleted(projectID, projectName, req.userID);
 
         const successful = await projectDBService.deleteProject(projectID);
 
@@ -181,7 +181,7 @@ router.post('/project/rename', async (req, res) => {
 
         if (successful) {
             // Notify all collaborators about the rename
-            await notificationDBService.notifyProjectRenamed(projectID, newProjectName);
+            await notifDB.notifyProjectRenamed(projectID, newProjectName);
             console.log("Project renamed successfully");
             return res.status(200).json({ success: true, message: 'Project renamed successfully' });
         } else {
@@ -251,9 +251,9 @@ router.post('/project/editShare', async (req, res) => {
                 const { uid, operation } = option;
 
                 if (operation === "invite") {
-                    await notificationDBService.notifyOwnerInviteSent(projectID, ownerID, uid);
+                    await notifDB.notifyOwnerInviteSent(projectID, ownerID, uid);
                 } else if (operation === "remove") {
-                    await notificationDBService.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
+                    await notifDB.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
                 }
             }
 
