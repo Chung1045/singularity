@@ -784,37 +784,6 @@
                     }
                 }, 'Rename'),
 
-                // Share option
-                React.createElement('button', {
-                    style: {
-                        width: '100%',
-                        padding: '12px 14.5px',
-                        border: 'none',
-                        backgroundColor: 'transparent',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: '13.3px',
-                        color: '#1c1d21',
-                        fontWeight: '400',
-                        fontFamily: '"Inter", Helvetica',
-                        transition: 'background-color 0.2s ease',
-                        borderBottom: '1px solid #f0f0f0'
-                    },
-                    onMouseEnter: (e) => {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
-                    },
-                    onMouseLeave: (e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    },
-                    onClick: (e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        if (typeof window.openProjectShareModal === 'function') {
-                            window.openProjectShareModal(selectedProjectID, currentProject?.projectName);
-                        }
-                    }
-                }, 'Share'),
-
                 // Delete option
                 React.createElement('button', {
                     style: {
@@ -924,6 +893,29 @@
         // Notification panel state
         const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
         const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+
+        // Check for unread notifications on mount
+        useEffect(() => {
+            const checkUnreadNotifications = async () => {
+                try {
+                    const response = await fetch('/api/notifications/unread-count', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setHasUnreadNotifications(data.count > 0);
+                    }
+                } catch (error) {
+                    console.error('Error checking notifications:', error);
+                }
+            };
+            checkUnreadNotifications();
+            // Check every 60 seconds
+            const interval = setInterval(checkUnreadNotifications, 60000);
+            return () => clearInterval(interval);
+        }, []);
 
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
@@ -1071,19 +1063,6 @@
                 window.removeEventListener('reportGenerated', handleReportGenerated);
             };
         }, [selectedProjectID]);
-
-        // Listen for refreshProjects event (triggered when user accepts invitation)
-        useEffect(() => {
-            const handleRefreshProjects = async () => {
-                console.log('Refreshing projects after invitation accepted...');
-                await fetchProjects();
-            };
-
-            window.addEventListener('refreshProjects', handleRefreshProjects);
-            return () => {
-                window.removeEventListener('refreshProjects', handleRefreshProjects);
-            };
-        }, [fetchProjects]);
 
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;

@@ -41,31 +41,21 @@ async function apiAuthUser(req, res, next) {
 
 async function findUserByUsername(username, selfUid) {
     const query = `
-        SELECT userName, lastName, firstName, userAvatarPath, uid, userEmail
+        SELECT userName, lastName, firstName, userAvatarPath, uid
         FROM user
-        WHERE (
-            userName LIKE ? 
-            OR firstName LIKE ? 
-            OR lastName LIKE ? 
-            OR userEmail LIKE ?
-        )
-        AND uid != ?
-        LIMIT 20
+        WHERE userName LIKE ?
+          AND uid != ?
+            LIMIT 20
     `;
-    const searchPattern = `%${username}%`;
-    const params = [searchPattern, searchPattern, searchPattern, searchPattern, selfUid];
+    const params = [`%${username}%`, selfUid]; // Matches anywhere in the string
 
     return new Promise((resolve, reject) => {
         db.all(query, params, (err, rows) => {
-            if (err) {
-                console.error('Error in findUserByUsername:', err);
-                return reject(err);
-            }
+            if (err) return reject(err);
             if (rows && rows.length > 0) {
                 console.log(`Found ${rows.length} users matching "${username}"`);
                 resolve(rows); // Return array of matching users
             } else {
-                console.log(`No users found matching "${username}"`);
                 resolve([]);
             }
         });

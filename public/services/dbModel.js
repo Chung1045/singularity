@@ -91,7 +91,7 @@ const PROJECT_SHARE_SCHEMA = () => `
         shareID   TEXT PRIMARY KEY NOT NULL UNIQUE,
         projectID TEXT             NOT NULL,
         collabUid TEXT             NOT NULL,
-        status    INTEGER          NOT NULL DEFAULT 0,  -- 0: pending, 1: accepted, 2: declined
+        confirmed INTEGER          NOT NULL DEFAULT 0,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
         FOREIGN KEY (collabUid) REFERENCES user (uid) ON DELETE CASCADE
     );

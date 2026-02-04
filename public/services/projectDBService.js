@@ -1,7 +1,6 @@
 const db = require("./db");
 const fss = require("./fsServices")
 const uuid = require("uuid-v4")
-const notifDB = require("./notificationDBService");
 
 async function listProjects(uid) {
     return new Promise((resolve, reject) => {
@@ -15,7 +14,7 @@ async function listProjects(uid) {
             SELECT p.projectID, p.projectName
             FROM project p
             JOIN projectShare ps ON ps.projectID = p.projectID
-            WHERE ps.collabUid = ? AND ps.status = 1
+            WHERE ps.collabUid = ?
         `;
 
         db.all(sql, [uid, uid], (err, rows) => {
@@ -341,19 +340,8 @@ async function queryProjectOwner(projectID) {
 
 async function updateProjectShare(projectID, shareOptions) {
 
-    const sql_invite = `INSERT INTO projectShare (shareID, projectID, collabUid, status) VALUES (?, ?, ?, ?)`;
-    const sql_reinvite = `UPDATE projectShare SET status = 0 WHERE projectID = ? AND collabUid = ?`;
+    const sql_invite = `INSERT INTO projectShare (shareID, projectID, collabUid, confirmed) VALUES (?, ?, ?, ?)`;
     const sql_delete = `DELETE FROM projectShare WHERE projectID = ? AND collabUid = ?`
-    const sql_cancel = `UPDATE projectShare SET status = 3 WHERE projectID = ? AND collabUid = ?`;
-    const sql_check_existing = `SELECT status FROM projectShare WHERE projectID = ? AND collabUid = ?`;
-
-    // Get project owner ID for notifications
-    const ownerID = await new Promise((resolve, reject) => {
-        db.get(`SELECT projectOwnerUid FROM project WHERE projectID = ?`, [projectID], (err, row) => {
-            if (err) return reject(err);
-            resolve(row?.projectOwnerUid);
-        });
-    });
 
     for (const option of shareOptions) {
         const { uid, operation } = option;
@@ -361,71 +349,16 @@ async function updateProjectShare(projectID, shareOptions) {
         switch (operation) {
             case "invite":
                 console.log(`Setting up invitation for user ${uid} to project ${projectID}`)
-
-                // Check if user already exists in projectShare
-                const existing = await new Promise((resolve, reject) => {
-                    db.get(sql_check_existing, [projectID, uid], (err, row) => {
-                        if (err) return reject(err);
-                        resolve(row);
-                    });
-                });
-
-                if (existing) {
-                    // User exists (likely declined or removed), reset status to 0 (pending)
-                    console.log(`User ${uid} already exists with status ${existing.status}, resetting to pending`)
-                    await new Promise((resolve, reject) => {
-                        db.run(sql_reinvite, [projectID, uid], (err) => {
-                            if (err) return reject(err);
-                            resolve();
-                        });
-                    });
-                } else {
-                    // New invitation
-                    await new Promise((resolve, reject) => {
-                        db.run(sql_invite, [uuid(), projectID, uid, 0], (err) => {
-                            if (err) return reject(err);
-                            resolve();
-                        });
-                    });
-                }
-
-                await setupProjectShareNotification(projectID, uid);
-
-                // Notify owner that they added a collaborator
-                if (ownerID) {
-                    await notifDB.notifyOwnerInviteSent(projectID, ownerID, uid);
-                }
-
+                await db.run(sql_invite, [uuid(), projectID, uid, 0])
+                await setupProjectShareNotification(projectID, uid)
                 console.log("invite", uid);
-                break;
-            case "cancel-invite":
-                console.log(`Cancelling invitation for user ${uid} for project ${projectID}`)
-                // Set status to 3 (removed) instead of deleting
-                await new Promise((resolve, reject) => {
-                    db.run(sql_cancel, [projectID, uid], (err) => {
-                        if (err) return reject(err);
-                        resolve();
-                    });
-                });
-                // Remove the notification
-                await removeProjectShareNotification(projectID, uid)
-                console.log("cancel-invite", uid);
                 break;
             case "remove":
             case "remove-invite":
                 console.log(`Removing / Deleting invitation / collaboration for user ${uid} for project ${projectID}`)
-                await new Promise((resolve, reject) => {
-                    db.run(sql_delete, [projectID, uid], (err) => {
-                        if (err) return reject(err);
-                        resolve();
-                    });
-                });
+                await db.run(sql_delete, [projectID, uid])
                 if (operation === "remove") {
-                    if (ownerID) {
-                        await notifDB.setProjectShareRemoveNotification(projectID, uid, ownerID);
-                        // Notify owner that they removed a collaborator
-                        await notifDB.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
-                    }
+                    await setProjectShareRemoveNotification(projectID, uid)
                 }
                 console.log("remove", uid);
                 break;
@@ -440,7 +373,7 @@ async function isProjectCollaborator(projectID, userID) {
     const query = `
         SELECT collabUid AS uid
         FROM projectShare
-        WHERE projectID = ? AND collabUid = ? AND status = 1
+        WHERE projectID = ? AND collabUid = ?
 
         UNION ALL
 
@@ -539,30 +472,7 @@ async function setupProjectShareNotification(projectID, collaboratorID) {
     }
 }
 
-async function removeProjectShareNotification(projectID, collaboratorID) {
-    const sql = `
-        DELETE FROM notification
-        WHERE receiveUid = ? AND projectID = ? AND kind = 'invitation'
-    `;
-
-    try {
-        return new Promise((resolve, reject) => {
-            db.run(sql, [collaboratorID, projectID], (err) => {
-                if (err) {
-                    console.error("Error removing notification:", err);
-                    return reject(err);
-                }
-                resolve(true);
-            });
-        });
-
-    } catch (err) {
-        console.error("Notification removal failed:", err);
-        return false;
-    }
-}
-
-async function setProjectShareRemoveNotification(projectID, collaboratorID, ownerID) {
+async function setProjectShareRemoveNotification(projectID, collaboratorID) {
     const sql = `
         INSERT INTO notification
             (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
@@ -572,25 +482,13 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID, owne
     try {
         const projectName = await fetchProjectName(projectID);
 
-        // Get owner info for the notification message
-        const ownerInfo = await new Promise((resolve, reject) => {
-            db.get(`SELECT userName, firstName, lastName FROM user WHERE uid = ?`, [ownerID], (err, row) => {
-                if (err) return reject(err);
-                resolve(row);
-            });
-        });
-
-        const ownerName = ownerInfo?.firstName && ownerInfo?.lastName
-            ? `${ownerInfo.firstName} ${ownerInfo.lastName}`
-            : ownerInfo?.userName || 'Project owner';
-
         const params = [
             uuid(),
             collaboratorID,
             Date.now(),
-            "removal",
+            "remove",
             projectID,
-            `You have been removed from ${projectName} by ${ownerName}`,
+            `You have been removed from the project ${projectName}`,
             false
         ];
 
@@ -610,147 +508,6 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID, owne
     }
 }
 
-async function getProjectShareDetails(projectID) {
-    try {
-        // Get project owner
-        const ownerQuery = `
-            SELECT u.uid, u.userName, u.firstName, u.lastName, u.userEmail
-            FROM project p
-            JOIN user u ON p.projectOwnerUid = u.uid
-            WHERE p.projectID = ?
-        `;
-
-        const owner = await new Promise((resolve, reject) => {
-            db.get(ownerQuery, [projectID], (err, row) => {
-                if (err) return reject(err);
-                if (row) {
-                    resolve({
-                        uid: row.uid,
-                        username: row.userName,
-                        displayName: row.firstName && row.lastName
-                            ? `${row.firstName} ${row.lastName}`
-                            : row.userName,
-                        email: row.userEmail,
-                        firstName: row.firstName,
-                        lastName: row.lastName
-                    });
-                } else {
-                    resolve(null);
-                }
-            });
-        });
-
-        // Get accepted collaborators (status = 1)
-        const collabQuery = `
-            SELECT u.uid, u.userName, u.firstName, u.lastName, u.userEmail
-            FROM projectShare ps
-            JOIN user u ON ps.collabUid = u.uid
-            WHERE ps.projectID = ? AND ps.status = 1
-        `;
-
-        const collaborators = await new Promise((resolve, reject) => {
-            db.all(collabQuery, [projectID], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows.map(row => ({
-                    uid: row.uid,
-                    username: row.userName,
-                    displayName: row.firstName && row.lastName
-                        ? `${row.firstName} ${row.lastName}`
-                        : row.userName,
-                    email: row.userEmail,
-                    firstName: row.firstName,
-                    lastName: row.lastName
-                })));
-            });
-        });
-
-        // Get pending invitations (status = 0)
-        const pendingQuery = `
-            SELECT u.uid, u.userName, u.firstName, u.lastName, u.userEmail
-            FROM projectShare ps
-            JOIN user u ON ps.collabUid = u.uid
-            WHERE ps.projectID = ? AND ps.status = 0
-        `;
-
-        const pendingInvites = await new Promise((resolve, reject) => {
-            db.all(pendingQuery, [projectID], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows.map(row => ({
-                    uid: row.uid,
-                    username: row.userName,
-                    displayName: row.firstName && row.lastName
-                        ? `${row.firstName} ${row.lastName}`
-                        : row.userName,
-                    email: row.userEmail,
-                    firstName: row.firstName,
-                    lastName: row.lastName,
-                    status: 'pending'
-                })));
-            });
-        });
-
-        // Get declined invitations (status = 2)
-        const declinedQuery = `
-            SELECT u.uid, u.userName, u.firstName, u.lastName, u.userEmail
-            FROM projectShare ps
-            JOIN user u ON ps.collabUid = u.uid
-            WHERE ps.projectID = ? AND ps.status = 2
-        `;
-
-        const declinedInvites = await new Promise((resolve, reject) => {
-            db.all(declinedQuery, [projectID], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows.map(row => ({
-                    uid: row.uid,
-                    username: row.userName,
-                    displayName: row.firstName && row.lastName
-                        ? `${row.firstName} ${row.lastName}`
-                        : row.userName,
-                    email: row.userEmail,
-                    firstName: row.firstName,
-                    lastName: row.lastName,
-                    status: 'declined'
-                })));
-            });
-        });
-
-        // Get removed invitations (status = 3)
-        const removedQuery = `
-            SELECT u.uid, u.userName, u.firstName, u.lastName, u.userEmail
-            FROM projectShare ps
-            JOIN user u ON ps.collabUid = u.uid
-            WHERE ps.projectID = ? AND ps.status = 3
-        `;
-
-        const removedInvites = await new Promise((resolve, reject) => {
-            db.all(removedQuery, [projectID], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows.map(row => ({
-                    uid: row.uid,
-                    username: row.userName,
-                    displayName: row.firstName && row.lastName
-                        ? `${row.firstName} ${row.lastName}`
-                        : row.userName,
-                    email: row.userEmail,
-                    firstName: row.firstName,
-                    lastName: row.lastName,
-                    status: 'removed'
-                })));
-            });
-        });
-
-        return {
-            owner,
-            collaborators,
-            pendingInvites: [...pendingInvites, ...declinedInvites, ...removedInvites]  // Include all states
-        };
-
-    } catch (err) {
-        console.error("Error fetching project share details:", err);
-        throw err;
-    }
-}
-
 module.exports = {
     listProjects,
     createProject,
@@ -760,6 +517,5 @@ module.exports = {
     queryProjectOwner,
     isProjectCollaborator,
     fetchProjectCollaborator,
-    fetchProjectName,
-    getProjectShareDetails
+    fetchProjectName
 }

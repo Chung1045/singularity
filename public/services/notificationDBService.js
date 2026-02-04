@@ -60,7 +60,7 @@ async function removeProjectInvitationNotification(projectID, collaboratorID) {
 }
 
 
-async function setProjectShareRemoveNotification(projectID, collaboratorID, ownerID) {
+async function setProjectShareRemoveNotification(projectID, collaboratorID) {
     const sql = `
         INSERT INTO notification
             (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
@@ -69,26 +69,16 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID, owne
 
     try {
         const projectName = await projectDB.fetchProjectName(projectID);
-
-        // Get owner info for the notification message
-        const ownerInfo = await new Promise((resolve, reject) => {
-            db.get(`SELECT userName, firstName, lastName FROM user WHERE uid = ?`, [ownerID], (err, row) => {
-                if (err) return reject(err);
-                resolve(row);
-            });
-        });
-
-        const ownerName = ownerInfo?.firstName && ownerInfo?.lastName
-            ? `${ownerInfo.firstName} ${ownerInfo.lastName}`
-            : ownerInfo?.userName || 'Project owner';
+        const now = new Date();
+        const dateTimeStr = now.toISOString().replace('T', ' ').split('.')[0];
 
         const params = [
             uuid(),
             collaboratorID,
-            Date.now(),
-            "removal",
+            dateTimeStr,
+            "remove",
             projectID,
-            `You have been removed from ${projectName} by ${ownerName}`,
+            `You have been removed from the project ${projectName}`,
             false
         ];
 
@@ -108,382 +98,37 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID, owne
     }
 }
 
-// Notify owner when they add a collaborator
-async function notifyOwnerInviteSent(projectID, ownerID, invitedUserID) {
-    const sql = `
-        INSERT INTO notification
-            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    try {
-        // Get invited user info
-        const userInfo = await new Promise((resolve, reject) => {
-            db.get(`SELECT userName, firstName, lastName FROM user WHERE uid = ?`, [invitedUserID], (err, row) => {
-                if (err) return reject(err);
-                resolve(row);
-            });
-        });
-
-        const userName = userInfo?.firstName && userInfo?.lastName
-            ? `${userInfo.firstName} ${userInfo.lastName}`
-            : userInfo?.userName || 'User';
-
-        const params = [
-            uuid(),
-            ownerID,
-            Date.now(),
-            'create',
-            projectID,
-            `You have added ${userName} as collaborator`,
-            false
-        ];
-
-        return new Promise((resolve, reject) => {
-            db.run(sql, params, (err) => {
-                if (err) {
-                    console.error("Error inserting notification:", err);
-                    return reject(err);
-                }
-                resolve(true);
-            });
-        });
-
-    } catch (err) {
-        console.error("Notification failed:", err);
-        return false;
-    }
-}
-
-// Notify owner when collaborator accepts invitation
-async function notifyOwnerInviteAccepted(projectID, ownerID, collaboratorID) {
-    const sql = `
-        INSERT INTO notification
-            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    try {
-        // Get collaborator info
-        const userInfo = await new Promise((resolve, reject) => {
-            db.get(`SELECT userName, firstName, lastName FROM user WHERE uid = ?`, [collaboratorID], (err, row) => {
-                if (err) return reject(err);
-                resolve(row);
-            });
-        });
-
-        const userName = userInfo?.firstName && userInfo?.lastName
-            ? `${userInfo.firstName} ${userInfo.lastName}`
-            : userInfo?.userName || 'User';
-
-        const params = [
-            uuid(),
-            ownerID,
-            Date.now(),
-            'create',
-            projectID,
-            `${userName} has accepted your invite request`,
-            false
-        ];
-
-        return new Promise((resolve, reject) => {
-            db.run(sql, params, (err) => {
-                if (err) {
-                    console.error("Error inserting notification:", err);
-                    return reject(err);
-                }
-                resolve(true);
-            });
-        });
-
-    } catch (err) {
-        console.error("Notification failed:", err);
-        return false;
-    }
-}
-
-// Notify owner when collaborator declines invitation
-async function notifyOwnerInviteDeclined(projectID, ownerID, collaboratorID) {
-    const sql = `
-        INSERT INTO notification
-            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    try {
-        // Get collaborator info
-        const userInfo = await new Promise((resolve, reject) => {
-            db.get(`SELECT userName, firstName, lastName FROM user WHERE uid = ?`, [collaboratorID], (err, row) => {
-                if (err) return reject(err);
-                resolve(row);
-            });
-        });
-
-        const userName = userInfo?.firstName && userInfo?.lastName
-            ? `${userInfo.firstName} ${userInfo.lastName}`
-            : userInfo?.userName || 'User';
-
-        const params = [
-            uuid(),
-            ownerID,
-            Date.now(),
-            'create',
-            projectID,
-            `${userName} has declined your invite request`,
-            false
-        ];
-
-        return new Promise((resolve, reject) => {
-            db.run(sql, params, (err) => {
-                if (err) {
-                    console.error("Error inserting notification:", err);
-                    return reject(err);
-                }
-                resolve(true);
-            });
-        });
-
-    } catch (err) {
-        console.error("Notification failed:", err);
-        return false;
-    }
-}
-
-// Notify collaborator when they join a project
-async function notifyCollaboratorJoined(projectID, collaboratorID) {
-    const sql = `
-        INSERT INTO notification
-            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    try {
-        const projectName = await projectDB.fetchProjectName(projectID);
-
-        const params = [
-            uuid(),
-            collaboratorID,
-            Date.now(),
-            'create',
-            projectID,
-            `You have joined project ${projectName}`,
-            false
-        ];
-
-        return new Promise((resolve, reject) => {
-            db.run(sql, params, (err) => {
-                if (err) {
-                    console.error("Error inserting notification:", err);
-                    return reject(err);
-                }
-                resolve(true);
-            });
-        });
-
-    } catch (err) {
-        console.error("Notification failed:", err);
-        return false;
-    }
-}
-
-// Notify owner when they remove a collaborator
-async function notifyOwnerRemovedCollaborator(projectID, ownerID, collaboratorID) {
-    // ...existing code...
-}
-
-// Notify all collaborators when project is renamed
-async function notifyProjectRenamed(projectID, newProjectName) {
-    const sql = `
-        INSERT INTO notification
-            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    try {
-        // Get owner and all collaborators
-        const users = await new Promise((resolve, reject) => {
-            db.all(`
-                SELECT projectOwnerUid AS uid FROM project WHERE projectID = ?
-                UNION
-                SELECT collabUid AS uid FROM projectShare WHERE projectID = ? AND status = 1
-            `, [projectID, projectID], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows || []);
-            });
-        });
-
-        // Send notification to all users
-        const promises = users.map(user => {
-            const params = [
-                uuid(),
-                user.uid,
-                Date.now(),
-                'create',
-                projectID,
-                `Project has been renamed to "${newProjectName}"`,
-                false
-            ];
-
-            return new Promise((resolve, reject) => {
-                db.run(sql, params, (err) => {
-                    if (err) {
-                        console.error("Error inserting notification:", err);
-                        return reject(err);
-                    }
-                    resolve(true);
-                });
-            });
-        });
-
-        await Promise.all(promises);
-        return true;
-
-    } catch (err) {
-        console.error("Notification failed:", err);
-        return false;
-    }
-}
-
-// Notify all collaborators when project is deleted (owner gets different message)
-async function notifyProjectDeleted(projectID, projectName, ownerID) {
-    const sql = `
-        INSERT INTO notification
-            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    try {
-        // Get owner info
-        const ownerInfo = await new Promise((resolve, reject) => {
-            db.get(`SELECT userName, firstName, lastName FROM user WHERE uid = ?`, [ownerID], (err, row) => {
-                if (err) return reject(err);
-                resolve(row);
-            });
-        });
-
-        const ownerName = ownerInfo?.firstName && ownerInfo?.lastName
-            ? `${ownerInfo.firstName} ${ownerInfo.lastName}`
-            : ownerInfo?.userName || 'Project owner';
-
-        // Get all collaborators (not owner)
-        const collaborators = await new Promise((resolve, reject) => {
-            db.all(`
-                SELECT collabUid AS uid FROM projectShare WHERE projectID = ? AND status = 1
-            `, [projectID], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows || []);
-            });
-        });
-
-        // Send notification to all collaborators
-        const promises = collaborators.map(collab => {
-            const params = [
-                uuid(),
-                collab.uid,
-                Date.now(),
-                'delete',
-                null, // projectID is null since project is deleted
-                `Project "${projectName}" has been deleted by ${ownerName}`,
-                false
-            ];
-
-            return new Promise((resolve, reject) => {
-                db.run(sql, params, (err) => {
-                    if (err) {
-                        console.error("Error inserting notification:", err);
-                        return reject(err);
-                    }
-                    resolve(true);
-                });
-            });
-        });
-
-        await Promise.all(promises);
-        return true;
-
-    } catch (err) {
-        console.error("Notification failed:", err);
-        return false;
-    }
-}
-
 async function processProjectInvitationResponse(notificationID, response) {
     try {
-        // Load the notification using callback-style db.get
-        const notification = await new Promise((resolve, reject) => {
-            db.get(
-                `SELECT projectID, receiveUid FROM notification WHERE notifID = ?`,
-                [notificationID],
-                (err, row) => {
-                    if (err) return reject(err);
-                    resolve(row);
-                }
-            );
-        });
+        // Load the notification
+        const [rows] = await db.run(
+            `SELECT projectID, receiveUid FROM notification WHERE notifID = ?`,
+            [notificationID]
+        );
 
-        if (!notification) {
+        if (rows.length === 0) {
             return { successful: false, message: "Notification not found" };
         }
 
-        const { projectID, receiveUid } = notification;
-
-        // Get project owner ID
-        const ownerID = await new Promise((resolve, reject) => {
-            db.get(
-                `SELECT projectOwnerUid FROM project WHERE projectID = ?`,
-                [projectID],
-                (err, row) => {
-                    if (err) return reject(err);
-                    resolve(row?.projectOwnerUid);
-                }
-            );
-        });
+        const { projectID, receiveUid } = rows[0];
 
         switch (response) {
             case "accept":
-                // Set status to 1 (accepted)
-                await new Promise((resolve, reject) => {
-                    db.run(
-                        `UPDATE projectShare SET status = 1 WHERE projectID = ? AND collabUid = ?`,
-                        [projectID, receiveUid],
-                        (err) => {
-                            if (err) return reject(err);
-                            resolve();
-                        }
-                    );
-                });
+                await db.run(
+                    `UPDATE projectShare SET confirmed = true WHERE projectID = ? AND collabUid = ?`,
+                    [projectID, receiveUid]
+                );
 
                 await removeNotification(notificationID);
-
-                // Notify owner that collaborator accepted
-                if (ownerID) {
-                    await notifyOwnerInviteAccepted(projectID, ownerID, receiveUid);
-                }
-
-                // Notify collaborator that they joined
-                await notifyCollaboratorJoined(projectID, receiveUid);
 
                 return { successful: true, message: "Accepted invitation" };
 
             case "reject":
-                // Set status to 2 (declined) instead of deleting
-                await new Promise((resolve, reject) => {
-                    db.run(
-                        `UPDATE projectShare SET status = 2 WHERE projectID = ? AND collabUid = ?`,
-                        [projectID, receiveUid],
-                        (err) => {
-                            if (err) return reject(err);
-                            resolve();
-                        }
-                    );
-                });
-
+                await db.run(
+                    `DELETE FROM projectShare WHERE projectID = ? AND collabUid = ?`,
+                    [projectID, receiveUid]
+                );
                 await removeNotification(notificationID);
-
-                // Notify owner that collaborator declined
-                if (ownerID) {
-                    await notifyOwnerInviteDeclined(projectID, ownerID, receiveUid);
-                }
 
                 return { successful: true, message: "Rejected Invitation" };
 
@@ -654,12 +299,5 @@ module.exports = {
     getNotificationRecipient,
     getAllNotifications,
     createProjectCreationNotification,
-    createProjectDeletionNotification,
-    notifyOwnerInviteSent,
-    notifyOwnerInviteAccepted,
-    notifyOwnerInviteDeclined,
-    notifyCollaboratorJoined,
-    notifyOwnerRemovedCollaborator,
-    notifyProjectRenamed,
-    notifyProjectDeleted
+    createProjectDeletionNotification
 }
