@@ -16,19 +16,15 @@
         cancelText = 'Cancel',
         onCancel
     }) {
-        console.log('[CustomAlertModal] Component called with:', { isOpen, title, message });
-
         // Handle escape key
         useEffect(() => {
             const handleEscape = (event) => {
                 if (event.key === 'Escape' && isOpen) {
-                    console.log('[CustomAlertModal] Escape key pressed, closing');
                     onClose();
                 }
             };
 
             if (isOpen) {
-                console.log('[CustomAlertModal] Adding escape key listener');
                 document.addEventListener('keydown', handleEscape);
             }
 
@@ -45,12 +41,9 @@
         };
 
         const handleConfirm = () => {
-            console.log('[CustomAlertModal] Confirm button clicked');
             if (onConfirm) {
-                console.log('[CustomAlertModal] Calling onConfirm callback');
                 onConfirm();
             }
-            console.log('[CustomAlertModal] Closing modal');
             onClose();
         };
 
@@ -61,12 +54,8 @@
             onClose();
         };
 
-        if (!isOpen) {
-            console.log('[CustomAlertModal] Not rendering (isOpen is false)');
-            return null;
-        }
+        if (!isOpen) return null;
 
-        console.log('[CustomAlertModal] Rendering modal overlay and content');
         return React.createElement(
             'div',
             {
@@ -123,8 +112,34 @@
                             }
                         },
                         title
+                    ),
+                    React.createElement(
+                        'button',
+                        {
+                            onClick: onClose,
+                            'aria-label': 'Close',
+                            style: {
+                                width: '32px',
+                                height: '32px',
+                                border: '1px solid #e4e4e4',
+                                backgroundColor: 'transparent',
+                                cursor: 'pointer',
+                                fontSize: '20px',
+                                color: '#666',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: '6px'
+                            },
+                            onMouseEnter: (e) => {
+                                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                            },
+                            onMouseLeave: (e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                            }
+                        },
+                        '✕'
                     )
-
                 ),
 
                 // Message

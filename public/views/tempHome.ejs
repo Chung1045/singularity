@@ -22,7 +22,7 @@
 
     <!-- Load z-index helper -->
     <script src="/scripts/zIndexHelper.js"></script>
-    <!-- Load shared utilities (includes socket + alerts + project data) -->
+    <!-- Load shared utilities first -->
     <script src="/scripts/projectUtils.js"></script>
     <!-- Load Notification Panel component -->
     <script src="/components/NotificationPanel.js"></script>
@@ -36,6 +36,7 @@
     <script src="/components/ProjectShareModal.js"></script>
     <script src="/components/AddInviteModal.js"></script>
     <script src="/components/CustomAlertModal.js"></script>
+    <script src="/scripts/projectShareExample.js"></script>
     <link rel="stylesheet" href="/stylesheets/projectShareModal.css">
 
     <!-- Load Requirements Panel component -->
@@ -77,8 +78,68 @@
     console.log("window.TempHome available?", typeof window.TempHome);
     console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
 
-    // Initialize Socket.IO connection using global utility
-    window.initializeSocketConnection(userInfo);
+    // Initialize Socket.IO connection
+    const socket = io();
+
+    // Join user-specific room for real-time updates
+    if (userInfo && userInfo.uid) {
+        socket.emit('join-user-room', userInfo.uid);
+        console.log(`Joined user room: user_${userInfo.uid}`);
+    }
+
+    // Listen for project share updates
+    socket.on('project-share-updated', (data) => {
+        console.log('Received project-share-updated:', data);
+
+        // Dispatch custom event to refresh project share modal
+        if (data.action === 'collaborator-accepted') {
+            window.dispatchEvent(new CustomEvent('refreshProjectShare', {
+                detail: { projectID: data.projectID }
+            }));
+        }
+    });
+
+    // Listen for collaborator removal notifications
+    socket.on('collaborator-removed', (data) => {
+        console.log('Received collaborator-removed:', data);
+
+        // Show custom alert modal instead of browser alert
+        window.showCustomAlert({
+            title: 'Project Access Removed',
+            message: data.message,
+            confirmText: 'OK',
+            onConfirm: () => {
+                // Refresh notifications and projects after user acknowledges
+                window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                window.dispatchEvent(new CustomEvent('refreshProjects'));
+            }
+        });
+    });
+
+    // Make socket available globally for components
+    window.socket = socket;
+
+    // Custom alert function
+    window.showCustomAlert = function(options) {
+        // Create a container for the alert modal if it doesn't exist
+        let alertContainer = document.getElementById('custom-alert-container');
+        if (!alertContainer) {
+            alertContainer = document.createElement('div');
+            alertContainer.id = 'custom-alert-container';
+            document.body.appendChild(alertContainer);
+        }
+
+        // Render the custom alert modal
+        const root = ReactDOM.createRoot(alertContainer);
+        root.render(React.createElement(window.CustomAlertModal, {
+            isOpen: true,
+            onClose: () => {
+                root.unmount();
+                alertContainer.remove();
+            },
+            ...options
+        }));
+    };
 
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));

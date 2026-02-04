@@ -1085,19 +1085,6 @@
             };
         }, [fetchProjects]);
 
-        // Listen for openNotificationPanel event (triggered when user is kicked from project)
-        useEffect(() => {
-            const handleOpenNotificationPanel = () => {
-                console.log('[Sidebar] Opening notification panel...');
-                setNotificationPanelOpen(true);
-            };
-
-            window.addEventListener('openNotificationPanel', handleOpenNotificationPanel);
-            return () => {
-                window.removeEventListener('openNotificationPanel', handleOpenNotificationPanel);
-            };
-        }, []);
-
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;
             setSidebarCollapsed(newState);

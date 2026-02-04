@@ -16,10 +16,11 @@
      <link rel="stylesheet" href="/stylesheets/z-index.css">
 
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <!-- Load z-index helper -->
     <script src="/scripts/zIndexHelper.js"></script>
-    <!-- Load shared utilities (includes socket + alerts + project data) -->
+    <!-- Load global utilities -->
+    <script src="/scripts/globalUtils.js"></script> 
+    <!-- Load shared utilities first -->
     <script src="/scripts/projectUtils.js"></script>
     <!-- Load Notification Panel component -->
     <script src="/components/NotificationPanel.js"></script>
@@ -37,6 +38,7 @@
     <script src="/components/ProjectShareModal.js"></script>
     <script src="/components/AddInviteModal.js"></script>
     <script src="/components/CustomAlertModal.js"></script>
+    <script src="/scripts/projectShareExample.js"></script>
     <link rel="stylesheet" href="/stylesheets/projectShareModal.css">
     
 </head>
@@ -61,16 +63,61 @@
     const userInfo = <%- JSON.stringify(userInfo || []) %>;
     const csrfToken = "<%= csrfToken %>";
 
-    console.log('[Profile] Socket.IO loaded?', typeof io !== 'undefined');
-    console.log('[Profile] CustomAlertModal loaded?', typeof window.CustomAlertModal !== 'undefined');
-    console.log('[Profile] userInfo:', userInfo);
-
-    // Initialize file upload listener (from projectUtils.js)
-    window.initializeFileUploadListener();
-
-    // Initialize socket connection
-    const socket = window.initializeSocketConnection(userInfo);
-    console.log('[Profile] Socket initialized:', !!socket);
+    // Add file upload event listener (same as tempHome)
+    const handleOpenFileUpload = (event) => {
+        const { projectID } = event.detail;
+        console.log('[FileUpload] Opening file upload modal for project:', projectID);
+        if (window.FileUploadComponent) {
+            const modalContainer = document.createElement('div');
+            modalContainer.id = 'file-upload-modal-container';
+            modalContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: ${window.ZIndex?.MODAL || 31};
+                padding: 20px;
+            `;
+            modalContainer.onclick = (e) => {
+                if (e.target === modalContainer) {
+                    document.body.removeChild(modalContainer);
+                }
+            };
+            document.body.appendChild(modalContainer);
+            
+            const modalRoot = ReactDOM.createRoot(modalContainer);
+            // Store projectID for use in callback
+            const currentProjectID = projectID;
+            modalRoot.render(
+                React.createElement(window.FileUploadComponent, {
+                    projectID: currentProjectID,
+                    onClose: () => {
+                        modalRoot.unmount();
+                        if (document.body.contains(modalContainer)) {
+                            document.body.removeChild(modalContainer);
+                        }
+                    },
+                    onFilesUploaded: (files) => {
+                        console.log('Files uploaded:', files);
+                        console.log('Refreshing files for project:', currentProjectID);
+                        // Refresh the source list in sidebar
+                        if (typeof window.fetchProjectFiles === 'function') {
+                            window.fetchProjectFiles(currentProjectID);
+                        } else {
+                            console.error('fetchProjectFiles not available');
+                        }
+                    }
+                })
+            );
+        }
+    };
+    
+    window.addEventListener('openFileUpload', handleOpenFileUpload);
 
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
