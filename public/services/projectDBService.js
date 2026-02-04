@@ -14,7 +14,7 @@ async function listProjects(uid) {
             SELECT p.projectID, p.projectName
             FROM project p
             JOIN projectShare ps ON ps.projectID = p.projectID
-            WHERE ps.collabUid = ?
+            WHERE ps.collabUid = ? AND ps.confirmed = 1
         `;
 
         db.all(sql, [uid, uid], (err, rows) => {
@@ -373,7 +373,7 @@ async function isProjectCollaborator(projectID, userID) {
     const query = `
         SELECT collabUid AS uid
         FROM projectShare
-        WHERE projectID = ? AND collabUid = ?
+        WHERE projectID = ? AND collabUid = ? AND confirmed = 1
 
         UNION ALL
 

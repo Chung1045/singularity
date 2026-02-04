@@ -4,6 +4,7 @@
     // Project Options Button Component
     const ProjectOptionsButton = ({selectedProjectID, projects, onProjectDeleted, onProjectRenamed}) => {
         const [menuOpen, setMenuOpen] = useState(false);
+        const [showShareModal, setShowShareModal] = useState(false);
         const menuRef = useRef(null);
 
         // Close menu when clicking outside
@@ -287,6 +288,11 @@
                 console.error('Error renaming project:', error);
                 alert('An error occurred while renaming the project.');
             }
+        };
+
+        const handleShare = () => {
+            setMenuOpen(false);
+            setShowShareModal(true);
         };
 
         const handleDelete = async () => {
@@ -698,7 +704,8 @@
             return null;
         }
 
-        return React.createElement('div', {
+        return React.createElement(React.Fragment, null,
+            React.createElement('div', {
                 ref: menuRef,
                 style: {
                     position: 'relative',
@@ -784,6 +791,34 @@
                     }
                 }, 'Rename'),
 
+                // Share option
+                React.createElement('button', {
+                    style: {
+                        width: '100%',
+                        padding: '12px 14.5px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '13.3px',
+                        color: '#1c1d21',
+                        fontWeight: '400',
+                        fontFamily: '"Inter", Helvetica',
+                        transition: 'background-color 0.2s ease',
+                        borderBottom: '1px solid #f0f0f0'
+                    },
+                    onMouseEnter: (e) => {
+                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                    },
+                    onMouseLeave: (e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        handleShare();
+                    }
+                }, 'Share'),
+
                 // Delete option
                 React.createElement('button', {
                     style: {
@@ -812,6 +847,15 @@
                 }, 'Delete')
 
             )
+            ),
+
+            // Project Share Modal
+            showShareModal && window.ProjectShareModal && 
+            React.createElement(window.ProjectShareModal, {
+                isOpen: showShareModal,
+                onClose: () => setShowShareModal(false),
+                projectID: selectedProjectID
+            })
         );
     };
 
@@ -1063,6 +1107,77 @@
                 window.removeEventListener('reportGenerated', handleReportGenerated);
             };
         }, [selectedProjectID]);
+
+        // Listen for refreshProjects event (e.g., when accepting invitation)
+        useEffect(() => {
+            const handleRefreshProjects = () => {
+                console.log('Refreshing projects due to refreshProjects event');
+                fetchProjects();
+            };
+
+            window.addEventListener('refreshProjects', handleRefreshProjects);
+            return () => {
+                window.removeEventListener('refreshProjects', handleRefreshProjects);
+            };
+        }, [fetchProjects]);
+
+        // Check for removal notifications and show alert
+        useEffect(() => {
+            let lastCheckedProjects = new Set(projects.map(p => p.projectID));
+
+            const checkForRemovals = async () => {
+                try {
+                    const response = await fetch('/api/notifications/list', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const removalNotifications = (data.notifications || []).filter(
+                            n => n.notificationType === 'remove' && !n.isRead
+                        );
+
+                        for (const notif of removalNotifications) {
+                            // Check if this is a new removal notification we haven't shown yet
+                            const notifKey = `shown_removal_${notif.notificationID}`;
+                            if (!sessionStorage.getItem(notifKey)) {
+                                // Mark as shown
+                                sessionStorage.setItem(notifKey, 'true');
+                                
+                                // Show alert
+                                if (window.showNotification) {
+                                    await window.showNotification({
+                                        type: 'error',
+                                        title: 'Removed from Project',
+                                        message: notif.notificationMessage,
+                                        actionText: 'OK'
+                                    });
+                                }
+
+                                // Refresh projects list to remove the project from sidebar
+                                await fetchProjects();
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking for removal notifications:', error);
+                }
+            };
+
+            // Check immediately when projects change
+            if (projects.length > 0) {
+                checkForRemovals();
+            }
+
+            // Check periodically every 10 seconds
+            const interval = setInterval(checkForRemovals, 10000);
+
+            return () => {
+                clearInterval(interval);
+            };
+        }, [projects, fetchProjects]);
 
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;

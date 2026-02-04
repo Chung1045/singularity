@@ -157,16 +157,96 @@ router.post('/notifications/list', async (req, res) => {
 
 })
 
+// Accept invitation endpoint
+router.post('/notifications/accept-invitation', async (req, res) => {
+    console.log("New request /notifications/accept-invitation");
+    
+    const { notificationId, projectId } = req.body;
+    
+    if (!notificationId) {
+        return res.status(400).json({ success: false, message: "notificationId is required" });
+    }
+
+    try {
+        // Verify notification belongs to this user
+        const recipient = await notifDB.getNotificationRecipient(notificationId);
+        if (recipient !== req.userID) {
+            return res.status(403).json({ success: false, message: "Unauthorized" });
+        }
+
+        // Process acceptance
+        const result = await notifDB.processProjectInvitationResponse(notificationId, "accept");
+        
+        if (result.successful) {
+            return res.status(200).json({ 
+                success: true, 
+                message: "Invitation accepted successfully" 
+            });
+        } else {
+            return res.status(500).json({ 
+                success: false, 
+                message: result.message || "Failed to accept invitation" 
+            });
+        }
+    } catch (error) {
+        console.error("Error accepting invitation:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: `Server Error: ${error.message}` 
+        });
+    }
+});
+
+// Decline invitation endpoint
+router.post('/notifications/decline-invitation', async (req, res) => {
+    console.log("New request /notifications/decline-invitation");
+    
+    const { notificationId } = req.body;
+    
+    if (!notificationId) {
+        return res.status(400).json({ success: false, message: "notificationId is required" });
+    }
+
+    try {
+        // Verify notification belongs to this user
+        const recipient = await notifDB.getNotificationRecipient(notificationId);
+        if (recipient !== req.userID) {
+            return res.status(403).json({ success: false, message: "Unauthorized" });
+        }
+
+        // Process rejection
+        const result = await notifDB.processProjectInvitationResponse(notificationId, "reject");
+        
+        if (result.successful) {
+            return res.status(200).json({ 
+                success: true, 
+                message: "Invitation declined successfully" 
+            });
+        } else {
+            return res.status(500).json({ 
+                success: false, 
+                message: result.message || "Failed to decline invitation" 
+            });
+        }
+    } catch (error) {
+        console.error("Error declining invitation:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: `Server Error: ${error.message}` 
+        });
+    }
+});
+
 // Helper function to generate notification titles based on type
 function getNotificationTitle(kind) {
     switch (kind) {
         case 'invitation':
             return 'Project Invitation';
         case 'create':
-            return 'Project Created';
+            return 'Project Update';
         case 'delete':
             return 'Project Deleted';
-        case 'removal':
+        case 'remove':
             return 'Removed from Project';
         case 'leaving':
             return 'Left Project';

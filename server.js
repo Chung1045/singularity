@@ -1,3 +1,5 @@
+require('dotenv').config(); // currently used in cursor AI
+
 const express = require('express');
 const session = require('express-session');
 const csrf = require('@dr.pogodin/csurf');

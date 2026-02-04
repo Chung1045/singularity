@@ -11,13 +11,12 @@ async function setupProjectShareNotification(projectID, collaboratorID) {
 
     try {
         const projectName = await projectDB.fetchProjectName(projectID);
-        const now = new Date();
-        const dateTimeStr = now.toISOString().replace('T', ' ').split('.')[0];
+        const now = Date.now(); // Store as milliseconds timestamp
 
         const params = [
             uuid(),
             collaboratorID,
-            dateTimeStr,
+            now,
             "invitation",
             projectID,
             `You are invited to join ${projectName}`,
@@ -43,11 +42,16 @@ async function setupProjectShareNotification(projectID, collaboratorID) {
 async function removeProjectInvitationNotification(projectID, collaboratorID) {
     const sql = `
         DELETE FROM notification
-        WHERE projectID = ? AND receiveUid = ?
+        WHERE projectID = ? AND receiveUid = ? AND kind = 'invitation'
     `;
 
     try {
-        const [result] = await db.run(sql, [projectID, collaboratorID]);
+        await new Promise((resolve, reject) => {
+            db.run(sql, [projectID, collaboratorID], function(err) {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
 
         return {
             successful: true,
@@ -69,13 +73,12 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID) {
 
     try {
         const projectName = await projectDB.fetchProjectName(projectID);
-        const now = new Date();
-        const dateTimeStr = now.toISOString().replace('T', ' ').split('.')[0];
+        const now = Date.now(); // Store as milliseconds timestamp
 
         const params = [
             uuid(),
             collaboratorID,
-            dateTimeStr,
+            now,
             "remove",
             projectID,
             `You have been removed from the project ${projectName}`,
@@ -101,34 +104,69 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID) {
 async function processProjectInvitationResponse(notificationID, response) {
     try {
         // Load the notification
-        const [rows] = await db.run(
-            `SELECT projectID, receiveUid FROM notification WHERE notifID = ?`,
-            [notificationID]
-        );
+        const notification = await new Promise((resolve, reject) => {
+            db.get(
+                `SELECT projectID, receiveUid FROM notification WHERE notifID = ?`,
+                [notificationID],
+                (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                }
+            );
+        });
 
-        if (rows.length === 0) {
+        if (!notification) {
             return { successful: false, message: "Notification not found" };
         }
 
-        const { projectID, receiveUid } = rows[0];
+        const { projectID, receiveUid } = notification;
+        
+        // Get project owner to notify them
+        const ownerUID = await projectDB.queryProjectOwner(projectID);
 
         switch (response) {
             case "accept":
-                await db.run(
-                    `UPDATE projectShare SET confirmed = true WHERE projectID = ? AND collabUid = ?`,
-                    [projectID, receiveUid]
-                );
+                await new Promise((resolve, reject) => {
+                    db.run(
+                        `UPDATE projectShare SET confirmed = 1 WHERE projectID = ? AND collabUid = ?`,
+                        [projectID, receiveUid],
+                        function(err) {
+                            if (err) reject(err);
+                            else resolve();
+                        }
+                    );
+                });
 
                 await removeNotification(notificationID);
+                
+                // Notify owner that invitation was accepted
+                if (ownerUID) {
+                    await notifyOwnerInvitationAccepted(projectID, ownerUID, receiveUid);
+                }
+                
+                // Notify collaborator that they successfully joined
+                await notifyCollaboratorJoined(projectID, receiveUid);
 
                 return { successful: true, message: "Accepted invitation" };
 
             case "reject":
-                await db.run(
-                    `DELETE FROM projectShare WHERE projectID = ? AND collabUid = ?`,
-                    [projectID, receiveUid]
-                );
+                await new Promise((resolve, reject) => {
+                    db.run(
+                        `DELETE FROM projectShare WHERE projectID = ? AND collabUid = ?`,
+                        [projectID, receiveUid],
+                        function(err) {
+                            if (err) reject(err);
+                            else resolve();
+                        }
+                    );
+                });
+                
                 await removeNotification(notificationID);
+                
+                // Notify owner that invitation was declined
+                if (ownerUID) {
+                    await notifyOwnerInvitationDeclined(projectID, ownerUID, receiveUid);
+                }
 
                 return { successful: true, message: "Rejected Invitation" };
 
@@ -176,6 +214,8 @@ async function removeNotification(notifID) {
 async function getNotificationRecipient(notifID) {
     const sql = `SELECT receiveUid FROM notification WHERE notifID = ?`;
 
+    console.log(`[getNotificationRecipient] Called with notifID: ${notifID}`);
+
     try {
         const rows = await new Promise((resolve, reject) => {
             db.all(sql, [notifID], (err, results) => {
@@ -184,15 +224,20 @@ async function getNotificationRecipient(notifID) {
             });
         });
 
+        console.log(`[getNotificationRecipient] Query returned ${rows.length} rows:`, rows);
+
         if (rows.length === 0) {
-            return { successful: false, message: "Notification not found" };
+            console.log(`[getNotificationRecipient] Notification not found, returning null`);
+            return null;
         }
 
-        return { successful: true, receiveUid: rows[0].receiveUid };
+        const receiveUid = rows[0].receiveUid;
+        console.log(`[getNotificationRecipient] Returning receiveUid: ${receiveUid}`);
+        return receiveUid;
 
     } catch (err) {
-        console.error("Error fetching notification recipient:", err);
-        return { successful: false, error: err };
+        console.error("[getNotificationRecipient] Error fetching notification recipient:", err);
+        return null;
     }
 }
 
@@ -251,6 +296,236 @@ async function createProjectDeletionNotification(projectID, userID, projectName)
     }
 }
 
+// Notify owner when they send an invitation
+async function notifyOwnerInvitationSent(projectID, ownerID, invitedUserID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await projectDB.fetchProjectName(projectID);
+        
+        // Get invited user's name
+        const invitedUser = await new Promise((resolve, reject) => {
+            db.get('SELECT userName, firstName, lastName FROM user WHERE uid = ?', [invitedUserID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        const invitedUsername = invitedUser ? invitedUser.userName : 'User';
+        const now = Date.now();
+
+        const params = [
+            uuid(),
+            ownerID,
+            now,
+            "create",
+            projectID,
+            `You invited @${invitedUsername} to join ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting owner invitation notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Owner invitation notification failed:", err);
+        return false;
+    }
+}
+
+// Notify owner when invitation is accepted
+async function notifyOwnerInvitationAccepted(projectID, ownerID, acceptedUserID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await projectDB.fetchProjectName(projectID);
+        
+        // Get accepted user's name
+        const acceptedUser = await new Promise((resolve, reject) => {
+            db.get('SELECT userName, firstName, lastName FROM user WHERE uid = ?', [acceptedUserID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        const acceptedUsername = acceptedUser ? acceptedUser.userName : 'User';
+        const now = Date.now();
+
+        const params = [
+            uuid(),
+            ownerID,
+            now,
+            "create",
+            projectID,
+            `@${acceptedUsername} accepted your invitation to ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting owner accept notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Owner accept notification failed:", err);
+        return false;
+    }
+}
+
+// Notify collaborator when they successfully join
+async function notifyCollaboratorJoined(projectID, collaboratorID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await projectDB.fetchProjectName(projectID);
+        const now = Date.now();
+
+        const params = [
+            uuid(),
+            collaboratorID,
+            now,
+            "create",
+            projectID,
+            `You have successfully joined ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting collaborator join notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Collaborator join notification failed:", err);
+        return false;
+    }
+}
+
+// Notify owner when invitation is declined
+async function notifyOwnerInvitationDeclined(projectID, ownerID, declinedUserID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await projectDB.fetchProjectName(projectID);
+        
+        // Get declined user's name
+        const declinedUser = await new Promise((resolve, reject) => {
+            db.get('SELECT userName, firstName, lastName FROM user WHERE uid = ?', [declinedUserID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        const declinedUsername = declinedUser ? declinedUser.userName : 'User';
+        const now = Date.now();
+
+        const params = [
+            uuid(),
+            ownerID,
+            now,
+            "create",
+            projectID,
+            `@${declinedUsername} declined your invitation to ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting owner decline notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Owner decline notification failed:", err);
+        return false;
+    }
+}
+
+// Notify owner when they remove a collaborator
+async function notifyOwnerCollaboratorRemoved(projectID, ownerID, removedUserID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await projectDB.fetchProjectName(projectID);
+        
+        // Get removed user's name
+        const removedUser = await new Promise((resolve, reject) => {
+            db.get('SELECT userName, firstName, lastName FROM user WHERE uid = ?', [removedUserID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        const removedUsername = removedUser ? removedUser.userName : 'User';
+        const now = Date.now();
+
+        const params = [
+            uuid(),
+            ownerID,
+            now,
+            "create",
+            projectID,
+            `You removed @${removedUsername} from ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting owner removal notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Owner removal notification failed:", err);
+        return false;
+    }
+}
+
 
 module.exports = {
     setProjectShareRemoveNotification,
@@ -261,5 +536,10 @@ module.exports = {
     removeNotification,
     getNotificationRecipient,
     getAllNotifications,
-    createProjectDeletionNotification
+    createProjectDeletionNotification,
+    notifyOwnerInvitationSent,
+    notifyOwnerInvitationAccepted,
+    notifyOwnerInvitationDeclined,
+    notifyOwnerCollaboratorRemoved,
+    notifyCollaboratorJoined
 }

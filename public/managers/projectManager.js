@@ -2,7 +2,7 @@ const credDBService = require("../services/credentialDBService");
 const uuid = require("uuid-v4");
 const dbService = require("../services/accountDBService");
 const projectDBService = require("../services/projectDBService");
-const notificationDBService = require("../services/notificationDBService");
+const notifDB = require("../services/notificationDBService");
 const fss = require("../services/fsServices")
 const express = require('express');
 const {json} = require("express");
@@ -647,6 +647,404 @@ router.post("/project/list/user-stories", async (req, res) => {
         return res.status(200).json({successful: true, reports: requirementList});
     } catch (err) {
         return res.status(403).json({ successful: false, message: "Unable to fetch project user-stories" });
+    }
+});
+
+/** POST Get project collaborators and invitations
+ * @param {string} projectID - UUID of the project (required)
+ * @returns {Object} owner, collaborators, pendingInvites
+ */
+router.post("/project/collaborators", async (req, res) => {
+    console.log("New request /project/collaborators");
+    
+    const { projectID } = req.body;
+    const userID = req.userID;
+
+    if (!projectID) {
+        return res.status(400).json({ success: false, message: "projectID is required" });
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    try {
+        // Get project owner
+        const ownerUID = await projectDBService.queryProjectOwner(projectID);
+        const ownerQuery = `SELECT uid as userID, userName as username, userEmail as email, firstName, lastName FROM user WHERE uid = ?`;
+        
+        const owner = await new Promise((resolve, reject) => {
+            const db = require('../services/db');
+            db.get(ownerQuery, [ownerUID], (err, row) => {
+                if (err) reject(err);
+                else {
+                    if (row) {
+                        resolve({
+                            userID: row.userID,
+                            displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
+                            username: row.username,
+                            email: row.email
+                        });
+                    } else {
+                        resolve(null);
+                    }
+                }
+            });
+        });
+
+        // Get confirmed collaborators
+        const collabQuery = `
+            SELECT u.uid as userID, u.userName as username, u.userEmail as email, u.firstName, u.lastName
+            FROM projectShare ps
+            JOIN user u ON ps.collabUid = u.uid
+            WHERE ps.projectID = ? AND ps.confirmed = 1
+        `;
+        
+        const collaborators = await new Promise((resolve, reject) => {
+            const db = require('../services/db');
+            db.all(collabQuery, [projectID], (err, rows) => {
+                if (err) reject(err);
+                else {
+                    const collabs = rows.map(row => ({
+                        userID: row.userID,
+                        displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
+                        username: row.username,
+                        email: row.email
+                    }));
+                    resolve(collabs);
+                }
+            });
+        });
+
+        // Get pending invitations
+        const inviteQuery = `
+            SELECT ps.shareID as inviteID, u.uid as userID, u.userName as username, u.userEmail as email, u.firstName, u.lastName
+            FROM projectShare ps
+            JOIN user u ON ps.collabUid = u.uid
+            WHERE ps.projectID = ? AND ps.confirmed = 0
+        `;
+        
+        const pendingInvites = await new Promise((resolve, reject) => {
+            const db = require('../services/db');
+            db.all(inviteQuery, [projectID], (err, rows) => {
+                if (err) reject(err);
+                else {
+                    const invites = rows.map(row => ({
+                        inviteID: row.inviteID,
+                        userID: row.userID,
+                        displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
+                        username: row.username,
+                        email: row.email,
+                        status: 'pending'
+                    }));
+                    resolve(invites);
+                }
+            });
+        });
+
+        return res.status(200).json({
+            success: true,
+            owner,
+            collaborators,
+            pendingInvites
+        });
+
+    } catch (error) {
+        console.error("Error fetching collaborators:", error);
+        return res.status(500).json({ success: false, message: `Server Error: ${error}` });
+    }
+});
+
+/** POST Search users to invite
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} query - Search query string (required)
+ * @returns {Array} users - Array of user objects matching the search
+ */
+router.post("/project/search-users", async (req, res) => {
+    console.log("New request /project/search-users");
+    
+    const { projectID, query } = req.body;
+    const userID = req.userID;
+
+    if (!projectID || !query) {
+        return res.status(400).json({ success: false, message: "projectID and query are required" });
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    try {
+        const searchQuery = `
+            SELECT uid as userID, userName as username, userEmail as email, firstName, lastName
+            FROM user
+            WHERE (
+                userName LIKE ? OR 
+                userEmail LIKE ? OR 
+                firstName LIKE ? OR 
+                lastName LIKE ?
+            )
+            AND uid != ?
+            AND uid NOT IN (
+                SELECT collabUid FROM projectShare WHERE projectID = ?
+            )
+            AND uid != (SELECT projectOwnerUid FROM project WHERE projectID = ?)
+            LIMIT 10
+        `;
+        
+        const searchPattern = `%${query}%`;
+        const ownerUID = await projectDBService.queryProjectOwner(projectID);
+        
+        const users = await new Promise((resolve, reject) => {
+            const db = require('../services/db');
+            db.all(searchQuery, [searchPattern, searchPattern, searchPattern, searchPattern, ownerUID, projectID, projectID], (err, rows) => {
+                if (err) reject(err);
+                else {
+                    const results = rows.map(row => ({
+                        userID: row.userID,
+                        displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
+                        username: row.username,
+                        email: row.email
+                    }));
+                    resolve(results);
+                }
+            });
+        });
+
+        return res.status(200).json({
+            success: true,
+            users
+        });
+
+    } catch (error) {
+        console.error("Error searching users:", error);
+        return res.status(500).json({ success: false, message: `Server Error: ${error}` });
+    }
+});
+
+/** POST Send invitation to a user
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} invitedUserId - UUID of the user to invite (required)
+ */
+router.post("/project/invite", async (req, res) => {
+    console.log("New request /project/invite");
+    
+    const { projectID, invitedUserId } = req.body;
+    const userID = req.userID;
+
+    if (!projectID || !invitedUserId) {
+        return res.status(400).json({ success: false, message: "projectID and invitedUserId are required" });
+    }
+
+    // Check if requester is project owner
+    const ownerUID = await projectDBService.queryProjectOwner(projectID);
+    if (ownerUID !== userID) {
+        return res.status(403).json({ success: false, message: "Only project owner can invite collaborators" });
+    }
+
+    try {
+        // Check if user already invited or is collaborator
+        const checkQuery = `SELECT * FROM projectShare WHERE projectID = ? AND collabUid = ?`;
+        
+        const db = require('../services/db');
+        const exists = await new Promise((resolve, reject) => {
+            db.get(checkQuery, [projectID, invitedUserId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        if (exists) {
+            return res.status(400).json({ success: false, message: "User already invited or is a collaborator" });
+        }
+
+        // Create invitation
+        const inviteQuery = `INSERT INTO projectShare (shareID, projectID, collabUid, confirmed) VALUES (?, ?, ?, ?)`;
+        const shareID = uuid();
+        
+        await new Promise((resolve, reject) => {
+            db.run(inviteQuery, [shareID, projectID, invitedUserId, 0], function(err) {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        // Send notification to invited user
+        await notifDB.setupProjectShareNotification(projectID, invitedUserId);
+        
+        // Notify owner that they sent an invitation
+        await notifDB.notifyOwnerInvitationSent(projectID, userID, invitedUserId);
+
+        console.log(`Invitation sent: ${invitedUserId} to project ${projectID}`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Invitation sent successfully"
+        });
+
+    } catch (error) {
+        console.error("Error sending invitation:", error);
+        return res.status(500).json({ success: false, message: `Server Error: ${error}` });
+    }
+});
+
+/** POST Remove a collaborator from project
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} userId - UUID of the user to remove (required)
+ */
+router.post("/project/remove-collaborator", async (req, res) => {
+    console.log("New request /project/remove-collaborator");
+    
+    const { projectID, userId } = req.body;
+    const userID = req.userID;
+
+    if (!projectID || !userId) {
+        return res.status(400).json({ success: false, message: "projectID and userId are required" });
+    }
+
+    // Check if requester is project owner
+    const ownerUID = await projectDBService.queryProjectOwner(projectID);
+    if (ownerUID !== userID) {
+        return res.status(403).json({ success: false, message: "Only project owner can remove collaborators" });
+    }
+
+    try {
+        const deleteQuery = `DELETE FROM projectShare WHERE projectID = ? AND collabUid = ?`;
+        
+        const db = require('../services/db');
+        await new Promise((resolve, reject) => {
+            db.run(deleteQuery, [projectID, userId], function(err) {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        // Send notification to removed collaborator
+        await notifDB.setProjectShareRemoveNotification(projectID, userId);
+        
+        // Notify owner that they removed a collaborator
+        await notifDB.notifyOwnerCollaboratorRemoved(projectID, userID, userId);
+
+        console.log(`Collaborator removed: ${userId} from project ${projectID}`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Collaborator removed successfully"
+        });
+
+    } catch (error) {
+        console.error("Error removing collaborator:", error);
+        return res.status(500).json({ success: false, message: `Server Error: ${error}` });
+    }
+});
+
+/** POST Remove a pending invitation
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} inviteId - UUID of the invitation to remove (required)
+ */
+router.post("/project/remove-invite", async (req, res) => {
+    console.log("New request /project/remove-invite");
+    
+    const { projectID, inviteId } = req.body;
+    const userID = req.userID;
+
+    if (!projectID || !inviteId) {
+        return res.status(400).json({ success: false, message: "projectID and inviteId are required" });
+    }
+
+    // Check if requester is project owner
+    const ownerUID = await projectDBService.queryProjectOwner(projectID);
+    if (ownerUID !== userID) {
+        return res.status(403).json({ success: false, message: "Only project owner can remove invitations" });
+    }
+
+    try {
+        // Get user ID from invitation before deleting
+        const db = require('../services/db');
+        const invitation = await new Promise((resolve, reject) => {
+            db.get(`SELECT collabUid FROM projectShare WHERE shareID = ? AND projectID = ?`, [inviteId, projectID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        const deleteQuery = `DELETE FROM projectShare WHERE shareID = ? AND projectID = ?`;
+        
+        await new Promise((resolve, reject) => {
+            db.run(deleteQuery, [inviteId, projectID], function(err) {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        // Remove related notification if exists
+        if (invitation && invitation.collabUid) {
+            await notifDB.removeProjectInvitationNotification(projectID, invitation.collabUid);
+        }
+
+        console.log(`Invitation removed: ${inviteId} from project ${projectID}`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Invitation removed successfully"
+        });
+
+    } catch (error) {
+        console.error("Error removing invitation:", error);
+        return res.status(500).json({ success: false, message: `Server Error: ${error}` });
+    }
+});
+
+/** POST Accept a pending invitation
+ * @param {string} projectID - UUID of the project (required)
+ * @param {string} inviteId - UUID of the invitation to accept (required)
+ */
+router.post("/project/accept-invite", async (req, res) => {
+    console.log("New request /project/accept-invite");
+    
+    const { projectID, inviteId } = req.body;
+    const userID = req.userID;
+
+    if (!projectID || !inviteId) {
+        return res.status(400).json({ success: false, message: "projectID and inviteId are required" });
+    }
+
+    try {
+        // Verify the invitation exists and belongs to this user
+        const verifyQuery = `SELECT * FROM projectShare WHERE shareID = ? AND projectID = ? AND collabUid = ?`;
+        
+        const db = require('../services/db');
+        const invitation = await new Promise((resolve, reject) => {
+            db.get(verifyQuery, [inviteId, projectID, userID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        if (!invitation) {
+            return res.status(404).json({ success: false, message: "Invitation not found or unauthorized" });
+        }
+
+        // Update invitation to confirmed
+        const updateQuery = `UPDATE projectShare SET confirmed = 1 WHERE shareID = ?`;
+        
+        await new Promise((resolve, reject) => {
+            db.run(updateQuery, [inviteId], function(err) {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        console.log(`Invitation accepted: ${inviteId} for project ${projectID}`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Invitation accepted successfully"
+        });
+
+    } catch (error) {
+        console.error("Error accepting invitation:", error);
+        return res.status(500).json({ success: false, message: `Server Error: ${error}` });
     }
 });
 

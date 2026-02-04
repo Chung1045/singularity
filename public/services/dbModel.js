@@ -96,14 +96,14 @@ const PROJECT_SHARE_SCHEMA = () => `
         FOREIGN KEY (collabUid) REFERENCES user (uid) ON DELETE CASCADE
     );
 `
-// kind: invitation / removal / leaving project / delete / create
+// kind: invitation / remove / leaving project / delete / create
 const NOTIFICATION_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS notification
     (
         notifID     TEXT PRIMARY KEY NOT NULL UNIQUE,
         receiveUid  TEXT             NOT NULL,
         dateReceive TEXT             NOT NULL,
-        kind        TEXT             NOT NULL CHECK (kind IN ('invitation', 'removal', 'leaving', 'delete', 'create')),
+        kind        TEXT             NOT NULL CHECK (kind IN ('invitation', 'remove', 'leaving', 'delete', 'create')),
         projectID   TEXT,
         message     TEXT,
         isRead      INTEGER          NOT NULL DEFAULT 0,

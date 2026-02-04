@@ -111,6 +111,11 @@
                     });
                     // Refresh projects in sidebar
                     window.dispatchEvent(new CustomEvent('refreshProjects'));
+                    
+                    // Refresh notifications to show the "successfully joined" notification
+                    setTimeout(() => {
+                        fetchNotifications();
+                    }, 500);
                 }
             } catch (error) {
                 console.error('Error accepting invitation:', error);
@@ -249,6 +254,7 @@
                 },
                     // Clear All button
                     notifications.length > 0 && React.createElement('button', {
+                        id: 'notification-clear-all-btn',
                         onClick: handleClearAll,
                         style: {
                             display: 'flex',
@@ -273,6 +279,7 @@
                     ),
                     // Close button
                     React.createElement('button', {
+                        id: 'notification-panel-close-btn',
                         onClick: onClose,
                         style: {
                             width: '32px',
@@ -305,6 +312,7 @@
 
             // Notifications list
             React.createElement('div', {
+                id: 'notification-panel-list',
                 style: {
                     flex: 1,
                     overflowY: 'auto',
@@ -312,9 +320,11 @@
                 }
             },
                 loading ? React.createElement('div', {
+                    id: 'notification-panel-loading',
                     style: { textAlign: 'center', padding: '40px', color: '#666' }
                 }, 'Loading...') :
                 notifications.length === 0 ? React.createElement('div', {
+                    id: 'notification-panel-empty',
                     style: { textAlign: 'center', padding: '40px', color: '#666' }
                 }, 'No notifications') :
                 notifications.map(notification =>
@@ -343,6 +353,8 @@
         const isInvitation = notification.notificationType === 'collaboration_invite';
 
         return React.createElement('div', {
+            id: `notification-item-${notification.notificationID}`,
+            'data-notification-type': notification.notificationType,
             style: {
                 backgroundColor: 'rgb(242, 242, 242)',
                 borderRadius: '12px',
@@ -353,6 +365,7 @@
         },
             // Header with NEW badge and time
             React.createElement('div', {
+                id: `notification-header-${notification.notificationID}`,
                 style: {
                     display: 'flex',
                     alignItems: 'center',
@@ -378,6 +391,7 @@
 
             // Title
             React.createElement('h3', {
+                id: `notification-title-${notification.notificationID}`,
                 style: {
                     margin: '0 0 6px 0',
                     fontSize: '15px',
@@ -388,6 +402,7 @@
 
             // Message
             React.createElement('p', {
+                id: `notification-message-${notification.notificationID}`,
                 style: {
                     margin: '0 0 12px 0',
                     fontSize: '13px',
@@ -398,6 +413,7 @@
 
             // Action buttons for invitations
             isInvitation && React.createElement('div', {
+                id: `notification-actions-${notification.notificationID}`,
                 style: {
                     display: 'flex',
                     gap: '16px',
@@ -405,6 +421,7 @@
                 }
             },
                 React.createElement('button', {
+                    id: `notification-accept-btn-${notification.notificationID}`,
                     onClick: () => onAccept(notification.notificationID, notification.projectID),
                     style: {
                         border: 'none',
@@ -417,6 +434,7 @@
                     }
                 }, 'Accept'),
                 React.createElement('button', {
+                    id: `notification-decline-btn-${notification.notificationID}`,
                     onClick: () => onDecline(notification.notificationID),
                     style: {
                         border: 'none',
@@ -432,6 +450,7 @@
 
             // Dismiss button for non-invitation notifications
             !isInvitation && React.createElement('button', {
+                id: `notification-dismiss-btn-${notification.notificationID}`,
                 onClick: () => onDismiss(notification.notificationID),
                 style: {
                     border: 'none',
