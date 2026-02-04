@@ -4,3 +4,8 @@
 
 //By clicking the add collaborator button, another component will be called.
 //More info will be disclosed once UI is finish porting as React JS code.
+
+(function() {
+    const {useState, useEffect, useRef, useCallback} = React;
+
+})();
