@@ -254,17 +254,6 @@ router.post('/project/editShare', async (req, res) => {
                     await notificationDBService.notifyOwnerInviteSent(projectID, ownerID, uid);
                 } else if (operation === "remove") {
                     await notificationDBService.notifyOwnerRemovedCollaborator(projectID, ownerID, uid);
-                    // Also notify the removed collaborator
-                    await notificationDBService.setProjectShareRemoveNotification(projectID, uid, ownerID);
-
-                    // Emit real-time notification to the removed collaborator
-                    if (global.io) {
-                        global.io.to(`user_${uid}`).emit('collaborator-removed', {
-                            projectID: projectID,
-                            message: 'You have been removed from this project'
-                        });
-                        console.log(`Emitted collaborator-removed to user ${uid} for project ${projectID}`);
-                    }
                 }
             }
 

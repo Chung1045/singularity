@@ -22,47 +22,6 @@ router.post('/notification/invite/respond', async (req, res) => {
 
     const result = await notifDB.processProjectInvitationResponse(notificationID, response);
     if (result.successful) {
-        // Emit real-time update to project owner when invitation is accepted
-        if (response === 'accept') {
-            try {
-                // Get project owner ID
-                const notification = await new Promise((resolve, reject) => {
-                    require('../services/db').get(
-                        `SELECT projectID FROM notification WHERE notifID = ?`,
-                        [notificationID],
-                        (err, row) => {
-                            if (err) return reject(err);
-                            resolve(row);
-                        }
-                    );
-                });
-
-                if (notification?.projectID) {
-                    const ownerID = await new Promise((resolve, reject) => {
-                        require('../services/db').get(
-                            `SELECT projectOwnerUid FROM project WHERE projectID = ?`,
-                            [notification.projectID],
-                            (err, row) => {
-                                if (err) return reject(err);
-                                resolve(row?.projectOwnerUid);
-                            }
-                        );
-                    });
-
-                    if (ownerID && global.io) {
-                        global.io.to(`user_${ownerID}`).emit('project-share-updated', {
-                            projectID: notification.projectID,
-                            action: 'collaborator-accepted',
-                            collaboratorID: req.userID
-                        });
-                        console.log(`Emitted project-share-updated to owner ${ownerID} for project ${notification.projectID}`);
-                    }
-                }
-            } catch (err) {
-                console.error('Error emitting real-time update:', err);
-            }
-        }
-
         res.status(200).json({ successful: true });
     } else {
         res.status(500).json({ successful: false, message: "Server Error: Failed to respond to invitation"});

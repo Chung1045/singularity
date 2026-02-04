@@ -248,21 +248,16 @@
                 const currentProjectID = localStorage.getItem('selectedProjectID');
                 const affectedProjectID = removalNotif?.projectID || deleteNotif?.projectID;
 
-                // Show alert and handle removal after user acknowledges
-                const handleRemoval = () => {
-                    if (currentProjectID === affectedProjectID) {
-                        window.location.href = '/';
-                    } else {
-                        window.dispatchEvent(new CustomEvent('refreshProjects'));
-                    }
-                };
-
                 if (removalNotif) {
                     alert(removalNotif.notificationMessage);
-                    handleRemoval();
                 } else if (deleteNotif) {
                     alert(deleteNotif.notificationMessage);
-                    handleRemoval();
+                }
+
+                if (currentProjectID === affectedProjectID) {
+                    window.location.href = '/';
+                } else {
+                    window.dispatchEvent(new CustomEvent('refreshProjects'));
                 }
             }
 
