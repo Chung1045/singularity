@@ -1,27 +1,26 @@
 const dbService = require("./accountDBService");
 const fss = require("./fsServices");
+const {serverLogger} = require("./loggingService");
 
 module.exports = async function startupChecks() {
     try {
-        console.log("Checking database connection...");
         await dbService.testConnection();
-        console.log("Database OK.");
+        serverLogger.info("Database connection OK.");
 
-        console.log("Checking MinIO connection...");
         await fss.testConnection(process.env.MINIO_BUCKET);
-        console.log("MinIO OK.");
+        serverLogger.info("MinIO connection OK.");
 
-        console.log("Checking XAI API Key...");
         if (!process.env.XAI_API_KEY) {
-            console.warn("  WARNING: XAI_API_KEY environment variable is not set!");
-            console.warn("  AI chat functionality will not work without a valid API key.");
-            console.warn("  Please set XAI_API_KEY in your .env file.");
+            serverLogger.warn("WARNING: XAI_API_KEY environment variable is not set!")
+            serverLogger.warn("AI chat functionality will not work without a valid API key.")
+            serverLogger.warn("Please set XAI_API_KEY in your .env file.")
+            throw new Error()
         } else {
-            console.log("XAI API Key found.");
+            serverLogger.info("XAI API Key found.");
         }
 
     } catch (err) {
-        console.error("Unable to start the server. Make sure the database and MinIO are running.");
+        serverLogger.warn("Unable to start the server. Make sure the database and MinIO are running, and the XAI_API_KEY is set correctly.");
         console.error(err);
         process.exit(1);
     }

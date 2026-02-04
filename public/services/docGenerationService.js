@@ -1,6 +1,6 @@
 const fs = require("fs");
 const fss = require("./fsServices")
-const aiDB = require("./aiAgentDBService")
+const aiDB = require("./aiAgentService/aiAgentDBService")
 const projectDB = require("./projectDBService")
 const lodash = require('lodash');
 const uuid = require("uuid-v4")
@@ -15,7 +15,6 @@ const {
     WidthType,
     TableLayoutType
 } = require("docx");
-const db = require("./db");
 const {FSS_REPORT_USERSTORIES} = require("./fsServices");
 
 // PDF conversion using libre-office or a pure JS solution
@@ -329,8 +328,22 @@ async function generateRequirementsDocument(projectID, requirements) {
         new Paragraph(""), // spacing
     ];
 
-    for (const requirement of requirements) {
-        console.log(`\nExtracted Requirement:\n${JSON.stringify(requirement)}`)
+    let functionalRequirements = requirements.filter(req => req.details?.requirementType === 'functional');
+    let nonFunctionalRequirements = requirements.filter(req => req.details?.requirementType === 'non-functional');
+
+    console.log(`Functional requirements filtered: ${functionalRequirements.length}`)
+    console.log(`Function requirements content: ${JSON.stringify(functionalRequirements)}`)
+    console.log(`Non-functional requirements filtered: ${nonFunctionalRequirements.length}`)
+    console.log(`Non-functional requirements content: ${JSON.stringify(nonFunctionalRequirements)}`)
+
+    requirementDocContent.push(new Paragraph(`Functional Requirements (${functionalRequirements.length})`))
+    for (const requirement of functionalRequirements) {
+        requirementDocContent.push(await createRequirementTable(requirement.details, projectID));
+        requirementDocContent.push(new Paragraph("")); // spacing
+    }
+
+    requirementDocContent.push(new Paragraph(`Non-functional Requirements (${nonFunctionalRequirements.length})`))
+    for (const requirement of nonFunctionalRequirements) {
         requirementDocContent.push(await createRequirementTable(requirement.details, projectID));
         requirementDocContent.push(new Paragraph("")); // spacing
     }

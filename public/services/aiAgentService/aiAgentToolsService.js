@@ -1,4 +1,4 @@
-const fss = require("./fsServices")
+const fss = require("../fsServices")
 
 const tools = [
     {
@@ -713,7 +713,7 @@ ${content}
         console.log(` generate_requirements_report called with projectID: ${projectID}`);
         console.log(` ========================================`);
 
-        const docGen = require("./docGenerationService");
+        const docGen = require("../docGenerationService");
         try {
             // Test database connectivity first
             console.log(` Testing database connectivity...`);
@@ -772,7 +772,7 @@ ${content}
 
     async generate_user_stories_report(projectID) {
         console.log(` generate_user_stories_report called with projectID: ${projectID}`);
-        const docGen = require("./docGenerationService");
+        const docGen = require("../docGenerationService");
         try {
             // Test database connectivity first
             console.log(`Testing database connectivity...`);

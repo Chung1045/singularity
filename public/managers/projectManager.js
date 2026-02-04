@@ -11,7 +11,7 @@ const multer = require('multer');
 const path = require('path');
 const {apiAuthUser} = require("../services/accountDBService");
 const fs = require('fs').promises;
-const agentDB = require("../services/aiAgentDBService")
+const agentDB = require("../services/aiAgentService/aiAgentDBService")
 
 router.use(dbService.apiAuthUser);
 
@@ -74,13 +74,6 @@ router.post('/project/create', async (req, res) => {
 
         if (successful) {
             console.log("Project is created with ID:", data.projectID)
-
-            // Create notification for project creation
-            await notificationDBService.createProjectCreationNotification(
-                data.projectID,
-                req.userID,
-                data.projectName
-            );
 
             // Return the new projectID and projectName so frontend can use it
             return res.status(200).json({
