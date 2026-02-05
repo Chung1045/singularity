@@ -16,6 +16,8 @@
      <link rel="stylesheet" href="/stylesheets/z-index.css">
 
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
     <!-- Load z-index helper -->
     <script src="/scripts/zIndexHelper.js"></script>
     <!-- Load shared utilities first -->
@@ -55,6 +57,9 @@
 
     const userInfo = <%- JSON.stringify(userInfo || []) %>;
     const csrfToken = "<%= csrfToken %>";
+    
+    // Make userInfo globally available for socket initialization
+    window.userInfo = userInfo;
 
     // Add file upload event listener (same as tempHome)
     const handleOpenFileUpload = (event) => {
@@ -121,5 +126,9 @@
         document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px;">Error: ' + error.message + '</div>';
     }
 </script>
+
+<!-- Socket.io initialization for real-time notifications - load AFTER userInfo is set -->
+<script src="/scripts/socketInit.js"></script>
+
 </body>
 </html>

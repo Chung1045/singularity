@@ -84,13 +84,16 @@ async function setProjectShareRemoveNotification(projectID, collaboratorID) {
             `You have been removed from the project ${projectName}`,
             false
         ];
+        
+        console.log(`[Notification] Creating removal notification for user ${collaboratorID} from project "${projectName}"`);
 
         return new Promise((resolve, reject) => {
             db.run(sql, params, (err) => {
                 if (err) {
-                    console.error("Error inserting notification:", err);
+                    console.error("Error inserting removal notification:", err);
                     return reject(err);
                 }
+                console.log(` Removal notification created\n`);
                 resolve(true);
             });
         });
@@ -526,6 +529,171 @@ async function notifyOwnerCollaboratorRemoved(projectID, ownerID, removedUserID)
     }
 }
 
+// Notify owner and collaborators when project is renamed
+async function notifyProjectRenamed(projectID, oldProjectName, newProjectName, changedByUserID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        console.log(`\n[Notification] Creating project rename notifications:`);
+        console.log(`  Project: "${oldProjectName}" → "${newProjectName}"`);
+        console.log(`  Changed by: ${changedByUserID}`);
+        
+        // Get the user who made the change
+        const changedByUser = await new Promise((resolve, reject) => {
+            db.get('SELECT userName, firstName, lastName FROM user WHERE uid = ?', [changedByUserID], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        const changedByUsername = changedByUser ? changedByUser.userName : 'Someone';
+        const now = Date.now();
+
+        // Get project owner
+        const ownerUID = await projectDB.queryProjectOwner(projectID);
+
+        // Get all confirmed collaborators
+        const collaborators = await new Promise((resolve, reject) => {
+            db.all(
+                'SELECT collabUid FROM projectShare WHERE projectID = ? AND confirmed = 1',
+                [projectID],
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows ? rows.map(r => r.collabUid) : []);
+                }
+            );
+        });
+        
+        console.log(`  Recipients: Owner (${ownerUID}) + ${collaborators.length} collaborator(s)`);
+
+        // Notify owner
+        if (ownerUID) {
+            const ownerMessage = ownerUID === changedByUserID
+                ? `You renamed project "${oldProjectName}" to "${newProjectName}"`
+                : `@${changedByUsername} renamed project "${oldProjectName}" to "${newProjectName}"`;
+
+            const ownerParams = [
+                uuid(),
+                ownerUID,
+                now,
+                "rename",
+                projectID,
+                ownerMessage,
+                false
+            ];
+
+            await new Promise((resolve, reject) => {
+                db.run(sql, ownerParams, (err) => {
+                    if (err) {
+                        console.error("Error inserting owner rename notification:", err);
+                        return reject(err);
+                    }
+                    resolve(true);
+                });
+            });
+        }
+
+        // Notify all collaborators
+        for (const collabUID of collaborators) {
+            const collabMessage = collabUID === changedByUserID
+                ? `You renamed project "${oldProjectName}" to "${newProjectName}"`
+                : `@${changedByUsername} renamed project "${oldProjectName}" to "${newProjectName}"`;
+
+            const collabParams = [
+                uuid(),
+                collabUID,
+                now,
+                "rename",
+                projectID,
+                collabMessage,
+                false
+            ];
+
+            await new Promise((resolve, reject) => {
+                db.run(sql, collabParams, (err) => {
+                    if (err) {
+                        console.error("Error inserting collaborator rename notification:", err);
+                        return reject(err);
+                    }
+                    resolve(true);
+                });
+            });
+        }
+
+        console.log(`  Created ${1 + collaborators.length} rename notification(s)\n`);
+        return true;
+
+    } catch (err) {
+        console.error("Project rename notification failed:", err);
+        return false;
+    }
+}
+
+// Notify all collaborators when project is deleted
+async function notifyCollaboratorsProjectDeleted(projectID, projectName, deletedByUserID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        console.log(`\n[Notification] Creating project deletion notifications:`);
+        console.log(`  Project: "${projectName}"`);
+        console.log(`  Deleted by: ${deletedByUserID}`);
+        
+        const now = Date.now();
+
+        // Get all confirmed collaborators
+        const collaborators = await new Promise((resolve, reject) => {
+            db.all(
+                'SELECT collabUid FROM projectShare WHERE projectID = ? AND confirmed = 1',
+                [projectID],
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows ? rows.map(r => r.collabUid) : []);
+                }
+            );
+        });
+        
+        console.log(`  Recipients: ${collaborators.length} collaborator(s)`);
+
+        // Notify all collaborators
+        for (const collabUID of collaborators) {
+            const params = [
+                uuid(),
+                collabUID,
+                now,
+                "delete",
+                null, // Set to null since project will be deleted
+                `Project "${projectName}" has been deleted by the owner`,
+                false
+            ];
+
+            await new Promise((resolve, reject) => {
+                db.run(sql, params, (err) => {
+                    if (err) {
+                        console.error("Error inserting collaborator deletion notification:", err);
+                        return reject(err);
+                    }
+                    resolve(true);
+                });
+            });
+        }
+
+        console.log(` Created ${collaborators.length} deletion notification(s)\n`);
+        return true;
+
+    } catch (err) {
+        console.error("Collaborator deletion notification failed:", err);
+        return false;
+    }
+}
+
 
 module.exports = {
     setProjectShareRemoveNotification,
@@ -541,5 +709,7 @@ module.exports = {
     notifyOwnerInvitationAccepted,
     notifyOwnerInvitationDeclined,
     notifyOwnerCollaboratorRemoved,
-    notifyCollaboratorJoined
+    notifyCollaboratorJoined,
+    notifyProjectRenamed,
+    notifyCollaboratorsProjectDeleted
 }

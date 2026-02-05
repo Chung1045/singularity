@@ -21,7 +21,51 @@ const PORT = process.env.PORT || 9090;
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+// Store user socket connections (userID -> socketID)
+const userSockets = new Map();
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+    console.log(`\n[Socket.io] Client connected: ${socket.id}`);
+    serverLogger.info(`Socket connected: ${socket.id}`);
+    
+    // Register user socket
+    socket.on('register', (userID) => {
+        if (userID) {
+            userSockets.set(userID, socket.id);
+            console.log(`[Socket.io] User registered: ${userID} → socket ${socket.id}`);
+            console.log(`[Socket.io] Total connected users: ${userSockets.size}`);
+            console.log(`[Socket.io] Active users: [${Array.from(userSockets.keys()).join(', ')}]\n`);
+            serverLogger.info(`User ${userID} registered with socket ${socket.id}`);
+        } else {
+            console.log(`[Socket.io] ✗ Registration failed - no userID provided`);
+        }
+    });
+    
+    socket.on('disconnect', () => {
+        // Remove user from map
+        for (const [userID, socketID] of userSockets.entries()) {
+            if (socketID === socket.id) {
+                userSockets.delete(userID);
+                console.log(`\n[Socket.io] User disconnected: ${userID}`);
+                console.log(`[Socket.io] Total connected users: ${userSockets.size}\n`);
+                serverLogger.info(`User ${userID} disconnected`);
+                break;
+            }
+        }
+    });
+});
+
+// Make io and userSockets globally available
+global.io = io;
+global.userSockets = userSockets;
 
 async function serverSetUp() {
     app.use((req, res, next) => {

@@ -96,8 +96,11 @@ router.post('/notification/fetch', async (req, res) => {
             };
         });
 
-        console.log("Notification is fetched")
-        console.log(transformedNotifications)
+        console.log("Notification is fetched");
+        console.log(`[Notifications] Returning ${transformedNotifications.length} notification(s) for user ${userID}:`);
+        transformedNotifications.forEach((notif, index) => {
+            console.log(`  [${index + 1}] ${notif.notificationTitle}: "${notif.notificationMessage}" (Type: ${notif.notificationType}, Read: ${notif.isRead ? 'Yes' : 'No'})`);
+        });
         return res.status(200).json({ successful: true, notifications: transformedNotifications})
 
     } catch (err) {
@@ -146,8 +149,11 @@ router.post('/notifications/list', async (req, res) => {
             };
         });
 
-        console.log("Notification is fetched")
-        console.log(transformedNotifications)
+        console.log("Notification is fetched");
+        console.log(`[Notifications] Returning ${transformedNotifications.length} notification(s) for user ${userID}:`);
+        transformedNotifications.forEach((notif, index) => {
+            console.log(`  [${index + 1}] ${notif.notificationTitle}: "${notif.notificationMessage}" (Type: ${notif.notificationType}, Read: ${notif.isRead ? 'Yes' : 'No'})`);
+        });
         return res.status(200).json({ successful: true, notifications: transformedNotifications})
 
     } catch (err) {
@@ -248,6 +254,10 @@ function getNotificationTitle(kind) {
             return 'Project Deleted';
         case 'remove':
             return 'Removed from Project';
+        case 'rename':
+            return 'Project Renamed';
+        case 'update':
+            return 'Project Update';
         case 'leaving':
             return 'Left Project';
         default:

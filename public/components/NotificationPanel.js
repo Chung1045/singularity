@@ -12,6 +12,7 @@
         const [sidebarWidth, setSidebarWidth] = useState(302);
         const [refreshKey, setRefreshKey] = useState(0); // Force re-render for time updates
         const panelRef = useRef(null);
+        const prevIsOpenRef = useRef(isOpen);
 
         // Auto-refresh timestamps every 30 seconds
         useEffect(() => {
@@ -52,9 +53,15 @@
 
         // Fetch notifications when panel opens
         useEffect(() => {
-            if (isOpen) {
+            const wasOpen = prevIsOpenRef.current;
+            
+            if (isOpen && !wasOpen) {
+                // Panel just opened - fetch notifications
                 fetchNotifications();
             }
+            
+            // Update ref for next render
+            prevIsOpenRef.current = isOpen;
         }, [isOpen]);
 
         // Close panel when clicking outside

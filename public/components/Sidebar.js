@@ -936,30 +936,6 @@
 
         // Notification panel state
         const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
-        const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
-
-        // Check for unread notifications on mount
-        useEffect(() => {
-            const checkUnreadNotifications = async () => {
-                try {
-                    const response = await fetch('/api/notifications/unread-count', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({})
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        setHasUnreadNotifications(data.count > 0);
-                    }
-                } catch (error) {
-                    console.error('Error checking notifications:', error);
-                }
-            };
-            checkUnreadNotifications();
-            // Check every 60 seconds
-            const interval = setInterval(checkUnreadNotifications, 60000);
-            return () => clearInterval(interval);
-        }, []);
 
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
@@ -980,7 +956,7 @@
 
         // Fetch projects
         const fetchProjects = useCallback(async () => {
-            console.log("Fetching projects...");
+            console.log("[Sidebar] Fetching projects...");
             try {
                 const response = await fetch('/api/project/list', {
                     method: 'POST',
@@ -994,6 +970,8 @@
                     const data = await response.json();
 
                     if (data.projects && data.projects.length > 0) {
+                        console.log(`[Sidebar] Received ${data.projects.length} project(s):`, 
+                            data.projects.map(p => `${p.projectName} (${p.projectID})`));
                         setHasProjects(true);
                         setProjects(data.projects);
                         populateProjectDropdown(data.projects);
@@ -1108,11 +1086,13 @@
             };
         }, [selectedProjectID]);
 
-        // Listen for refreshProjects event (e.g., when accepting invitation)
+        // Listen for refreshProjects event (e.g., when accepting invitation or project renamed)
         useEffect(() => {
             const handleRefreshProjects = () => {
-                console.log('Refreshing projects due to refreshProjects event');
-                fetchProjects();
+                console.log('[Sidebar] Received refreshProjects event - updating project list...');
+                fetchProjects().then(() => {
+                    console.log('[Sidebar] Project list refreshed successfully');
+                });
             };
 
             window.addEventListener('refreshProjects', handleRefreshProjects);
@@ -1121,63 +1101,8 @@
             };
         }, [fetchProjects]);
 
-        // Check for removal notifications and show alert
-        useEffect(() => {
-            let lastCheckedProjects = new Set(projects.map(p => p.projectID));
-
-            const checkForRemovals = async () => {
-                try {
-                    const response = await fetch('/api/notifications/list', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({})
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        const removalNotifications = (data.notifications || []).filter(
-                            n => n.notificationType === 'remove' && !n.isRead
-                        );
-
-                        for (const notif of removalNotifications) {
-                            // Check if this is a new removal notification we haven't shown yet
-                            const notifKey = `shown_removal_${notif.notificationID}`;
-                            if (!sessionStorage.getItem(notifKey)) {
-                                // Mark as shown
-                                sessionStorage.setItem(notifKey, 'true');
-                                
-                                // Show alert
-                                if (window.showNotification) {
-                                    await window.showNotification({
-                                        type: 'error',
-                                        title: 'Removed from Project',
-                                        message: notif.notificationMessage,
-                                        actionText: 'OK'
-                                    });
-                                }
-
-                                // Refresh projects list to remove the project from sidebar
-                                await fetchProjects();
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error checking for removal notifications:', error);
-                }
-            };
-
-            // Check immediately when projects change
-            if (projects.length > 0) {
-                checkForRemovals();
-            }
-
-            // Check periodically every 10 seconds
-            const interval = setInterval(checkForRemovals, 10000);
-
-            return () => {
-                clearInterval(interval);
-            };
-        }, [projects, fetchProjects]);
+        // Removed polling for notifications - now using Socket.io for real-time updates
+        // Notifications are only fetched when the notification panel is opened
 
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;
@@ -2000,17 +1925,6 @@
                             React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
                             React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
                         ),
-                        hasUnreadNotifications && React.createElement('span', {
-                            style: {
-                                position: 'absolute',
-                                top: '8px',
-                                left: '24px',
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#e53935',
-                                borderRadius: '50%'
-                            }
-                        }),
                         React.createElement('span', {
                             style: {
                                 fontSize: '14px',
@@ -2064,18 +1978,7 @@
                         },
                             React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
                             React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
-                        ),
-                        hasUnreadNotifications && React.createElement('span', {
-                            style: {
-                                position: 'absolute',
-                                top: '6px',
-                                right: '8px',
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#e53935',
-                                borderRadius: '50%'
-                            }
-                        })
+                        )
                     )
                 ),
 
@@ -2084,7 +1987,6 @@
                     isOpen: notificationPanelOpen,
                     onClose: () => {
                         setNotificationPanelOpen(false);
-                        setHasUnreadNotifications(false);
                     },
                     sidebarCollapsed: sidebarCollapsed
                 }),

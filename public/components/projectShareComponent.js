@@ -336,7 +336,8 @@
                                 gap: '12px'
                             }
                         },
-                            // Invite Collaborators button
+                            // Invite Collaborators button - only show to owner
+                            projectData && projectData.currentUserID === projectData.owner?.userID &&
                             React.createElement('button', {
                                 id: 'project-share-invite-collaborators-btn',
                                 style: {
@@ -346,7 +347,7 @@
                                     color: '#1c1d21',
                                     // backgroundColor: '#f3f4f6',
                                     border: '1px solid #d1d5db',
-                                    borderRadius: '8px',
+                                    borderRadius: '6px',
                                     cursor: 'pointer',
                                     fontFamily: '"Inter", Helvetica',
                                     transition: 'all 0.2s',
@@ -617,7 +618,8 @@
                                                 }, collaborator.email || 'example@example.com')
                                             ),
 
-                                            // Remove button
+                                            // Remove button - only show to owner
+                                            projectData.currentUserID === projectData.owner?.userID &&
                                             React.createElement('button', {
                                                 id: `project-share-remove-collaborator-btn-${collaborator.userID}`,
                                                 style: {
@@ -633,7 +635,7 @@
                                                     transition: 'background-color 0.2s',
                                                     flexShrink: 0
                                                 },
-                                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#fee2e2',
+                                                // onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#fee2e2',
                                                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                                                 onClick: () => handleRemoveCollaborator(collaborator.userID, collaborator.username)
                                             }, 'Remove')
@@ -727,7 +729,8 @@
                                                 }, invite.email || 'example@example.com')
                                             ),
 
-                                            // Status badge and action button
+                                            // Status badge and action button - only show to owner
+                                            projectData.currentUserID === projectData.owner?.userID &&
                                             React.createElement('div', {
                                                 style: {
                                                     display: 'flex',
