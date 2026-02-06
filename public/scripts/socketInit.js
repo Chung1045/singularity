@@ -27,20 +27,21 @@
             
             const { projectID, oldProjectName, newProjectName, changedByUserID } = data;
             
-            // Show instant alert
-            const message = changedByUserID === window.userInfo.uid 
-                ? `You renamed project "${oldProjectName}" to "${newProjectName}"`
-                : `Project "${oldProjectName}" has been renamed to "${newProjectName}"`;
-            
-            if (window.showNotification) {
-                window.showNotification({
-                    type: 'info',
-                    title: 'Project Renamed',
-                    message: message,
-                    actionText: 'OK'
-                });
-            } else {
-                alert(message);
+            // Only show alert to OTHER users (not the person who renamed it)
+            // The renamer already gets a success modal from the rename action
+            if (changedByUserID !== window.userInfo.uid) {
+                const message = `Project "${oldProjectName}" has been renamed to "${newProjectName}"`;
+                
+                if (window.showNotification) {
+                    window.showNotification({
+                        type: 'info',
+                        title: 'Project Renamed',
+                        message: message,
+                        actionText: 'OK'
+                    });
+                } else {
+                    alert(message);
+                }
             }
             
             // Update the project name in the current view if this is the selected project

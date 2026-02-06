@@ -413,16 +413,7 @@
                 padding: '16px',
                 marginBottom: '12px',
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-                cursor: isUnread ? 'pointer' : 'default',
-                transition: 'background-color 0.2s'
-            },
-            onMouseEnter: (e) => {
-                if (isUnread) {
-                    e.currentTarget.style.backgroundColor = 'rgb(235, 235, 235)';
-                }
-            },
-            onMouseLeave: (e) => {
-                e.currentTarget.style.backgroundColor = 'rgb(242, 242, 242)';
+                cursor: 'pointer'
             }
         },
             // Header with NEW badge and time

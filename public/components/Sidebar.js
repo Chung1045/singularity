@@ -1137,13 +1137,9 @@
             };
 
             window.addEventListener('refreshNotifications', handleRefreshNotifications);
-            
-            // Poll every 30 seconds as backup (in case socket events are missed)
-            const pollInterval = setInterval(checkUnreadNotifications, 30000);
 
             return () => {
                 window.removeEventListener('refreshNotifications', handleRefreshNotifications);
-                clearInterval(pollInterval);
             };
         }, [checkUnreadNotifications]);
 
