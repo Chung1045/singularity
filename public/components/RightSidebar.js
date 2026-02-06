@@ -15,6 +15,14 @@
         const [isResizing, setIsResizing] = useState(false);
         const sidebarRef = useRef(null);
 
+        // Refresh reports when selectedProjectID changes
+        useEffect(() => {
+            if (selectedProjectID && typeof window.fetchProjectReports === 'function') {
+                console.log('[RightSidebar] Project changed, refreshing reports for:', selectedProjectID);
+                window.fetchProjectReports(selectedProjectID);
+            }
+        }, [selectedProjectID]);
+
         const startResizing = useCallback((e) => {
             e.preventDefault();
             setIsResizing(true);

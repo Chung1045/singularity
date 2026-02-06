@@ -117,21 +117,25 @@
             
             const { projectID, projectName, deletedByOwner } = data;
             
-            // Show instant alert and wait for user acknowledgment
-            const message = `Project "${projectName}" has been deleted by the owner`;
+            // Check if the user is currently working on this deleted project
+            const currentProjectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+            const isWorkingOnDeletedProject = currentProjectID === projectID;
             
-            if (window.showNotification) {
-                window.showNotification({
-                    type: 'warning',
-                    title: 'Project Deleted',
-                    message: message,
-                    actionText: 'OK'
-                }).then(() => {
-                    // After user clicks OK, then kick them
-                    console.log('[Socket.io] User acknowledged project deletion - processing kick...');
-                    
-                    // Clear current project if it's the deleted one
-                    if (window.getCurrentProjectID && window.getCurrentProjectID() === projectID) {
+            // Only show popup if user is actively working on the deleted project
+            if (isWorkingOnDeletedProject) {
+                // Show instant alert and wait for user acknowledgment
+                const message = `Project "${projectName}" has been deleted by the owner`;
+                
+                if (window.showNotification) {
+                    window.showNotification({
+                        type: 'warning',
+                        title: 'Project Deleted',
+                        message: message,
+                        actionText: 'OK'
+                    }).then(() => {
+                        // After user clicks OK, then kick them
+                        console.log('[Socket.io] User acknowledged project deletion - processing kick...');
+                        
                         // Clear the selected project
                         if (window.clearCurrentProject) {
                             window.clearCurrentProject();
@@ -144,20 +148,15 @@
                         setTimeout(() => {
                             window.location.reload();
                         }, 500);
-                    } else {
-                        // If not viewing the deleted project, just refresh the list
-                        window.dispatchEvent(new CustomEvent('refreshProjects'));
-                    }
+                        
+                        // Refresh notification panel
+                        window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                    });
+                } else {
+                    // Fallback for browsers without promise support
+                    alert(message);
                     
-                    // Refresh notification panel
-                    window.dispatchEvent(new CustomEvent('refreshNotifications'));
-                });
-            } else {
-                // Fallback for browsers without promise support
-                alert(message);
-                
-                // Same logic as above
-                if (window.getCurrentProjectID && window.getCurrentProjectID() === projectID) {
+                    // Same logic as above
                     if (window.clearCurrentProject) {
                         window.clearCurrentProject();
                     }
@@ -166,8 +165,12 @@
                     setTimeout(() => {
                         window.location.reload();
                     }, 500);
+                    
+                    window.dispatchEvent(new CustomEvent('refreshNotifications'));
                 }
-                
+            } else {
+                // User is not working on the deleted project - just refresh the project list silently
+                console.log('[Socket.io] User not working on deleted project - refreshing list silently');
                 window.dispatchEvent(new CustomEvent('refreshProjects'));
                 window.dispatchEvent(new CustomEvent('refreshNotifications'));
             }

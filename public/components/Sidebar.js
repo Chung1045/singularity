@@ -936,6 +936,7 @@
 
         // Notification panel state
         const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+        const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
@@ -1101,8 +1102,50 @@
             };
         }, [fetchProjects]);
 
-        // Removed polling for notifications - now using Socket.io for real-time updates
-        // Notifications are only fetched when the notification panel is opened
+        // Check for unread notifications
+        const checkUnreadNotifications = useCallback(async () => {
+            try {
+                const response = await fetch('/api/notifications/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const notifications = data.notifications || [];
+                    
+                    // Check if there are any unread notifications (isRead === 0 or false)
+                    const hasUnread = notifications.some(n => n.isRead === 0 || n.isRead === false);
+                    setHasUnreadNotifications(hasUnread);
+                    console.log('[Sidebar] Checked notifications - hasUnread:', hasUnread);
+                }
+            } catch (error) {
+                console.error('[Sidebar] Error checking unread notifications:', error);
+            }
+        }, []);
+
+        // Check for unread notifications on mount and listen for refresh events
+        useEffect(() => {
+            // Initial check
+            checkUnreadNotifications();
+
+            // Listen for notification refresh events from socket
+            const handleRefreshNotifications = () => {
+                console.log('[Sidebar] Received refreshNotifications event - checking for unread...');
+                checkUnreadNotifications();
+            };
+
+            window.addEventListener('refreshNotifications', handleRefreshNotifications);
+            
+            // Poll every 30 seconds as backup (in case socket events are missed)
+            const pollInterval = setInterval(checkUnreadNotifications, 30000);
+
+            return () => {
+                window.removeEventListener('refreshNotifications', handleRefreshNotifications);
+                clearInterval(pollInterval);
+            };
+        }, [checkUnreadNotifications]);
 
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;
@@ -1890,7 +1933,10 @@
                     },
                     React.createElement('button', {
                         id: 'notification-trigger-btn',
-                        onClick: () => setNotificationPanelOpen(!notificationPanelOpen),
+                        onClick: () => {
+                            setNotificationPanelOpen(!notificationPanelOpen);
+                            // Badge will be cleared automatically when notifications are marked as read
+                        },
                         style: {
                             position: 'relative',
                             width: '100%',
@@ -1911,19 +1957,40 @@
                         onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                     },
-                        React.createElement('svg', {
-                            width: '20',
-                            height: '20',
-                            viewBox: '0 0 24 24',
-                            fill: 'none',
-                            stroke: '#333',
-                            strokeWidth: '2',
-                            strokeLinecap: 'round',
-                            strokeLinejoin: 'round',
-                            style: { marginLeft: '30px' }
+                        React.createElement('div', {
+                            style: {
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginLeft: '30px'
+                            }
                         },
-                            React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
-                            React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                            React.createElement('svg', {
+                                width: '20',
+                                height: '20',
+                                viewBox: '0 0 24 24',
+                                fill: 'none',
+                                stroke: '#333',
+                                strokeWidth: '2',
+                                strokeLinecap: 'round',
+                                strokeLinejoin: 'round'
+                            },
+                                React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                                React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                            ),
+                            // Red dot indicator for unread notifications
+                            hasUnreadNotifications && React.createElement('span', {
+                                style: {
+                                    position: 'absolute',
+                                    top: '-2px',
+                                    right: '-2px',
+                                    width: '8px',
+                                    height: '8px',
+                                    backgroundColor: '#e53935',
+                                    borderRadius: '50%',
+                                    border: '1px solid #fff'
+                                }
+                            })
                         ),
                         React.createElement('span', {
                             style: {
@@ -1946,7 +2013,10 @@
                     },
                     React.createElement('button', {
                         id: 'notification-trigger-btn-collapsed',
-                        onClick: () => setNotificationPanelOpen(!notificationPanelOpen),
+                        onClick: () => {
+                            setNotificationPanelOpen(!notificationPanelOpen);
+                            // Badge will be cleared automatically when notifications are marked as read
+                        },
                         title: 'Notifications',
                         style: {
                             position: 'relative',
@@ -1978,7 +2048,20 @@
                         },
                             React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
                             React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
-                        )
+                        ),
+                        // Red dot indicator for unread notifications
+                        hasUnreadNotifications && React.createElement('span', {
+                            style: {
+                                position: 'absolute',
+                                top: '6px',
+                                right: '8px',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#e53935',
+                                borderRadius: '50%',
+                                border: '1px solid #fff'
+                            }
+                        })
                     )
                 ),
 

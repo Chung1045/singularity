@@ -99,8 +99,32 @@
             }
         };
 
+        // Mark a notification as read
+        const markNotificationAsRead = async (notificationId) => {
+            try {
+                await fetch('/api/notification/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notifID: notificationId })
+                });
+                
+                // Update local state to reflect read status
+                setNotifications(prev => prev.map(n => 
+                    n.notificationID === notificationId ? { ...n, isRead: 1 } : n
+                ));
+                
+                // Trigger refresh of notification badge in sidebar
+                window.dispatchEvent(new CustomEvent('refreshNotifications'));
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+            }
+        };
+
         const handleAccept = async (notificationId, projectId) => {
             try {
+                // Mark as read when accepting
+                await markNotificationAsRead(notificationId);
+                
                 const response = await fetch('/api/notifications/accept-invitation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -131,6 +155,9 @@
 
         const handleDecline = async (notificationId) => {
             try {
+                // Mark as read when declining
+                await markNotificationAsRead(notificationId);
+                
                 const response = await fetch('/api/notifications/decline-invitation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -168,6 +195,9 @@
 
         const handleDismiss = async (notificationId) => {
             try {
+                // Mark as read before dismissing
+                await markNotificationAsRead(notificationId);
+                
                 const response = await fetch('/api/notification/remove', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -341,6 +371,7 @@
                         onAccept: handleAccept,
                         onDecline: handleDecline,
                         onDismiss: handleDismiss,
+                        onMarkAsRead: markNotificationAsRead,
                         formatTimeAgo: formatTimeAgo
                     })
                 )
@@ -350,7 +381,7 @@
     };
 
     // Individual notification item component
-    const NotificationItem = ({ notification, onAccept, onDecline, onDismiss, formatTimeAgo }) => {
+    const NotificationItem = ({ notification, onAccept, onDecline, onDismiss, onMarkAsRead, formatTimeAgo }) => {
         // Check if notification is new (unread AND created within last 5 minutes)
         const notificationAge = new Date() - new Date(notification.createdAt);
         const isUnread = notification.isRead === 0 || notification.isRead === false;
@@ -359,15 +390,39 @@
 
         const isInvitation = notification.notificationType === 'collaboration_invite';
 
+        // Handler to mark as read when clicking on the notification
+        const handleNotificationClick = (e) => {
+            // Don't mark as read if clicking on action buttons
+            if (e.target.tagName === 'BUTTON') {
+                return;
+            }
+            
+            // Mark as read if it's unread
+            if (isUnread && onMarkAsRead) {
+                onMarkAsRead(notification.notificationID);
+            }
+        };
+
         return React.createElement('div', {
             id: `notification-item-${notification.notificationID}`,
             'data-notification-type': notification.notificationType,
+            onClick: handleNotificationClick,
             style: {
                 backgroundColor: 'rgb(242, 242, 242)',
                 borderRadius: '12px',
                 padding: '16px',
                 marginBottom: '12px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                cursor: isUnread ? 'pointer' : 'default',
+                transition: 'background-color 0.2s'
+            },
+            onMouseEnter: (e) => {
+                if (isUnread) {
+                    e.currentTarget.style.backgroundColor = 'rgb(235, 235, 235)';
+                }
+            },
+            onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = 'rgb(242, 242, 242)';
             }
         },
             // Header with NEW badge and time
