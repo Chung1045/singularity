@@ -72,41 +72,54 @@
             
             const { projectID, projectName, removedByOwner } = data;
             
-            // Show instant alert
-            const message = `You have been removed from project "${projectName}"`;
+            // Check if the user is currently working on this project
+            const currentProjectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+            const isWorkingOnRemovedProject = currentProjectID === projectID;
             
-            if (window.showNotification) {
-                window.showNotification({
-                    type: 'error',
-                    title: 'Removed from Project',
-                    message: message,
-                    actionText: 'OK'
-                }).then(() => {
-                    // After user acknowledges the alert, refresh and show in notification
-                    console.log('[Socket.io] User acknowledged removal - refreshing...');
-                    
-                    // Clear current project if it's the one they were removed from
-                    if (window.getCurrentProjectID && window.getCurrentProjectID() === projectID) {
+            // Only show popup if user is actively working on the project they were removed from
+            if (isWorkingOnRemovedProject) {
+                // Show instant alert
+                const message = `You have been removed from project "${projectName}"`;
+                
+                if (window.showNotification) {
+                    window.showNotification({
+                        type: 'error',
+                        title: 'Removed from Project',
+                        message: message,
+                        actionText: 'OK'
+                    }).then(() => {
+                        // After user acknowledges the alert, refresh and show in notification
+                        console.log('[Socket.io] User acknowledged removal - refreshing...');
+                        
+                        // Clear current project if it's the one they were removed from
                         localStorage.setItem('wentBackToInitial', 'true');
                         localStorage.removeItem('activeChatID');
-                    }
-                    
-                    // Refresh project list (removes the project from sidebar)
-                    window.dispatchEvent(new CustomEvent('refreshProjects'));
-                    
-                    // Refresh notification panel (shows the removal notification)
-                    window.dispatchEvent(new CustomEvent('refreshNotifications'));
-                    
-                    // If they were viewing the removed project, reload the page
-                    if (window.getCurrentProjectID && window.getCurrentProjectID() === projectID) {
+                        
+                        // Refresh project list (removes the project from sidebar)
+                        window.dispatchEvent(new CustomEvent('refreshProjects'));
+                        
+                        // Refresh notification panel (shows the removal notification)
+                        window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                        
+                        // Reload the page to clear state
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1000);
-                    }
-                });
+                        }, 500);
+                    });
+                } else {
+                    alert(message);
+                    // Fallback if showNotification not available
+                    localStorage.setItem('wentBackToInitial', 'true');
+                    localStorage.removeItem('activeChatID');
+                    window.dispatchEvent(new CustomEvent('refreshProjects'));
+                    window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }
             } else {
-                alert(message);
-                // Fallback if showNotification not available
+                // User is not working on the removed project - just refresh silently
+                console.log('[Socket.io] User not working on removed project - refreshing list silently');
                 window.dispatchEvent(new CustomEvent('refreshProjects'));
                 window.dispatchEvent(new CustomEvent('refreshNotifications'));
             }

@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     const { useState, useEffect, useRef } = React;
     console.log('[FileUpload] fileUploadComponent.js loading...');
 
@@ -734,21 +734,6 @@
                                                     overflow: 'hidden'
                                                 }
                                             },
-                                            React.createElement('button', {
-                                                id: `upload-menu-download-button-${file.tempID}`,
-                                                onClick: () => {
-                                                    const url = URL.createObjectURL(file.file);
-                                                    const a = document.createElement('a');
-                                                    a.href = url;
-                                                    a.download = file.originalName;
-                                                    a.click();
-                                                    URL.revokeObjectURL(url);
-                                                    setMenuOpen(null);
-                                                },
-                                                style: { width: '100%', padding: '10px 15px', textAlign: 'left', background: 'transparent', border: 'none', fontSize: '13px', color: '#000' },
-                                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
-                                                onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                                            }, 'Download'),
                                             React.createElement('button', {
                                                 id: `upload-menu-rename-button-${file.tempID}`,
                                                 onClick: () => startRename(file.tempID),

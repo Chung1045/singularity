@@ -1017,6 +1017,10 @@
 
             if (savedProjectID && !projectExists) {
                 localStorage.removeItem('selectedProjectID');
+                // If we're falling back to a different project, save it
+                if (selectedID) {
+                    localStorage.setItem('selectedProjectID', selectedID);
+                }
             }
 
             const options = projects.map((project) =>
@@ -1026,6 +1030,7 @@
             dropdown.innerHTML = options;
 
             if (selectedID) {
+                localStorage.setItem('selectedProjectID', selectedID);
                 setSelectedProjectID(selectedID);
                 dropdown.value = selectedID;
                 dropdown.dispatchEvent(new Event('change'));

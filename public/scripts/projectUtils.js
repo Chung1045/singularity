@@ -975,7 +975,14 @@ function createReportItem(reportName, reportID, projectID, reportType) {
             e.stopPropagation();
             setMenuOpen(false);
 
-            if (!confirm(`Are you sure you want to delete "${reportName}"?`)) {
+            const confirmDelete = await ConfirmModal.show({
+                title: 'Warning',
+                message: `Are you sure you want to delete "${reportName}"? This cannot be reversed!`,
+                confirmText: 'Delete',
+                cancelText: 'Cancel'
+            });
+
+            if (!confirmDelete) {
                 return;
             }
 

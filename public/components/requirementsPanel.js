@@ -223,7 +223,14 @@
         };
 
         const deleteReport = async (reportID) => {
-            if (!confirm('Are you sure you want to delete this report?')) return;
+            const confirmDelete = await window.ConfirmModal.show({
+                title: 'Warning',
+                message: 'Are you sure you want to delete this report? This cannot be reversed!',
+                confirmText: 'Delete',
+                cancelText: 'Cancel'
+            });
+
+            if (!confirmDelete) return;
 
             try {
                 const response = await fetch('/api/project/report/delete', {
