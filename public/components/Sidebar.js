@@ -1033,7 +1033,9 @@
                 localStorage.setItem('selectedProjectID', selectedID);
                 setSelectedProjectID(selectedID);
                 dropdown.value = selectedID;
-                dropdown.dispatchEvent(new Event('change'));
+
+                // Notify TempHome / RightSidebar so their selectedProjectID stays in sync
+                window.dispatchEvent(new CustomEvent('projectSelected', { detail: { projectID: selectedID } }));
             }
         }, []);
 
@@ -1400,6 +1402,10 @@
                                 const projectID = e.target.value;
                                 localStorage.setItem('selectedProjectID', projectID);
                                 setSelectedProjectID(projectID);
+
+                                // Notify TempHome / RightSidebar so their selectedProjectID stays in sync
+                                window.dispatchEvent(new CustomEvent('projectSelected', { detail: { projectID } }));
+
                                 // ... reset logic ...
                                 window.currentChatID = null;
                                 localStorage.removeItem('activeChatID');
