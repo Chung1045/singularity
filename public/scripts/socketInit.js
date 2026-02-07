@@ -76,53 +76,31 @@
             const currentProjectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
             const isWorkingOnRemovedProject = currentProjectID === projectID;
             
-            // Only show popup if user is actively working on the project they were removed from
             if (isWorkingOnRemovedProject) {
-                // Show instant alert
-                const message = `You have been removed from project "${projectName}"`;
+                // User is on the removed project - clear state and switch to another project
+                console.log('[Socket.io] User is on removed project - switching away gracefully');
                 
-                if (window.showNotification) {
-                    window.showNotification({
-                        type: 'error',
-                        title: 'Removed from Project',
-                        message: message,
-                        actionText: 'OK'
-                    }).then(() => {
-                        // After user acknowledges the alert, refresh and show in notification
-                        console.log('[Socket.io] User acknowledged removal - refreshing...');
-                        
-                        // Clear current project if it's the one they were removed from
-                        localStorage.setItem('wentBackToInitial', 'true');
-                        localStorage.removeItem('activeChatID');
-                        
-                        // Refresh project list (removes the project from sidebar)
-                        window.dispatchEvent(new CustomEvent('refreshProjects'));
-                        
-                        // Refresh notification panel (shows the removal notification)
-                        window.dispatchEvent(new CustomEvent('refreshNotifications'));
-                        
-                        // Reload the page to clear state
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 500);
-                    });
-                } else {
-                    alert(message);
-                    // Fallback if showNotification not available
-                    localStorage.setItem('wentBackToInitial', 'true');
-                    localStorage.removeItem('activeChatID');
-                    window.dispatchEvent(new CustomEvent('refreshProjects'));
-                    window.dispatchEvent(new CustomEvent('refreshNotifications'));
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
+                // Clear chat state for the removed project
+                window.currentChatID = null;
+                localStorage.removeItem('activeChatID');
+                localStorage.removeItem('activeChatProjectID');
+                localStorage.setItem('wentBackToInitial', 'true');
+                window.pendingChatRestoration = null;
+                
+                // Remove the stored project so refreshProjects falls back to another one
+                localStorage.removeItem('selectedProjectID');
+                
+                // Go back to initial screen (hides chat interface)
+                if (typeof window.backToInitialScreen === 'function') {
+                    window.backToInitialScreen();
                 }
-            } else {
-                // User is not working on the removed project - just refresh silently
-                console.log('[Socket.io] User not working on removed project - refreshing list silently');
-                window.dispatchEvent(new CustomEvent('refreshProjects'));
-                window.dispatchEvent(new CustomEvent('refreshNotifications'));
             }
+            
+            // Refresh project list (removes the project from sidebar, auto-selects another)
+            window.dispatchEvent(new CustomEvent('refreshProjects'));
+            
+            // Refresh notification panel (shows the removal notification via bell icon)
+            window.dispatchEvent(new CustomEvent('refreshNotifications'));
         });
         
         // Listen for project deleted events
