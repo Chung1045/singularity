@@ -1102,7 +1102,7 @@
             };
         }, [fetchProjects]);
 
-        // Check for unread notifications
+        // Check for NEW notifications (unread AND recent)
         const checkUnreadNotifications = useCallback(async () => {
             try {
                 const response = await fetch('/api/notifications/list', {
@@ -1115,10 +1115,16 @@
                     const data = await response.json();
                     const notifications = data.notifications || [];
                     
-                    // Check if there are any unread notifications (isRead === 0 or false)
-                    const hasUnread = notifications.some(n => n.isRead === 0 || n.isRead === false);
-                    setHasUnreadNotifications(hasUnread);
-                    console.log('[Sidebar] Checked notifications - hasUnread:', hasUnread);
+                    // Check if there are any NEW notifications (unread AND created within last 5 minutes)
+                    const hasNewNotifications = notifications.some(n => {
+                        const isUnread = n.isRead === 0 || n.isRead === false;
+                        const notificationAge = new Date() - new Date(n.createdAt);
+                        const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes
+                        return isUnread && isRecent;
+                    });
+                    
+                    setHasUnreadNotifications(hasNewNotifications);
+                    console.log('[Sidebar] Checked notifications - hasNew:', hasNewNotifications);
                 }
             } catch (error) {
                 console.error('[Sidebar] Error checking unread notifications:', error);

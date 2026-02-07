@@ -768,22 +768,35 @@ router.post("/project/collaborators", async (req, res) => {
         return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
+    const fss = require('../services/fsServices');
+
     try {
         // Get project owner
         const ownerUID = await projectDBService.queryProjectOwner(projectID);
-        const ownerQuery = `SELECT uid as userID, userName as username, userEmail as email, firstName, lastName FROM user WHERE uid = ?`;
+        const ownerQuery = `SELECT uid as userID, userName as username, userEmail as email, firstName, lastName, googleAvatarUrl FROM user WHERE uid = ?`;
         
         const owner = await new Promise((resolve, reject) => {
             const db = require('../services/db');
-            db.get(ownerQuery, [ownerUID], (err, row) => {
+            db.get(ownerQuery, [ownerUID], async (err, row) => {
                 if (err) reject(err);
                 else {
                     if (row) {
+                        // Fetch profile picture from MinIO
+                        let profilePic = null;
+                        try {
+                            const pics = await fss.fetchProfilePics([row.userID]);
+                            profilePic = pics[0]?.image || row.googleAvatarUrl || null;
+                        } catch (err) {
+                            console.log('Could not fetch profile pic for owner, using googleAvatarUrl');
+                            profilePic = row.googleAvatarUrl || null;
+                        }
+                        
                         resolve({
                             userID: row.userID,
                             displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
                             username: row.username,
-                            email: row.email
+                            email: row.email,
+                            profilePicture: profilePic
                         });
                     } else {
                         resolve(null);
@@ -794,7 +807,7 @@ router.post("/project/collaborators", async (req, res) => {
 
         // Get confirmed collaborators
         const collabQuery = `
-            SELECT u.uid as userID, u.userName as username, u.userEmail as email, u.firstName, u.lastName
+            SELECT u.uid as userID, u.userName as username, u.userEmail as email, u.firstName, u.lastName, u.googleAvatarUrl
             FROM projectShare ps
             JOIN user u ON ps.collabUid = u.uid
             WHERE ps.projectID = ? AND ps.confirmed = 1
@@ -802,14 +815,30 @@ router.post("/project/collaborators", async (req, res) => {
         
         const collaborators = await new Promise((resolve, reject) => {
             const db = require('../services/db');
-            db.all(collabQuery, [projectID], (err, rows) => {
+            db.all(collabQuery, [projectID], async (err, rows) => {
                 if (err) reject(err);
                 else {
+                    // Fetch profile pictures from MinIO for all collaborators
+                    const userIDs = rows.map(row => row.userID);
+                    let profilePics = {};
+                    
+                    if (userIDs.length > 0) {
+                        try {
+                            const pics = await fss.fetchProfilePics(userIDs);
+                            pics.forEach(pic => {
+                                profilePics[pic.userID] = pic.image;
+                            });
+                        } catch (err) {
+                            console.log('Could not fetch profile pics for collaborators');
+                        }
+                    }
+                    
                     const collabs = rows.map(row => ({
                         userID: row.userID,
                         displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
                         username: row.username,
-                        email: row.email
+                        email: row.email,
+                        profilePicture: profilePics[row.userID] || row.googleAvatarUrl || null
                     }));
                     resolve(collabs);
                 }
@@ -818,7 +847,7 @@ router.post("/project/collaborators", async (req, res) => {
 
         // Get pending invitations
         const inviteQuery = `
-            SELECT ps.shareID as inviteID, u.uid as userID, u.userName as username, u.userEmail as email, u.firstName, u.lastName
+            SELECT ps.shareID as inviteID, u.uid as userID, u.userName as username, u.userEmail as email, u.firstName, u.lastName, u.googleAvatarUrl
             FROM projectShare ps
             JOIN user u ON ps.collabUid = u.uid
             WHERE ps.projectID = ? AND ps.confirmed = 0
@@ -826,15 +855,31 @@ router.post("/project/collaborators", async (req, res) => {
         
         const pendingInvites = await new Promise((resolve, reject) => {
             const db = require('../services/db');
-            db.all(inviteQuery, [projectID], (err, rows) => {
+            db.all(inviteQuery, [projectID], async (err, rows) => {
                 if (err) reject(err);
                 else {
+                    // Fetch profile pictures from MinIO for all pending invites
+                    const userIDs = rows.map(row => row.userID);
+                    let profilePics = {};
+                    
+                    if (userIDs.length > 0) {
+                        try {
+                            const pics = await fss.fetchProfilePics(userIDs);
+                            pics.forEach(pic => {
+                                profilePics[pic.userID] = pic.image;
+                            });
+                        } catch (err) {
+                            console.log('Could not fetch profile pics for pending invites');
+                        }
+                    }
+                    
                     const invites = rows.map(row => ({
                         inviteID: row.inviteID,
                         userID: row.userID,
                         displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
                         username: row.username,
                         email: row.email,
+                        profilePicture: profilePics[row.userID] || row.googleAvatarUrl || null,
                         status: 'pending'
                     }));
                     resolve(invites);
@@ -876,8 +921,10 @@ router.post("/project/search-users", async (req, res) => {
     }
 
     try {
+        const fss = require('../services/fsServices');
+        
         const searchQuery = `
-            SELECT uid as userID, userName as username, userEmail as email, firstName, lastName
+            SELECT uid as userID, userName as username, userEmail as email, firstName, lastName, googleAvatarUrl
             FROM user
             WHERE (
                 userName LIKE ? OR 
@@ -898,12 +945,28 @@ router.post("/project/search-users", async (req, res) => {
         
         const users = await new Promise((resolve, reject) => {
             const db = require('../services/db');
-            db.all(searchQuery, [searchPattern, searchPattern, searchPattern, searchPattern, ownerUID, projectID, projectID], (err, rows) => {
+            db.all(searchQuery, [searchPattern, searchPattern, searchPattern, searchPattern, ownerUID, projectID, projectID], async (err, rows) => {
                 if (err) reject(err);
                 else {
+                    // Fetch profile pictures from MinIO for all search results
+                    const userIDs = rows.map(row => row.userID);
+                    let profilePics = {};
+                    
+                    if (userIDs.length > 0) {
+                        try {
+                            const pics = await fss.fetchProfilePics(userIDs);
+                            pics.forEach(pic => {
+                                profilePics[pic.userID] = pic.image;
+                            });
+                        } catch (err) {
+                            console.log('Could not fetch profile pics for search results');
+                        }
+                    }
+                    
                     const results = rows.map(row => ({
                         userID: row.userID,
                         displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
+                        profilePicture: profilePics[row.userID] || row.googleAvatarUrl || null,
                         username: row.username,
                         email: row.email
                     }));

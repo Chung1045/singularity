@@ -387,7 +387,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                     style: {
 
                         fontSize: '24px',
-                        fontWeight: '700',
+                        fontWeight: '500',
                         fontFamily: 'SF Pro-Bold, Helvetica',
                         color: '#000000',
                         marginBottom: isSmallDesktop ? '80px' : '131px',

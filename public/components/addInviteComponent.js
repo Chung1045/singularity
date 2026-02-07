@@ -356,15 +356,40 @@
                                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                             },
                                 // Avatar
-                                React.createElement('div', {
-                                    style: {
-                                        width: '48px',
-                                        height: '48px',
-                                        borderRadius: '50%',
-                                        backgroundColor: '#6b7280',
-                                        flexShrink: 0
-                                    }
-                                }),
+                                user.profilePicture 
+                                    ? React.createElement('img', {
+                                        src: user.profilePicture,
+                                        alt: user.displayName,
+                                        style: {
+                                            width: '48px',
+                                            height: '48px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            flexShrink: 0
+                                        }
+                                    })
+                                    : React.createElement('div', {
+                                        style: {
+                                            width: '48px',
+                                            height: '48px',
+                                            borderRadius: '50%',
+                                            backgroundColor: '#6b7280',
+                                            flexShrink: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }
+                                    },
+                                        React.createElement('img', {
+                                            src: './img/user.svg',
+                                            alt: 'Default avatar',
+                                            style: {
+                                                width: '24px',
+                                                height: '24px',
+                                                filter: 'brightness(0) invert(1)'
+                                            }
+                                        })
+                                    ),
 
                                 // User info
                                 React.createElement('div', {
@@ -414,21 +439,21 @@
                                         fontSize: '14px',
                                         fontWeight: '500',
                                         color: invitedUsers.has(user.userID) ? '#9ca3af' : '#1c1d21',
-                                        backgroundColor: 'transparent',
+                                        // backgroundColor: 'transparent',
                                         border: 'none',
                                         cursor: invitedUsers.has(user.userID) ? 'default' : 'pointer',
                                         borderRadius: '6px',
                                         fontFamily: '"Inter", Helvetica',
-                                        transition: 'background-color 0.2s',
+                                        // transition: 'background-color 0.2s',
                                         flexShrink: 0
                                     },
                                     onMouseEnter: (e) => {
                                         if (!invitedUsers.has(user.userID)) {
-                                            e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                            // e.currentTarget.style.backgroundColor = '#f3f4f6';
                                         }
                                     },
                                     onMouseLeave: (e) => {
-                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                        // e.currentTarget.style.backgroundColor = 'transparent';
                                     },
                                     onClick: () => {
                                         if (!invitedUsers.has(user.userID)) {

@@ -486,15 +486,40 @@
                                     }
                                 },
                                     // Avatar
-                                    React.createElement('div', {
-                                        style: {
-                                            width: '44px',
-                                            height: '44px',
-                                            borderRadius: '50%',
-                                            backgroundColor: '#6b7280',
-                                            flexShrink: 0
-                                        }
-                                    }),
+                                    projectData.owner.profilePicture 
+                                        ? React.createElement('img', {
+                                            src: projectData.owner.profilePicture,
+                                            alt: projectData.owner.displayName,
+                                            style: {
+                                                width: '44px',
+                                                height: '44px',
+                                                borderRadius: '50%',
+                                                objectFit: 'cover',
+                                                flexShrink: 0
+                                            }
+                                        })
+                                        : React.createElement('div', {
+                                            style: {
+                                                width: '44px',
+                                                height: '44px',
+                                                borderRadius: '50%',
+                                                backgroundColor: '#6b7280',
+                                                flexShrink: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }
+                                        },
+                                            React.createElement('img', {
+                                                src: './img/user.svg',
+                                                alt: 'Default avatar',
+                                                style: {
+                                                    width: '24px',
+                                                    height: '24px',
+                                                    filter: 'brightness(0) invert(1)'
+                                                }
+                                            })
+                                        ),
 
                                     // Owner info
                                     React.createElement('div', {
@@ -573,15 +598,40 @@
                                             }
                                         },
                                             // Avatar
-                                            React.createElement('div', {
-                                                style: {
-                                                    width: '44px',
-                                                    height: '44px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: '#6b7280',
-                                                    flexShrink: 0
-                                                }
-                                            }),
+                                            collaborator.profilePicture 
+                                                ? React.createElement('img', {
+                                                    src: collaborator.profilePicture,
+                                                    alt: collaborator.displayName,
+                                                    style: {
+                                                        width: '44px',
+                                                        height: '44px',
+                                                        borderRadius: '50%',
+                                                        objectFit: 'cover',
+                                                        flexShrink: 0
+                                                    }
+                                                })
+                                                : React.createElement('div', {
+                                                    style: {
+                                                        width: '44px',
+                                                        height: '44px',
+                                                        borderRadius: '50%',
+                                                        backgroundColor: '#6b7280',
+                                                        flexShrink: 0,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }
+                                                },
+                                                    React.createElement('img', {
+                                                        src: './img/user.svg',
+                                                        alt: 'Default avatar',
+                                                        style: {
+                                                            width: '24px',
+                                                            height: '24px',
+                                                            filter: 'brightness(0) invert(1)'
+                                                        }
+                                                    })
+                                                ),
 
                                             // Collaborator info
                                             React.createElement('div', {
@@ -684,15 +734,40 @@
                                             }
                                         },
                                             // Avatar
-                                            React.createElement('div', {
-                                                style: {
-                                                    width: '44px',
-                                                    height: '44px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: '#6b7280',
-                                                    flexShrink: 0
-                                                }
-                                            }),
+                                            invite.profilePicture 
+                                                ? React.createElement('img', {
+                                                    src: invite.profilePicture,
+                                                    alt: invite.displayName,
+                                                    style: {
+                                                        width: '44px',
+                                                        height: '44px',
+                                                        borderRadius: '50%',
+                                                        objectFit: 'cover',
+                                                        flexShrink: 0
+                                                    }
+                                                })
+                                                : React.createElement('div', {
+                                                    style: {
+                                                        width: '44px',
+                                                        height: '44px',
+                                                        borderRadius: '50%',
+                                                        backgroundColor: '#6b7280',
+                                                        flexShrink: 0,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }
+                                                },
+                                                    React.createElement('img', {
+                                                        src: './img/user.svg',
+                                                        alt: 'Default avatar',
+                                                        style: {
+                                                            width: '24px',
+                                                            height: '24px',
+                                                            filter: 'brightness(0) invert(1)'
+                                                        }
+                                                    })
+                                                ),
 
                                             // Invite info
                                             React.createElement('div', {
@@ -748,8 +823,8 @@
                                                                 padding: '4px 10px',
                                                                 fontSize: '12px',
                                                                 fontWeight: '500',
-                                                                color: '#d97706',
-                                                                backgroundColor: '#fef3c7',
+                                                                color: 'rgb(138, 138, 138)',
+                                                                // backgroundColor: '#fef3c7',
                                                                 borderRadius: '6px',
                                                                 fontFamily: '"Inter", Helvetica'
                                                             }
@@ -766,10 +841,10 @@
                                                                 cursor: 'pointer',
                                                                 borderRadius: '6px',
                                                                 fontFamily: '"Inter", Helvetica',
-                                                                transition: 'background-color 0.2s'
+                                                                // transition: 'background-color 0.2s'
                                                             },
-                                                            onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#fee2e2',
-                                                            onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                                                            // onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#fee2e2',
+                                                            // onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                                                             onClick: () => handleRemoveInvite(invite.inviteID, invite.username, invite)
                                                         }, 'Remove Invite')
                                                     ) :
@@ -786,10 +861,10 @@
                                                                 cursor: 'pointer',
                                                                 borderRadius: '6px',
                                                                 fontFamily: '"Inter", Helvetica',
-                                                                transition: 'background-color 0.2s'
+                                                                // transition: 'background-color 0.2s'
                                                             },
-                                                            onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f3f4f6',
-                                                            onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                                                            // onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f3f4f6',
+                                                            // onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                                                             onClick: () => handleReinvite(invite.userID, invite.username)
                                                         }, 'Add Invite') :
                                                         // For 'ready' status or other statuses
