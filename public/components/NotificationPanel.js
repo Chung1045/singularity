@@ -388,7 +388,11 @@
         const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes in milliseconds
         const isNew = isUnread && isRecent;
 
-        const isInvitation = notification.notificationType === 'collaboration_invite';
+        // Check if this is an invitation that requires action from the user
+        // Only show Accept/Decline for "You are invited to join..." messages
+        // Don't show for owner's "You invited..." or collaborator's "You have successfully joined..." messages
+        const isActionableInvitation = notification.notificationType === 'collaboration_invite' && 
+                                       notification.notificationMessage.includes('You are invited to join');
 
         // Handler to mark as read when clicking on the notification
         const handleNotificationClick = (e) => {
@@ -464,8 +468,8 @@
                 }
             }, notification.notificationMessage),
 
-            // Action buttons for invitations
-            isInvitation && React.createElement('div', {
+            // Action buttons for actionable invitations (collaborator receiving invite)
+            isActionableInvitation && React.createElement('div', {
                 id: `notification-actions-${notification.notificationID}`,
                 style: {
                     display: 'flex',
@@ -501,8 +505,8 @@
                 }, 'Decline')
             ),
 
-            // Dismiss button for non-invitation notifications
-            !isInvitation && React.createElement('button', {
+            // Dismiss button for non-actionable notifications (owner's invite notifications and other types)
+            !isActionableInvitation && React.createElement('button', {
                 id: `notification-dismiss-btn-${notification.notificationID}`,
                 onClick: () => onDismiss(notification.notificationID),
                 style: {

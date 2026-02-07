@@ -1221,6 +1221,9 @@
                     localStorage.setItem('sourceExpanded', JSON.stringify(true));
                     window.skipProjectDataLoad = true;
 
+                    // Dispatch event to notify other components (RightSidebar, etc.)
+                    window.dispatchEvent(new CustomEvent('projectSelected', { detail: { projectID: newProjectID } }));
+
                     const clearSidebarLists = () => {
                         const chatHistoryList = document.getElementById('div-chat-history-list');
                         const noChatLabel = document.getElementById('p-label-chat-history-no-entry');

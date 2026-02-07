@@ -170,6 +170,9 @@ async function processProjectInvitationResponse(notificationID, response) {
                 if (ownerUID) {
                     await notifyOwnerInvitationDeclined(projectID, ownerUID, receiveUid);
                 }
+                
+                // Notify collaborator that they declined
+                await notifyCollaboratorDeclined(projectID, receiveUid);
 
                 return { successful: true, message: "Rejected Invitation" };
 
@@ -325,7 +328,7 @@ async function notifyOwnerInvitationSent(projectID, ownerID, invitedUserID) {
             uuid(),
             ownerID,
             now,
-            "create",
+            "invitation",
             projectID,
             `You invited @${invitedUsername} to join ${projectName}`,
             false
@@ -373,7 +376,7 @@ async function notifyOwnerInvitationAccepted(projectID, ownerID, acceptedUserID)
             uuid(),
             ownerID,
             now,
-            "create",
+            "invitation",
             projectID,
             `@${acceptedUsername} accepted your invitation to ${projectName}`,
             false
@@ -411,7 +414,7 @@ async function notifyCollaboratorJoined(projectID, collaboratorID) {
             uuid(),
             collaboratorID,
             now,
-            "create",
+            "invitation",
             projectID,
             `You have successfully joined ${projectName}`,
             false
@@ -459,7 +462,7 @@ async function notifyOwnerInvitationDeclined(projectID, ownerID, declinedUserID)
             uuid(),
             ownerID,
             now,
-            "create",
+            "invitation",
             projectID,
             `@${declinedUsername} declined your invitation to ${projectName}`,
             false
@@ -477,6 +480,44 @@ async function notifyOwnerInvitationDeclined(projectID, ownerID, declinedUserID)
 
     } catch (err) {
         console.error("Owner decline notification failed:", err);
+        return false;
+    }
+}
+
+// Notify collaborator when they decline an invitation
+async function notifyCollaboratorDeclined(projectID, collaboratorID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const projectName = await projectDB.fetchProjectName(projectID);
+        const now = Date.now();
+
+        const params = [
+            uuid(),
+            collaboratorID,
+            now,
+            "invitation",
+            projectID,
+            `You declined the invitation to ${projectName}`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting collaborator decline notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Collaborator decline notification failed:", err);
         return false;
     }
 }
@@ -507,7 +548,7 @@ async function notifyOwnerCollaboratorRemoved(projectID, ownerID, removedUserID)
             uuid(),
             ownerID,
             now,
-            "create",
+            "remove",
             projectID,
             `You removed @${removedUsername} from ${projectName}`,
             false
@@ -634,6 +675,43 @@ async function notifyProjectRenamed(projectID, oldProjectName, newProjectName, c
 }
 
 // Notify all collaborators when project is deleted
+// Notify owner when they delete a project
+async function notifyOwnerProjectDeleted(projectID, projectName, ownerID) {
+    const sql = `
+        INSERT INTO notification
+            (notifID, receiveUid, dateReceive, kind, projectID, message, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const now = Date.now();
+
+        const params = [
+            uuid(),
+            ownerID,
+            now,
+            "delete",
+            null, // Set to null since project is deleted
+            `You deleted project "${projectName}"`,
+            false
+        ];
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, params, (err) => {
+                if (err) {
+                    console.error("Error inserting owner deletion notification:", err);
+                    return reject(err);
+                }
+                resolve(true);
+            });
+        });
+
+    } catch (err) {
+        console.error("Owner deletion notification failed:", err);
+        return false;
+    }
+}
+
 async function notifyCollaboratorsProjectDeleted(projectID, projectName, deletedByUserID) {
     const sql = `
         INSERT INTO notification
@@ -710,6 +788,8 @@ module.exports = {
     notifyOwnerInvitationDeclined,
     notifyOwnerCollaboratorRemoved,
     notifyCollaboratorJoined,
+    notifyCollaboratorDeclined,
     notifyProjectRenamed,
+    notifyOwnerProjectDeleted,
     notifyCollaboratorsProjectDeleted
 }

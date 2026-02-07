@@ -134,12 +134,8 @@ router.post('/project/delete', async (req, res) => {
         const successful = await projectDBService.deleteProject(projectID);
 
         if (successful) {
-            // Create notification for project owner
-            await notifDB.createProjectDeletionNotification(
-                projectID,
-                req.userID,
-                projectName
-            );
+            // Notify owner that they deleted the project
+            await notifDB.notifyOwnerProjectDeleted(projectID, projectName, req.userID);
             
             // Send real-time notifications via Socket.io to kick collaborators
             const io = global.io;

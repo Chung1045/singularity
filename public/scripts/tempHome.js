@@ -72,15 +72,24 @@ const TempHome = ({ csrfToken, userInfo }) => {
         fetchAvatar();
     }, []);
 
-    // Sync project ID from sidebar
+    // Sync project ID from sidebar via event instead of polling
     React.useEffect(() => {
-        const syncProjectID = () => {
-            const projectID = window.getCurrentProjectID?.();
-            setSelectedProjectID(projectID);
+        const handleProjectSelected = (event) => {
+            const projectID = event.detail?.projectID;
+            if (projectID) {
+                console.log('[TempHome] Project selected event received:', projectID);
+                setSelectedProjectID(projectID);
+            }
         };
-        syncProjectID();
-        const interval = setInterval(syncProjectID, 500);
-        return () => clearInterval(interval);
+
+        // Initial sync on mount
+        const initialProjectID = window.getCurrentProjectID?.();
+        if (initialProjectID) {
+            setSelectedProjectID(initialProjectID);
+        }
+
+        window.addEventListener('projectSelected', handleProjectSelected);
+        return () => window.removeEventListener('projectSelected', handleProjectSelected);
     }, []);
 
     // Auto-load chat from URL parameter
