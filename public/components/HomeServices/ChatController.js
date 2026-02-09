@@ -215,9 +215,18 @@ const ChatController = {
         }
 
         bubble.appendChild(progressIndicator);
+
+        const streamContentWrapper = document.createElement('div');
+        streamContentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+        streamContentWrapper.appendChild(bubble);
+
         messageDiv.appendChild(avatar);
-        messageDiv.appendChild(bubble);
+        messageDiv.appendChild(streamContentWrapper);
         messagesContainer.appendChild(messageDiv);
+
+        // Remove any previous suggestion chips
+        removeSuggestionChips();
+
         ChatUtils.scrollToBottom();
 
         let fullResponse = '';
@@ -296,6 +305,18 @@ const ChatController = {
                         await new Promise(resolve => setTimeout(resolve, 500));
                         await window.fetchProjectReports(data.projectID);
                     }
+
+                    // Add timestamp to the streamed message
+                    const tsDiv = document.createElement('div');
+                    tsDiv.className = 'message-timestamp';
+                    tsDiv.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
+                    const tsNow = new Date();
+                    tsDiv.textContent = `${tsNow.getHours().toString().padStart(2, '0')}:${tsNow.getMinutes().toString().padStart(2, '0')}`;
+                    streamContentWrapper.appendChild(tsDiv);
+
+                    // Add suggestion chips after streaming completes
+                    appendSuggestionChips(streamContentWrapper);
+                    ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'error') {
                     ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                     bubble.style.color = '#f44336';
@@ -487,6 +508,90 @@ const ChatController = {
     }
 };
 
+// ===== SUGGESTION CHIPS =====
+
+/**
+ * Predefined follow-up suggestions shown after AI responses.
+ * A random subset is displayed each time.
+ */
+const SUGGESTION_PROMPTS = [
+    'Summarize all the requirements',
+    'List all user stories',
+    'What are the non-functional requirements?',
+    'Are there any missing requirements?',
+    'Compare functional vs non-functional requirements',
+    'What are the key roles identified?',
+    'Suggest improvements for the user stories',
+    'Generate a requirements report',
+    'Generate a user stories report',
+];
+
+/**
+ * Picks a random subset of suggestions (avoiding repeating the last set).
+ */
+let _lastSuggestionSet = [];
+function pickSuggestions(count = 3) {
+    // Filter out prompts used last time to keep it fresh
+    let pool = SUGGESTION_PROMPTS.filter(s => !_lastSuggestionSet.includes(s));
+    if (pool.length < count) pool = [...SUGGESTION_PROMPTS];
+
+    const picked = [];
+    const copy = [...pool];
+    for (let i = 0; i < count && copy.length > 0; i++) {
+        const idx = Math.floor(Math.random() * copy.length);
+        picked.push(copy.splice(idx, 1)[0]);
+    }
+    _lastSuggestionSet = picked;
+    return picked;
+}
+
+/**
+ * Removes any existing suggestion chips from the chat.
+ */
+function removeSuggestionChips() {
+    document.querySelectorAll('.suggestion-chips-container').forEach(el => el.remove());
+}
+
+/**
+ * Creates and appends suggestion chips after an AI message element.
+ * @param {HTMLElement} parentContentWrapper - The content wrapper div of the AI message
+ */
+function appendSuggestionChips(parentContentWrapper) {
+    if (!parentContentWrapper) return;
+
+    const suggestions = pickSuggestions(3);
+
+    const container = document.createElement('div');
+    container.className = 'suggestion-chips-container';
+
+    const label = document.createElement('span');
+    label.className = 'suggestion-chips-label';
+    label.textContent = 'Suggestion';
+    container.appendChild(label);
+
+    suggestions.forEach(text => {
+        const chip = document.createElement('button');
+        chip.className = 'suggestion-chip';
+        chip.textContent = text;
+        chip.onclick = () => {
+            // Fill the input and submit immediately
+            const input = document.getElementById('main-message-input');
+            if (input) {
+                input.value = text;
+                input.style.height = 'auto';
+                input.style.height = input.scrollHeight + 'px';
+            }
+            removeSuggestionChips();
+            if (typeof window.submitConversationRequest === 'function') {
+                window.submitConversationRequest();
+            }
+        };
+        container.appendChild(chip);
+    });
+
+    parentContentWrapper.appendChild(container);
+}
+
 // ===== ADD MESSAGE FUNCTION =====
 
 function addMessage(role, text, conversationID = null, chatSeq = null, attachedFileIDs = []) {
@@ -497,6 +602,9 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     const messageDiv = document.createElement('div');
     messageDiv.id = `chat-message-${role}-${messageTimestamp}`;
     messageDiv.className = role === 'user' ? 'message user-message' : 'message ai-message';
+
+    // Remove any previous suggestion chips when a new message arrives
+    removeSuggestionChips();
 
     if (conversationID) messageDiv.dataset.conversationId = conversationID;
     if (chatSeq) messageDiv.dataset.chatSeq = chatSeq;
@@ -600,6 +708,9 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         const now = new Date();
         timestamp.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         contentWrapper.appendChild(timestamp);
+
+        // Add suggestion chips after AI message
+        appendSuggestionChips(contentWrapper);
 
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(contentWrapper);

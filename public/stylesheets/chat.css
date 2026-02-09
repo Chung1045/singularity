@@ -554,5 +554,54 @@
     }
 }
 
+/* ===== Suggestion Chips (after AI messages) ===== */
+.suggestion-chips-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0 0 0;
+    margin-top: 8px;
+}
 
+.suggestion-chips-label {
+    font-family: 'Inter', Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 2px;
+}
 
+.suggestion-chip {
+    display: block;
+    width: fit-content;
+    text-align: left;
+    font-family: 'Inter', Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    background-color: #e8e8e8;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+    white-space: normal;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+.suggestion-chip:hover {
+    background-color: #d6d6d6;
+    color: #111;
+}
+
+.suggestion-chip:active {
+    background-color: #ccc;
+}
+
+@media (max-width: 768px) {
+    .suggestion-chip {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
