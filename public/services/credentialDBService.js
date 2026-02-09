@@ -1,6 +1,7 @@
 const db = require("./db")
 const uuid = require("uuid-v4")
 const fss = require("./fsServices")
+const argon2 = require('argon2');
 
 // Import findUserByUsername for use in insertGoogleOAuthUserAccount
 const { findUserByUsername } = require("./accountDBService")
@@ -16,10 +17,12 @@ async function insertCredentials(data){
     const now = new Date();
     const dateIsoString = now.toISOString();
 
+    const passwordHash = await argon2.hash(data.credentialPassword);
+
     const params = [
         id,
         data.uid,
-        data.credentialPassword,
+        passwordHash,
         dateIsoString,
     ];
 
@@ -189,16 +192,26 @@ async function savePasskey(data) {
 
 async function checkPassword(data) {
     const query = `
-        SELECT COUNT(*) AS count
+        SELECT credentialPassword
         FROM credential
-        WHERE uid = ? AND credentialPassword = ?
+        WHERE uid = ?
     `;
-    const params = [data.uid, data.password];
+    const params = [data.uid];
 
     return new Promise((resolve, reject) => {
-        db.get(query, params, (err, row) => {
+        db.get(query, params, async (err, row) => {
             if (err) return reject(err);
-            resolve(row.count > 0);
+
+            // No user found
+            if (!row) return resolve(false);
+
+            try {
+                // Verify the password against the stored hash
+                const isValid = await argon2.verify(row.credentialPassword, data.password);
+                resolve(isValid);
+            } catch (verifyErr) {
+                reject(verifyErr);
+            }
         });
     });
 }
@@ -209,7 +222,9 @@ async function updatePassword(data) {
         SET credentialPassword = ?, changeDate = ?
         WHERE uid = ?
     `;
-    const params = [data.password, Date.now(), data.uid];
+
+    let passwordHash = await argon2.hash(data.password);
+    const params = [passwordHash, Date.now(), data.uid];
 
     return new Promise((resolve, reject) => {
         db.run(query, params, function (err) {
@@ -258,7 +273,7 @@ async function updatePasskeyLastUsed(keyID) {
                 console.error(` Error updating passkey lastUsed:`, err);
                 return reject(err);
             }
-            console.log(` Updated lastUsed for passkey: ${keyID} with device: ${deviceInfo}`);
+            // console.log(` Updated lastUsed for passkey: ${keyID} with device: ${deviceInfo}`);
             resolve(true);
         });
     });
