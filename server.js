@@ -4,10 +4,12 @@ const express = require('express');
 const session = require('express-session');
 const csrf = require('@dr.pogodin/csurf');
 const cookieParser = require('cookie-parser');
+const fs = require('fs');
 const passport = require('passport');
 const http = require('http');
+const https = require('https');
 const socketIo = require('socket.io');
-const {serverLogger, logAccessedPath} = require("./public/services/loggingService");
+const {serverLogger, logAccessedPath, logger} = require("./public/services/loggingService");
 
 const startupCheck = require("./public/services/startupCheck");
 const routeManager = require("./public/managers/routesManager");
@@ -20,7 +22,38 @@ const testRouteManager = require("./public/managers/testRoutesManager");
 const PORT = process.env.PORT || 9090;
 
 const app = express();
-const server = http.createServer(app);
+let server = null
+
+async function createServer() {
+    try {
+        if (process.env.ENABLE_HTTPS === 'true') {
+            serverLogger.info("Starting HTTPS Server");
+
+            if (!process.env.SSL_KEY_PATH || !process.env.SSL_CERT_PATH) {
+                throw new Error("SSL Key or Certificate paths not found");
+            }
+
+            const httpsOptions = {
+                key: fs.readFileSync(process.env.SSL_KEY_PATH),
+                cert: fs.readFileSync(process.env.SSL_CERT_PATH),
+            };
+
+            server = https.createServer(httpsOptions, app);
+        } else {
+            serverLogger.warn("Starting HTTP Server, TRAFFIC IS NOT ENCRYPTED!!!");
+            serverLogger.warn("DO NOT USE THIS IN PRODUCTION!!");
+            server = http.createServer(app);
+        }
+
+    } catch (error) {
+        serverLogger.error("UNABLE TO START SERVER:", error);
+        serverLogger.warn("Please check if the server key and certificate files exist and are correctly configured.");
+        process.exit(1);
+    }
+}
+
+createServer()
+
 const io = socketIo(server, {
     cors: {
         origin: "*",
@@ -35,7 +68,7 @@ const userSockets = new Map();
 io.on('connection', (socket) => {
     console.log(`\n[Socket.io] Client connected: ${socket.id}`);
     serverLogger.info(`Socket connected: ${socket.id}`);
-    
+
     // Register user socket
     socket.on('register', (userID) => {
         if (userID) {
@@ -48,7 +81,7 @@ io.on('connection', (socket) => {
             console.log(`[Socket.io] ✗ Registration failed - no userID provided`);
         }
     });
-    
+
     socket.on('disconnect', () => {
         // Remove user from map
         for (const [userID, socketID] of userSockets.entries()) {
@@ -172,7 +205,8 @@ async function startServer() {
         await serverSetUp()
 
         server.listen(PORT, () => {
-            serverLogger.info(`Server running on http://localhost:${PORT}`);
+            const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
+            serverLogger.info(`Server running on ${protocol}://localhost:${PORT}`);
             serverLogger.info('Server is now online');
         });
 
