@@ -189,6 +189,9 @@
 
                 await Promise.all(promises);
                 setNotifications([]);
+                
+                // Trigger refresh of notification badge in sidebar
+                window.dispatchEvent(new CustomEvent('refreshNotifications'));
             } catch (error) {
                 console.error('Error clearing notifications:', error);
             }
