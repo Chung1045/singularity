@@ -68,7 +68,8 @@
         useEffect(() => {
             const handleClickOutside = (event) => {
                 if (panelRef.current && !panelRef.current.contains(event.target) &&
-                    !event.target.closest('#notification-trigger-btn')) {
+                    !event.target.closest('#sidebar-notification-button') &&
+                    !event.target.closest('#sidebar-notification-button-collapsed')) {
                     onClose();
                 }
             };

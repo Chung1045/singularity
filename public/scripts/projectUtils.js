@@ -555,6 +555,7 @@ function createFileItem(fileName, documentID) {
         };
 
         return React.createElement('div', {
+            id: `source-item-${documentID}`,
             className: 'sidebar-items source-item',
             'data-document-id': documentID,
             style: {
@@ -580,6 +581,7 @@ function createFileItem(fileName, documentID) {
             }
         },
             React.createElement('input', {
+                id: `source-item-checkbox-${documentID}`,
                 type: 'checkbox',
                 className: 'source-checkbox',
                 style: { width: "16px", height: "16px", flexShrink: 0, cursor: 'pointer' },
@@ -612,6 +614,7 @@ function createFileItem(fileName, documentID) {
             }, fileName),
             // Menu container - only visible when checkbox is checked
             isChecked && React.createElement('div', {
+                id: `source-item-menu-wrapper-${documentID}`,
                 ref: menuRef,
                 style: {
                     position: 'relative',
@@ -1056,6 +1059,7 @@ function createReportItem(reportName, reportID, projectID, reportType) {
         },
             // Checkbox - click to show/hide three-dot menu
             React.createElement('input', {
+                id: `sidebar-report-checkbox-${reportID}`,
                 type: 'checkbox',
                 className: 'report-checkbox',
                 checked: isChecked,
@@ -1079,6 +1083,8 @@ function createReportItem(reportName, reportID, projectID, reportType) {
 
             // Document icon - different for Requirements vs User Stories
             React.createElement('img', {
+                id: `sidebar-report-icon-${reportID}`,
+                className: 'report-icon',
                 src: iconSrc,
                 alt: '',
                 style: {
@@ -1106,6 +1112,7 @@ function createReportItem(reportName, reportID, projectID, reportType) {
 
             // Options menu container - only visible when checkbox is checked
             isChecked && React.createElement('div', {
+                id: `sidebar-report-menu-wrapper-${reportID}`,
                 ref: menuRef,
                 style: { position: 'relative', marginLeft: '8px' }
             },

@@ -53,10 +53,10 @@ const ChatController = {
 
         addMessage('user', userMessage, conversationID, chatSeq, allAttachedDocuments);
 
-        const typingId = ChatUtils.showTypingIndicator();
+        ChatUtils.showLoadingIndicator();
 
         try {
-            const data = await ChatService.editConversation({
+            await this._streamEditResponse({
                 projectID,
                 chatID: this.currentChatID,
                 chatSeq,
@@ -64,20 +64,135 @@ const ChatController = {
                 message: userMessage,
                 attachedDocumentIDs: allAttachedDocuments
             });
-
-            ChatUtils.removeTypingIndicator(typingId);
-
-            if (data.success) {
-                addMessage('ai', data.response);
-            } else {
-                addMessage('ai', 'Sorry, there was an error editing your message.');
-            }
         } catch (error) {
-            ChatUtils.removeTypingIndicator(typingId);
+            ChatUtils.removeLoadingIndicator();
             addMessage('ai', 'Sorry, there was an error editing your message.');
             console.error('Error editing message:', error);
         } finally {
             EditMode.cancel();
+        }
+    },
+
+    /**
+     * Stream edit response from server (mirrors _streamChatResponse)
+     */
+    async _streamEditResponse(data) {
+        const response = await fetch('/api/agent/conversation-edit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const messagesContainer = document.getElementById('chat-messages');
+        removeSuggestionChips();
+
+        // Prepare AI message (hidden until first chunk)
+        const messageTimestamp = Date.now();
+        const messageDiv = document.createElement('div');
+        messageDiv.id = `chat-message-ai-edit-${messageTimestamp}`;
+        messageDiv.className = 'message ai-message';
+        messageDiv.style.display = 'none';
+
+        const avatar = document.createElement('div');
+        avatar.id = `message-avatar-ai-edit-${messageTimestamp}`;
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
+
+        const bubble = document.createElement('div');
+        bubble.id = `message-bubble-ai-edit-${messageTimestamp}`;
+        bubble.className = 'message-bubble';
+        bubble.dataset.role = 'ai';
+
+        const streamContentWrapper = document.createElement('div');
+        streamContentWrapper.id = `message-content-wrapper-ai-edit-${messageTimestamp}`;
+        streamContentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; max-width: 600px;';
+        streamContentWrapper.appendChild(bubble);
+
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(streamContentWrapper);
+        messagesContainer.appendChild(messageDiv);
+
+        let fullResponse = '';
+        let buffer = '';
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        const processSSEEvent = async (eventData) => {
+            if (!eventData?.trim()) return;
+            try {
+                const jsonData = JSON.parse(eventData);
+
+                if (jsonData.type === 'chunk') {
+                    // console.log('[Edit] Received chunk:', jsonData.content?.substring(0, 50));
+                    ChatUtils.removeLoadingIndicator();
+                    messageDiv.style.display = '';
+
+                    fullResponse += jsonData.content || '';
+                    ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
+                    ChatUtils.scrollToBottom();
+                } else if (jsonData.type === 'done') {
+                    ChatUtils.removeLoadingIndicator();
+                    messageDiv.style.display = '';
+
+                    // Add timestamp
+                    const tsDiv = document.createElement('div');
+                    tsDiv.id = `message-timestamp-ai-edit-${messageTimestamp}`;
+                    tsDiv.className = 'message-timestamp';
+                    tsDiv.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
+                    const tsNow = new Date();
+                    tsDiv.textContent = `${tsNow.getHours().toString().padStart(2, '0')}:${tsNow.getMinutes().toString().padStart(2, '0')}`;
+                    streamContentWrapper.appendChild(tsDiv);
+
+                    appendSuggestionChips(streamContentWrapper);
+                    ChatUtils.scrollToBottom();
+                } else if (jsonData.type === 'error') {
+                    ChatUtils.removeLoadingIndicator();
+                    messageDiv.style.display = '';
+                    ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
+                    bubble.style.color = '#f44336';
+                } else if (jsonData.type === 'stage') {
+                    if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
+                        window.dispatchEvent(new CustomEvent('requirementsUpdated', { detail: { projectID: jsonData.projectID || data.projectID } }));
+                        window.fetchProjectRequirements?.(jsonData.projectID || data.projectID);
+                        window.fetchProjectUserStories?.(jsonData.projectID || data.projectID);
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing SSE event:', e.message);
+            }
+        };
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            let separatorIndex;
+            while ((separatorIndex = buffer.indexOf('\n\n')) !== -1) {
+                const message = buffer.substring(0, separatorIndex);
+                buffer = buffer.substring(separatorIndex + 2);
+                for (const line of message.split('\n')) {
+                    if (line.startsWith('data: ')) {
+                        await processSSEEvent(line.substring(6));
+                    }
+                }
+            }
+        }
+
+        if (buffer.trim()) {
+            for (const line of buffer.split('\n')) {
+                if (line.startsWith('data: ')) {
+                    await processSSEEvent(line.substring(6));
+                }
+            }
         }
     },
 
@@ -104,10 +219,10 @@ const ChatController = {
         ChatUtils.clearInput();
         ChatUtils.clearSelectedFiles();
 
-        const typingId = ChatUtils.showTypingIndicator();
+        ChatUtils.showLoadingIndicator();
 
         try {
-            const result = await this._streamChatResponse(data, typingId);
+            const result = await this._streamChatResponse(data);
             const newChatID = result?.chatID;
             const conversationID = result?.conversationID;
             const chatSeq = result?.chatSeq;
@@ -154,7 +269,7 @@ const ChatController = {
             }
         } catch (error) {
             console.error("Error in submitConversationRequest:", error);
-            ChatUtils.removeTypingIndicator(typingId);
+            ChatUtils.removeLoadingIndicator();
             addMessage('ai', `Sorry, there was an error processing your request: ${error.message || 'Unknown error'}`);
         }
     },
@@ -162,8 +277,8 @@ const ChatController = {
     /**
      * Stream chat response from server
      */
-    async _streamChatResponse(data, typingId) {
-        console.log('=== STREAM CHAT RESPONSE ===');
+    async _streamChatResponse(data) {
+        // console.log('=== STREAM CHAT RESPONSE ===');
 
         const response = await fetch('/api/agent/chat', {
             method: 'POST',
@@ -178,56 +293,36 @@ const ChatController = {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        ChatUtils.removeTypingIndicator(typingId);
-
-        // Create AI message container
         const messagesContainer = document.getElementById('chat-messages');
+
+        // Remove any previous suggestion chips
+        removeSuggestionChips();
+
+        // Prepare the actual AI message (hidden until first chunk arrives)
+        const messageTimestamp = Date.now();
         const messageDiv = document.createElement('div');
+        messageDiv.id = `chat-message-ai-stream-${messageTimestamp}`;
         messageDiv.className = 'message ai-message';
+        messageDiv.style.display = 'none';
 
         const avatar = document.createElement('div');
+        avatar.id = `message-avatar-ai-stream-${messageTimestamp}`;
         avatar.className = 'message-avatar';
         avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
         const bubble = document.createElement('div');
+        bubble.id = `message-bubble-ai-stream-${messageTimestamp}`;
         bubble.className = 'message-bubble';
         bubble.dataset.role = 'ai';
 
-        // Progress indicator
-        const progressIndicator = document.createElement('div');
-        progressIndicator.id = 'ai-progress-indicator';
-        progressIndicator.style.cssText = `
-            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px; font-family: Inter, Helvetica; font-size: 13px; color: #495057;
-        `;
-        progressIndicator.innerHTML = `
-            <span id="stage-message" style="flex: 1;">Working on it...</span>
-            <div class="spinner-small" style="width: 16px; height: 16px; border: 2px solid #dee2e6; border-top-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        `;
-
-        // Add spinner animation
-        if (!document.getElementById('spinner-style')) {
-            const style = document.createElement('style');
-            style.id = 'spinner-style';
-            style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
-            document.head.appendChild(style);
-        }
-
-        bubble.appendChild(progressIndicator);
-
         const streamContentWrapper = document.createElement('div');
-        streamContentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+        streamContentWrapper.id = `message-content-wrapper-ai-stream-${messageTimestamp}`;
+        streamContentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; max-width: 600px;';
         streamContentWrapper.appendChild(bubble);
 
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(streamContentWrapper);
         messagesContainer.appendChild(messageDiv);
-
-        // Remove any previous suggestion chips
-        removeSuggestionChips();
-
-        ChatUtils.scrollToBottom();
 
         let fullResponse = '';
         let chatIDReceived = null;
@@ -264,10 +359,18 @@ const ChatController = {
                         window.fetchProjectUserStories?.(jsonData.projectID || data.projectID);
                     }
                 } else if (jsonData.type === 'chunk') {
+                    // Remove the loading indicator and show the real message on first chunk
+                    ChatUtils.removeLoadingIndicator();
+                    messageDiv.style.display = '';
+
                     fullResponse += jsonData.content || '';
                     ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'done') {
+                    // Ensure loading indicator is removed and message is visible
+                    ChatUtils.removeLoadingIndicator();
+                    messageDiv.style.display = '';
+
                     if (jsonData.conversationID && jsonData.chatSeq) {
                         conversationIDReceived = jsonData.conversationID;
                         chatSeqReceived = jsonData.chatSeq;
@@ -308,6 +411,7 @@ const ChatController = {
 
                     // Add timestamp to the streamed message
                     const tsDiv = document.createElement('div');
+                    tsDiv.id = `message-timestamp-ai-stream-${messageTimestamp}`;
                     tsDiv.className = 'message-timestamp';
                     tsDiv.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
                     const tsNow = new Date();
@@ -318,6 +422,9 @@ const ChatController = {
                     appendSuggestionChips(streamContentWrapper);
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'error') {
+                    ChatUtils.removeLoadingIndicator();
+                    messageDiv.style.display = '';
+
                     ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                     bubble.style.color = '#f44336';
                     throw new Error(jsonData.message);
@@ -562,17 +669,25 @@ function appendSuggestionChips(parentContentWrapper) {
     const suggestions = pickSuggestions(3);
 
     const container = document.createElement('div');
+    container.id = 'suggestion-chips-container';
     container.className = 'suggestion-chips-container';
+    container.style.cssText = 'display: flex; flex-direction: column; gap: 6px; padding: 4px 0 0 0; margin-top: 8px;';
 
     const label = document.createElement('span');
+    label.id = 'suggestion-chips-label';
     label.className = 'suggestion-chips-label';
+    label.style.cssText = "font-family: 'Inter', Helvetica, sans-serif; font-size: 13px; font-weight: 700; color: #222; margin-bottom: 2px;";
     label.textContent = 'Suggestion';
     container.appendChild(label);
 
-    suggestions.forEach(text => {
+    suggestions.forEach((text, index) => {
         const chip = document.createElement('button');
+        chip.id = `suggestion-chip-${index}`;
         chip.className = 'suggestion-chip';
+        chip.style.cssText = "display: block; width: fit-content; text-align: left; font-family: 'Inter', Helvetica, sans-serif; font-size: 13px; font-weight: 500; color: #333; background-color: #e8e8e8; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; white-space: normal; word-break: break-word; max-width: 100%;";
         chip.textContent = text;
+        chip.onmouseenter = () => { chip.style.backgroundColor = '#d6d6d6'; };
+        chip.onmouseleave = () => { chip.style.backgroundColor = '#e8e8e8'; };
         chip.onclick = () => {
             // Fill the input and submit immediately
             const input = document.getElementById('main-message-input');
@@ -610,6 +725,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     if (chatSeq) messageDiv.dataset.chatSeq = chatSeq;
 
     const avatar = document.createElement('div');
+    avatar.id = `message-avatar-${role}-${messageTimestamp}`;
     avatar.className = 'message-avatar';
 
     if (role === 'user') {
@@ -620,6 +736,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     }
 
     const bubble = document.createElement('div');
+    bubble.id = `message-bubble-${role}-${messageTimestamp}`;
     bubble.className = 'message-bubble';
 
     if (role === 'ai') {
@@ -632,12 +749,14 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     // Build message structure
     if (role === 'user') {
         const contentWrapper = document.createElement('div');
+        contentWrapper.id = `message-content-wrapper-user-${messageTimestamp}`;
         contentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; max-width: 600px;';
 
         contentWrapper.appendChild(bubble);
 
         // Timestamp
         const timestamp = document.createElement('div');
+        timestamp.id = `message-timestamp-user-${messageTimestamp}`;
         timestamp.className = 'message-timestamp';
         timestamp.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
         const now = new Date();
@@ -646,11 +765,13 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
         // Bottom row with files
         const bottomRow = document.createElement('div');
+        bottomRow.id = `message-bottom-row-${messageTimestamp}`;
         bottomRow.className = 'message-bottom-row';
         bottomRow.style.cssText = 'display: flex; align-items: center; gap: 8px; padding-left: 12px; min-height: 24px;';
 
         if (attachedFileIDs?.length) {
             const filesContainer = document.createElement('div');
+            filesContainer.id = `message-files-container-${messageTimestamp}`;
             filesContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; flex: 1;';
 
             attachedFileIDs.forEach(fileId => {
@@ -678,10 +799,12 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
         // Avatar wrapper with edit/cancel buttons
         const avatarWrapper = document.createElement('div');
+        avatarWrapper.id = `message-avatar-wrapper-${messageTimestamp}`;
         avatarWrapper.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 4px;';
         avatarWrapper.appendChild(avatar);
 
         const editBtn = document.createElement('button');
+        editBtn.id = `message-edit-btn-${messageTimestamp}`;
         editBtn.className = 'message-edit-btn';
         editBtn.innerHTML = 'Edit';
         editBtn.style.cssText = 'background: transparent; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #999; opacity: 0; margin-top: 9px;';
@@ -689,6 +812,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         avatarWrapper.appendChild(editBtn);
 
         const cancelBtn = document.createElement('button');
+        cancelBtn.id = `message-cancel-btn-${messageTimestamp}`;
         cancelBtn.className = 'message-cancel-btn';
         cancelBtn.innerHTML = 'Cancel';
         cancelBtn.style.cssText = 'background: transparent; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #e57373; display: none; margin-top: 8px;';
@@ -699,10 +823,12 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         messageDiv.appendChild(contentWrapper);
     } else {
         const contentWrapper = document.createElement('div');
-        contentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+        contentWrapper.id = `message-content-wrapper-ai-${messageTimestamp}`;
+        contentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; max-width: 600px;';
         contentWrapper.appendChild(bubble);
 
         const timestamp = document.createElement('div');
+        timestamp.id = `message-timestamp-ai-${messageTimestamp}`;
         timestamp.className = 'message-timestamp';
         timestamp.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
         const now = new Date();

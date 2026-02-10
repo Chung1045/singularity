@@ -100,6 +100,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
         const displayName = (chatThreadName?.trim() || 'New Chat');
 
         return React.createElement('div', {
+            id: `chat-history-item-${chatID}`,
             className: 'sidebar-items chat-history-item',
             'data-chat-id': chatID,
             'data-thread-name': displayName,
@@ -126,6 +127,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
             onClick: handleClick
         },
             React.createElement('p', {
+                id: `chat-history-item-name-${chatID}`,
+                className: 'chat-item-name',
                 style: {
                     flexGrow: 1,
                     margin: 0,
@@ -136,6 +139,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 }
             }, displayName),
             React.createElement('div', {
+                id: `chat-history-item-menu-wrapper-${chatID}`,
                 ref: menuRef,
                 className: 'chat-menu',
                 style: {
@@ -145,6 +149,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 }
             },
                 React.createElement('img', {
+                    id: `chat-history-item-menu-button-${chatID}`,
+                    className: 'chat-menu-button',
                     style: {
                         padding: "4px",
                         flexShrink: 0,
@@ -162,6 +168,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 }),
                 menuOpen && React.createElement('div', {
+                    id: `chat-history-item-dropdown-${chatID}`,
+                    className: 'chat-menu-dropdown',
                     style: {
                         position: 'absolute',
                         top: '100%',
@@ -177,6 +185,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 },
                     React.createElement('button', {
+                        id: `chat-history-item-delete-button-${chatID}`,
+                        className: 'chat-menu-delete-button',
                         style: {
                             width: '100%',
                             padding: '12px 14.5px',

@@ -211,7 +211,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
         }
 
         const projectTitle = projectDropdown.options[projectDropdown.selectedIndex]?.text || 'Project Analysis';
-        const typingId = ChatUtils.showTypingIndicator();
+        ChatUtils.showLoadingIndicator();
 
         try {
             const response = await fetch('/api/agent/analyze-documents', {
@@ -225,7 +225,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 })
             });
 
-            ChatUtils.removeTypingIndicator(typingId);
+            ChatUtils.removeLoadingIndicator();
             const data = await response.json();
 
             if (response.ok && data.success) {
@@ -239,7 +239,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 window.showNotification?.({ type: 'error', title: 'Analysis Failed', message: data.message || 'Unable to analyze documents.', actionText: 'OK' });
             }
         } catch (error) {
-            ChatUtils.removeTypingIndicator(typingId);
+            ChatUtils.removeLoadingIndicator();
             addMessage('ai', 'Sorry, there was an error analyzing the documents.');
             window.showNotification?.({ type: 'error', title: 'Error', message: 'An error occurred while analyzing documents.', actionText: 'OK' });
         }
@@ -365,11 +365,12 @@ const TempHome = ({ csrfToken, userInfo }) => {
 
                     // Input field
                     React.createElement('form', {
+                        id: 'input-field-form',
                         className: 'input-field',
                         role: 'search',
                         onSubmit: (e) => { e.preventDefault(); submitConversationRequest(); }
                     },
-                        React.createElement('div', { style: { position: 'relative' } },
+                        React.createElement('div', { id: 'input-field-attachment-wrapper', style: { position: 'relative' } },
                             // Attachment menu button
                             React.createElement('button', {
                                 id: 'attachment-menu-button',
@@ -377,7 +378,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                                 className: 'input-field-button',
                                 onClick: (e) => { e.stopPropagation(); setAttachmentMenuOpen(!attachmentMenuOpen); }
                             },
-                                React.createElement('img', { className: 'vector', src: './img/paperclip.svg', alt: 'Attach', style: { width: '20px', height: '20px' } })
+                                React.createElement('img', { id: 'attachment-menu-icon', className: 'vector', src: './img/paperclip.svg', alt: 'Attach', style: { width: '20px', height: '20px' } })
                             ),
 
                             // Attachment dropdown
@@ -391,11 +392,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
                                 }
                             },
                                 React.createElement('button', {
+                                    id: 'attachment-dropdown-upload-files',
                                     type: 'button',
                                     style: { width: '100%', padding: '12px 14.5px', border: 'none', backgroundColor: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: '13.3px', color: '#000', fontWeight: 500 },
                                     onClick: handleUploadFiles
                                 }, 'Upload Files'),
                                 React.createElement('button', {
+                                    id: 'attachment-dropdown-select-files',
                                     type: 'button',
                                     style: { width: '100%', padding: '12px 14.5px', border: 'none', backgroundColor: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: '13.3px', color: '#000', fontWeight: 500 },
                                     onClick: handleSelectUploadedFiles
@@ -422,11 +425,12 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         }),
 
                         React.createElement('button', {
+                            id: 'input-field-send-button',
                             type: 'submit',
                             className: 'input-field-button',
                             onClick: (e) => { e.preventDefault(); submitConversationRequest(); }
                         },
-                            React.createElement('img', { className: 'img', src: './img/Send.svg', alt: '' })
+                            React.createElement('img', { id: 'input-field-send-icon', className: 'img', src: './img/Send.svg', alt: '' })
                         )
                     )
                 )

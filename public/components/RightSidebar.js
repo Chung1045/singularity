@@ -77,6 +77,7 @@
             },
             // Resizing Handle (matching left sidebar exactly)
             React.createElement('div', {
+                id: 'right-sidebar-resizer',
                 className: 'right-sidebar-resizer',
                 onMouseDown: startResizing,
                 style: {
@@ -96,6 +97,7 @@
             }),
             // Sidebar content
             React.createElement('div', {
+                id: 'right-sidebar-content',
                 className: 'right-sidebar-content',
                 style: {
                     flex: 1,
@@ -114,6 +116,7 @@
                     },
                     // Header "Reports"
                     React.createElement('h2', {
+                            id: 'right-sidebar-reports-header',
                             style: {
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '700',
@@ -158,11 +161,13 @@
                             }
                         },
                         React.createElement('img', {
+                            id: 'btn-generate-user-stories-icon',
                             src: './img/UserStoriesIcon.svg',
                             alt: '',
                             style: { width: '18px', height: '18px', flexShrink: 0 }
                         }),
                         React.createElement('span', {
+                            id: 'btn-generate-user-stories-text',
                             style: {
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
@@ -207,11 +212,13 @@
                             }
                         },
                         React.createElement('img', {
+                            id: 'btn-generate-requirements-icon',
                             src: './img/RequirementsIcon.svg',
                             alt: '',
                             style: { width: '18px', height: '18px', flexShrink: 0 }
                         }),
                         React.createElement('span', {
+                            id: 'btn-generate-requirements-text',
                             style: {
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
@@ -225,6 +232,7 @@
 
                     // Horizontal divider
                     React.createElement('hr', {
+                        id: 'right-sidebar-divider',
                         style: {
                             width: '100%',
                             border: 'none',
@@ -264,11 +272,14 @@
                             onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
                         },
                         React.createElement('img', {
+                            id: 'right-sidebar-manage-requirements-icon',
                             src: './img/edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
                             alt: '',
                             style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)', flexShrink: 0 }
                         }),
-                        'Manage Requirements / Stories'
+                        React.createElement('span', {
+                            id: 'right-sidebar-manage-requirements-text'
+                        }, 'Manage Requirements / Stories')
                     ),
 
                     // Requirements List

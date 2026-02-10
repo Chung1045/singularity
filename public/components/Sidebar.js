@@ -706,6 +706,7 @@
 
         return React.createElement(React.Fragment, null,
             React.createElement('div', {
+                id: 'sidebar-project-options-wrapper',
                 ref: menuRef,
                 style: {
                     position: 'relative',
@@ -714,6 +715,7 @@
                 }
             },
             React.createElement('button', {
+                    id: 'sidebar-project-options-button',
                     type: 'button',
                     'aria-label': 'Project options',
                     onClick: (e) => {
@@ -739,6 +741,7 @@
                     }
                 },
                 React.createElement('img', {
+                    id: 'sidebar-project-options-icon',
                     src: './img/more_vert_24.svg',
                     alt: 'Options',
                     style: {
@@ -749,6 +752,7 @@
             ),
 
             menuOpen && React.createElement('div', {
+                    id: 'sidebar-project-options-menu',
                     style: {
                         position: 'absolute',
                         top: '100%',
@@ -765,6 +769,7 @@
                 },
                 // Rename option
                 React.createElement('button', {
+                    id: 'sidebar-project-option-rename',
                     style: {
                         width: '100%',
                         padding: '12px 14.5px',
@@ -793,6 +798,7 @@
 
                 // Share option
                 React.createElement('button', {
+                    id: 'sidebar-project-option-share',
                     style: {
                         width: '100%',
                         padding: '12px 14.5px',
@@ -821,6 +827,7 @@
 
                 // Delete option
                 React.createElement('button', {
+                    id: 'sidebar-project-option-delete',
                     style: {
                         width: '100%',
                         padding: '12px 14.5px',
@@ -1314,6 +1321,7 @@
             },
             // Resizing Handle
             !sidebarCollapsed && React.createElement('div', {
+                id: 'sidebar-resizer',
                 className: 'sidebar-resizer',
                 onMouseDown: startResizing,
                 style: {
@@ -1332,12 +1340,13 @@
                 onMouseLeave: (e) => e.target.style.borderRight = '1px solid transparent'
             }),
 
-            React.createElement('nav', null,
+            React.createElement('nav', { id: 'sidebar-nav' },
                 React.createElement('div', {
+                        id: 'sidebar-header-wrapper',
                         style: { display: "flex" }
                     },
                     React.createElement('button', {
-                            id: 'sidebar-icon',
+                            id: 'sidebar-header-logo',
                             style: {
                                 background: 'none',
                                 border: 'none',
@@ -1349,6 +1358,7 @@
                             'aria-label': 'Go to home'
                         },
                         React.createElement('img', {
+                            id: 'sidebar-header-logo-img',
                             className: 'union',
                             src: './img/union.svg',
                             alt: 'Singularity Icon'
@@ -1358,6 +1368,7 @@
 
                 // Project dropdown
                 React.createElement('div', {
+                        id: 'sidebar-project-dropdown-wrapper',
                         style: {
                             display: !sidebarCollapsed ? 'flex' : 'none',
                             alignItems: 'center',
@@ -1368,6 +1379,7 @@
                         }
                     },
                     React.createElement('div', {
+                            id: 'sidebar-project-select-wrapper',
                             style: {
                                 position: 'relative',
                                 flex: '1',
@@ -1378,7 +1390,7 @@
                             }
                         },
                         React.createElement('select', {
-                            id: "select-project-drop-down",
+                            id: 'select-project-drop-down',
                             style: {
                                 flex: '1',
                                 padding: '10px 14px',
@@ -1456,7 +1468,7 @@
                     ),
 
                     React.createElement('button', {
-                            id: 'btn-create-project',
+                            id: 'sidebar-create-project-button',
                             type: 'button',
                             'aria-label': 'Create new project',
                             onClick: () => setShowCreateProjectModal(true),
@@ -1478,6 +1490,7 @@
                             onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
                         },
                         React.createElement('img', {
+                            id: 'sidebar-create-project-icon',
                             src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                             alt: 'Create project',
                             style: { width: '20px', height: '20px' }
@@ -1487,7 +1500,7 @@
 
                 // New Chat Button
                 hasProjects && React.createElement('button', {
-                        id: 'btn-new-chat',
+                        id: 'sidebar-new-chat-button',
                         type: 'button',
                         'aria-label': 'Create new chat',
                         onClick: () => {
@@ -1519,6 +1532,7 @@
                         onMouseLeave: (e) => { e.target.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.2)'; }
                     },
                     React.createElement('img', {
+                        id: 'sidebar-new-chat-icon',
                         src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                         alt: '',
                         style: {
@@ -1530,13 +1544,14 @@
                         }
                     }),
                     React.createElement('span', {
+                        id: 'sidebar-new-chat-label',
                         style: { flex: '1 1 0%', textAlign: 'center' }
                     }, 'New Chat')
                 ),
 
                 // Search bar
                 React.createElement('form', {
-                        id: 'sidebar-search',
+                        id: 'sidebar-search-form',
                         className: 'search-file-field',
                         role: 'search',
                         'aria-label': 'Search files',
@@ -1559,12 +1574,13 @@
                         alt: ''
                     }),
                     React.createElement('label', {
-                        htmlFor: 'search-files-input',
+                        id: 'sidebar-search-label',
+                        htmlFor: 'sidebar-search-input',
                         className: 'visually-hidden'
                     }, 'Search files'),
                     React.createElement('input', {
                         type: 'search',
-                        id: 'search-files-input',
+                        id: 'sidebar-search-input',
                         className: 'text-wrapper-4',
                         placeholder: 'Search files',
                         'aria-label': 'Search files',
@@ -1580,12 +1596,12 @@
 
                 // Scrollable wrapper
                 React.createElement('div', {
-                        className: 'sidebar-scrollable-content',
-                        id: 'sidebar-scrollable-wrapper'
+                        id: 'sidebar-scrollable-wrapper',
+                        className: 'sidebar-scrollable-content'
                     },
                     // History section
                     React.createElement('div', {
-                            id: 'sidebar-history-wrapper',
+                            id: 'sidebar-history-section',
                             style: {marginBottom: '10px', width: 'calc(100% - 40px)'}
                         },
                         React.createElement('button', {
@@ -1615,13 +1631,15 @@
                                     outline: 'none'
                                 }
                             },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
+                            React.createElement('div', { id: 'sidebar-history-button-content', style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
                                 React.createElement('img', {
+                                    id: 'sidebar-history-icon',
                                     className: 'slash-circle',
                                     src: './img/slash-circle-1.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
+                                    id: 'sidebar-history-label',
                                     className: 'text-wrapper-2',
                                     // --- NEW: Text Truncation ---
                                     style: {
@@ -1634,11 +1652,13 @@
                                 }, 'History')
                             ),
                             React.createElement('span', {
+                                    id: 'sidebar-history-chevron-wrapper',
                                     className: 'submenu',
                                     'aria-hidden': 'true',
                                     style: { flexShrink: 0 }
                                 },
                                 React.createElement('img', {
+                                    id: 'sidebar-history-chevron',
                                     className: 'text-wrapper-3',
                                     src: './img/down-chevron-black-16112.svg',
                                     alt: '',
@@ -1664,11 +1684,11 @@
                                 }
                             },
                             React.createElement('div', {
-                                id: "div-chat-history-list",
+                                id: 'div-chat-history-list',
                                 style: { display: "flex", flexDirection: "column", gap: "5px", width: 'calc(100% + 40px)', margin: '0 50px 0 -20px' }
                             }),
                             React.createElement('p', {
-                                id: "p-label-chat-history-no-entry",
+                                id: 'p-label-chat-history-no-entry',
                                 style: { fontSize: '14px', color: '#666' }
                             }, 'Chat history is empty.')
                         )
@@ -1676,7 +1696,7 @@
 
                     // Source section
                     React.createElement('div', {
-                            id: 'sidebar-source-wrapper',
+                            id: 'sidebar-source-section',
                             style: {marginBottom: '10px', width: 'calc(100% - 40px)'}
                         },
                         React.createElement('button', {
@@ -1706,13 +1726,15 @@
                                     outline: 'none'
                                 }
                             },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
+                            React.createElement('div', { id: 'sidebar-source-button-content', style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
                                 React.createElement('img', {
+                                    id: 'sidebar-source-icon',
                                     className: 'slash-circle',
                                     src: './img/slash-circle-1.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
+                                    id: 'sidebar-source-label',
                                     className: 'text-wrapper-2',
                                     style: {
                                         flex: 1,
@@ -1724,11 +1746,13 @@
                                 }, 'Source')
                             ),
                             React.createElement('span', {
+                                    id: 'sidebar-source-chevron-wrapper',
                                     className: 'submenu',
                                     'aria-hidden': 'true',
                                     style: { flexShrink: 0 }
                                 },
                                 React.createElement('img', {
+                                    id: 'sidebar-source-chevron',
                                     className: 'text-wrapper-3',
                                     src: './img/down-chevron-black-16112.svg',
                                     alt: '',
@@ -1786,6 +1810,7 @@
                                     onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
                                 },
                                 React.createElement('img', {
+                                    id: 'sidebar-source-upload-icon',
                                     src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                     style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)' }
                                 }),
@@ -1833,13 +1858,15 @@
                                     paddingRight: '20px'
                                 }
                             },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
+                            React.createElement('div', { id: 'sidebar-requirements-button-content', style: { display: 'flex', alignItems: 'center', ...(sidebarCollapsed ? {} : { flex: 1 }), minWidth: 0, overflow: 'hidden' } },
                                 React.createElement('img', {
+                                    id: 'sidebar-requirements-icon',
                                     className: 'slash-circle',
                                     src: './img/slash-circle-1.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
+                                    id: 'sidebar-requirements-label',
                                     className: 'text-wrapper-2',
                                     style: {
                                         flex: 1,
@@ -1851,11 +1878,13 @@
                                 }, 'Report')
                             ),
                             React.createElement('span', {
+                                    id: 'sidebar-requirements-chevron-wrapper',
                                     className: 'submenu',
                                     'aria-hidden': 'true',
                                     style: { flexShrink: 0 }
                                 },
                                 React.createElement('img', {
+                                    id: 'sidebar-requirements-chevron',
                                     className: 'text-wrapper-3',
                                     src: './img/down-chevron-black-16112.svg',
                                     alt: '',
@@ -1911,6 +1940,7 @@
                                     onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
                                 },
                                 React.createElement('img', {
+                                    id: 'sidebar-manage-requirements-icon',
                                     src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                                     style: { width: '16px', height: '16px', filter: 'brightness(0) invert(1)' }
                                 }),
@@ -1930,17 +1960,17 @@
 
                 // Horizontal divider
                 React.createElement('div', {
-                        id: 'sidebar-divider-for-username-and-toggle',
+                        id: 'sidebar-divider-wrapper',
                         className: 'horizontal-inset',
                         role: 'separator',
                         style: {marginBottom: '20px'}
                     },
-                    React.createElement('hr', null)
+                    React.createElement('hr', { id: 'sidebar-divider-line' })
                 ),
 
                 // Notification trigger (expanded view)
                 !sidebarCollapsed && React.createElement('div', {
-                        id: 'notification-trigger-wrapper-expanded',
+                        id: 'sidebar-notification-wrapper-expanded',
                         style: {
                             padding: '0 0 0 0',
                             marginLeft: '0',
@@ -1948,7 +1978,7 @@
                         }
                     },
                     React.createElement('button', {
-                        id: 'notification-trigger-btn',
+                        id: 'sidebar-notification-button',
                         onClick: () => {
                             setNotificationPanelOpen(!notificationPanelOpen);
                             // Badge will be cleared automatically when notifications are marked as read
@@ -1974,6 +2004,7 @@
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                     },
                         React.createElement('div', {
+                            id: 'sidebar-notification-icon-wrapper',
                             style: {
                                 position: 'relative',
                                 display: 'flex',
@@ -1982,6 +2013,7 @@
                             }
                         },
                             React.createElement('svg', {
+                                id: 'sidebar-notification-icon',
                                 width: '20',
                                 height: '20',
                                 viewBox: '0 0 24 24',
@@ -1996,6 +2028,7 @@
                             ),
                             // Red dot indicator for unread notifications
                             hasUnreadNotifications && React.createElement('span', {
+                                id: 'sidebar-notification-unread-badge',
                                 style: {
                                     position: 'absolute',
                                     top: '-2px',
@@ -2009,6 +2042,7 @@
                             })
                         ),
                         React.createElement('span', {
+                            id: 'sidebar-notification-label',
                             style: {
                                 fontSize: '14px',
                                 color: '#333',
@@ -2020,7 +2054,7 @@
 
                 // Notification trigger (collapsed view)
                 sidebarCollapsed && React.createElement('div', {
-                        id: 'notification-trigger-wrapper-collapsed',
+                        id: 'sidebar-notification-wrapper-collapsed',
                         style: {
                             display: 'flex',
                             justifyContent: 'center',
@@ -2028,7 +2062,7 @@
                         }
                     },
                     React.createElement('button', {
-                        id: 'notification-trigger-btn-collapsed',
+                        id: 'sidebar-notification-button-collapsed',
                         onClick: () => {
                             setNotificationPanelOpen(!notificationPanelOpen);
                             // Badge will be cleared automatically when notifications are marked as read
@@ -2067,6 +2101,7 @@
                         ),
                         // Red dot indicator for unread notifications
                         hasUnreadNotifications && React.createElement('span', {
+                            id: 'sidebar-notification-unread-badge-collapsed',
                             style: {
                                 position: 'absolute',
                                 top: '6px',
@@ -2090,9 +2125,9 @@
                     sidebarCollapsed: sidebarCollapsed
                 }),
 
-                // Username section
+                // Profile section
                 React.createElement('div', {
-                        id: 'sidebar-username',
+                        id: 'sidebar-profile-section',
                         style: {
                             width: '100%',
                             marginBottom: '20px',
@@ -2102,7 +2137,7 @@
                         onClick: toggleUserMenu
                     },
                     !sidebarCollapsed && React.createElement('a', {
-                            id: 'sidebar-user-avatar-expanded',
+                            id: 'sidebar-profile-avatar',
                             href: '#',
                             className: 'username-display',
                             style: {
@@ -2118,7 +2153,7 @@
                             onClick: (e) => e.preventDefault()
                         },
                         React.createElement('img', {
-                            id: 'sidebar-user-avatar-img',
+                            id: 'sidebar-profile-avatar-img',
                             className: 'user',
                             src: avatarUrl,
                             alt: 'User',
@@ -2129,10 +2164,10 @@
                                 objectFit: 'cover'
                             }
                         }),
-                        React.createElement('span', { className: 'text-wrapper-6' }, username),
+                        React.createElement('span', { id: 'sidebar-profile-username', className: 'text-wrapper-6' }, username),
 
                         userMenuOpen && React.createElement('div', {
-                                id: 'sidebar-user-menu-expanded',
+                                id: 'sidebar-profile-dropdown',
                                 style: {
                                     position: 'absolute',
                                     bottom: '100%',
@@ -2205,7 +2240,7 @@
                     ),
 
                     sidebarCollapsed && React.createElement('button', {
-                            id: 'sidebar-user-avatar-collapsed',
+                            id: 'sidebar-profile-avatar-collapsed',
                             style: {
                                 position: 'relative',
                                 width: '48px',
@@ -2224,6 +2259,7 @@
                             }
                         },
                         React.createElement('img', {
+                            id: 'sidebar-profile-avatar-img-collapsed',
                             src: avatarUrl,
                             alt: 'User',
                             style: {
@@ -2235,7 +2271,7 @@
                         }),
 
                         sidebarCollapsed && userMenuOpen && React.createElement('div', {
-                                id: 'sidebar-user-menu-collapsed',
+                                id: 'sidebar-profile-dropdown-collapsed',
                                 style: {
                                     position: 'fixed',
                                     bottom: '10px',
@@ -2330,9 +2366,9 @@
                     )
                 ),
 
-                // Toggle button at bottom
+                // Toggle/collapse button at bottom
                 React.createElement('button', {
-                        id: 'sidebar-toggle',
+                        id: 'sidebar-collapse-button',
                         className: 'trigger',
                         type: 'button',
                         'aria-label': 'Toggle sidebar',
@@ -2341,6 +2377,7 @@
                         style: {marginBottom: '20px', outline: 'none'}
                     },
                     React.createElement('img', {
+                        id: 'sidebar-collapse-icon',
                         src: './img/double-arrow-right-svgrepo-com.svg',
                         alt: 'Toggle sidebar',
                         style: {width: '24px', height: '24px'}
@@ -2350,7 +2387,7 @@
 
             // Create Project Modal
             showCreateProjectModal && React.createElement('div', {
-                    id: 'create-new-project-modal',
+                    id: 'sidebar-create-project-modal-overlay',
                     style: {
                         position: 'fixed',
                         top: 0,
@@ -2366,6 +2403,7 @@
                     onClick: handleSkipCreateProject
                 },
                 React.createElement('div', {
+                        id: 'sidebar-create-project-modal-content',
                         style: {
                             backgroundColor: '#ffffff',
                             borderRadius: '15px',
@@ -2377,6 +2415,7 @@
                         onClick: (e) => e.stopPropagation()
                     },
                     React.createElement('h2', {
+                        id: 'sidebar-create-project-modal-title',
                         style: {
                             margin: '0 0 10px 0',
                             fontSize: '24px',
@@ -2386,6 +2425,7 @@
                         }
                     }, 'Create New Project'),
                     React.createElement('p', {
+                        id: 'sidebar-create-project-modal-description',
                         style: {
                             margin: '0 0 20px 0',
                             fontSize: '14px',
@@ -2394,6 +2434,7 @@
                         }
                     }, 'Enter a name for your new project or skip to create it later.'),
                     React.createElement('input', {
+                        id: 'sidebar-create-project-modal-input',
                         type: 'text',
                         placeholder: 'Project Name',
                         value: newProjectName,
@@ -2416,6 +2457,7 @@
                         }
                     }),
                     React.createElement('div', {
+                            id: 'sidebar-create-project-modal-actions',
                             style: {
                                 display: 'flex',
                                 gap: '10px',
@@ -2423,6 +2465,7 @@
                             }
                         },
                         React.createElement('button', {
+                            id: 'sidebar-create-project-modal-skip',
                             onClick: handleSkipCreateProject,
                             style: {
                                 padding: '10px 20px',
@@ -2440,6 +2483,7 @@
                             onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
                         }, 'Skip'),
                         React.createElement('button', {
+                            id: 'sidebar-create-project-modal-submit',
                             onClick: handleCreateProject,
                             style: {
                                 padding: '10px 20px',
@@ -2462,6 +2506,7 @@
 
             // Success Notification
             showSuccessNotification && React.createElement('div', {
+                    id: 'sidebar-success-notification',
                     style: {
                         position: 'fixed',
                         top: '20px',
@@ -2482,13 +2527,15 @@
                     }
                 },
                 React.createElement('span', {
+                    id: 'sidebar-success-notification-icon',
                     style: { fontSize: '20px', fontWeight: 'bold' }
                 }, '✓'),
-                React.createElement('span', null, successMessage)
+                React.createElement('span', { id: 'sidebar-success-notification-message' }, successMessage)
             ),
 
             // Error Notification
             showErrorNotification && React.createElement('div', {
+                    id: 'sidebar-error-notification',
                     style: {
                         position: 'fixed',
                         top: '20px',
@@ -2509,9 +2556,10 @@
                     }
                 },
                 React.createElement('span', {
+                    id: 'sidebar-error-notification-icon',
                     style: { fontSize: '20px', fontWeight: 'bold' }
                 }, '✕'),
-                React.createElement('span', null, errorMessage)
+                React.createElement('span', { id: 'sidebar-error-notification-message' }, errorMessage)
             )
         );
     };

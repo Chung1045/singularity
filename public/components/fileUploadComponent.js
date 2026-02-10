@@ -14,6 +14,7 @@
         const [editingFilename, setEditingFilename] = useState('');
         const headerCheckboxRef = useRef(null);
         const renameContainerRef = useRef(null);
+        const uploadAbortController = useRef(null);
 
         // Preserve existing checked state - new files start unchecked
         useEffect(() => {
@@ -164,24 +165,35 @@
             }
 
             setIsUploading(true);
+            uploadAbortController.current = new AbortController();
             const uploadedFiles = [];
+
             for (const fileData of uploadThese) {
                 try {
                     const formData = new FormData();
                     const renamedFile = new File([fileData.file], fileData.originalName, { type: fileData.file.type });
                     formData.append('file', renamedFile);
                     formData.append('projectID', projectID);
-                    const response = await fetch('/api/project/file/upload', { method: 'POST', body: formData });
+                    const response = await fetch('/api/project/file/upload', { 
+                        method: 'POST', 
+                        body: formData,
+                        signal: uploadAbortController.current.signal
+                    });
                     const data = await response.json();
                     if (data.successful) {
                         uploadedFiles.push({ ...fileData, documentID: data.documentID });
                     }
                 } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.log('Upload cancelled by user');
+                        break;
+                    }
                     console.error('Error uploading file:', error);
                     window.showNotification({ type: 'error', title: 'Upload Failed', message: `Failed to upload ${fileData.originalName}.`, actionText: 'OK' });
                 }
             }
             setIsUploading(false);
+            uploadAbortController.current = null;
 
             if (onFilesUploaded) {
                 onFilesUploaded(uploadedFiles);
@@ -193,6 +205,25 @@
                 message: `${uploadedFiles.length} file(s) uploaded successfully.`,
                 actionText: 'Done'
             }).then(() => { onClose(); });
+        };
+
+        const handleClose = async () => {
+            if (isUploading) {
+                const confirmCancel = await window.ConfirmModal.show({
+                    title: 'Cancel Upload?',
+                    message: 'Upload is in progress. Are you sure you want to cancel?',
+                    confirmText: 'Cancel Upload',
+                    cancelText: 'Continue Upload'
+                });
+
+                if (!confirmCancel) return;
+
+                // Abort the ongoing uploads
+                if (uploadAbortController.current) {
+                    uploadAbortController.current.abort();
+                }
+            }
+            onClose();
         };
 
         const formatFileSize = (bytes) => {
@@ -362,7 +393,7 @@
                     style: { width: '650px', height: '422px', maxWidth: '650px', backgroundColor: '#ffffff', borderRadius: '10px', display: 'flex', flexDirection: 'column' }
                 },
                 React.createElement('div', { id: 'import-header-container', style: { padding: '18px 17px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e4e4e4' } },
-                    React.createElement('button', { id: 'import-back-button', onClick: onClose, style: { width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e4e4e4', borderRadius: '10px', backgroundColor: '#ffffff', cursor: 'pointer' } },
+                    React.createElement('button', { id: 'import-back-button', onClick: handleClose, style: { width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e4e4e4', borderRadius: '10px', backgroundColor: '#ffffff', cursor: 'pointer' } },
                         React.createElement('img', { id: 'import-back-icon', src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg', style: { width: '20px', height: '20px' } })
                     ),
                     React.createElement('div', { id: 'import-title-text', style: { fontFamily: '"SF Pro-Bold", Helvetica', fontWeight: '400', fontSize: '18px', color: '#000000', marginLeft: '10px' } }, 'Import Files'),
@@ -444,7 +475,7 @@
                 },
                 React.createElement('button', {
                         id: 'upload-back-button',
-                        onClick: () => setUploadStage('initial'),
+                        onClick: isUploading ? handleClose : () => setUploadStage('initial'),
                         style: {
                             width: '35px',
                             height: '35px',

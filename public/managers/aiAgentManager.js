@@ -127,7 +127,8 @@ router.post('/agent/chat', async (req, res) => {
                     const trimmedChunk = chunk.trim();
                     if (!useLegacy && trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
                         // Log stage markers but don't send to client as content
-                        console.log(`📊 Stage marker: ${trimmedChunk}`);
+                        console.log(`Stage marker: ${trimmedChunk}`);
+
 
                         // Handle report generation events
                         if (trimmedChunk.includes('REPORT_GENERATED:')) {
@@ -137,17 +138,21 @@ router.post('/agent/chat', async (req, res) => {
                                 const endIdx = trimmedChunk.lastIndexOf('}');
                                 if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
                                     const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
-                                    console.log(`📊 Report generation marker found, JSON string:`, jsonStr);
+                                    console.log(` Report generation marker found, JSON string:`, jsonStr);
                                     const reportInfo = JSON.parse(jsonStr);
-                                    console.log(`📊 Parsed reportInfo:`, reportInfo);
-                                    console.log(`📊 Sending reportGenerated event to client`);
+                                    console.log(` Parsed reportInfo:`, reportInfo);
+                                    console.log(` Sending reportGenerated event to client`);
+
+                                    
                                     res.write(`data: ${JSON.stringify({ 
                                         type: 'reportGenerated', 
                                         reportType: reportInfo.type,
                                         projectID: reportInfo.projectID || projectID
                                     })}\n\n`);
                                 } else {
-                                    console.error('📊 Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
+                                    console.error(' Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
+
+                                
                                 }
                             } catch (parseErr) {
                                 console.error('Failed to parse report info:', parseErr);
@@ -181,7 +186,8 @@ router.post('/agent/chat', async (req, res) => {
                     }
 
                     fullResponse += chunk;
-                    console.log(` Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+                    // console.log(` Sending chunk (${chunk.length} chars):`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
                 }
 
@@ -619,23 +625,95 @@ router.post('/agent/conversation-edit', async(req, res) => {
     try {
         let success = await aiDB.conversationEdit(chatID, chatSeq, conversationID, message)
 
-        if (success) {
-            const data = {
-                projectID: projectID,
-                chatID: chatID,
-                requestMessage: message,
-                attachedDocumentIDs: attachedDocumentIDs
-            };
+        if (!success) {
+            return res.status(500).json({ success: false, message: `Internal server error, unable to complete edit conversation message procedure.` });
+        }
 
-            let conversationSummary = ""
-            let conversationHistory = JSON.stringify(await aiDB.fetchChatThread(projectID, chatID));
-            console.log(`History: ${conversationHistory}`)
+        const data = {
+            projectID: projectID,
+            chatID: chatID,
+            requestMessage: message,
+            attachedDocumentIDs: attachedDocumentIDs
+        };
 
-            if (conversationHistory !== null && conversationHistory !== "null") {
-                conversationSummary = await agent.getChatSummary(conversationHistory)
-                console.log(`Memory: \n ${conversationSummary}`)
+        let conversationSummary = ""
+        let conversationHistory = JSON.stringify(await aiDB.fetchChatThread(projectID, chatID));
+        console.log(`History: ${conversationHistory}`)
+
+        if (conversationHistory !== null && conversationHistory !== "null") {
+            conversationSummary = await agent.getChatSummary(conversationHistory)
+            console.log(`Memory: \n ${conversationSummary}`)
+        }
+
+        // Check if client wants streaming
+        const acceptHeader = req.headers.accept || '';
+        const wantsStream = acceptHeader.includes('text/event-stream');
+
+        if (wantsStream) {
+            // Set up SSE headers for streaming
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no'
+            });
+
+            let fullResponse = '';
+
+            try {
+                const streamGenerator = agent.getStreamingResponseThreeStage(data, conversationSummary);
+
+                for await (const chunk of streamGenerator) {
+                    const trimmedChunk = chunk.trim();
+                    if (trimmedChunk.startsWith('<!--') && trimmedChunk.endsWith('-->')) {
+                        // console.log(`[Edit] Stage marker: ${trimmedChunk}`);
+
+
+                        if (trimmedChunk.includes('REPORT_GENERATED:')) {
+                            try {
+                                const startIdx = trimmedChunk.indexOf('{');
+                                const endIdx = trimmedChunk.lastIndexOf('}');
+                                if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                                    const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
+                                    const reportInfo = JSON.parse(jsonStr);
+                                    res.write(`data: ${JSON.stringify({ type: 'reportGenerated', reportType: reportInfo.type, projectID: reportInfo.projectID || projectID })}\n\n`);
+                                }
+                            } catch (parseErr) {
+                                console.error('Failed to parse report info:', parseErr);
+                            }
+                            continue;
+                        }
+
+                        if (trimmedChunk.includes('STAGE_2_COMPLETE')) {
+                            res.write(`data: ${JSON.stringify({ type: 'stage', stage: 2, status: 'complete', refreshRequirements: true, projectID: projectID })}\n\n`);
+                        }
+                        continue;
+                    }
+
+                    fullResponse += chunk;
+                    res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+                }
+
+                // Save to database
+                if (attachedDocumentIDs && attachedDocumentIDs.length > 0) {
+                    await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
+                }
+                await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
+
+                // Send done event
+                res.write(`data: ${JSON.stringify({ type: 'done', conversationID: conversationID, chatSeq: chatSeq })}\n\n`);
+                res.end();
+            } catch (error) {
+                console.error(`[Edit] Streaming error:`, error);
+                let userFriendlyMessage = error.message || 'Stream failed';
+                if (error.message?.includes('SAFETY_CHECK') || (error.message?.includes('content') && error.message?.includes('violates'))) {
+                    userFriendlyMessage = 'The AI provider\'s content filter flagged this request. Try rephrasing.';
+                }
+                res.write(`data: ${JSON.stringify({ type: 'error', message: userFriendlyMessage })}\n\n`);
+                res.end();
             }
-
+        } else {
+            // Non-streaming fallback
             let response = await agent.getResponse(data, conversationSummary)
 
             if (attachedDocumentIDs && attachedDocumentIDs.length > 0) {
@@ -649,8 +727,6 @@ router.post('/agent/conversation-edit', async(req, res) => {
                 chatSeq: chatSeq,
                 response: response
             });
-        } else {
-            return res.status(500).json({ success: false, message: `Internal server error, unable to complete edit conversation message procedure.` });
         }
     } catch (error) {
         console.log(error)
