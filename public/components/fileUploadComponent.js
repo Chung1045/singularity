@@ -209,10 +209,11 @@
 
         const handleClose = async () => {
             if (isUploading) {
-                const confirmCancel = await window.ConfirmModal.show({
+                const confirmCancel = await window.showNotification({
+                    type: 'confirm',
                     title: 'Cancel Upload?',
-                    message: 'Upload is in progress. Are you sure you want to cancel?',
-                    confirmText: 'Cancel Upload',
+                    message: 'Upload is in progress.\nAre you sure you want to cancel?',
+                    actionText: 'Cancel Upload',
                     cancelText: 'Continue Upload'
                 });
 

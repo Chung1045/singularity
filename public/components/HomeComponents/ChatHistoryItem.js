@@ -26,10 +26,11 @@ function createChatHistoryItem(chatThreadName, chatID) {
         const handleDelete = async () => {
             setMenuOpen(false);
 
-            const confirmDelete = await ConfirmModal.show({
+            const confirmDelete = await window.showNotification({
+                type: 'confirm',
                 title: 'Warning',
-                message: 'Are you sure you want to delete this chat? This cannot be reversed!',
-                confirmText: 'Delete',
+                message: 'Are you sure you want to delete this chat?\nThis cannot be reversed!',
+                actionText: 'Delete',
                 cancelText: 'Cancel'
             });
 

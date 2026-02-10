@@ -978,10 +978,12 @@ function createReportItem(reportName, reportID, projectID, reportType) {
             e.stopPropagation();
             setMenuOpen(false);
 
-            const confirmDelete = await ConfirmModal.show({
+            // Use showNotification (available on all pages)
+            const confirmDelete = await window.showNotification({
+                type: 'confirm',
                 title: 'Warning',
-                message: `Are you sure you want to delete "${reportName}"? This cannot be reversed!`,
-                confirmText: 'Delete',
+                message: `Are you sure you want to delete "${reportName}"?\nThis cannot be reversed!`,
+                actionText: 'Delete',
                 cancelText: 'Cancel'
             });
 

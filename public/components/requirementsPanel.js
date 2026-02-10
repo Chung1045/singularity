@@ -223,10 +223,11 @@
         };
 
         const deleteReport = async (reportID) => {
-            const confirmDelete = await window.ConfirmModal.show({
+            const confirmDelete = await window.showNotification({
+                type: 'confirm',
                 title: 'Warning',
-                message: 'Are you sure you want to delete this report? This cannot be reversed!',
-                confirmText: 'Delete',
+                message: 'Are you sure you want to delete this report?\nThis cannot be reversed!',
+                actionText: 'Delete',
                 cancelText: 'Cancel'
             });
 
