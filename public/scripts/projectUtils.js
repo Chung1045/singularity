@@ -158,13 +158,22 @@ function createChatHistoryItem(threadName, chatID) {
 
                 const data = await response.json();
                 if (response.ok && data.success) {
-                    // Show success message
-                    await window.showNotification({
-                        type: 'success',
-                        title: 'Warning',
-                        message: 'Current chat successfully deleted',
-                        actionText: 'OK'
-                    });
+                    // Show success message using AlertModal for consistent styling
+                    if (window.AlertModal) {
+                        await window.AlertModal.show({
+                            title: 'Chat Deleted',
+                            message: 'Current chat successfully deleted',
+                            autoClose: 3000
+                        });
+                    } else {
+                        // Fallback to showNotification if AlertModal not available
+                        await window.showNotification({
+                            type: 'success',
+                            title: 'Chat Deleted',
+                            message: 'Current chat successfully deleted',
+                            actionText: 'OK'
+                        });
+                    }
 
                     // Refresh chat history
                     if (typeof window.fetchProjectChats === 'function') {
