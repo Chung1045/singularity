@@ -670,15 +670,20 @@ const ChatController = {
  * A random subset is displayed each time.
  */
 const SUGGESTION_PROMPTS = [
-    'Summarize all the requirements',
-    'List all user stories',
-    'What are the non-functional requirements?',
-    'Are there any missing requirements?',
-    'Compare functional vs non-functional requirements',
-    'What are the key roles identified?',
-    'Suggest improvements for the user stories',
-    'Generate a requirements report',
-    'Generate a user stories report',
+    '📋 Summarize all requirements',
+    '📝 List all user stories',
+    '⚡ What are the non-functional requirements?',
+    '🔍 Are there any missing requirements?',
+    '📊 Compare functional vs non-functional requirements',
+    '👥 What are the key roles identified?',
+    '💡 Suggest improvements for the user stories',
+    '📄 Generate a requirements report',
+    '📈 Generate a user stories report',
+    '🎯 What are the main objectives?',
+    '⚠️ Identify potential risks',
+    '🔄 Show dependencies between requirements',
+    '✨ What are the priority requirements?',
+    '🏗️ Suggest system architecture',
 ];
 
 /**
@@ -724,15 +729,18 @@ function appendSuggestionChips(parentContentWrapper) {
     const container = document.createElement('div');
     container.id = 'suggestion-chips-container';
     container.className = 'suggestion-chips-container';
-    container.style.cssText = 'display: flex; flex-direction: column; gap: 6px; padding: 4px 0 0 0; margin-top: 8px;';
 
     // build the suggestion chips label
-    const label = document.createElement('span');
+    const label = document.createElement('div');
     label.id = 'suggestion-chips-label';
     label.className = 'suggestion-chips-label';
-    label.style.cssText = "font-family: 'Inter', Helvetica, sans-serif; font-size: 13px; font-weight: 700; color: #222; margin-bottom: 2px;";
-    label.textContent = 'Suggestion';
+    label.innerHTML = '<span style="margin-right: 4px;">💬</span>Suggestions for you';
     container.appendChild(label);
+
+    // Create chips wrapper for horizontal layout
+    const chipsWrapper = document.createElement('div');
+    chipsWrapper.className = 'suggestion-chips-wrapper';
+    chipsWrapper.style.cssText = 'display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;';
 
     // iterate over the suggestions
     suggestions.forEach((text, index) => {
@@ -740,32 +748,45 @@ function appendSuggestionChips(parentContentWrapper) {
         const chip = document.createElement('button');
         chip.id = `suggestion-chip-${index}`;
         chip.className = 'suggestion-chip';
-        chip.style.cssText = "display: block; width: fit-content; text-align: left; font-family: 'Inter', Helvetica, sans-serif; font-size: 13px; font-weight: 500; color: #333; background-color: #e8e8e8; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; white-space: normal; word-break: break-word; max-width: 100%;";
         chip.textContent = text;
-        chip.onmouseenter = () => { chip.style.backgroundColor = '#d6d6d6'; };
-        chip.onmouseleave = () => { chip.style.backgroundColor = '#e8e8e8'; };
+        
         chip.onclick = () => {
-            // Fill the input and submit immediately
-            const input = document.getElementById('main-message-input');
-            if (input) {
-                // set the input value
-                input.value = text;
-                // set the input height
-                input.style.height = 'auto';
-                // set the input height to the scroll height
-                input.style.height = input.scrollHeight + 'px';
-            }
-            // remove the suggestion chips
-            removeSuggestionChips();
-            // if the submit conversation request function is defined, call it
-            if (typeof window.submitConversationRequest === 'function') window.submitConversationRequest();
+            // Add click animation
+            chip.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                // Fill the input and submit immediately
+                const input = document.getElementById('main-message-input');
+                if (input) {
+                    // set the input value
+                    input.value = text;
+                    // set the input height
+                    input.style.height = 'auto';
+                    // set the input height to the scroll height
+                    input.style.height = input.scrollHeight + 'px';
+                }
+                // remove the suggestion chips with fade out
+                container.style.opacity = '0';
+                container.style.transform = 'translateY(-5px)';
+                setTimeout(() => removeSuggestionChips(), 200);
+                // if the submit conversation request function is defined, call it
+                if (typeof window.submitConversationRequest === 'function') window.submitConversationRequest();
+            }, 100);
         };
-        // add the suggestion chip to the container
-        container.appendChild(chip);
+        // add the suggestion chip to the wrapper
+        chipsWrapper.appendChild(chip);
     });
+
+    // add the chips wrapper to container
+    container.appendChild(chipsWrapper);
 
     // add the suggestion chips container to the parent content wrapper
     parentContentWrapper.appendChild(container);
+    
+    // Trigger animation
+    setTimeout(() => {
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+    }, 10);
 }
 
 // ===== ADD MESSAGE FUNCTION =====

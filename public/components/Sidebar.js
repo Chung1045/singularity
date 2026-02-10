@@ -1119,6 +1119,7 @@
         // Check for NEW notifications (unread AND recent)
         const checkUnreadNotifications = useCallback(async () => {
             try {
+                console.log('[Sidebar] Checking for unread notifications...');
                 const response = await fetch('/api/notifications/list', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1129,16 +1130,30 @@
                     const data = await response.json();
                     const notifications = data.notifications || [];
                     
+                    console.log(`[Sidebar] Fetched ${notifications.length} notifications total`);
+                    
                     // Check if there are any NEW notifications (unread AND created within last 5 minutes)
                     const hasNewNotifications = notifications.some(n => {
                         const isUnread = n.isRead === 0 || n.isRead === false;
                         const notificationAge = new Date() - new Date(n.createdAt);
                         const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes
+                        
+                        if (isUnread) {
+                            console.log(`[Sidebar] Unread notification found:`, {
+                                type: n.notificationType,
+                                message: n.notificationMessage,
+                                isUnread: isUnread,
+                                age: Math.round(notificationAge / 1000) + 's',
+                                isRecent: isRecent,
+                                willShowBadge: isUnread && isRecent
+                            });
+                        }
+                        
                         return isUnread && isRecent;
                     });
                     
                     setHasUnreadNotifications(hasNewNotifications);
-                    console.log('[Sidebar] Checked notifications - hasNew:', hasNewNotifications);
+                    console.log('[Sidebar] ✓ Notification badge status:', hasNewNotifications ? 'SHOW RED BADGE' : 'NO BADGE');
                 }
             } catch (error) {
                 console.error('[Sidebar] Error checking unread notifications:', error);
@@ -1158,8 +1173,15 @@
 
             window.addEventListener('refreshNotifications', handleRefreshNotifications);
 
+            // Auto-refresh every 30 seconds as backup for socket failures
+            const pollInterval = setInterval(() => {
+                console.log('[Sidebar] Auto-polling for new notifications (30s interval)');
+                checkUnreadNotifications();
+            }, 30000);
+
             return () => {
                 window.removeEventListener('refreshNotifications', handleRefreshNotifications);
+                clearInterval(pollInterval);
             };
         }, [checkUnreadNotifications]);
 

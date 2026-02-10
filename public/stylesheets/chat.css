@@ -558,50 +558,107 @@
 .suggestion-chips-container {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 4px 0 0 0;
-    margin-top: 8px;
+    padding: 12px 0 0 0;
+    margin-top: 12px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .suggestion-chips-label {
     font-family: 'Inter', Helvetica, sans-serif;
     font-size: 13px;
-    font-weight: 700;
-    color: #222;
-    margin-bottom: 2px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.2px;
+}
+
+.suggestion-chips-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .suggestion-chip {
-    display: block;
+    display: inline-flex;
+    align-items: center;
     width: fit-content;
     text-align: left;
     font-family: 'Inter', Helvetica, sans-serif;
     font-size: 13px;
     font-weight: 500;
-    color: #333;
-    background-color: #e8e8e8;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 14px;
+    color: #1a1a1a;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border: 1px solid #d0d0d0;
+    border-radius: 20px;
+    padding: 9px 16px;
     cursor: pointer;
-    transition: background-color 0.15s, color 0.15s;
-    white-space: normal;
-    word-break: break-word;
-    max-width: 100%;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    position: relative;
+    overflow: hidden;
+}
+
+.suggestion-chip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .suggestion-chip:hover {
-    background-color: #d6d6d6;
-    color: #111;
+    background: linear-gradient(135deg, #e8e8e8 0%, #d6d6d6 100%);
+    border-color: #b8b8b8;
+    color: #000;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.suggestion-chip:hover::before {
+    opacity: 1;
 }
 
 .suggestion-chip:active {
-    background-color: #ccc;
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 @media (max-width: 768px) {
+    .suggestion-chips-container {
+        padding: 10px 0 0 0;
+        margin-top: 10px;
+    }
+    
+    .suggestion-chips-label {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+    
+    .suggestion-chips-wrapper {
+        gap: 6px;
+    }
+    
     .suggestion-chip {
         font-size: 12px;
-        padding: 8px 12px;
+        padding: 8px 14px;
+        border-radius: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .suggestion-chip {
+        font-size: 11px;
+        padding: 7px 12px;
+        white-space: normal;
+        max-width: 100%;
     }
 }

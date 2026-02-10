@@ -193,6 +193,9 @@
                     // Remove from cancelled list
                     setCancelledInvites(prev => prev.filter(u => u.userID !== userId));
                     
+                    // Refresh notification badge
+                    window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                    
                     await window.showNotification({
                         type: 'success',
                         title: 'Invitation Sent',
