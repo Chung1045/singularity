@@ -283,15 +283,15 @@ function createChatHistoryItem(threadName, chatID) {
                     display: 'flex',
                     alignItems: 'center',
                     flexShrink: 0,
-                    width: '50px',
-                    height: '50px'
+                    width: '30px',
+                    height: '30px'
                 }
             },
                 React.createElement('img', {
                     className: 'chat-menu-btn',
                     style: {
-                        width: '50px',
-                        height: '50px',
+                        width: '30px',
+                        height: '30px',
                         padding: '4px',
                         flexShrink: 0,
                         borderRadius: '5px',

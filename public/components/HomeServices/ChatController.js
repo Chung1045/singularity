@@ -14,7 +14,9 @@ const ChatController = {
         const userMessage = input?.value?.trim();
         if (!userMessage) return;
 
+        // get the project dropdown
         const projectDropdown = document.getElementById("select-project-drop-down");
+        // get the project ID
         const projectID = projectDropdown?.value;
         if (!projectID) {
             console.error("No project selected");
@@ -43,18 +45,25 @@ const ChatController = {
             return;
         }
 
+        // get the selected source
         const selectedSource = ChatUtils.getSelectedSource();
+        // get the chip file IDs
         const chipFileIDs = ChatUtils.getChipFileIDs();
+        // merge the attached documents
         const allAttachedDocuments = ChatUtils.mergeAttachedDocuments(selectedSource, chipFileIDs);
 
+        // clear the input
         ChatUtils.clearInput();
+        // clear the selected files
         ChatUtils.clearSelectedFiles();
+        // remove the messages from the sequence
         EditMode.removeMessagesFromSeq(chatSeq);
-
+        // add the user message
+        // show the loading indicator
         addMessage('user', userMessage, conversationID, chatSeq, allAttachedDocuments);
 
         ChatUtils.showLoadingIndicator();
-
+        // try to stream the edit response
         try {
             await this._streamEditResponse({
                 projectID,
@@ -85,12 +94,14 @@ const ChatController = {
             },
             body: JSON.stringify(data)
         });
-
+        // if the response is not ok, throw an error
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // get the messages container
         const messagesContainer = document.getElementById('chat-messages');
+        // remove the suggestion chips
         removeSuggestionChips();
 
         // Prepare AI message (hidden until first chunk)
@@ -100,31 +111,38 @@ const ChatController = {
         messageDiv.className = 'message ai-message';
         messageDiv.style.display = 'none';
 
+        // build the avatar element
         const avatar = document.createElement('div');
         avatar.id = `message-avatar-ai-edit-${messageTimestamp}`;
         avatar.className = 'message-avatar';
         avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
+        // build the bubble element
         const bubble = document.createElement('div');
         bubble.id = `message-bubble-ai-edit-${messageTimestamp}`;
         bubble.className = 'message-bubble';
         bubble.dataset.role = 'ai';
 
+        // build the stream content wrapper element
         const streamContentWrapper = document.createElement('div');
         streamContentWrapper.id = `message-content-wrapper-ai-edit-${messageTimestamp}`;
         streamContentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; max-width: 600px;';
         streamContentWrapper.appendChild(bubble);
 
+        // add the avatar and stream content wrapper to the message div
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(streamContentWrapper);
         messagesContainer.appendChild(messageDiv);
 
+        // initialize the full response and buffer
         let fullResponse = '';
         let buffer = '';
 
+        // get the reader and decoder
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
+        // process the SSE event
         const processSSEEvent = async (eventData) => {
             if (!eventData?.trim()) return;
             try {
@@ -134,7 +152,7 @@ const ChatController = {
                     // console.log('[Edit] Received chunk:', jsonData.content?.substring(0, 50));
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
-
+                    // add the content to the full response
                     fullResponse += jsonData.content || '';
                     ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
                     ChatUtils.scrollToBottom();
@@ -150,7 +168,7 @@ const ChatController = {
                     const tsNow = new Date();
                     tsDiv.textContent = `${tsNow.getHours().toString().padStart(2, '0')}:${tsNow.getMinutes().toString().padStart(2, '0')}`;
                     streamContentWrapper.appendChild(tsDiv);
-
+                    // add the suggestion chips
                     appendSuggestionChips(streamContentWrapper);
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'error') {
@@ -158,9 +176,13 @@ const ChatController = {
                     messageDiv.style.display = '';
                     ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                     bubble.style.color = '#f44336';
+                    
                 } else if (jsonData.type === 'stage') {
+                    // if the stage is 2 and the status is complete and the refresh requirements flag is true, dispatch the requirements updated event
                     if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
+                        // dispatch the requirements updated event
                         window.dispatchEvent(new CustomEvent('requirementsUpdated', { detail: { projectID: jsonData.projectID || data.projectID } }));
+                        // fetch the project requirements and user stories
                         window.fetchProjectRequirements?.(jsonData.projectID || data.projectID);
                         window.fetchProjectUserStories?.(jsonData.projectID || data.projectID);
                     }
@@ -170,6 +192,7 @@ const ChatController = {
             }
         };
 
+        // read the stream
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -186,7 +209,7 @@ const ChatController = {
                 }
             }
         }
-
+        // process the remaining buffer
         if (buffer.trim()) {
             for (const line of buffer.split('\n')) {
                 if (line.startsWith('data: ')) {
@@ -288,11 +311,12 @@ const ChatController = {
             },
             body: JSON.stringify(data)
         });
-
+        // if the response is not ok, throw an error
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // get the messages container
         const messagesContainer = document.getElementById('chat-messages');
 
         // Remove any previous suggestion chips
@@ -305,34 +329,41 @@ const ChatController = {
         messageDiv.className = 'message ai-message';
         messageDiv.style.display = 'none';
 
+        // build the avatar element
         const avatar = document.createElement('div');
         avatar.id = `message-avatar-ai-stream-${messageTimestamp}`;
         avatar.className = 'message-avatar';
         avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
+        // build the bubble element
         const bubble = document.createElement('div');
         bubble.id = `message-bubble-ai-stream-${messageTimestamp}`;
         bubble.className = 'message-bubble';
         bubble.dataset.role = 'ai';
 
+        // build the stream content wrapper element
         const streamContentWrapper = document.createElement('div');
         streamContentWrapper.id = `message-content-wrapper-ai-stream-${messageTimestamp}`;
         streamContentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; max-width: 600px;';
         streamContentWrapper.appendChild(bubble);
 
+        // add the avatar and stream content wrapper to the message div
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(streamContentWrapper);
         messagesContainer.appendChild(messageDiv);
 
+        // initialize the full response, chat ID received, conversation ID received, chat sequence received, and buffer
         let fullResponse = '';
         let chatIDReceived = null;
         let conversationIDReceived = null;
         let chatSeqReceived = null;
         let buffer = '';
 
+        // get the reader and decoder
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
+        // process the SSE event
         const processSSEEvent = async (eventData) => {
             if (!eventData?.trim()) return;
 
@@ -341,20 +372,27 @@ const ChatController = {
 
                 if (jsonData.type === 'chatID') {
                     chatIDReceived = jsonData.chatID;
+                    // if the chat ID is empty, fetch the project chats
                     if (data.chatID === '') {
                         await fetchProjectChats(data.projectID);
                     }
                 } else if (jsonData.type === 'reportGenerated') {
+                    // wait for 500ms
                     await new Promise(resolve => setTimeout(resolve, 500));
+                    // fetch the project reports and dispatch the report generated event
                     await window.fetchProjectReports?.(jsonData.projectID || data.projectID);
                     window.dispatchEvent(new CustomEvent('reportGenerated', {
                         detail: { projectID: jsonData.projectID || data.projectID, reportType: jsonData.reportType }
-                    }));
+                    }));    
+                    // fetch the project reports and dispatch the report generated event
                 } else if (jsonData.type === 'stage') {
+                    // if the stage is 2 and the status is complete and the refresh requirements flag is true, dispatch the requirements updated event
                     if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
+                        // dispatch the requirements updated event
                         window.dispatchEvent(new CustomEvent('requirementsUpdated', {
                             detail: { projectID: jsonData.projectID || data.projectID }
                         }));
+                        // fetch the project requirements and user stories
                         window.fetchProjectRequirements?.(jsonData.projectID || data.projectID);
                         window.fetchProjectUserStories?.(jsonData.projectID || data.projectID);
                     }
@@ -362,21 +400,25 @@ const ChatController = {
                     // Remove the loading indicator and show the real message on first chunk
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
-
+                    // add the content to the full response
                     fullResponse += jsonData.content || '';
+                    // set the bubble content
                     ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
+                    // scroll to bottom
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'done') {
                     // Ensure loading indicator is removed and message is visible
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
-
+                    // if the conversation ID and chat sequence are received, set the conversation ID and chat sequence
                     if (jsonData.conversationID && jsonData.chatSeq) {
                         conversationIDReceived = jsonData.conversationID;
                         chatSeqReceived = jsonData.chatSeq;
                     }
 
+                    // get the thread name
                     const threadName = jsonData.threadName || 'New Chat';
+                    // try to get the chat title element and set the text content
                     const chatTitleElement = document.getElementById('chat-title');
                     if (chatTitleElement && threadName !== 'New Chat') {
                         chatTitleElement.textContent = threadName;
@@ -384,19 +426,24 @@ const ChatController = {
 
                     if (chatIDReceived) {
                         if (data.chatID === '') {
+                            // if the chat ID is empty, fetch the project chats
                             await fetchProjectChats(data.projectID);
                         }
 
+                        // try to get the chat item by the chat ID
                         const chatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatIDReceived}"]`);
                         if (chatItem) {
+                            // deselect all chat items and set the background color to transparent
                             document.querySelectorAll('.chat-history-item').forEach(item => {
                                 item.classList.remove('selected');
                                 item.style.backgroundColor = 'transparent';
                             });
+                            // select the chat item and set the background color to #e0e0e0
                             chatItem.classList.add('selected');
                             chatItem.style.backgroundColor = '#e0e0e0';
+                            // set the thread name data attribute
                             chatItem.dataset.threadName = threadName;
-
+                            // try to get the name element and set the text content
                             const nameElement = chatItem.querySelector('.chat-item-name, span:first-child, span');
                             if (nameElement && threadName !== 'New Chat') {
                                 nameElement.textContent = threadName;
@@ -404,6 +451,7 @@ const ChatController = {
                         }
                     }
 
+                    // if the fetch project reports function is defined, call it
                     if (typeof window.fetchProjectReports === 'function') {
                         await new Promise(resolve => setTimeout(resolve, 500));
                         await window.fetchProjectReports(data.projectID);
@@ -642,12 +690,14 @@ function pickSuggestions(count = 3) {
     let pool = SUGGESTION_PROMPTS.filter(s => !_lastSuggestionSet.includes(s));
     if (pool.length < count) pool = [...SUGGESTION_PROMPTS];
 
+    // pick the suggestions
     const picked = [];
     const copy = [...pool];
     for (let i = 0; i < count && copy.length > 0; i++) {
         const idx = Math.floor(Math.random() * copy.length);
         picked.push(copy.splice(idx, 1)[0]);
     }
+    // set the last suggestion set
     _lastSuggestionSet = picked;
     return picked;
 }
@@ -663,16 +713,20 @@ function removeSuggestionChips() {
  * Creates and appends suggestion chips after an AI message element.
  * @param {HTMLElement} parentContentWrapper - The content wrapper div of the AI message
  */
+
 function appendSuggestionChips(parentContentWrapper) {
     if (!parentContentWrapper) return;
 
+    // pick 3 random suggestions
     const suggestions = pickSuggestions(3);
 
+    // build the suggestion chips container
     const container = document.createElement('div');
     container.id = 'suggestion-chips-container';
     container.className = 'suggestion-chips-container';
     container.style.cssText = 'display: flex; flex-direction: column; gap: 6px; padding: 4px 0 0 0; margin-top: 8px;';
 
+    // build the suggestion chips label
     const label = document.createElement('span');
     label.id = 'suggestion-chips-label';
     label.className = 'suggestion-chips-label';
@@ -680,7 +734,9 @@ function appendSuggestionChips(parentContentWrapper) {
     label.textContent = 'Suggestion';
     container.appendChild(label);
 
+    // iterate over the suggestions
     suggestions.forEach((text, index) => {
+        // build the suggestion chip
         const chip = document.createElement('button');
         chip.id = `suggestion-chip-${index}`;
         chip.className = 'suggestion-chip';
@@ -692,23 +748,37 @@ function appendSuggestionChips(parentContentWrapper) {
             // Fill the input and submit immediately
             const input = document.getElementById('main-message-input');
             if (input) {
+                // set the input value
                 input.value = text;
+                // set the input height
                 input.style.height = 'auto';
+                // set the input height to the scroll height
                 input.style.height = input.scrollHeight + 'px';
             }
+            // remove the suggestion chips
             removeSuggestionChips();
-            if (typeof window.submitConversationRequest === 'function') {
-                window.submitConversationRequest();
-            }
+            // if the submit conversation request function is defined, call it
+            if (typeof window.submitConversationRequest === 'function') window.submitConversationRequest();
         };
+        // add the suggestion chip to the container
         container.appendChild(chip);
     });
 
+    // add the suggestion chips container to the parent content wrapper
     parentContentWrapper.appendChild(container);
 }
 
 // ===== ADD MESSAGE FUNCTION =====
 
+
+/**
+ * Adds a message to the chat messages container.
+ * @param {string} role - The role of the message (user or ai)
+ * @param {string} text - The text of the message
+ * @param {string} conversationID - The conversation ID
+ * @param {string} chatSeq - The chat sequence
+ * @param {array} attachedFileIDs - The attached file IDs
+ */
 function addMessage(role, text, conversationID = null, chatSeq = null, attachedFileIDs = []) {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
@@ -721,40 +791,51 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     // Remove any previous suggestion chips when a new message arrives
     removeSuggestionChips();
 
+    // set the conversation ID and chat sequence data attributes
     if (conversationID) messageDiv.dataset.conversationId = conversationID;
     if (chatSeq) messageDiv.dataset.chatSeq = chatSeq;
 
+    // build the avatar element
     const avatar = document.createElement('div');
     avatar.id = `message-avatar-${role}-${messageTimestamp}`;
     avatar.className = 'message-avatar';
 
+    // if the role is user, set the avatar image
     if (role === 'user') {
+        // set the avatar image
         const avatarUrl = window.userAvatarUrl || './img/user.svg';
         avatar.innerHTML = `<img src="${avatarUrl}" alt="User" style="width: 80%; height: 80%; object-fit: cover; border-radius: 50%;">`;
     } else {
+        // set the AI avatar image
         avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
     }
 
+    // build the bubble element
     const bubble = document.createElement('div');
     bubble.id = `message-bubble-${role}-${messageTimestamp}`;
     bubble.className = 'message-bubble';
 
+    // if the role is AI, set the bubble content
     if (role === 'ai') {
         bubble.dataset.role = 'ai';
+        // set the bubble content
         ChatUtils.setBubbleContent(bubble, text, { allowMarkdown: true });
     } else {
+        // set the bubble text content
         bubble.textContent = text;
     }
 
     // Build message structure
     if (role === 'user') {
+        // build the content wrapper
         const contentWrapper = document.createElement('div');
         contentWrapper.id = `message-content-wrapper-user-${messageTimestamp}`;
         contentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; max-width: 600px;';
 
+        // add the bubble to the content wrapper
         contentWrapper.appendChild(bubble);
 
-        // Timestamp
+        // build the timestamp element
         const timestamp = document.createElement('div');
         timestamp.id = `message-timestamp-user-${messageTimestamp}`;
         timestamp.className = 'message-timestamp';
@@ -769,22 +850,28 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         bottomRow.className = 'message-bottom-row';
         bottomRow.style.cssText = 'display: flex; align-items: center; gap: 8px; padding-left: 12px; min-height: 24px;';
 
+        // if there are attached file IDs
         if (attachedFileIDs?.length) {
+            // build the files container
             const filesContainer = document.createElement('div');
             filesContainer.id = `message-files-container-${messageTimestamp}`;
             filesContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; flex: 1;';
 
+            // iterate over the attached file IDs
             attachedFileIDs.forEach(fileId => {
                 let fileName = fileId;
                 const chipElement = document.querySelector(`[data-file-id="${fileId}"]`);
                 if (chipElement) {
+                    // try to get the file name from the chip element
                     fileName = chipElement.getAttribute('data-file-name') || chipElement.querySelector('span')?.textContent || fileId;
                 } else {
+                    // try to get the file name from the source element
                     const sourceElement = document.getElementById(`source-file-name-${fileId}`);
                     if (sourceElement) fileName = sourceElement.textContent;
                     else if (window.chatFileNameMap?.has(fileId)) fileName = window.chatFileNameMap.get(fileId);
                 }
 
+                // build the file chip
                 const fileChip = document.createElement('div');
                 fileChip.dataset.fileId = fileId;
                 fileChip.style.cssText = 'display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: rgba(195, 171, 111, 0.15); border: 1px solid rgba(195, 171, 111, 0.3); border-radius: 12px; font-size: 11px; color: #666;';
@@ -792,9 +879,11 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
                 filesContainer.appendChild(fileChip);
             });
 
+            // add the files container to the bottom row
             bottomRow.appendChild(filesContainer);
         }
 
+        // add the bottom row to the content wrapper
         contentWrapper.appendChild(bottomRow);
 
         // Avatar wrapper with edit/cancel buttons
@@ -803,6 +892,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         avatarWrapper.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 4px;';
         avatarWrapper.appendChild(avatar);
 
+        // build the edit button
         const editBtn = document.createElement('button');
         editBtn.id = `message-edit-btn-${messageTimestamp}`;
         editBtn.className = 'message-edit-btn';
@@ -811,6 +901,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         editBtn.onclick = () => conversationID && chatSeq ? EditMode.start(text, conversationID, chatSeq) : alert('Please wait for the message to finish sending.');
         avatarWrapper.appendChild(editBtn);
 
+        // build the cancel button
         const cancelBtn = document.createElement('button');
         cancelBtn.id = `message-cancel-btn-${messageTimestamp}`;
         cancelBtn.className = 'message-cancel-btn';
@@ -819,14 +910,17 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         cancelBtn.onclick = () => EditMode.cancel();
         avatarWrapper.appendChild(cancelBtn);
 
+        // add the avatar wrapper and content wrapper to the message div
         messageDiv.appendChild(avatarWrapper);
         messageDiv.appendChild(contentWrapper);
     } else {
+        // build the AI message structure
         const contentWrapper = document.createElement('div');
         contentWrapper.id = `message-content-wrapper-ai-${messageTimestamp}`;
         contentWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; max-width: 600px;';
         contentWrapper.appendChild(bubble);
 
+        // build the timestamp element
         const timestamp = document.createElement('div');
         timestamp.id = `message-timestamp-ai-${messageTimestamp}`;
         timestamp.className = 'message-timestamp';
@@ -835,9 +929,10 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         timestamp.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         contentWrapper.appendChild(timestamp);
 
-        // Add suggestion chips after AI message
+        // add suggestion chips after the AI message
         appendSuggestionChips(contentWrapper);
 
+        // add the avatar and content wrapper to the message div
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(contentWrapper);
     }
@@ -851,6 +946,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 async function fetchProjectChats(projectID) {
     let chatHistoryContainer = document.getElementById("div-chat-history-list");
 
+    // wait for the chat history container to be found
     if (!chatHistoryContainer) {
         await new Promise(resolve => setTimeout(resolve, 300));
         chatHistoryContainer = document.getElementById("div-chat-history-list");
@@ -862,6 +958,7 @@ async function fetchProjectChats(projectID) {
     try {
         const data = await ChatService.fetchProjectChats(projectID);
 
+        // add chat history items to the chat history container
         if (data.chats) {
             for (let chat of data.chats) {
                 const chatHistoryElement = createChatHistoryItem(chat.threadName, chat.chatID);
@@ -939,8 +1036,11 @@ async function fetchProjectFiles(projectID) {
     }
 }
 
+// ===== UPLOADED FILES SELECTION MODAL FUNCTIONS =====
 async function showUploadedFilesSelectionModal() {
+    // get the current project ID
     const projectID = window.getCurrentProjectID?.();
+    // if the project ID is not found, show a notification
     if (!projectID) {
         await window.showNotification?.({
             type: 'warning',
@@ -984,6 +1084,7 @@ async function showUploadedFilesSelectionModal() {
     }
 }
 
+// ===== OPEN REQUIREMENTS PANEL FUNCTION =====
 function openRequirementsPanel() {
     const projectID = window.getCurrentProjectID?.();
     if (!projectID) {
