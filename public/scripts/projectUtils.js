@@ -1031,7 +1031,7 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '8px 12px',
-                cursor: 'pointer',
+                cursor: 'default',
                 borderRadius: '8px',
                 transition: 'background-color 0.2s',
                 fontSize: '14px',
@@ -1049,13 +1049,13 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                 if (!menuOpen) {
                     e.currentTarget.style.backgroundColor = 'transparent';
                 }
-            },
-            onClick: (e) => {
-                // Download the report on click (unless clicking checkbox or menu button)
-                if (e.target.type !== 'checkbox' && e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
-                    handleDownload(e);
-                }
             }
+            // onClick: (e) => {
+            //     // Download the report on click (unless clicking checkbox or menu button)
+            //     if (e.target.type !== 'checkbox' && e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
+            //         handleDownload(e);
+            //     }
+            // }
         },
             // Checkbox - click to show/hide three-dot menu
             React.createElement('input', {

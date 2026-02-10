@@ -2248,7 +2248,7 @@
                                 bottom: '40px',
                                 background: '#ffffff',
                                 padding: '5px 5px 10px 6px',
-                                cursor: 'pointer',
+                                // cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -2333,8 +2333,8 @@
                                     color: '#1c1d21',
                                     transition: 'background-color 0.2s'
                                 },
-                                onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
-                                onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                                // onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
+                                // onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
                                 onClick: (e) => {
                                     e.stopPropagation();
                                     onProfileRoute();
@@ -2353,10 +2353,10 @@
                                     fontFamily: 'Urbanist-SemiBold, Helvetica',
                                     fontWeight: '600',
                                     color: '#b62e2e',
-                                    transition: 'background-color 0.2s'
+                                    // transition: 'background-color 0.2s'
                                 },
-                                onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
-                                onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
+                                // onMouseEnter: (e) => e.target.style.backgroundColor = '#eeeeee',
+                                // onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent',
                                 onClick: (e) => {
                                     e.stopPropagation();
                                     onLogout();
