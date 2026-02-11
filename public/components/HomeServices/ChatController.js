@@ -670,20 +670,20 @@ const ChatController = {
  * A random subset is displayed each time.
  */
 const SUGGESTION_PROMPTS = [
-    '📋 Summarize all requirements',
-    '📝 List all user stories',
-    '⚡ What are the non-functional requirements?',
-    '🔍 Are there any missing requirements?',
-    '📊 Compare functional vs non-functional requirements',
-    '👥 What are the key roles identified?',
-    '💡 Suggest improvements for the user stories',
-    '📄 Generate a requirements report',
-    '📈 Generate a user stories report',
-    '🎯 What are the main objectives?',
-    '⚠️ Identify potential risks',
-    '🔄 Show dependencies between requirements',
-    '✨ What are the priority requirements?',
-    '🏗️ Suggest system architecture',
+    'Summarize all requirements',
+    'List all user stories',
+    'What are the non-functional requirements?',
+    'Are there any missing requirements?',
+    'Compare functional vs non-functional requirements',
+    'What are the key roles identified?',
+    'Suggest improvements for the user stories',
+    'Generate a requirements report',
+    'Generate a user stories report',
+    'What are the main objectives?',
+    'Identify potential risks',
+    'Show dependencies between requirements',
+    'What are the priority requirements?',
+    'Suggest system architecture',
 ];
 
 /**
@@ -734,7 +734,7 @@ function appendSuggestionChips(parentContentWrapper) {
     const label = document.createElement('div');
     label.id = 'suggestion-chips-label';
     label.className = 'suggestion-chips-label';
-    label.innerHTML = '<span style="margin-right: 4px;">💬</span>Suggestions for you';
+    label.innerHTML = 'Suggestions';
     container.appendChild(label);
 
     // Create chips wrapper for horizontal layout
@@ -751,8 +751,7 @@ function appendSuggestionChips(parentContentWrapper) {
         chip.textContent = text;
         
         chip.onclick = () => {
-            // Add click animation
-            chip.style.transform = 'scale(0.95)';
+            
             setTimeout(() => {
                 // Fill the input and submit immediately
                 const input = document.getElementById('main-message-input');
@@ -782,11 +781,6 @@ function appendSuggestionChips(parentContentWrapper) {
     // add the suggestion chips container to the parent content wrapper
     parentContentWrapper.appendChild(container);
     
-    // Trigger animation
-    setTimeout(() => {
-        container.style.opacity = '1';
-        container.style.transform = 'translateY(0)';
-    }, 10);
 }
 
 // ===== ADD MESSAGE FUNCTION =====

@@ -49,7 +49,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     await AlertModal.show({
                         title: 'Chat Deleted',
                         message: 'Chat successfully deleted',
-                        autoClose: 3000
+                        autoClose: 7000
                     });
 
                     await window.fetchProjectChats?.(projectID);

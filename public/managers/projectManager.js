@@ -120,7 +120,7 @@ router.post('/project/delete', async (req, res) => {
             return res.status(403).json({ successful: false, message: "Unauthorized" });
         }
 
-        console.log(`✓ Authorization passed: User is project owner\n`);
+        console.log(`Authorization passed: User is project owner\n`);
 
         // Get project name before deletion for notification
         const projectName = await projectDBService.fetchProjectName(projectID);
@@ -1060,9 +1060,9 @@ router.post("/project/invite", async (req, res) => {
                     projectID: projectID,
                     from: userID
                 });
-                console.log(`  ✓✓✓ SENT 'newInvitation' to invited user (${invitedUserId}) socket ${invitedSocketID}`);
+                console.log(`SENT 'newInvitation' to invited user (${invitedUserId}) socket ${invitedSocketID}`);
             } else {
-                console.log(`  ✗✗✗ INVITED USER NOT CONNECTED (${invitedUserId}) - They will see notification on next page load/poll`);
+                console.log(`INVITED USER NOT CONNECTED (${invitedUserId}) - They will see notification on next page load/poll`);
             }
             
             // Notify the owner
@@ -1073,12 +1073,12 @@ router.post("/project/invite", async (req, res) => {
                     projectID: projectID,
                     to: invitedUserId
                 });
-                console.log(`  ✓✓✓ SENT 'invitationSent' to owner (${userID}) socket ${ownerSocketID}`);
+                console.log(`SENT 'invitationSent' to owner (${userID}) socket ${ownerSocketID}`);
             } else {
-                console.log(`  ✗✗✗ OWNER NOT CONNECTED (${userID})`);
+                console.log(`OWNER NOT CONNECTED (${userID})`);
             }
         } else {
-            console.log(`  ✗ Socket.io not available`);
+            console.log(`Socket.io not available`);
         }
         console.log(``);
 
@@ -1158,12 +1158,12 @@ router.post("/project/remove-collaborator", async (req, res) => {
                     projectName,
                     removedByOwner: true
                 });
-                console.log(`  ✓ Sent removal alert to user (${userId})`);
+                console.log(`Sent removal alert to user (${userId})`);
             } else {
-                console.log(`  ✗ User not connected (${userId})`);
+                console.log(`User not connected (${userId})`);
             }
         } else {
-            console.log(`  ✗ Socket.io not available`);
+            console.log(`Socket.io not available`);
         }
         console.log();
 

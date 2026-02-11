@@ -171,7 +171,7 @@
         // Listen for new invitation events (invited user)
         socket.on('newInvitation', (data) => {
             console.log('\n========================================');
-            console.log('[Socket.io] ✓✓✓ NEW INVITATION EVENT RECEIVED!');
+            console.log('[Socket.io] NEW INVITATION EVENT RECEIVED!');
             console.log('  Data:', data);
             console.log('  My User ID:', window.userInfo?.uid);
             console.log('  Dispatching refreshNotifications event...');
@@ -184,7 +184,7 @@
         // Listen for invitation sent events (project owner)
         socket.on('invitationSent', (data) => {
             console.log('\n========================================');
-            console.log('[Socket.io] ✓✓✓ INVITATION SENT CONFIRMATION!');
+            console.log('[Socket.io] INVITATION SENT CONFIRMATION!');
             console.log('  Data:', data);
             console.log('  My User ID:', window.userInfo?.uid);
             console.log('  Dispatching refreshNotifications event...');
