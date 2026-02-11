@@ -1206,7 +1206,7 @@
 
             return () => {
                 window.removeEventListener('refreshNotifications', handleRefreshNotifications);
-                clearInterval(pollInterval);
+                // clearInterval(pollInterval); // Commented out as pollInterval is not currently used
             };
         }, [checkUnreadNotifications]);
 
