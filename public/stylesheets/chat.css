@@ -164,7 +164,7 @@
 .message {
     display: flex;
     gap: 12px;
-    margin-bottom: 16px;
+    /*! margin-bottom: 5px; */
     position: relative; /* For edit button positioning */
 }
 
@@ -559,7 +559,9 @@
     display: flex;
     flex-direction: column;
     padding: 12px 0 0 0;
-    margin-top: 12px;
+    margin-top: 10px;
+
+    /* See if you want to delete these */
     opacity: 0;
     transform: translateY(10px);
     transition: opacity 0.3s ease, transform 0.3s ease;
@@ -578,29 +580,28 @@
 
 .suggestion-chips-wrapper {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .suggestion-chip {
-    display: inline-flex;
-    align-items: center;
-    width: fit-content;
+    display: block;
+    width: 100%;
     text-align: left;
     font-family: 'Inter', Helvetica, sans-serif;
     font-size: 13px;
-    font-weight: 500;
-    color: #1a1a1a;
-    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
-    border: 1px solid #d0d0d0;
-    border-radius: 20px;
-    padding: 9px 16px;
+    font-weight: 400;
+    color: #4a5568;
+    background: transparent;
+    border: none;
+    border-left: 3px solid #cbd5e0;
+    padding: 10px 12px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
+    white-space: normal;
+    word-wrap: break-word;
 }
 
 .suggestion-chip::before {
@@ -610,17 +611,16 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%);
+    background: #f7fafc;
     opacity: 0;
     transition: opacity 0.2s ease;
+    z-index: -1;
 }
 
 .suggestion-chip:hover {
-    background: linear-gradient(135deg, #e8e8e8 0%, #d6d6d6 100%);
-    border-color: #b8b8b8;
-    color: #000;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    background: #f7fafc;
+    border-left-color: #2d3748;
+    color: #2d3748;
 }
 
 .suggestion-chip:hover::before {
@@ -628,8 +628,8 @@
 }
 
 .suggestion-chip:active {
-    transform: translateY(0) scale(0.98);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    background: #edf2f7;
+    border-left-color: #1a365d;
 }
 
 @media (max-width: 768px) {
@@ -644,13 +644,13 @@
     }
     
     .suggestion-chips-wrapper {
-        gap: 6px;
+        gap: 4px;
     }
     
     .suggestion-chip {
         font-size: 12px;
-        padding: 8px 14px;
-        border-radius: 16px;
+        padding: 8px 10px;
+        border-left-width: 2px;
     }
 }
 

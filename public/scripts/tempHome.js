@@ -13,6 +13,43 @@
 
 const { useState } = React;
 
+// Alert Modal sub-component - defined first to ensure it's available
+const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
+    return React.createElement('div', {
+        style: {
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: window.ZIndex?.MODAL_BACKDROP || 30, padding: '20px'
+        },
+        onClick: (e) => e.target === e.currentTarget && modal.type === 'alert' && closeModal()
+    },
+        React.createElement('div', {
+            style: {
+                backgroundColor: '#ffffff', borderRadius: '15px',
+                padding: isMobile ? '25px' : '30px',
+                maxWidth: isMobile ? '90%' : '500px', width: '100%',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                display: 'flex', flexDirection: 'column', gap: '20px'
+            },
+            onClick: (e) => e.stopPropagation()
+        },
+            React.createElement('div', { style: { fontFamily: 'Urbanist, Helvetica', fontWeight: 700, fontSize: isMobile ? '20px' : '24px', color: '#000' } }, modal.title),
+            React.createElement('div', { style: { fontFamily: 'Inter, Helvetica', fontSize: isMobile ? '14px' : '16px', color: '#000', lineHeight: '1.5' } }, modal.message),
+            React.createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' } },
+                React.createElement('button', {
+                    style: {
+                        padding: isMobile ? '10px 20px' : '12px 24px', borderRadius: '10px', border: 'none',
+                        backgroundColor: '#000', color: '#fff', fontFamily: 'Urbanist, Helvetica',
+                        fontWeight: 600, fontSize: isMobile ? '14px' : '16px', cursor: 'pointer'
+                    },
+                    onClick: closeModal
+                }, 'OK')
+            )
+        )
+    );
+};
+
 const TempHome = ({ csrfToken, userInfo }) => {
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -457,43 +494,6 @@ function downloadSourceDocument(documentID) {
 function deleteSourceDocument(documentID) {
     // your logic here
 }
-
-// Alert Modal sub-component
-const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
-    return React.createElement('div', {
-        style: {
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: window.ZIndex?.MODAL_BACKDROP || 30, padding: '20px'
-        },
-        onClick: (e) => e.target === e.currentTarget && modal.type === 'alert' && closeModal()
-    },
-        React.createElement('div', {
-            style: {
-                backgroundColor: '#ffffff', borderRadius: '15px',
-                padding: isMobile ? '25px' : '30px',
-                maxWidth: isMobile ? '90%' : '500px', width: '100%',
-                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                display: 'flex', flexDirection: 'column', gap: '20px'
-            },
-            onClick: (e) => e.stopPropagation()
-        },
-            React.createElement('div', { style: { fontFamily: 'Urbanist, Helvetica', fontWeight: 700, fontSize: isMobile ? '20px' : '24px', color: '#000' } }, modal.title),
-            React.createElement('div', { style: { fontFamily: 'Inter, Helvetica', fontSize: isMobile ? '14px' : '16px', color: '#000', lineHeight: '1.5' } }, modal.message),
-            React.createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' } },
-                React.createElement('button', {
-                    style: {
-                        padding: isMobile ? '10px 20px' : '12px 24px', borderRadius: '10px', border: 'none',
-                        backgroundColor: '#000', color: '#fff', fontFamily: 'Urbanist, Helvetica',
-                        fontWeight: 600, fontSize: isMobile ? '14px' : '16px', cursor: 'pointer'
-                    },
-                    onClick: closeModal
-                }, 'OK')
-            )
-        )
-    );
-};
 
 // Export
 Object.assign(window, { TempHome });

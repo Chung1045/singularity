@@ -737,14 +737,13 @@ function appendSuggestionChips(parentContentWrapper) {
     label.innerHTML = 'Suggestions';
     container.appendChild(label);
 
-    // Create chips wrapper for horizontal layout
+    // Create chips wrapper for list layout
     const chipsWrapper = document.createElement('div');
     chipsWrapper.className = 'suggestion-chips-wrapper';
-    chipsWrapper.style.cssText = 'display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;';
 
     // iterate over the suggestions
     suggestions.forEach((text, index) => {
-        // build the suggestion chip
+        // build the suggestion chip as a list item
         const chip = document.createElement('button');
         chip.id = `suggestion-chip-${index}`;
         chip.className = 'suggestion-chip';
@@ -781,6 +780,12 @@ function appendSuggestionChips(parentContentWrapper) {
     // add the suggestion chips container to the parent content wrapper
     parentContentWrapper.appendChild(container);
     
+    // Trigger animation by setting opacity and transform to visible state
+    // Use requestAnimationFrame to ensure the browser registers the initial state first
+    requestAnimationFrame(() => {
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+    });
 }
 
 // ===== ADD MESSAGE FUNCTION =====

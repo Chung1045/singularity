@@ -944,6 +944,9 @@
         // Notification panel state
         const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
         const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+        const [notificationCheckDisabled, setNotificationCheckDisabled] = useState(false);
+        const notificationCheckStartTimeRef = useRef(null);
+        const NOTIFICATION_CHECK_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
 
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
@@ -1119,6 +1122,22 @@
         // Check for NEW notifications (unread AND recent)
         const checkUnreadNotifications = useCallback(async () => {
             try {
+                // If checking is disabled, don't proceed
+                if (notificationCheckDisabled) {
+                    console.log('[Sidebar] Notification checking is disabled - skipping check');
+                    return;
+                }
+
+                // Check if we've exceeded the timeout duration
+                if (notificationCheckStartTimeRef.current) {
+                    const elapsedTime = Date.now() - notificationCheckStartTimeRef.current;
+                    if (elapsedTime > NOTIFICATION_CHECK_TIMEOUT) {
+                        console.log('[Sidebar] Notification check timeout reached - disabling checks');
+                        setNotificationCheckDisabled(true);
+                        return;
+                    }
+                }
+
                 console.log('[Sidebar] Checking for unread notifications...');
                 const response = await fetch('/api/notifications/list', {
                     method: 'POST',
@@ -1153,15 +1172,21 @@
                     });
                     
                     setHasUnreadNotifications(hasNewNotifications);
-                    console.log('[Sidebar] ✓ Notification badge status:', hasNewNotifications ? 'SHOW RED BADGE' : 'NO BADGE');
+                    console.log('[Sidebar] Notification badge status:', hasNewNotifications ? 'SHOW RED BADGE' : 'NO BADGE');
                 }
             } catch (error) {
                 console.error('[Sidebar] Error checking unread notifications:', error);
             }
-        }, []);
+        }, [notificationCheckDisabled]);
 
         // Check for unread notifications on mount and listen for refresh events
         useEffect(() => {
+            // Initialize the start time on first mount
+            if (!notificationCheckStartTimeRef.current) {
+                notificationCheckStartTimeRef.current = Date.now();
+                console.log('[Sidebar] Notification checking started - will disable after 30 minutes');
+            }
+
             // Initial check
             checkUnreadNotifications();
 
@@ -1174,10 +1199,10 @@
             window.addEventListener('refreshNotifications', handleRefreshNotifications);
 
             // Auto-refresh every 30 seconds as backup for socket failures
-            const pollInterval = setInterval(() => {
-                console.log('[Sidebar] Auto-polling for new notifications (30s interval)');
-                checkUnreadNotifications();
-            }, 30000);
+            // const pollInterval = setInterval(() => {
+            //     console.log('[Sidebar] Auto-polling for new notifications (30s interval)');
+            //     checkUnreadNotifications();
+            // }, 30000);
 
             return () => {
                 window.removeEventListener('refreshNotifications', handleRefreshNotifications);
