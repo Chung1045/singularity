@@ -1198,15 +1198,15 @@
 
             window.addEventListener('refreshNotifications', handleRefreshNotifications);
 
-            // Auto-refresh every 30 seconds as backup for socket failures
-            // const pollInterval = setInterval(() => {
-            //     console.log('[Sidebar] Auto-polling for new notifications (30s interval)');
-            //     checkUnreadNotifications();
-            // }, 30000);
+            // Auto-refresh every 2 minutes as backup for socket failures
+            const pollInterval = setInterval(() => {
+                console.log('[Sidebar] Auto-polling for new notifications (2 minute interval)');
+                checkUnreadNotifications();
+            }, 2 * 60 * 1000); // 2 minutes
 
             return () => {
                 window.removeEventListener('refreshNotifications', handleRefreshNotifications);
-                // clearInterval(pollInterval); // Commented out as pollInterval is not currently used
+                clearInterval(pollInterval);
             };
         }, [checkUnreadNotifications]);
 
