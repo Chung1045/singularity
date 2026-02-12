@@ -468,7 +468,7 @@ async function saveGeneratedReport(projectID, buffer, kind) {
             ? 'application/pdf'
             : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-        console.log(`📊 Content type: ${contentType}`);
+        console.log(`Content type: ${contentType}`);
 
         // Use putObject for buffer data
         await minioClient.putObject(bucket, pathName, buffer, buffer.length, {
@@ -531,7 +531,7 @@ async function insertReportRecord(projectID, reportType) {
     let isPdf = reportType && reportType.endsWith('_pdf');
     let baseType = isPdf ? reportType.replace('_pdf', '') : reportType;
 
-    console.log(`📊 isPdf: ${isPdf}, baseType: ${baseType}`);
+    console.log(`isPdf: ${isPdf}, baseType: ${baseType}`);
 
     if (baseType === FSS_REPORT_REQUIREMENTS || reportType === FSS_REPORT_REQUIREMENTS_PDF) {
         reportName = "Project Requirements Report" + (isPdf ? " (PDF)" : "");

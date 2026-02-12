@@ -308,8 +308,8 @@ const AlertModal = {
             `;
 
             content.innerHTML = `
-                <div style="font-family: Urbanist, Helvetica; font-weight: 700; font-size: 24px; color: #000000;">${title}</div>
-                <div style="font-family: Inter, Helvetica; font-weight: 400; font-size: 16px; color: #000000; line-height: 1.4;">${message}</div>
+                <div id="modal-title" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 18px; color: #1a1a1a; margin: 0;">${title}</div>
+                <div id="notification-message" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 14px; color: #666666; margin: 0; line-height: 1.5;">${message}</div>
                 <div style="display: flex; justify-content: flex-end;">
                     <button id="alert-ok-btn" style="padding: 12px 32px; border-radius: 10px; border: none; background-color: #000000; color: #ffffff; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${buttonText}</button>
                 </div>

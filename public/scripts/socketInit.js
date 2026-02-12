@@ -168,6 +168,32 @@
             }
         });
         
+        // Listen for new invitation events (invited user)
+        socket.on('newInvitation', (data) => {
+            console.log('\n========================================');
+            console.log('[Socket.io] NEW INVITATION EVENT RECEIVED!');
+            console.log('  Data:', data);
+            console.log('  My User ID:', window.userInfo?.uid);
+            console.log('  Dispatching refreshNotifications event...');
+            console.log('========================================\n');
+            
+            // Refresh notification panel badge immediately (same as projectRenamed)
+            window.dispatchEvent(new CustomEvent('refreshNotifications'));
+        });
+        
+        // Listen for invitation sent events (project owner)
+        socket.on('invitationSent', (data) => {
+            console.log('\n========================================');
+            console.log('[Socket.io] INVITATION SENT CONFIRMATION!');
+            console.log('  Data:', data);
+            console.log('  My User ID:', window.userInfo?.uid);
+            console.log('  Dispatching refreshNotifications event...');
+            console.log('========================================\n');
+            
+            // Refresh notification panel badge immediately (same as projectRenamed)
+            window.dispatchEvent(new CustomEvent('refreshNotifications'));
+        });
+        
         socket.on('disconnect', () => {
             console.log('[Socket.io] Disconnected');
         });

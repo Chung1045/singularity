@@ -214,32 +214,5 @@ const FileChip = ({ fileId }) => {
     }, `📎 ${fileName}`);
 };
 
-/**
- * TypingIndicator Component
- */
-const TypingIndicator = ({ id }) => {
-    return React.createElement('div', {
-        id: id,
-        className: 'message ai-message'
-    },
-        React.createElement('div', {
-            className: 'message-avatar'
-        }, React.createElement('img', {
-            src: './img/Union.svg',
-            alt: 'AI',
-            style: { width: '50%', height: '50%', objectFit: 'contain' }
-        })),
-        React.createElement('div', {
-            className: 'message-bubble typing-bubble'
-        }, React.createElement('div', {
-            className: 'typing-indicator'
-        },
-            React.createElement('span'),
-            React.createElement('span'),
-            React.createElement('span')
-        ))
-    );
-};
-
 // Export components
-Object.assign(window, { ChatMessage, FileChip, TypingIndicator });
+Object.assign(window, { ChatMessage, FileChip });

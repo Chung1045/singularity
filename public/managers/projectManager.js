@@ -120,7 +120,7 @@ router.post('/project/delete', async (req, res) => {
             return res.status(403).json({ successful: false, message: "Unauthorized" });
         }
 
-        console.log(`✓ Authorization passed: User is project owner\n`);
+        console.log(`Authorization passed: User is project owner\n`);
 
         // Get project name before deletion for notification
         const projectName = await projectDBService.fetchProjectName(projectID);
@@ -1083,6 +1083,53 @@ router.post("/project/invite", async (req, res) => {
         // Notify owner that they sent an invitation
         await notifDB.notifyOwnerInvitationSent(projectID, userID, invitedUserId);
 
+        console.log(`[Invitation] Database notifications created successfully`);
+
+        // Send real-time socket notifications AFTER database writes complete
+        const io = global.io;
+        const userSockets = global.userSockets;
+        
+        console.log(`\n[Socket.io] Sending invitation notifications:`);
+        console.log(`  Project: ${projectID}`);
+        console.log(`  From (Owner): ${userID}`);
+        console.log(`  To (Invited): ${invitedUserId}`);
+        console.log(`  Owner UID type: ${typeof userID}`);
+        console.log(`  Invited UID type: ${typeof invitedUserId}`);
+        
+        if (io && userSockets) {
+            console.log(`  Total connected users: ${userSockets.size}`);
+            console.log(`  All connected UIDs:`, Array.from(userSockets.keys()));
+            
+            // Notify the invited user
+            const invitedSocketID = userSockets.get(invitedUserId);
+            console.log(`  Looking for invited user socket: ${invitedUserId} -> ${invitedSocketID}`);
+            if (invitedSocketID) {
+                io.to(invitedSocketID).emit('newInvitation', {
+                    projectID: projectID,
+                    from: userID
+                });
+                console.log(`SENT 'newInvitation' to invited user (${invitedUserId}) socket ${invitedSocketID}`);
+            } else {
+                console.log(`INVITED USER NOT CONNECTED (${invitedUserId}) - They will see notification on next page load/poll`);
+            }
+            
+            // Notify the owner
+            const ownerSocketID = userSockets.get(userID);
+            console.log(`  Looking for owner socket: ${userID} -> ${ownerSocketID}`);
+            if (ownerSocketID) {
+                io.to(ownerSocketID).emit('invitationSent', {
+                    projectID: projectID,
+                    to: invitedUserId
+                });
+                console.log(`SENT 'invitationSent' to owner (${userID}) socket ${ownerSocketID}`);
+            } else {
+                console.log(`OWNER NOT CONNECTED (${userID})`);
+            }
+        } else {
+            console.log(`Socket.io not available`);
+        }
+        console.log(``);
+
         console.log(`Invitation sent: ${invitedUserId} to project ${projectID}`);
 
         return res.status(200).json({
@@ -1159,12 +1206,12 @@ router.post("/project/remove-collaborator", async (req, res) => {
                     projectName,
                     removedByOwner: true
                 });
-                console.log(`  ✓ Sent removal alert to user (${userId})`);
+                console.log(`Sent removal alert to user (${userId})`);
             } else {
-                console.log(`  ✗ User not connected (${userId})`);
+                console.log(`User not connected (${userId})`);
             }
         } else {
-            console.log(`  ✗ Socket.io not available`);
+            console.log(`Socket.io not available`);
         }
         console.log();
 

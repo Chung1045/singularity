@@ -13,6 +13,43 @@
 
 const { useState } = React;
 
+// Alert Modal sub-component - defined first to ensure it's available
+const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
+    return React.createElement('div', {
+        style: {
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: window.ZIndex?.MODAL_BACKDROP || 30, padding: '20px'
+        },
+        onClick: (e) => e.target === e.currentTarget && modal.type === 'alert' && closeModal()
+    },
+        React.createElement('div', {
+            style: {
+                backgroundColor: '#ffffff', borderRadius: '15px',
+                padding: isMobile ? '25px' : '30px',
+                maxWidth: isMobile ? '90%' : '500px', width: '100%',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                display: 'flex', flexDirection: 'column', gap: '20px'
+            },
+            onClick: (e) => e.stopPropagation()
+        },
+            React.createElement('div', { style: { fontFamily: 'Urbanist, Helvetica', fontWeight: 700, fontSize: isMobile ? '20px' : '24px', color: '#000' } }, modal.title),
+            React.createElement('div', { style: { fontFamily: 'Inter, Helvetica', fontSize: isMobile ? '14px' : '16px', color: '#000', lineHeight: '1.5' } }, modal.message),
+            React.createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' } },
+                React.createElement('button', {
+                    style: {
+                        padding: isMobile ? '10px 20px' : '12px 24px', borderRadius: '10px', border: 'none',
+                        backgroundColor: '#000', color: '#fff', fontFamily: 'Urbanist, Helvetica',
+                        fontWeight: 600, fontSize: isMobile ? '14px' : '16px', cursor: 'pointer'
+                    },
+                    onClick: closeModal
+                }, 'OK')
+            )
+        )
+    );
+};
+
 const TempHome = ({ csrfToken, userInfo }) => {
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -211,7 +248,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
         }
 
         const projectTitle = projectDropdown.options[projectDropdown.selectedIndex]?.text || 'Project Analysis';
-        const typingId = ChatUtils.showTypingIndicator();
+        ChatUtils.showLoadingIndicator();
 
         try {
             const response = await fetch('/api/agent/analyze-documents', {
@@ -225,7 +262,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 })
             });
 
-            ChatUtils.removeTypingIndicator(typingId);
+            ChatUtils.removeLoadingIndicator();
             const data = await response.json();
 
             if (response.ok && data.success) {
@@ -239,7 +276,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 window.showNotification?.({ type: 'error', title: 'Analysis Failed', message: data.message || 'Unable to analyze documents.', actionText: 'OK' });
             }
         } catch (error) {
-            ChatUtils.removeTypingIndicator(typingId);
+            ChatUtils.removeLoadingIndicator();
             addMessage('ai', 'Sorry, there was an error analyzing the documents.');
             window.showNotification?.({ type: 'error', title: 'Error', message: 'An error occurred while analyzing documents.', actionText: 'OK' });
         }
@@ -365,11 +402,12 @@ const TempHome = ({ csrfToken, userInfo }) => {
 
                     // Input field
                     React.createElement('form', {
+                        id: 'input-field-form',
                         className: 'input-field',
                         role: 'search',
                         onSubmit: (e) => { e.preventDefault(); submitConversationRequest(); }
                     },
-                        React.createElement('div', { style: { position: 'relative' } },
+                        React.createElement('div', { id: 'input-field-attachment-wrapper', style: { position: 'relative' } },
                             // Attachment menu button
                             React.createElement('button', {
                                 id: 'attachment-menu-button',
@@ -377,7 +415,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                                 className: 'input-field-button',
                                 onClick: (e) => { e.stopPropagation(); setAttachmentMenuOpen(!attachmentMenuOpen); }
                             },
-                                React.createElement('img', { className: 'vector', src: './img/paperclip.svg', alt: 'Attach', style: { width: '20px', height: '20px' } })
+                                React.createElement('img', { id: 'attachment-menu-icon', className: 'vector', src: './img/paperclip.svg', alt: 'Attach', style: { width: '20px', height: '20px' } })
                             ),
 
                             // Attachment dropdown
@@ -391,11 +429,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
                                 }
                             },
                                 React.createElement('button', {
+                                    id: 'attachment-dropdown-upload-files',
                                     type: 'button',
                                     style: { width: '100%', padding: '12px 14.5px', border: 'none', backgroundColor: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: '13.3px', color: '#000', fontWeight: 500 },
                                     onClick: handleUploadFiles
                                 }, 'Upload Files'),
                                 React.createElement('button', {
+                                    id: 'attachment-dropdown-select-files',
                                     type: 'button',
                                     style: { width: '100%', padding: '12px 14.5px', border: 'none', backgroundColor: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: '13.3px', color: '#000', fontWeight: 500 },
                                     onClick: handleSelectUploadedFiles
@@ -422,11 +462,12 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         }),
 
                         React.createElement('button', {
+                            id: 'input-field-send-button',
                             type: 'submit',
                             className: 'input-field-button',
                             onClick: (e) => { e.preventDefault(); submitConversationRequest(); }
                         },
-                            React.createElement('img', { className: 'img', src: './img/Send.svg', alt: '' })
+                            React.createElement('img', { id: 'input-field-send-icon', className: 'img', src: './img/Send.svg', alt: '' })
                         )
                     )
                 )
@@ -453,43 +494,6 @@ function downloadSourceDocument(documentID) {
 function deleteSourceDocument(documentID) {
     // your logic here
 }
-
-// Alert Modal sub-component
-const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
-    return React.createElement('div', {
-        style: {
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: window.ZIndex?.MODAL_BACKDROP || 30, padding: '20px'
-        },
-        onClick: (e) => e.target === e.currentTarget && modal.type === 'alert' && closeModal()
-    },
-        React.createElement('div', {
-            style: {
-                backgroundColor: '#ffffff', borderRadius: '15px',
-                padding: isMobile ? '25px' : '30px',
-                maxWidth: isMobile ? '90%' : '500px', width: '100%',
-                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                display: 'flex', flexDirection: 'column', gap: '20px'
-            },
-            onClick: (e) => e.stopPropagation()
-        },
-            React.createElement('div', { style: { fontFamily: 'Urbanist, Helvetica', fontWeight: 700, fontSize: isMobile ? '20px' : '24px', color: '#000' } }, modal.title),
-            React.createElement('div', { style: { fontFamily: 'Inter, Helvetica', fontSize: isMobile ? '14px' : '16px', color: '#000', lineHeight: '1.5' } }, modal.message),
-            React.createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' } },
-                React.createElement('button', {
-                    style: {
-                        padding: isMobile ? '10px 20px' : '12px 24px', borderRadius: '10px', border: 'none',
-                        backgroundColor: '#000', color: '#fff', fontFamily: 'Urbanist, Helvetica',
-                        fontWeight: 600, fontSize: isMobile ? '14px' : '16px', cursor: 'pointer'
-                    },
-                    onClick: closeModal
-                }, 'OK')
-            )
-        )
-    );
-};
 
 // Export
 Object.assign(window, { TempHome });

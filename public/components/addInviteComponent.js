@@ -98,6 +98,9 @@
                         // Add to invited set
                         setInvitedUsers(prev => new Set(prev).add(userId));
                         
+                        // Refresh notification badge
+                        window.dispatchEvent(new CustomEvent('refreshNotifications'));
+                        
                         // Show success notification
                         if (window.showNotification) {
                             await window.showNotification({

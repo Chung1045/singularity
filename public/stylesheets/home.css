@@ -187,8 +187,8 @@ a {
   margin-bottom: 32px; /* More space from bottom */
 }
 
-/* Suggestion chips container */
-.suggestion-chips-container {
+/* Suggestion chips container (main screen / input area) */
+.main-screen > .suggestion-chips-container {
   display: none;
   gap: 12px; /* More space between chips */
   justify-content: left;
@@ -201,7 +201,7 @@ a {
   transition: all 0.3s ease;
 }
 
-.sidebar-expand .main-screen.chat-mode .suggestion-chips-container {
+.sidebar-expand .main-screen.chat-mode > .suggestion-chips-container {
   display: flex;
   opacity: 1;
   transform: translateY(0);

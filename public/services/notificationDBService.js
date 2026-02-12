@@ -12,9 +12,10 @@ async function setupProjectShareNotification(projectID, collaboratorID) {
     try {
         const projectName = await projectDB.fetchProjectName(projectID);
         const now = Date.now(); // Store as milliseconds timestamp
+        const notifID = uuid();
 
         const params = [
-            uuid(),
+            notifID,
             collaboratorID,
             now,
             "invitation",
@@ -23,12 +24,21 @@ async function setupProjectShareNotification(projectID, collaboratorID) {
             false
         ];
 
+        console.log(`[Notification DB] Creating invitation notification for user ${collaboratorID}:`, {
+            notifID: notifID,
+            projectID: projectID,
+            projectName: projectName,
+            isRead: false,
+            timestamp: now
+        });
+
         return new Promise((resolve, reject) => {
             db.run(sql, params, (err) => {
                 if (err) {
                     console.error("Error inserting notification:", err);
                     return reject(err);
                 }
+                console.log(`[Notification DB] ✓ Invitation notification created successfully for user ${collaboratorID}`);
                 resolve(true);
             });
         });
@@ -323,9 +333,10 @@ async function notifyOwnerInvitationSent(projectID, ownerID, invitedUserID) {
 
         const invitedUsername = invitedUser ? invitedUser.userName : 'User';
         const now = Date.now();
+        const notifID = uuid();
 
         const params = [
-            uuid(),
+            notifID,
             ownerID,
             now,
             "invitation",
@@ -334,12 +345,21 @@ async function notifyOwnerInvitationSent(projectID, ownerID, invitedUserID) {
             false
         ];
 
+        console.log(`[Notification DB] Creating owner invitation notification for user ${ownerID}:`, {
+            notifID: notifID,
+            projectID: projectID,
+            invitedUser: invitedUsername,
+            isRead: false,
+            timestamp: now
+        });
+
         return new Promise((resolve, reject) => {
             db.run(sql, params, (err) => {
                 if (err) {
                     console.error("Error inserting owner invitation notification:", err);
                     return reject(err);
                 }
+                console.log(`[Notification DB] ✓ Owner invitation notification created successfully for user ${ownerID}`);
                 resolve(true);
             });
         });

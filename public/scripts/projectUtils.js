@@ -158,13 +158,22 @@ function createChatHistoryItem(threadName, chatID) {
 
                 const data = await response.json();
                 if (response.ok && data.success) {
-                    // Show success message
-                    await window.showNotification({
-                        type: 'success',
-                        title: 'Warning',
-                        message: 'Current chat successfully deleted',
-                        actionText: 'OK'
-                    });
+                    // Show success message using AlertModal for consistent styling
+                    if (window.AlertModal) {
+                        await window.AlertModal.show({
+                            title: 'Chat Deleted',
+                            message: 'Current chat successfully deleted',
+                            autoClose: 3000
+                        });
+                    } else {
+                        // Fallback to showNotification if AlertModal not available
+                        await window.showNotification({
+                            type: 'success',
+                            title: 'Chat Deleted',
+                            message: 'Current chat successfully deleted',
+                            actionText: 'OK'
+                        });
+                    }
 
                     // Refresh chat history
                     if (typeof window.fetchProjectChats === 'function') {
@@ -283,15 +292,15 @@ function createChatHistoryItem(threadName, chatID) {
                     display: 'flex',
                     alignItems: 'center',
                     flexShrink: 0,
-                    width: '50px',
-                    height: '50px'
+                    width: '30px',
+                    height: '30px'
                 }
             },
                 React.createElement('img', {
                     className: 'chat-menu-btn',
                     style: {
-                        width: '50px',
-                        height: '50px',
+                        width: '30px',
+                        height: '30px',
                         padding: '4px',
                         flexShrink: 0,
                         borderRadius: '5px',
@@ -555,6 +564,7 @@ function createFileItem(fileName, documentID) {
         };
 
         return React.createElement('div', {
+            id: `source-item-${documentID}`,
             className: 'sidebar-items source-item',
             'data-document-id': documentID,
             style: {
@@ -580,6 +590,7 @@ function createFileItem(fileName, documentID) {
             }
         },
             React.createElement('input', {
+                id: `source-item-checkbox-${documentID}`,
                 type: 'checkbox',
                 className: 'source-checkbox',
                 style: { width: "16px", height: "16px", flexShrink: 0, cursor: 'pointer' },
@@ -612,6 +623,7 @@ function createFileItem(fileName, documentID) {
             }, fileName),
             // Menu container - only visible when checkbox is checked
             isChecked && React.createElement('div', {
+                id: `source-item-menu-wrapper-${documentID}`,
                 ref: menuRef,
                 style: {
                     position: 'relative',
@@ -975,10 +987,12 @@ function createReportItem(reportName, reportID, projectID, reportType) {
             e.stopPropagation();
             setMenuOpen(false);
 
-            const confirmDelete = await ConfirmModal.show({
+            // Use showNotification (available on all pages)
+            const confirmDelete = await window.showNotification({
+                type: 'confirm',
                 title: 'Warning',
-                message: `Are you sure you want to delete "${reportName}"? This cannot be reversed!`,
-                confirmText: 'Delete',
+                message: `Are you sure you want to delete "${reportName}"?\nThis cannot be reversed!`,
+                actionText: 'Delete',
                 cancelText: 'Cancel'
             });
 
@@ -1028,7 +1042,7 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '8px 12px',
-                cursor: 'pointer',
+                cursor: 'default',
                 borderRadius: '8px',
                 transition: 'background-color 0.2s',
                 fontSize: '14px',
@@ -1046,16 +1060,17 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                 if (!menuOpen) {
                     e.currentTarget.style.backgroundColor = 'transparent';
                 }
-            },
-            onClick: (e) => {
-                // Download the report on click (unless clicking checkbox or menu button)
-                if (e.target.type !== 'checkbox' && e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
-                    handleDownload(e);
-                }
             }
+            // onClick: (e) => {
+            //     // Download the report on click (unless clicking checkbox or menu button)
+            //     if (e.target.type !== 'checkbox' && e.target.tagName !== 'IMG' && e.target.tagName !== 'BUTTON') {
+            //         handleDownload(e);
+            //     }
+            // }
         },
             // Checkbox - click to show/hide three-dot menu
             React.createElement('input', {
+                id: `sidebar-report-checkbox-${reportID}`,
                 type: 'checkbox',
                 className: 'report-checkbox',
                 checked: isChecked,
@@ -1079,6 +1094,8 @@ function createReportItem(reportName, reportID, projectID, reportType) {
 
             // Document icon - different for Requirements vs User Stories
             React.createElement('img', {
+                id: `sidebar-report-icon-${reportID}`,
+                className: 'report-icon',
                 src: iconSrc,
                 alt: '',
                 style: {
@@ -1106,6 +1123,7 @@ function createReportItem(reportName, reportID, projectID, reportType) {
 
             // Options menu container - only visible when checkbox is checked
             isChecked && React.createElement('div', {
+                id: `sidebar-report-menu-wrapper-${reportID}`,
                 ref: menuRef,
                 style: { position: 'relative', marginLeft: '8px' }
             },

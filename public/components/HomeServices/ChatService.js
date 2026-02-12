@@ -13,7 +13,7 @@ const ChatService = {
      */
     async streamChat(data, { onChunk, onStage, onDone, onError, onChatID, onReportGenerated }) {
         console.log('=== STREAM CHAT REQUEST ===');
-        console.log('📤 Sending data:', JSON.stringify(data, null, 2));
+        console.log('Sending data:', JSON.stringify(data, null, 2));
 
         const response = await fetch('/api/agent/chat', {
             method: 'POST',
@@ -67,7 +67,7 @@ const ChatService = {
                         break;
 
                     case 'done':
-                        console.log('Streaming complete');
+                        // console.log('Streaming complete');
                         if (jsonData.conversationID && jsonData.chatSeq) {
                             conversationIDReceived = jsonData.conversationID;
                             chatSeqReceived = jsonData.chatSeq;

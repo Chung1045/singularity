@@ -223,10 +223,11 @@
         };
 
         const deleteReport = async (reportID) => {
-            const confirmDelete = await window.ConfirmModal.show({
+            const confirmDelete = await window.showNotification({
+                type: 'confirm',
                 title: 'Warning',
-                message: 'Are you sure you want to delete this report? This cannot be reversed!',
-                confirmText: 'Delete',
+                message: 'Are you sure you want to delete this report?\nThis cannot be reversed!',
+                actionText: 'Delete',
                 cancelText: 'Cancel'
             });
 
@@ -400,6 +401,7 @@
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#f2f2f7'
                     },
                         React.createElement('svg', {
+                            id: 'requirements-panel-close-icon',
                             style: { width: '18px', height: '18px' },
                             viewBox: '0 0 24 24',
                             fill: 'none'
@@ -533,7 +535,7 @@
                             }
                         }, 'Functional'),
                         React.createElement('button', {
-                            id: 'requirements-panel-subtab-nonfunctional',
+                            id: 'requirements-panel-subtab-non-functional',
                             onClick: () => setSubTab('non-functional'),
                             style: {
                                 minWidth: '130px',
@@ -591,7 +593,7 @@
                             gap: '8px'
                         }
                     },
-                        React.createElement('span', { style: { fontSize: '16px' } }, ''),
+                        React.createElement('span', { id: 'requirements-panel-error-icon', style: { fontSize: '16px' } }, ''),
                         error
                     ),
 
@@ -609,7 +611,7 @@
                             gap: '8px'
                         }
                     },
-                        React.createElement('span', { style: { fontSize: '16px' } }, '✓'),
+                        React.createElement('span', { id: 'requirements-panel-success-icon', style: { fontSize: '16px' } }, '✓'),
                         successMessage
                     ),
 
@@ -759,6 +761,7 @@
                                     },
                                         // Sequence badge
                                         React.createElement('div', {
+                                            id: `requirements-panel-item-badge-${itemId}`,
                                             style: {
                                                 padding: '4px 10px',
                                                 backgroundColor: '#1c1d21',
@@ -772,9 +775,11 @@
                                         }, `${prefix}-${String(seqNum).padStart(2, '0')}`),
                                         // Content
                                         React.createElement('div', {
+                                            id: `requirements-panel-item-body-${itemId}`,
                                             style: { flex: 1, minWidth: 0 }
                                         },
                                             React.createElement('h4', {
+                                                id: `requirements-panel-item-title-${itemId}`,
                                                 style: {
                                                     margin: '0 0 6px 0',
                                                     fontFamily: 'Inter, Helvetica',
@@ -784,6 +789,7 @@
                                                 }
                                             }, title),
                                             React.createElement('p', {
+                                                id: `requirements-panel-item-description-${itemId}`,
                                                 style: {
                                                     margin: '0 0 8px 0',
                                                     fontFamily: 'Inter, Helvetica',
@@ -798,6 +804,7 @@
                                             }, description),
                                             // Role badge (if available)
                                             role && React.createElement('div', {
+                                                id: `requirements-panel-item-role-${itemId}`,
                                                 style: {
                                                     display: 'inline-flex',
                                                     alignItems: 'center',
@@ -809,6 +816,7 @@
                                                 }
                                             },
                                                 React.createElement('svg', {
+                                                    id: `requirements-panel-item-role-icon-${itemId}`,
                                                     width: '14',
                                                     height: '14',
                                                     viewBox: '0 0 24 24',
@@ -823,6 +831,7 @@
                                                     })
                                                 ),
                                                 React.createElement('span', {
+                                                    id: `requirements-panel-item-role-label-${itemId}`,
                                                     style: {
                                                         fontFamily: 'Inter, Helvetica',
                                                         fontSize: '14px',
@@ -833,6 +842,7 @@
                                             ),
                                             // Source references
                                             sourceReferences.length > 0 && React.createElement('div', {
+                                                id: `requirements-panel-item-sources-${itemId}`,
                                                 style: {
                                                     display: 'flex',
                                                     flexDirection: 'column',
@@ -843,6 +853,8 @@
                                                 sourceReferences.map((src, srcIndex) =>
                                                     React.createElement('div', {
                                                         key: src.documentID || srcIndex,
+                                                        'data-source-index': srcIndex,
+                                                        id: `requirements-panel-source-${itemId}-${srcIndex}`,
                                                         style: {
                                                             display: 'flex',
                                                             alignItems: 'center',
@@ -855,6 +867,7 @@
                                                     },
                                                         // Document icon
                                                         React.createElement('svg', {
+                                                            id: `requirements-panel-source-icon-${itemId}-${srcIndex}`,
                                                             width: '14',
                                                             height: '14',
                                                             viewBox: '0 0 24 24',
@@ -878,6 +891,7 @@
                                                         ),
                                                         // Document name
                                                         React.createElement('span', {
+                                                            id: `requirements-panel-source-name-${itemId}-${srcIndex}`,
                                                             style: {
                                                                 fontFamily: 'Inter, Helvetica',
                                                                 fontSize: '14px',
@@ -892,6 +906,7 @@
                                                         }, src.documentName || 'Unknown Document'),
                                                         // Location (if available)
                                                         src.location && React.createElement('span', {
+                                                            id: `requirements-panel-source-location-${itemId}-${srcIndex}`,
                                                             style: {
                                                                 fontFamily: 'Inter, Helvetica',
                                                                 fontSize: '14px',
@@ -985,6 +1000,7 @@
                             }
                         },
                             React.createElement('img', {
+                                id: 'requirements-panel-btn-generate-requirements-icon',
                                 src: './img/RequirementsIcon.svg',
                                 alt: '',
                                 style: {
@@ -1024,6 +1040,7 @@
                             }
                         },
                             React.createElement('img', {
+                                id: 'requirements-panel-btn-generate-userstories-icon',
                                 src: './img/UserStoriesIcon.svg',
                                 alt: '',
                                 style: {
@@ -1146,9 +1163,9 @@
                                             minWidth: 0
                                         }
                                     },
-                                        // Document icon
+                                        // Report icon wrapper
                                         React.createElement('div', {
-                                            id: `requirements-panel-report-icon-${reportId}`,
+                                            id: `requirements-panel-report-icon-wrapper-${reportId}`,
                                             style: {
                                                 width: '32px',
                                                 height: '32px',
@@ -1161,6 +1178,7 @@
                                             }
                                         },
                                             React.createElement('svg', {
+                                                id: `requirements-panel-report-icon-${reportId}`,
                                                 width: '16',
                                                 height: '16',
                                                 viewBox: '0 0 24 24',
@@ -1184,9 +1202,11 @@
                                         ),
                                         // Report info
                                         React.createElement('div', {
+                                            id: `requirements-panel-report-details-${reportId}`,
                                             style: { flex: 1, minWidth: 0 }
                                         },
                                             React.createElement('div', {
+                                                id: `requirements-panel-report-name-${reportId}`,
                                                 style: {
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontWeight: '500',
@@ -1198,6 +1218,7 @@
                                                 }
                                             }, report.reportName || 'Untitled Report'),
                                             React.createElement('div', {
+                                                id: `requirements-panel-report-type-${reportId}`,
                                                 style: {
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontSize: '11px',
@@ -1240,6 +1261,7 @@
                                             }
                                         },
                                             React.createElement('svg', {
+                                                id: `requirements-panel-report-download-icon-${reportId}`,
                                                 width: '16',
                                                 height: '16',
                                                 viewBox: '0 0 24 24',
@@ -1279,6 +1301,7 @@
                                             }
                                         },
                                             React.createElement('svg', {
+                                                id: `requirements-panel-report-delete-icon-${reportId}`,
                                                 width: '16',
                                                 height: '16',
                                                 viewBox: '0 0 24 24',

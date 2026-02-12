@@ -164,7 +164,7 @@
 .message {
     display: flex;
     gap: 12px;
-    margin-bottom: 16px;
+    /*! margin-bottom: 5px; */
     position: relative; /* For edit button positioning */
 }
 
@@ -554,5 +554,111 @@
     }
 }
 
+/* ===== Suggestion Chips (after AI messages) ===== */
+.suggestion-chips-container {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0 0 0;
+    margin-top: 10px;
 
+    /* See if you want to delete these */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
 
+.suggestion-chips-label {
+    font-family: 'Inter', Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.2px;
+}
+
+.suggestion-chips-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.suggestion-chip {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: 'Inter', Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: #4a5568;
+    background: transparent;
+    border: none;
+    border-left: 3px solid #cbd5e0;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.suggestion-chip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f7fafc;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: -1;
+}
+
+.suggestion-chip:hover {
+    background: #f7fafc;
+    border-left-color: #2d3748;
+    color: #2d3748;
+}
+
+.suggestion-chip:hover::before {
+    opacity: 1;
+}
+
+.suggestion-chip:active {
+    background: #edf2f7;
+    border-left-color: #1a365d;
+}
+
+@media (max-width: 768px) {
+    .suggestion-chips-container {
+        padding: 10px 0 0 0;
+        margin-top: 10px;
+    }
+    
+    .suggestion-chips-label {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+    
+    .suggestion-chips-wrapper {
+        gap: 4px;
+    }
+    
+    .suggestion-chip {
+        font-size: 12px;
+        padding: 8px 10px;
+        border-left-width: 2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .suggestion-chip {
+        font-size: 11px;
+        padding: 7px 12px;
+        white-space: normal;
+        max-width: 100%;
+    }
+}

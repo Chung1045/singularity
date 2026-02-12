@@ -36,45 +36,42 @@ const ChatUtils = {
     },
 
     /**
-     * Show typing indicator
-     * @returns {string} Indicator ID
+     * Show loading indicator (avatar + "Working on it..." + spinner)
      */
-    showTypingIndicator() {
+    showLoadingIndicator() {
         const messagesContainer = document.getElementById('chat-messages');
-        if (!messagesContainer) return null;
+        if (!messagesContainer) return;
 
-        const id = 'typing-indicator-' + Date.now();
-        const typingDiv = document.createElement('div');
-        typingDiv.id = id;
-        typingDiv.className = 'message ai-message';
+        // Add spinner animation style if not present
+        if (!document.getElementById('spinner-style')) {
+            const style = document.createElement('style');
+            style.id = 'spinner-style';
+            style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+            document.head.appendChild(style);
+        }
 
-        const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
-        avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
-
-        const bubble = document.createElement('div');
-        bubble.className = 'message-bubble typing-bubble';
-        bubble.innerHTML = `
-            <div class="typing-indicator">
-                <span></span><span></span><span></span>
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'ai-loading-indicator';
+        loadingDiv.className = 'message ai-message';
+        loadingDiv.innerHTML = `
+            <div class="message-avatar">
+                <img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; font-family: Inter, Helvetica; font-size: 14px; color: #777;">
+                <span>Working on it...</span>
+                <div style="width: 14px; height: 14px; border: 2px solid #ddd; border-top-color: #555; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
             </div>
         `;
-
-        typingDiv.appendChild(avatar);
-        typingDiv.appendChild(bubble);
-        messagesContainer.appendChild(typingDiv);
+        messagesContainer.appendChild(loadingDiv);
         this.scrollToBottom();
-
-        return id;
     },
 
     /**
-     * Remove typing indicator
-     * @param {string} id
+     * Remove loading indicator
      */
-    removeTypingIndicator(id) {
-        const typing = document.getElementById(id);
-        if (typing) typing.remove();
+    removeLoadingIndicator() {
+        const loader = document.getElementById('ai-loading-indicator');
+        if (loader) loader.remove();
     },
 
     /**
@@ -218,8 +215,8 @@ Object.assign(window, {
     // Aliases for backward compatibility
     renderMarkdownContent: ChatUtils.renderMarkdown.bind(ChatUtils),
     scrollToBottom: ChatUtils.scrollToBottom.bind(ChatUtils),
-    showTypingIndicator: ChatUtils.showTypingIndicator.bind(ChatUtils),
-    removeTypingIndicator: ChatUtils.removeTypingIndicator.bind(ChatUtils),
+    showLoadingIndicator: ChatUtils.showLoadingIndicator.bind(ChatUtils),
+    removeLoadingIndicator: ChatUtils.removeLoadingIndicator.bind(ChatUtils),
     showChatInterface: ChatUtils.showChatInterface.bind(ChatUtils),
     hideChatInterface: ChatUtils.hideChatInterface.bind(ChatUtils),
     getSelectedSource: ChatUtils.getSelectedSource.bind(ChatUtils)

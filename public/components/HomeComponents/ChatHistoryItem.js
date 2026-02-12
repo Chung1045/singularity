@@ -6,6 +6,7 @@
 function createChatHistoryItem(chatThreadName, chatID) {
     const ChatHistoryItemComponent = () => {
         const [menuOpen, setMenuOpen] = React.useState(false);
+        const [isChecked, setIsChecked] = React.useState(false);
         const menuRef = React.useRef(null);
 
         // Close menu when clicking outside
@@ -25,10 +26,11 @@ function createChatHistoryItem(chatThreadName, chatID) {
         const handleDelete = async () => {
             setMenuOpen(false);
 
-            const confirmDelete = await ConfirmModal.show({
+            const confirmDelete = await window.showNotification({
+                type: 'confirm',
                 title: 'Warning',
-                message: 'Are you sure you want to delete this chat? This cannot be reversed!',
-                confirmText: 'Delete',
+                message: 'Are you sure you want to delete this chat?\nThis cannot be reversed!',
+                actionText: 'Delete',
                 cancelText: 'Cancel'
             });
 
@@ -45,9 +47,9 @@ function createChatHistoryItem(chatThreadName, chatID) {
 
                 if (data.success) {
                     await AlertModal.show({
-                        title: 'Success',
+                        title: 'Chat Deleted',
                         message: 'Chat successfully deleted',
-                        autoClose: 5000
+                        autoClose: 7000
                     });
 
                     await window.fetchProjectChats?.(projectID);
@@ -75,7 +77,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
         };
 
         const handleClick = (e) => {
-            if (e.target.tagName === 'IMG' || e.target.closest('.chat-menu')) return;
+            if (e.target.type === 'checkbox' || e.target.tagName === 'IMG' || e.target.closest('.chat-menu')) return;
 
             document.querySelectorAll('.chat-history-item').forEach(item => {
                 item.classList.remove('selected');
@@ -100,6 +102,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
         const displayName = (chatThreadName?.trim() || 'New Chat');
 
         return React.createElement('div', {
+            id: `chat-history-item-${chatID}`,
             className: 'sidebar-items chat-history-item',
             'data-chat-id': chatID,
             'data-thread-name': displayName,
@@ -125,7 +128,32 @@ function createChatHistoryItem(chatThreadName, chatID) {
             },
             onClick: handleClick
         },
+            // Checkbox - click to show/hide three-dot menu
+            React.createElement('input', {
+                id: `chat-history-item-checkbox-${chatID}`,
+                type: 'checkbox',
+                className: 'chat-history-checkbox',
+                checked: isChecked,
+                style: {
+                    width: '16px',
+                    height: '16px',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    marginRight: '8px'
+                },
+                onChange: (e) => {
+                    e.stopPropagation();
+                    const checked = e.target.checked;
+                    setIsChecked(checked);
+                    if (!checked) {
+                        setMenuOpen(false);
+                    }
+                },
+                onClick: (e) => e.stopPropagation()
+            }),
             React.createElement('p', {
+                id: `chat-history-item-name-${chatID}`,
+                className: 'chat-item-name',
                 style: {
                     flexGrow: 1,
                     margin: 0,
@@ -135,7 +163,9 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     fontSize: '14px'
                 }
             }, displayName),
-            React.createElement('div', {
+            // Menu wrapper - only visible when checkbox is checked
+            isChecked && React.createElement('div', {
+                id: `chat-history-item-menu-wrapper-${chatID}`,
                 ref: menuRef,
                 className: 'chat-menu',
                 style: {
@@ -145,6 +175,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 }
             },
                 React.createElement('img', {
+                    id: `chat-history-item-menu-button-${chatID}`,
+                    className: 'chat-menu-button',
                     style: {
                         padding: "4px",
                         flexShrink: 0,
@@ -162,6 +194,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 }),
                 menuOpen && React.createElement('div', {
+                    id: `chat-history-item-dropdown-${chatID}`,
+                    className: 'chat-menu-dropdown',
                     style: {
                         position: 'absolute',
                         top: '100%',
@@ -177,6 +211,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 },
                     React.createElement('button', {
+                        id: `chat-history-item-delete-button-${chatID}`,
+                        className: 'chat-menu-delete-button',
                         style: {
                             width: '100%',
                             padding: '12px 14.5px',
