@@ -347,7 +347,8 @@
                     • All chat history<br>
                     • All uploaded documents<br>
                     • All requirements and user stories<br>
-                    • All generated reports<br><br>
+                    • All generated reports<br>
+                    • Invited collaborator will be removed immediately<br>
                     This action CANNOT be undone!</div>
                     <div style="
                         display: flex;
@@ -946,7 +947,7 @@
         const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
         const [notificationCheckDisabled, setNotificationCheckDisabled] = useState(false);
         const notificationCheckStartTimeRef = useRef(null);
-        const NOTIFICATION_CHECK_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+        const NOTIFICATION_CHECK_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
 
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
@@ -1184,7 +1185,7 @@
             // Initialize the start time on first mount
             if (!notificationCheckStartTimeRef.current) {
                 notificationCheckStartTimeRef.current = Date.now();
-                console.log('[Sidebar] Notification checking started - will disable after 30 minutes');
+                console.log('[Sidebar] Notification checking started - will disable after certain minutes');
             }
 
             // Initial check
