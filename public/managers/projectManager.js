@@ -124,7 +124,7 @@ router.post('/project/delete', async (req, res) => {
 
         // Get project name before deletion for notification
         const projectName = await projectDBService.fetchProjectName(projectID);
-        
+
         // Get all collaborators BEFORE deletion
         const collaborators = await projectDBService.fetchProjectCollaborator(projectID);
 
@@ -136,17 +136,17 @@ router.post('/project/delete', async (req, res) => {
         if (successful) {
             // Notify owner that they deleted the project
             await notifDB.notifyOwnerProjectDeleted(projectID, projectName, req.userID);
-            
+
             // Send real-time notifications via Socket.io to kick collaborators
             const io = global.io;
             const userSockets = global.userSockets;
-            
+
             console.log(`\n[Socket.io] Sending real-time deletion notifications (kick):`);
             console.log(`  Project: "${projectName}"`);
-            
+
             if (io && userSockets) {
                 let sentCount = 0;
-                
+
                 // Notify all collaborators - instant kick
                 for (const collab of collaborators) {
                     if (collab.uid) {
@@ -164,7 +164,7 @@ router.post('/project/delete', async (req, res) => {
                         }
                     }
                 }
-                
+
                 console.log(`  Total kicked: ${sentCount} collaborator(s)\n`);
             } else {
                 console.log(` Socket.io not available\n`);
@@ -210,21 +210,21 @@ router.post('/project/rename', async (req, res) => {
         if (successful) {
             // Notify owner and collaborators about the rename
             await notifDB.notifyProjectRenamed(projectID, oldProjectName, newProjectName, req.userID);
-            
+
             // Get all collaborators to send real-time notifications
             const ownerUID = await projectDBService.queryProjectOwner(projectID);
             const collaborators = await projectDBService.fetchProjectCollaborator(projectID);
-            
+
             // Send real-time notifications via Socket.io
             const io = global.io;
             const userSockets = global.userSockets;
-            
+
             console.log(`\n[Socket.io] Sending real-time rename notifications:`);
             console.log(`  Project: "${oldProjectName}" → "${newProjectName}"`);
-            
+
             if (io && userSockets) {
                 let sentCount = 0;
-                
+
                 // Notify owner
                 if (ownerUID) {
                     const ownerSocketID = userSockets.get(ownerUID);
@@ -241,7 +241,7 @@ router.post('/project/rename', async (req, res) => {
                         console.log(` Owner not connected (${ownerUID})`);
                     }
                 }
-                
+
                 // Notify all collaborators
                 for (const collab of collaborators) {
                     if (collab.uid) {
@@ -260,12 +260,12 @@ router.post('/project/rename', async (req, res) => {
                         }
                     }
                 }
-                
+
                 console.log(`  Total sent: ${sentCount} real-time notification(s)\n`);
             } else {
                 console.log(`  Socket.io not available\n`);
             }
-            
+
             console.log("Project renamed successfully");
             return res.status(200).json({ success: true, message: 'Project renamed successfully' });
         } else {
@@ -742,7 +742,55 @@ router.post("/project/list/user-stories", async (req, res) => {
         const requirementList = await agentDB.getProjectUserStories(projectID)
         return res.status(200).json({successful: true, reports: requirementList});
     } catch (err) {
-        return res.status(403).json({ successful: false, message: "Unable to fetch project user-stories" });
+        return res.status(400).json({ successful: false, message: "Unable to fetch project user-stories" });
+    }
+});
+
+router.post("/project/delete/requirements", async (req, res) => {
+
+    const userID = req.userID;
+    let data = req.body;
+    let projectID = data.projectID;
+    let requirementID = data.requirementID;
+
+    if (projectID == null || requirementID == null) {
+        return res.status(400).json({ successful:false, message: "Missing field: Please provide a valid project ID and requirement ID" });
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    let success = await agentDB.deleteRequirement(requirementID, projectID)
+
+    if (success) {
+        return res.status(200).json({successful: true});
+    } else {
+        return res.status(400).json({ successful: false, message: "Unable to delete requirement from the project" });
+    }
+
+});
+
+router.post("/project/delete/user-stories", async (req, res) => {
+    const userID = req.userID;
+    let data = req.body;
+    let projectID = data.projectID;
+    let storyID = data.storyID;
+
+    if (projectID == null || storyID == null) {
+        return res.status(400).json({ successful:false, message: "Missing field: Please provide a valid project ID and story ID" });
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    let success = await agentDB.deleteUserStory(storyID, projectID)
+
+    if (success) {
+        return res.status(200).json({successful: true});
+    } else {
+        return res.status(400).json({ successful: false, message: "Unable to delete user story from the project" });
     }
 });
 
@@ -752,7 +800,7 @@ router.post("/project/list/user-stories", async (req, res) => {
  */
 router.post("/project/collaborators", async (req, res) => {
     console.log("New request /project/collaborators");
-    
+
     const { projectID } = req.body;
     const userID = req.userID;
 
@@ -770,7 +818,7 @@ router.post("/project/collaborators", async (req, res) => {
         // Get project owner
         const ownerUID = await projectDBService.queryProjectOwner(projectID);
         const ownerQuery = `SELECT uid as userID, userName as username, userEmail as email, firstName, lastName, googleAvatarUrl FROM user WHERE uid = ?`;
-        
+
         const owner = await new Promise((resolve, reject) => {
             const db = require('../services/db');
             db.get(ownerQuery, [ownerUID], async (err, row) => {
@@ -786,7 +834,7 @@ router.post("/project/collaborators", async (req, res) => {
                             console.log('Could not fetch profile pic for owner, using googleAvatarUrl');
                             profilePic = row.googleAvatarUrl || null;
                         }
-                        
+
                         resolve({
                             userID: row.userID,
                             displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
@@ -808,7 +856,7 @@ router.post("/project/collaborators", async (req, res) => {
             JOIN user u ON ps.collabUid = u.uid
             WHERE ps.projectID = ? AND ps.confirmed = 1
         `;
-        
+
         const collaborators = await new Promise((resolve, reject) => {
             const db = require('../services/db');
             db.all(collabQuery, [projectID], async (err, rows) => {
@@ -817,7 +865,7 @@ router.post("/project/collaborators", async (req, res) => {
                     // Fetch profile pictures from MinIO for all collaborators
                     const userIDs = rows.map(row => row.userID);
                     let profilePics = {};
-                    
+
                     if (userIDs.length > 0) {
                         try {
                             const pics = await fss.fetchProfilePics(userIDs);
@@ -828,7 +876,7 @@ router.post("/project/collaborators", async (req, res) => {
                             console.log('Could not fetch profile pics for collaborators');
                         }
                     }
-                    
+
                     const collabs = rows.map(row => ({
                         userID: row.userID,
                         displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
@@ -848,7 +896,7 @@ router.post("/project/collaborators", async (req, res) => {
             JOIN user u ON ps.collabUid = u.uid
             WHERE ps.projectID = ? AND ps.confirmed = 0
         `;
-        
+
         const pendingInvites = await new Promise((resolve, reject) => {
             const db = require('../services/db');
             db.all(inviteQuery, [projectID], async (err, rows) => {
@@ -857,7 +905,7 @@ router.post("/project/collaborators", async (req, res) => {
                     // Fetch profile pictures from MinIO for all pending invites
                     const userIDs = rows.map(row => row.userID);
                     let profilePics = {};
-                    
+
                     if (userIDs.length > 0) {
                         try {
                             const pics = await fss.fetchProfilePics(userIDs);
@@ -868,7 +916,7 @@ router.post("/project/collaborators", async (req, res) => {
                             console.log('Could not fetch profile pics for pending invites');
                         }
                     }
-                    
+
                     const invites = rows.map(row => ({
                         inviteID: row.inviteID,
                         userID: row.userID,
@@ -904,7 +952,7 @@ router.post("/project/collaborators", async (req, res) => {
  */
 router.post("/project/search-users", async (req, res) => {
     console.log("New request /project/search-users");
-    
+
     const { projectID, query } = req.body;
     const userID = req.userID;
 
@@ -918,7 +966,7 @@ router.post("/project/search-users", async (req, res) => {
 
     try {
         const fss = require('../services/fsServices');
-        
+
         const searchQuery = `
             SELECT uid as userID, userName as username, userEmail as email, firstName, lastName, googleAvatarUrl
             FROM user
@@ -935,10 +983,10 @@ router.post("/project/search-users", async (req, res) => {
             AND uid != (SELECT projectOwnerUid FROM project WHERE projectID = ?)
             LIMIT 10
         `;
-        
+
         const searchPattern = `%${query}%`;
         const ownerUID = await projectDBService.queryProjectOwner(projectID);
-        
+
         const users = await new Promise((resolve, reject) => {
             const db = require('../services/db');
             db.all(searchQuery, [searchPattern, searchPattern, searchPattern, searchPattern, ownerUID, projectID, projectID], async (err, rows) => {
@@ -947,7 +995,7 @@ router.post("/project/search-users", async (req, res) => {
                     // Fetch profile pictures from MinIO for all search results
                     const userIDs = rows.map(row => row.userID);
                     let profilePics = {};
-                    
+
                     if (userIDs.length > 0) {
                         try {
                             const pics = await fss.fetchProfilePics(userIDs);
@@ -958,7 +1006,7 @@ router.post("/project/search-users", async (req, res) => {
                             console.log('Could not fetch profile pics for search results');
                         }
                     }
-                    
+
                     const results = rows.map(row => ({
                         userID: row.userID,
                         displayName: row.firstName && row.lastName ? `${row.firstName} ${row.lastName}` : row.username,
@@ -988,7 +1036,7 @@ router.post("/project/search-users", async (req, res) => {
  */
 router.post("/project/invite", async (req, res) => {
     console.log("New request /project/invite");
-    
+
     const { projectID, invitedUserId } = req.body;
     const userID = req.userID;
 
@@ -1005,7 +1053,7 @@ router.post("/project/invite", async (req, res) => {
     try {
         // Check if user already invited or is collaborator
         const checkQuery = `SELECT * FROM projectShare WHERE projectID = ? AND collabUid = ?`;
-        
+
         const db = require('../services/db');
         const exists = await new Promise((resolve, reject) => {
             db.get(checkQuery, [projectID, invitedUserId], (err, row) => {
@@ -1021,7 +1069,7 @@ router.post("/project/invite", async (req, res) => {
         // Create invitation
         const inviteQuery = `INSERT INTO projectShare (shareID, projectID, collabUid, confirmed) VALUES (?, ?, ?, ?)`;
         const shareID = uuid();
-        
+
         await new Promise((resolve, reject) => {
             db.run(inviteQuery, [shareID, projectID, invitedUserId, 0], function(err) {
                 if (err) reject(err);
@@ -1031,12 +1079,12 @@ router.post("/project/invite", async (req, res) => {
 
         // Send notification to invited user
         await notifDB.setupProjectShareNotification(projectID, invitedUserId);
-        
+
         // Notify owner that they sent an invitation
         await notifDB.notifyOwnerInvitationSent(projectID, userID, invitedUserId);
 
         console.log(`Invitation sent: ${invitedUserId} to project ${projectID}`);
-        
+
         return res.status(200).json({
             success: true,
             message: "Invitation sent successfully"
@@ -1054,7 +1102,7 @@ router.post("/project/invite", async (req, res) => {
  */
 router.post("/project/remove-collaborator", async (req, res) => {
     console.log("New request /project/remove-collaborator");
-    
+
     const { projectID, userId } = req.body;
     const userID = req.userID;
 
@@ -1071,7 +1119,7 @@ router.post("/project/remove-collaborator", async (req, res) => {
     try {
         // Get project name and user info before removal
         const projectName = await projectDBService.fetchProjectName(projectID);
-        
+
         const db = require('../services/db');
         const removedUser = await new Promise((resolve, reject) => {
             db.get('SELECT userName FROM user WHERE uid = ?', [userId], (err, row) => {
@@ -1079,9 +1127,9 @@ router.post("/project/remove-collaborator", async (req, res) => {
                 else resolve(row);
             });
         });
-        
+
         const deleteQuery = `DELETE FROM projectShare WHERE projectID = ? AND collabUid = ?`;
-        
+
         await new Promise((resolve, reject) => {
             db.run(deleteQuery, [projectID, userId], function(err) {
                 if (err) reject(err);
@@ -1091,18 +1139,18 @@ router.post("/project/remove-collaborator", async (req, res) => {
 
         // Send notification to removed collaborator
         await notifDB.setProjectShareRemoveNotification(projectID, userId);
-        
+
         // Notify owner that they removed a collaborator
         await notifDB.notifyOwnerCollaboratorRemoved(projectID, userID, userId);
 
         // Send real-time notification via Socket.io to removed collaborator
         const io = global.io;
         const userSockets = global.userSockets;
-        
+
         console.log(`\n[Socket.io] Sending removal notification (kick):`);
         console.log(`  User: ${removedUser?.userName || userId}`);
         console.log(`  Project: "${projectName}"`);
-        
+
         if (io && userSockets) {
             const socketID = userSockets.get(userId);
             if (socketID) {
@@ -1121,7 +1169,7 @@ router.post("/project/remove-collaborator", async (req, res) => {
         console.log();
 
         console.log(`Collaborator removed: ${userId} from project ${projectID}`);
-        
+
         return res.status(200).json({
             success: true,
             message: "Collaborator removed successfully"
@@ -1139,7 +1187,7 @@ router.post("/project/remove-collaborator", async (req, res) => {
  */
 router.post("/project/remove-invite", async (req, res) => {
     console.log("New request /project/remove-invite");
-    
+
     const { projectID, inviteId } = req.body;
     const userID = req.userID;
 
@@ -1164,7 +1212,7 @@ router.post("/project/remove-invite", async (req, res) => {
         });
 
         const deleteQuery = `DELETE FROM projectShare WHERE shareID = ? AND projectID = ?`;
-        
+
         await new Promise((resolve, reject) => {
             db.run(deleteQuery, [inviteId, projectID], function(err) {
                 if (err) reject(err);
@@ -1178,7 +1226,7 @@ router.post("/project/remove-invite", async (req, res) => {
         }
 
         console.log(`Invitation removed: ${inviteId} from project ${projectID}`);
-        
+
         return res.status(200).json({
             success: true,
             message: "Invitation removed successfully"
@@ -1196,7 +1244,7 @@ router.post("/project/remove-invite", async (req, res) => {
  */
 router.post("/project/accept-invite", async (req, res) => {
     console.log("New request /project/accept-invite");
-    
+
     const { projectID, inviteId } = req.body;
     const userID = req.userID;
 
@@ -1207,7 +1255,7 @@ router.post("/project/accept-invite", async (req, res) => {
     try {
         // Verify the invitation exists and belongs to this user
         const verifyQuery = `SELECT * FROM projectShare WHERE shareID = ? AND projectID = ? AND collabUid = ?`;
-        
+
         const db = require('../services/db');
         const invitation = await new Promise((resolve, reject) => {
             db.get(verifyQuery, [inviteId, projectID, userID], (err, row) => {
@@ -1222,7 +1270,7 @@ router.post("/project/accept-invite", async (req, res) => {
 
         // Update invitation to confirmed
         const updateQuery = `UPDATE projectShare SET confirmed = 1 WHERE shareID = ?`;
-        
+
         await new Promise((resolve, reject) => {
             db.run(updateQuery, [inviteId], function(err) {
                 if (err) reject(err);
@@ -1231,7 +1279,7 @@ router.post("/project/accept-invite", async (req, res) => {
         });
 
         console.log(`Invitation accepted: ${inviteId} for project ${projectID}`);
-        
+
         return res.status(200).json({
             success: true,
             message: "Invitation accepted successfully"

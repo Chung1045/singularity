@@ -258,6 +258,64 @@
             }
         };
 
+        const deleteEntry = async (id) => {
+            const type = mainTab === "requirements" ? "requirement" : mainTab
+            const confirmDelete = await window.ConfirmModal.show({
+                title: 'Warning',
+                message: `Are you sure you want to delete this ${type}? This cannot be reversed!`,
+                confirmText: 'Delete',
+                cancelText: 'Cancel'
+            });
+
+            if (!confirmDelete) return;
+
+            try {
+                let response = null
+
+                if (mainTab === "requirements") {
+                    response = await fetch('/api/project/delete/requirements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            projectID: projectID,
+                            requirementID: id
+                        })
+                    });
+                } else if (mainTab === "user-stories") {
+                    response = await fetch('/api/project/delete/user-stories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            projectID: projectID,
+                            storyID: id
+                        })
+                    });
+                } else {
+                    console.error("How do you get to here?")
+                    throw new Error("Invalid type")
+                }
+
+                const data = await response.json();
+                const type = mainTab === "requirements" ? "Requirement" : "User story"
+                if (response.ok && data.successful) {
+                    await fetchRequirements()
+                    await fetchUserStories()
+                    setSuccessMessage(`${type} deleted successfully`);
+                    setTimeout(() => setSuccessMessage(null), 3000);
+                } else {
+                    setError(data.message || 'Failed to delete entry');
+                }
+
+            } catch (err) {
+                await window.ConfirmModal.show({
+                    title: 'Error',
+                    message: `Unable to delete entry`,
+                    confirmText: 'OK',
+                });
+            }
+
+        }
+
         // Get current data to display
         const currentData = mainTab === 'requirements' ? requirements : userStories;
 
@@ -690,6 +748,7 @@
                                         e.currentTarget.style.borderColor = '#f0f0f0';
                                     }
                                 },
+                                    //////
                                     React.createElement('div', {
                                         id: `requirements-panel-item-content-${itemId}`,
                                         style: {
@@ -842,6 +901,44 @@
                                                         }, `• ${src.location}`)
                                                     )
                                                 )
+                                            )
+                                        ),
+                                        React.createElement('button', {
+                                                id: `requirements-panel-item-delete-${itemId}`,
+                                                onClick: () => deleteEntry(itemId),
+                                                'aria-label': 'Delete entry',
+                                                style: {
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    backgroundColor: '#fef2f2',
+                                                    border: 'none',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s'
+                                                },
+                                                onMouseEnter: (e) => {
+                                                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                                                },
+                                                onMouseLeave: (e) => {
+                                                    e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                }
+                                            },
+                                            React.createElement('svg', {
+                                                    width: '16',
+                                                    height: '16',
+                                                    viewBox: '0 0 24 24',
+                                                    fill: 'none'
+                                                },
+                                                React.createElement('path', {
+                                                    d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
+                                                    stroke: '#dc2626',
+                                                    strokeWidth: '2',
+                                                    strokeLinecap: 'round',
+                                                    strokeLinejoin: 'round'
+                                                })
                                             )
                                         )
                                     )

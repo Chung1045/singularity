@@ -183,27 +183,27 @@ router.post('/signup', async (req, res) => {
 
     } catch (error){
         console.log(error)
-        
+
         // Check if it's a UNIQUE constraint error for username
         if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('user.userName')) {
             return res.status(400).json({
-                success: false, 
+                success: false,
                 fieldMessage: 'An account with this username already exists.',
                 slideUpMessage: 'An account with this username already exists. Please enter a different one to proceed.',
                 field: 'username'
             });
         }
-        
+
         // Check if it's a UNIQUE constraint error for email
         if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('user.userEmail')) {
             return res.status(400).json({
-                success: false, 
+                success: false,
                 fieldMessage: 'An account with this email already exists.',
                 slideUpMessage: 'An account with this email already exists. Please enter a different one to proceed.',
                 field: 'email'
             });
         }
-        
+
         // Generic error for other cases
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
@@ -268,7 +268,7 @@ router.post("/login", async (req, res) => {
 
 });
 
-router.post("/logout", async (req, res) => {
+router.post("/logout", apiAuthUser, async (req, res) => {
     console.log("New requests /logout")
     if (!req.cookies.session_id) {
         return res.status(403).json({success:false, message: `Bad requests: Session ID not found`})
@@ -309,7 +309,7 @@ router.get('/auth/google/callback',
     }
 );
 
-router.post("/passkey/gen-option", async (req, res) => {
+router.post("/passkey/gen-option", apiAuthUser,async (req, res) => {
     try {
 
         if (!req.cookies.session_id){
@@ -352,7 +352,7 @@ router.post("/passkey/gen-option", async (req, res) => {
     }
 });
 
-router.post("/passkey/gen-auth-option", async (req, res) => {
+router.post("/passkey/gen-auth-option", apiAuthUser, async (req, res) => {
     try {
         const options = await generateAuthenticationOptions({
             rpID: process.env.domain || 'localhost',
@@ -372,7 +372,7 @@ router.post("/passkey/gen-auth-option", async (req, res) => {
     }
 })
 
-router.post("/passkey/verify-register", async (req, res) => {
+router.post("/passkey/verify-register", apiAuthUser, async (req, res) => {
     const { attResp } = req.body;
     const expectedChallenge = req.session.challenge;
 
@@ -429,7 +429,7 @@ router.post("/passkey/verify-register", async (req, res) => {
     }
 })
 
-router.post("/passkey/verify-authentication", async (req, res) => {
+router.post("/passkey/verify-authentication", apiAuthUser, async (req, res) => {
     try {
         const { credential } = req.body;
         const expectedChallenge = req.session.challenge;
@@ -515,7 +515,7 @@ router.post("/passkey/verify-authentication", async (req, res) => {
     }
 });
 
-router.post("/passkey/list", async (req, res) => {
+router.post("/passkey/list", apiAuthUser, async (req, res) => {
     let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     try {
@@ -528,7 +528,7 @@ router.post("/passkey/list", async (req, res) => {
     }
 })
 
-router.post("/passkey/delete", async (req, res) => {
+router.post("/passkey/delete", apiAuthUser, async (req, res) => {
     console.log("Raw body:", req.body);
 
     const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
@@ -562,7 +562,7 @@ router.post("/passkey/delete", async (req, res) => {
     }
 });
 
-router.post("/session/list", async (req, res) => {
+router.post("/session/list", apiAuthUser, async (req, res) => {
     let userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     try {
@@ -575,7 +575,7 @@ router.post("/session/list", async (req, res) => {
     }
 })
 
-router.post("/session/logout", async(req, res) => {
+router.post("/session/logout", apiAuthUser, async(req, res) => {
     if (!req.cookies.session_id){
         res.status(403).json({successful: false, message: "Unauthorized"})
     }
@@ -596,7 +596,7 @@ router.post("/session/logout", async(req, res) => {
 
 })
 
-router.post("/loginAttempts/deleteAll", async(req, res) => {
+router.post("/loginAttempts/deleteAll", apiAuthUser, async(req, res) => {
     if (!req.cookies.session_id){
         res.status(403).json({successful: false, message: "Unauthorized"})
     }
@@ -613,7 +613,7 @@ router.post("/loginAttempts/deleteAll", async(req, res) => {
 
 })
 
-router.post("/userInfo/query", async(req, res) => {
+router.post("/userInfo/query", apiAuthUser, async(req, res) => {
     if (!req.cookies.session_id){
         res.status(403).json({successful: false, message: "Unauthorized"})
     }
@@ -631,7 +631,7 @@ router.post("/userInfo/query", async(req, res) => {
 
 })
 
-router.post("/user/search", async (req, res) => {
+router.post("/user/search", apiAuthUser, async (req, res) => {
     if (!req.cookies.session_id){
         res.status(403).json({successful: false, message: "Unauthorized"})
     }
@@ -652,7 +652,7 @@ router.post("/user/search", async (req, res) => {
     }
 })
 
-router.post("/password/change", async (req, res) => {
+router.post("/password/change", apiAuthUser, async (req, res) => {
     try {
         if (!req.cookies.session_id) {
             console.log(" Unauthorized attempt for changing password");

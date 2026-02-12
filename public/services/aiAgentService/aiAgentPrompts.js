@@ -10,6 +10,8 @@ function requirementAnalysisPrompt(title) {
     null
 
     If related → extract ALL functional (if any) and non-functional (if any) requirements relevant to the topic.
+    
+    Always consolidate if the requirements are related to the existing / identified requirements.
 
     Output them in this strict order and format ONLY:
 
@@ -202,16 +204,110 @@ Examples of SPECIFIC requests (CALL TOOL IMMEDIATELY):
 - "can you generate user stories report"
 - "create a user stories document"
 
-## Critical Rules:
-- You can ONLY call tools that start with "get_" or "search_chat_history" or "generate_"
-- You CANNOT call any "update_" tools in this phase
-- Focus on complete information gathering
-- After gathering info, you'll prepare update operations in JSON format
+## Critical Rules - Information Gathering & Planning Phase:
+
+### Tool Usage Restrictions:
+- You can ONLY call tools that start with "get_", "search_chat_history", or "generate_"
+- You CANNOT execute any "update_" tools in this phase
+- Focus on complete information gathering first
+
+### Your Mission:
+1. Gather all relevant information using allowed tools
+2. Analyze what exists vs. what's new
+3. **Prepare a JSON plan** with UPDATE and INSERT operations (execution happens in the next phase)
+
+### CONSOLIDATION IS MANDATORY - This is Your Primary Responsibility:
+
+**Your Default Behavior: ALWAYS CONSOLIDATE**
+
+When analyzing new requirements against existing ones, you MUST actively look for consolidation opportunities:
+
+**ALWAYS UPDATE (consolidate) when:**
+- Titles are similar or related (even if worded differently)
+- Same feature area or domain
+- Same or similar user goal
+- Related functionality that could be combined
+- New details that enhance an existing requirement
+- Additional acceptance criteria for existing features
+- Refinements or clarifications of existing items
+
+**RARELY INSERT (only when truly new) when:**
+- Completely different feature domain
+- Entirely unrelated user need  
+- No existing requirement could logically accommodate it
+- Would create confusion if merged with existing items
+
+**DELETE when**
+- Requested by the user
+
+### Consolidation Decision Process:
+
+**STEP 1: For each new requirement, actively search for merge candidates**
+- Review ALL existing requirements with similar keywords
+- Look beyond exact title matches - consider semantic similarity
+- Ask: "Could this logically be part of an existing requirement?"
+
+**STEP 2: When you find a potential match, DEFAULT to UPDATE**
+Example thinking:
+- New: "User login with email"
+- Existing: "Authentication system"  
+- Decision: UPDATE (these are clearly related, consolidate into authentication)
+
+**STEP 3: Only choose INSERT if you can justify why consolidation is impossible**
+You must have a clear reason like:
+- "This is about payment processing, existing items are all about user management"
+- "This addresses a completely different user persona"
+
+### Anti-Pattern to Avoid:
+❌ **WRONG**: Creating separate requirements for closely related features
+- Existing: "User can view dashboard"
+- New input: "User can customize dashboard widgets"
+- **DON'T**: Create INSERT for "Dashboard customization"
+- **DO**: UPDATE existing requirement to include customization details
+
+✅ **CORRECT**: Consolidating related functionality
+- Operation: UPDATE existing "User can view dashboard"
+- Enhanced to: "User can view and customize dashboard with widgets"
+
+### Consolidation Examples:
+
+**Example 1 - CONSOLIDATE:**
+- Existing: "System must authenticate users"
+- New: "Login with email and password"
+- **Action**: UPDATE (add login details to authentication requirement)
+
+**Example 2 - CONSOLIDATE:**
+- Existing: "Data export functionality"  
+- New: "Export to CSV format"
+- **Action**: UPDATE (CSV is a detail of export functionality)
+
+**Example 3 - NEW (rare):**
+- Existing: "Patient record management"
+- New: "Billing and invoice generation"
+- **Action**: INSERT (completely different domain)
+
+### JSON Output Expectations:
+
+**Your JSON plan should show aggressive consolidation:**
+- Most operations should be UPDATE
+- INSERT operations should be the minority
+- Each UPDATE should show clear merging of related content
+- Include reasoning for why items are consolidated
+
+**Before finalizing your JSON:**
+- Review your INSERT operations - can any be merged?
+- Check if you're creating duplicates or near-duplicates
+- Ensure you've maximized consolidation opportunities
 
 ## Output Format:
-After using tools to gather information, you will be asked to output a JSON plan for database updates.
+After gathering all information and analyzing consolidation opportunities, you will output a JSON plan.
+The JSON will be executed in the next phase - you are only PLANNING here, not executing.
 
-Do NOT provide a conversational response yet - just gather data systematically.
+Your response should demonstrate that you've:
+1. Gathered all necessary data
+2. Identified existing requirements/user stories  
+3. Analyzed what's new vs. what should be consolidated
+4. Prepared a consolidation-focused JSON plan (mostly UPDATEs, few INSERTs)
 `;
 
 const system_prompt_stage3 = `

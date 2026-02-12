@@ -700,12 +700,109 @@ async function searchChatHistory(projectID, chatID, keyword){
     return await dbAll(sql, [projectID, chatID, `%${keyword}%`]);
 }
 
+async function deleteRequirement(requirementID, projectID){
+
+    try {
+        console.log(`Attempting to delete requirement ${requirementID} in project ${projectID}`)
+        const deleteSQL = `DELETE FROM requirements WHERE requirementsID = ? AND projectID = ?`;
+        await dbRun(`DELETE FROM requirementsSource WHERE requirementsID = ? AND projectID = ?`, [requirementID, projectID]);
+        await dbRun(deleteSQL, [requirementID, projectID]);
+        console.log("Successfully deleted requirement")
+        await reorderRequirements(projectID)
+        console.log("Requirements re-ordered")
+        return true;
+    } catch (err) {
+        console.error(`Unable to delete a requirement: ${err.message}`)
+        return false
+    }
+
+}
+
+async function deleteUserStory(storyID, projectID){
+
+    try {
+        console.log(`Attempting to delete user story ${storyID} in project ${projectID}`)
+        const deleteSQL = `DELETE FROM userStories WHERE storyID = ? AND projectID = ?`;
+        await dbRun(`DELETE FROM userStorySource WHERE storyID = ? AND projectID = ?`, [storyID, projectID]);
+        await dbRun(deleteSQL, [storyID, projectID]);
+        console.log("Successfully deleted requirement")
+        await reorderUserStories(projectID)
+        console.log("User stories re-ordered")
+        return true;
+    } catch (err) {
+        console.error(`Unable to delete a user story: ${err.message}`)
+        return false
+    }
+
+}
+
+
+async function reorderRequirements(projectID) {
+    try {
+
+        let nonFunctionalRequirements = await dbAll(`SELECT *
+                                                     FROM requirements
+                                                     WHERE projectID = ?
+                                                       AND requirementType = 'non-functional'`, [projectID])
+        let functionalRequirements = await dbAll(`SELECT *
+                                                  FROM requirements
+                                                  WHERE projectID = ?
+                                                    AND requirementType = 'functional'`, [projectID])
+
+        console.log(nonFunctionalRequirements)
+        console.log(functionalRequirements)
+
+        for (let seq = 1; seq <= nonFunctionalRequirements.length; seq++) {
+            await dbRun(`UPDATE requirements
+                         SET requirementSeq = ?
+                         WHERE requirementsID = ?
+                           AND requirementType = 'non-functional'`, [seq, nonFunctionalRequirements[seq - 1].requirementsID])
+        }
+
+        for (let seq = 0; seq < functionalRequirements.length; seq++) {
+            await dbRun(`UPDATE requirements
+                         SET requirementSeq = ?
+                         WHERE requirementsID = ?
+                           AND requirementType = 'functional'`, [seq, functionalRequirements[seq - 1].requirementsID])
+        }
+
+        return true
+
+    } catch (err) {
+        console.error(`Unable to reorder requirements for project ${projectID}:`)
+        return false
+    }
+}
+
+async function reorderUserStories(projectID) {
+    try {
+
+        let userStories = await dbAll(`SELECT *
+                                       FROM userStories
+                                       WHERE projectID = ?`, [projectID])
+
+        console.log(userStories)
+
+        for (let seq = 1; seq <= userStories.length; seq++) {
+            await dbRun(`UPDATE userStories
+                         SET storySeq = ?
+                         WHERE storyID = ?`, [seq, userStories[seq - 1].storyID])
+        }
+        return true
+    } catch (err) {
+        console.error(`Unable to reorder user stories for project ${projectID}:`)
+        return false
+    }
+}
+
 module.exports = {
     conversationEdit,
     createNewChatThread,
     renameChatThread,
     deleteChatThread,
     deleteConversation,
+    deleteRequirement,
+    deleteUserStory,
     fetchChatThread,
     fetchProjectChats,
     getProjectRequirements,
