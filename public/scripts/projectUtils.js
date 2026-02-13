@@ -1293,17 +1293,46 @@ window.createNewChat = function() {
         const messagesContainer = document.getElementById('chat-messages');
         if (messagesContainer) messagesContainer.innerHTML = '';
 
+        // Clear input field
+        const input = document.getElementById('main-message-input');
+        if (input) {
+            input.value = '';
+            input.style.height = 'auto';
+        }
+
+        // Remove chat-mode class from main screen
+        const mainScreen = document.querySelector('.main-screen');
+        if (mainScreen) mainScreen.classList.remove('chat-mode');
+
         // Hide chat interface, show welcome screen
         const chatInterface = document.getElementById('chat-interface');
+        const chatTopBar = document.getElementById('chat-top-bar');
         const suggestionChips = document.getElementById('suggestion-chips');
         const mainScreenTitle = document.querySelector('.main-screen-title');
+        const quickPromptsContainer = document.getElementById('quick-prompts-container');
 
         if (chatInterface) chatInterface.style.display = 'none';
+        if (chatTopBar) chatTopBar.style.display = 'none';
         if (suggestionChips) suggestionChips.style.display = 'none';
         if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
+        if (quickPromptsContainer) quickPromptsContainer.style.display = 'flex';
 
         // Clear current chat ID tracking
         window.currentChatID = null;
+        localStorage.removeItem('activeChatID');
+        localStorage.removeItem('activeChatProjectID');
+        localStorage.setItem('wentBackToInitial', 'true');
+
+        // Clear URL parameters
+        const currentUrl = new URL(window.location);
+        if (currentUrl.searchParams.has('chatID')) {
+            currentUrl.searchParams.delete('chatID');
+            window.history.pushState({}, '', currentUrl);
+        }
+
+        // Reset chat title
+        const chatTitle = document.getElementById('chat-title');
+        if (chatTitle) chatTitle.textContent = 'New Chat';
 
         console.log('New chat created - ready for first message');
     } else {

@@ -459,11 +459,6 @@
         padding: 10px;
     }
 
-    .chat-messages {
-        /*! padding: 44px; */
-        /*! gap: 7px; */
-    }
-
     .message-bubble {
         max-width: 70vw;
         font-size: 14px;
@@ -507,11 +502,6 @@
 @media (min-width: 400px),  (max-width: 768px) {
     .chat-interface {
         padding: 10px;
-    }
-
-    .chat-messages {
-        /*! padding: 44px; */
-        /*! gap: 7px; */
     }
 
     .message-bubble {
@@ -660,5 +650,127 @@
         padding: 7px 12px;
         white-space: normal;
         max-width: 100%;
+    }
+}
+
+/* ===== Quick Prompts (Initial Screen) ===== */
+.quick-prompts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 0;
+    margin: 0 auto;
+    width: 90%;
+    max-width: 650px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quick-prompts-title {
+    font-family: 'Urbanist', Helvetica, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.quick-prompts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.quick-prompt-category {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quick-prompt-category-title {
+    font-family: 'Inter', Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.quick-prompt-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: 'Inter', Helvetica, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #666;
+    background: transparent;
+    border: none;
+    padding: 8px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    line-height: 1.5;
+}
+
+.quick-prompt-item:hover {
+    background: rgba(195, 171, 111, 0.1);
+    color: #1a1a1a;
+}
+
+.quick-prompt-item:active {
+    background: rgba(195, 171, 111, 0.2);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .quick-prompts-container {
+        padding: 16px 0;
+        width: 90%;
+    }
+    
+    .quick-prompts-title {
+        font-size: 16px;
+    }
+    
+    .quick-prompts-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .quick-prompt-category-title {
+        font-size: 12px;
+    }
+    
+    .quick-prompt-item {
+        font-size: 13px;
+        padding: 8px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .quick-prompts-container {
+        padding: 12px 0;
+        width: 90%;
+    }
+    
+    .quick-prompts-title {
+        font-size: 15px;
+    }
+    
+    .quick-prompt-item {
+        font-size: 12px;
+        padding: 6px 4px;
     }
 }

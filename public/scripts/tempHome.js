@@ -198,6 +198,26 @@ const TempHome = ({ csrfToken, userInfo }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [attachmentMenuOpen]);
 
+    // Initialize quick prompts visibility on mount
+    React.useEffect(() => {
+        // Wait a bit for chat history to load
+        const timer = setTimeout(() => {
+            const quickPromptsContainer = document.getElementById('quick-prompts-container');
+            const chatInterface = document.getElementById('chat-interface');
+            
+            if (quickPromptsContainer && chatInterface) {
+                // Show quick prompts if on initial screen (chat interface is hidden)
+                if (chatInterface.style.display !== 'flex') {
+                    quickPromptsContainer.style.display = 'flex';
+                } else {
+                    quickPromptsContainer.style.display = 'none';
+                }
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, []);
+
     // ===== HANDLERS =====
 
     const showAlert = (title, message) => {
@@ -469,7 +489,10 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         },
                             React.createElement('img', { id: 'input-field-send-icon', className: 'img', src: './img/Send.svg', alt: '' })
                         )
-                    )
+                    ),
+
+                    // Quick Prompts Component
+                    React.createElement(window.QuickPrompts)
                 )
             ),
 

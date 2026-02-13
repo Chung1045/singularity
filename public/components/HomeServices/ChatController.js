@@ -10,18 +10,33 @@ const ChatController = {
      * Submit a conversation request (new message or edit)
      */
     async submitConversation() {
-        const input = document.getElementById("main-message-input");
-        const userMessage = input?.value?.trim();
-        if (!userMessage) return;
-
-        // get the project dropdown
+        // Check for project first, before checking message
         const projectDropdown = document.getElementById("select-project-drop-down");
         // get the project ID
         const projectID = projectDropdown?.value;
+        
         if (!projectID) {
             console.error("No project selected");
+            
+            // Show warning notification if no project is selected
+            if (typeof window.showNotification === 'function') {
+                window.showNotification({
+                    type: 'warning',
+                    title: 'No Project Selected',
+                    message: 'Please create or select a project before starting a chat.',
+                    actionText: 'OK'
+                });
+            } else {
+                alert('Please create or select a project before starting a chat.');
+            }
+            
             return;
         }
+
+        // Then check if there's a message
+        const input = document.getElementById("main-message-input");
+        const userMessage = input?.value?.trim();
+        if (!userMessage) return;
 
         // Handle edit mode
         if (EditMode.isEditing) {
@@ -1014,6 +1029,16 @@ async function fetchProjectChats(projectID) {
         const noChatHistoryLabel = document.getElementById("p-label-chat-history-no-entry");
         if (noChatHistoryLabel) {
             noChatHistoryLabel.style.display = data.chats?.length > 0 ? "none" : "block";
+        }
+
+        // Show quick prompts if on initial screen (chat interface hidden)
+        const quickPromptsContainer = document.getElementById('quick-prompts-container');
+        const chatInterface = document.getElementById('chat-interface');
+        if (quickPromptsContainer && chatInterface) {
+            // Show quick prompts only if chat interface is hidden (on initial screen)
+            if (chatInterface.style.display === 'none') {
+                quickPromptsContainer.style.display = 'flex';
+            }
         }
     } catch (error) {
         console.error("Error fetching chats:", error);

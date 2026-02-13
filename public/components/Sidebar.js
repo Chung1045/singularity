@@ -348,7 +348,7 @@
                     • All uploaded documents<br>
                     • All requirements and user stories<br>
                     • All generated reports<br>
-                    • Invited collaborator will be removed immediately<br>
+                    • Invited collaborator will be removed immediately<br><br>
                     This action CANNOT be undone!</div>
                     <div style="
                         display: flex;
