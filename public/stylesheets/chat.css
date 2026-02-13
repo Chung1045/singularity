@@ -717,11 +717,12 @@
     color: #666;
     background: transparent;
     border: none;
-    padding: 8px 4px;
+    padding: 8px 8px;
     cursor: pointer;
     transition: all 0.2s ease;
     border-radius: 6px;
     line-height: 1.5;
+    border: 1px solid #e0e0e0;
 }
 
 .quick-prompt-item:hover {

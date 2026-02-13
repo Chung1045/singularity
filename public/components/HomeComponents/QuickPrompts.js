@@ -47,7 +47,7 @@ const QuickPrompts = () => {
     const prompts = [
         {
             category: 'FR/NFR',
-            title: 'FR/NFR',
+            title: 'FR / NFR',
             prompt: 'Classify and identify functional and non-functional requirements from the uploaded documents',
             displayText: 'Classify requirements from documents'
         },
