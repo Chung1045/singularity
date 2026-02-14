@@ -949,6 +949,11 @@
         const notificationCheckStartTimeRef = useRef(null);
         const NOTIFICATION_CHECK_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
 
+        // Search state
+        const [searchQuery, setSearchQuery] = useState('');
+        const [searchPanelOpen, setSearchPanelOpen] = useState(false);
+        const isHomePage = window.location.pathname === '/' || window.location.pathname === '/home';
+
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
             return localStorage.getItem('selectedProjectID') || null;
@@ -1333,6 +1338,18 @@
             setNewProjectName('');
         };
 
+        // Search result handler
+        const handleSearchResultClick = (type, item) => {
+            console.log('Search result clicked:', type, item);
+            // TODO: Implement navigation/opening logic based on type
+            // For files: open file viewer
+            // For requirements: scroll to or open requirement
+            // For user stories: navigate to story detail
+            
+            // Clear search after selection
+            setSearchQuery('');
+        };
+
         // Fetch avatar URL
         useEffect(() => {
             async function fetchAvatar() {
@@ -1603,6 +1620,8 @@
                         className: 'search-file-field',
                         role: 'search',
                         'aria-label': 'Search files',
+                        onSubmit: (e) => e.preventDefault(),
+                        onClick: sidebarCollapsed ? () => setSearchPanelOpen(true) : undefined,
                         style: {
                             marginBottom: '20px',
                             // --- Collapsed: let CSS handle positioning ---
@@ -1612,7 +1631,8 @@
                             }),
                             marginRight: '25px',
                             boxSizing: 'border-box',
-                            display: 'flex'
+                            display: 'flex',
+                            cursor: sidebarCollapsed ? 'pointer' : 'default'
                         }
                     },
                     React.createElement('img', {
@@ -1625,13 +1645,15 @@
                         id: 'sidebar-search-label',
                         htmlFor: 'sidebar-search-input',
                         className: 'visually-hidden'
-                    }, 'Search files'),
+                    }, 'Search files, requirements, stories...'),
                     React.createElement('input', {
                         type: 'search',
                         id: 'sidebar-search-input',
                         className: 'text-wrapper-4',
-                        placeholder: 'Search files',
+                        placeholder: 'Search files, requirements, stories...',
                         'aria-label': 'Search files',
+                        value: searchQuery,
+                        onChange: (e) => setSearchQuery(e.target.value),
                         style: {
                             // --- NEW: Input Stretches ---
                             width: '100%',
@@ -1642,10 +1664,22 @@
                     })
                 ),
 
+                // Search Results Component
+                React.createElement(window.sidebarInnerSearchResults, {
+                    searchQuery: searchQuery,
+                    onResultClick: handleSearchResultClick,
+                    onClose: () => setSearchQuery(''),
+                    isHomePage: isHomePage,
+                    sidebarCollapsed: sidebarCollapsed
+                }),
+
                 // Scrollable wrapper
                 React.createElement('div', {
                         id: 'sidebar-scrollable-wrapper',
-                        className: 'sidebar-scrollable-content'
+                        className: 'sidebar-scrollable-content',
+                        style: {
+                            visibility: searchQuery ? 'hidden' : 'visible'
+                        }
                     },
                     // History section
                     React.createElement('div', {
@@ -2118,49 +2152,62 @@
                         title: 'Notifications',
                         style: {
                             position: 'relative',
-                            width: '40px',
+                            width: '100%',
                             height: '40px',
-                            padding: '8px',
+                            padding: '8px 0px',
                             border: 'none',
                             borderRadius: '8px',
                             backgroundColor: 'transparent',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            justifyContent: 'flex-start',
+                            gap: '10px',
                             outline: 'none',
-                            transition: 'background-color 0.2s'
+                            marginLeft: '-5px',
+                            // transition: 'background-color 0.2s'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
-                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                        // onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        // onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                     },
-                        React.createElement('svg', {
-                            width: '20',
-                            height: '20',
-                            viewBox: '0 0 24 24',
-                            fill: 'none',
-                            stroke: '#333',
-                            strokeWidth: '2',
-                            strokeLinecap: 'round',
-                            strokeLinejoin: 'round'
-                        },
-                            React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
-                            React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
-                        ),
-                        // Red dot indicator for unread notifications
-                        hasUnreadNotifications && React.createElement('span', {
-                            id: 'sidebar-notification-unread-badge-collapsed',
+                        React.createElement('div', {
+                            id: 'sidebar-notification-icon-wrapper-collapsed',
                             style: {
-                                position: 'absolute',
-                                top: '6px',
-                                right: '8px',
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#e53935',
-                                borderRadius: '50%',
-                                border: '1px solid #fff'
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginLeft: '30px'
                             }
-                        })
+                        },
+                            React.createElement('svg', {
+                                id: 'sidebar-notification-icon-collapsed',
+                                width: '20',
+                                height: '20',
+                                viewBox: '0 0 24 24',
+                                fill: 'none',
+                                stroke: '#333',
+                                strokeWidth: '2',
+                                strokeLinecap: 'round',
+                                strokeLinejoin: 'round'
+                            },
+                                React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                                React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                            ),
+                            // Red dot indicator for unread notifications
+                            hasUnreadNotifications && React.createElement('span', {
+                                id: 'sidebar-notification-unread-badge-collapsed',
+                                style: {
+                                    position: 'absolute',
+                                    top: '-2px',
+                                    right: '-4px',
+                                    width: '8px',
+                                    height: '8px',
+                                    backgroundColor: '#e53935',
+                                    borderRadius: '50%',
+                                    border: '1px solid #fff'
+                                }
+                            })
+                        )
                     )
                 ),
 
@@ -2171,6 +2218,16 @@
                         setNotificationPanelOpen(false);
                     },
                     sidebarCollapsed: sidebarCollapsed
+                }),
+
+                // Search Panel (for collapsed sidebar)
+                window.SearchPanel && React.createElement(window.SearchPanel, {
+                    isOpen: searchPanelOpen,
+                    onClose: () => {
+                        setSearchPanelOpen(false);
+                    },
+                    sidebarCollapsed: sidebarCollapsed,
+                    isHomePage: isHomePage
                 }),
 
                 // Profile section
@@ -2301,8 +2358,9 @@
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 transition: 'all 220ms ease',
-                                margin: '9.5px auto',
+                                // margin: '9.5px auto',
                                 // border: 'none',
+                                margin: '20px 0 9.5px 12px',
                                 outline: 'none'
                             }
                         },
