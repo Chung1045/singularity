@@ -4,6 +4,7 @@ const aiDB = require("./aiAgentService/aiAgentDBService")
 const projectDB = require("./projectDBService")
 const lodash = require('lodash');
 const uuid = require("uuid-v4")
+const { PassThrough } = require('stream');
 const {
     Document,
     Packer,
@@ -427,8 +428,98 @@ async function generateUserStoriesDocument(projectID, userStories) {
     }
 }
 
+function createThreadEntry(threadEntry) {
+    return [
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: "User",
+                    bold: true,
+                }),
+            ],
+        }),
+        new Paragraph({
+            children: [
+                new TextRun(threadEntry.message ?? ""),
+            ],
+        }),
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: "Agent",
+                    bold: true,
+                }),
+            ],
+        }),
+        new Paragraph(""),
+        new Paragraph({
+            children: [
+                new TextRun(threadEntry.response.message ?? ""),
+            ],
+        }),
+    ];
+}
+
+function normalizeAgentMarkdown(md) {
+    return md
+        .replace(/^### /gm, "##### ")
+        .replace(/^## /gm, "#### ")
+        .replace(/^# /gm, "### ");
+}
+
+
+function createThreadEntry(threadEntry) {
+    const agentMessage = normalizeAgentMarkdown(threadEntry.response?.message ?? "");
+
+    return `
+**User**
+
+${threadEntry.message ?? ""}
+
+**Agent**
+
+${agentMessage}
+`;
+}
+
+function generateChatThreadHistDoc(projectID, chatID) {  // Note: NOT async
+    const stream = new PassThrough();
+
+    // Start the async work but don't await it
+    (async () => {
+        try {
+            const projectName = await projectDB.fetchProjectName(projectID);
+            const chatThread = await aiDB.fetchChatThread(projectID, chatID);
+            const chatThreadName = await aiDB.getChatThreadName(projectID, chatID);
+
+            // Write header
+            stream.write(`# ${projectName}\n\n## ${chatThreadName} – Chat Thread History\n\n`);
+
+            // Stream each conversation entry
+            if (chatThread && chatThread.conversations) {
+                for (const thread of chatThread.conversations) {
+                    const entry = createThreadEntry(thread);
+                    stream.write(entry);
+                    stream.write(`\n---\n`);
+                }
+            }
+
+            // Signal end of stream
+            stream.end();
+
+        } catch (error) {
+            console.error('Error in generateChatThreadHistDoc:', error);
+            stream.destroy(error);
+        }
+    })();
+
+    return stream;  // Return the stream immediately
+}
+
 
 module.exports = {
     generateRequirementsDocument,
-    generateUserStoriesDocument
+    generateUserStoriesDocument,
+    generateChatThreadHistDoc
+
 }

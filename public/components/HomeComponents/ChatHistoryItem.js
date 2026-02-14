@@ -76,6 +76,40 @@ function createChatHistoryItem(chatThreadName, chatID) {
             }
         };
 
+        const handleChatExport = async (chatID) => {
+            try {
+                const projectID = localStorage.getItem('selectedProjectID');
+
+                const response = await fetch('/api/agent/chat/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectID, chatID })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `chat-export-${Date.now()}.md`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    setMenuOpen(false);
+                } else {
+                    throw new Error('Export failed');
+                }
+            } catch (err) {
+                console.error('Error exporting the chat:', err);
+                await window.showNotification({
+                    type: 'confirm',
+                    title: 'Error',
+                    message: 'Unable to export chat',
+                    actionText: 'OK',
+                });
+            }
+        }
+
         const handleClick = (e) => {
             if (e.target.type === 'checkbox' || e.target.tagName === 'IMG' || e.target.closest('.chat-menu')) return;
 
@@ -210,6 +244,28 @@ function createChatHistoryItem(chatThreadName, chatID) {
                         overflow: 'hidden'
                     }
                 },
+                    React.createElement('button', {
+                        id: `chat-history-item-export-button-${chatID}`,
+                        className: 'chat-menu-export-button',
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
+                        },
+                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            handleChatExport(chatID);
+                        }
+                    }, 'Export Chat'),
                     React.createElement('button', {
                         id: `chat-history-item-delete-button-${chatID}`,
                         className: 'chat-menu-delete-button',

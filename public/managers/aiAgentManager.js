@@ -143,7 +143,7 @@ router.post('/agent/chat', async (req, res) => {
                                     console.log(` Parsed reportInfo:`, reportInfo);
                                     console.log(` Sending reportGenerated event to client`);
 
-                                    
+
                                     res.write(`data: ${JSON.stringify({ 
                                         type: 'reportGenerated', 
                                         reportType: reportInfo.type,
@@ -152,7 +152,7 @@ router.post('/agent/chat', async (req, res) => {
                                 } else {
                                     console.error(' Could not find JSON in REPORT_GENERATED marker:', trimmedChunk);
 
-                                
+
                                 }
                             } catch (parseErr) {
                                 console.error('Failed to parse report info:', parseErr);
@@ -886,6 +886,46 @@ router.post('/agent/analyze-documents', async (req, res) => {
     }
 });
 
-// Get a complete chat thread with all conversations
+
+router.post("/agent/chat/export", apiAuthUser, async (req, res) => {
+    const data = req.body;
+    const projectID = data.projectID;
+    const chatID = data.chatID;
+    const userID = req.userID;
+
+    console.log(`Data received: projectID: ${projectID}, chatID: ${chatID}`)
+
+    if (!projectID || !chatID) {
+        return res.status(400).json({ success: false, message: "projectID and chatID are required" });
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    try {
+        const chatThreadName = await aiDB.getChatThreadName(projectID, chatID);
+        const fileName = `${chatThreadName}-${Date.now()}.md`;
+
+        const stream = docGen.generateChatThreadHistDoc(projectID, chatID);
+
+        res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+        res.setHeader("Content-Type", "text/markdown");
+
+        stream.pipe(res);
+
+        // Handle stream errors
+        stream.on('error', (err) => {
+            console.error("Stream error:", err);
+            if (!res.headersSent) {
+                res.status(500).send("Download failed");
+            }
+        });
+
+    } catch (err) {
+        console.error("Download failed:", err);
+        res.status(500).send("Download failed");
+    }
+});
 
 module.exports = router;

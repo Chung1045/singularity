@@ -795,6 +795,25 @@ async function reorderUserStories(projectID) {
     }
 }
 
+async function exportChat(chatID, projectID){
+
+    try {
+        let chatThread = await fetchChatThread(projectID, chatID);
+        console.log(chatThread)
+
+        let conversations = chatThread.conversations;
+        let content = ""
+
+
+    } catch (err) {
+
+    }
+
+
+}
+
+exportChat("109565be-5e85-4977-ba6b-a22b6c5561b5", "e719a12c-6831-4feb-8e9d-23c3cdcd5837")
+
 module.exports = {
     conversationEdit,
     createNewChatThread,
