@@ -306,7 +306,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
 
         console.log('chatThreadData type:', typeof chatThreadData);
         console.log('chatThreadData:', JSON.stringify(chatThreadData, null, 2));
-        console.log(`✅ Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
+        console.log(`Chat ${chatID} belongs to project: ${chatThreadData?.projectID}`);
 
         if (!chatThreadData) {
             console.log('No chat thread data returned');

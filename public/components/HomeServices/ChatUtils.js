@@ -82,11 +82,13 @@ const ChatUtils = {
         const chatTopBar = document.getElementById('chat-top-bar');
         const suggestionChips = document.getElementById('suggestion-chips');
         const mainScreenTitle = document.querySelector('.main-screen-title');
+        const quickPromptsContainer = document.getElementById('quick-prompts-container');
 
         if (chatInterface) chatInterface.style.display = 'flex';
         if (chatTopBar) chatTopBar.style.display = 'flex';
         if (suggestionChips) suggestionChips.style.display = 'flex';
         if (mainScreenTitle) mainScreenTitle.style.display = 'none';
+        if (quickPromptsContainer) quickPromptsContainer.style.display = 'none';
     },
 
     /**
@@ -97,11 +99,17 @@ const ChatUtils = {
         const chatTopBar = document.getElementById('chat-top-bar');
         const suggestionChips = document.getElementById('suggestion-chips');
         const mainScreenTitle = document.querySelector('.main-screen-title');
+        const quickPromptsContainer = document.getElementById('quick-prompts-container');
 
         if (chatInterface) chatInterface.style.display = 'none';
         if (chatTopBar) chatTopBar.style.display = 'none';
         if (suggestionChips) suggestionChips.style.display = 'none';
         if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
+        
+        // Show quick prompts when on initial screen (no active chat)
+        if (quickPromptsContainer) {
+            quickPromptsContainer.style.display = 'flex';
+        }
     },
 
     /**
