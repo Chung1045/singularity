@@ -1262,6 +1262,46 @@ async function downloadReport(reportID, reportName, projectID) {
     }
 }
 
+/**
+ * Download a project file by documentID. Used by sidebar search and search panel file preview.
+ * @param {string} documentID - The document UUID
+ * @param {string} fileName - Filename for the download (e.g. "report.docx")
+ */
+async function downloadFile(documentID, fileName) {
+    try {
+        const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+        if (!projectID) {
+            if (window.showNotification) {
+                await window.showNotification({ type: 'error', title: 'Error', message: 'No project selected', actionText: 'OK' });
+            }
+            return;
+        }
+
+        const response = await fetch('/api/project/file/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectID, documentID })
+        });
+
+        if (!response.ok) throw new Error('Download failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName || 'download';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Download error:', error);
+        if (window.showNotification) {
+            await window.showNotification({ type: 'error', title: 'Error', message: 'Failed to download file', actionText: 'OK' });
+        }
+    }
+}
+
 // Make functions available globally
 window.fetchProjectChats = fetchProjectChats;
 window.fetchProjectFiles = fetchProjectFiles;
@@ -1270,6 +1310,7 @@ window.refreshProjectFiles = fetchProjectFiles; // Alias for refreshing files af
 window.createChatHistoryItem = createChatHistoryItem;
 window.createFileItem = createFileItem;
 window.createReportItem = createReportItem;
+window.downloadFile = downloadFile;
 
 /**
  * Create a new chat thread
