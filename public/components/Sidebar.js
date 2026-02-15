@@ -952,7 +952,18 @@
         // Search state
         const [searchQuery, setSearchQuery] = useState('');
         const [searchPanelOpen, setSearchPanelOpen] = useState(false);
+        const [selectedSearchItem, setSelectedSearchItem] = useState(null);
+        const [selectedSearchType, setSelectedSearchType] = useState(null);
         const isHomePage = window.location.pathname === '/' || window.location.pathname === '/home';
+
+        // Reset search state when sidebar collapses
+        useEffect(() => {
+            if (sidebarCollapsed) {
+                setSearchQuery('');
+                setSelectedSearchItem(null);
+                setSelectedSearchType(null);
+            }
+        }, [sidebarCollapsed]);
 
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
@@ -1341,13 +1352,14 @@
         // Search result handler
         const handleSearchResultClick = (type, item) => {
             console.log('Search result clicked:', type, item);
-            // TODO: Implement navigation/opening logic based on type
-            // For files: open file viewer
-            // For requirements: scroll to or open requirement
-            // For user stories: navigate to story detail
-            
-            // Clear search after selection
-            setSearchQuery('');
+            setSelectedSearchItem(item);
+            setSelectedSearchType(type);
+        };
+
+        // Handle back from detail view
+        const handleBackToSearchResults = () => {
+            setSelectedSearchItem(null);
+            setSelectedSearchType(null);
         };
 
         // Fetch avatar URL
@@ -1664,11 +1676,433 @@
                     })
                 ),
 
-                // Search Results Component
-                React.createElement(window.sidebarInnerSearchResults, {
+                // Search Results or Detail View Component (hidden when collapsed)
+                !sidebarCollapsed && selectedSearchItem ? React.createElement('div', {
+                    id: 'sidebar-search-detail-view',
+                    className: 'search-results-overlay',
+                    style: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '15px',
+                        padding: '15px 20px',
+                        overflowY: 'auto'
+                    }
+                },
+                    // Back button
+                    React.createElement('button', {
+                        id: 'sidebar-search-back-btn',
+                        onClick: handleBackToSearchResults,
+                        style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 12px',
+                            border: '1px solid #e4e4e4',
+                            borderRadius: '8px',
+                            backgroundColor: '#ffffff',
+                            cursor: 'pointer',
+                            fontFamily: 'Inter, Helvetica',
+                            fontSize: '13px',
+                            color: '#1c1d21',
+                            width: 'fit-content',
+                            transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }
+                    },
+                        React.createElement('img', {
+                            src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                            alt: '',
+                            style: { width: '18px', height: '18px', flexShrink: 0 }
+                        }),
+                        'Back to results'
+                    ),
+                    
+                    // Detail content - macOS Quick Look style with sidebar theme
+                    selectedSearchType === 'file' ? React.createElement('div', {
+                        id: 'sidebar-search-file-preview',
+                        style: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1px solid #e4e4e4'
+                        }
+                    },
+                        // File header with icon and name
+                        React.createElement('div', {
+                            id: 'sidebar-search-file-header-section',
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '16px',
+                                padding: '20px',
+                                backgroundColor: '#f9f9f9',
+                                borderBottom: '1px solid #e4e4e4'
+                            }
+                        },
+                            React.createElement('div', {
+                                id: 'sidebar-search-file-icon',
+                                style: {
+                                    width: '60px',
+                                    height: '60px',
+                                    backgroundColor: '#ffffff',
+                                    borderRadius: '10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '20px',
+                                    fontWeight: '700',
+                                    color: '#333333',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                    border: '2px solid #e4e4e4',
+                                    flexShrink: 0
+                                }
+                            }, selectedSearchItem.documentExt.replace('.', '').toUpperCase()),
+                            // File name with marquee
+                            React.createElement('div', {
+                                id: 'sidebar-search-file-name',
+                                className: selectedSearchItem.name.length > 30 ? 'file-name-marquee-container' : '',
+                                style: {
+                                    fontFamily: 'Inter, Helvetica',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    color: '#1c1d21',
+                                    textAlign: 'left',
+                                    flex: '1',
+                                    overflow: 'hidden',
+                                    position: 'relative'
+                                }
+                            },
+                                React.createElement('div', {
+                                    className: selectedSearchItem.name.length > 30 ? 'file-name-marquee' : '',
+                                    style: {
+                                        whiteSpace: 'nowrap',
+                                        wordBreak: selectedSearchItem.name.length <= 30 ? 'break-word' : 'normal'
+                                    }
+                                }, selectedSearchItem.name)
+                            )
+                        ),
+                        
+                        // File details section
+                        React.createElement('div', {
+                            id: 'sidebar-search-file-details',
+                            style: {
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px',
+                                overflowY: 'auto',
+                                flex: '1'
+                            }
+                        },
+                            
+                            // Divider
+                            // React.createElement('div', {
+                            //     style: {
+                            //         height: '1px',
+                            //         backgroundColor: '#e4e4e4'
+                            //     }
+                            // }),
+                            
+                            // Info rows
+                            React.createElement('div', {
+                                id: 'sidebar-search-file-info',
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '12px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    id: 'sidebar-search-file-info-type',
+                                    style: {
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }
+                                },
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#666',
+                                            fontWeight: '400'
+                                        } 
+                                    }, 'Type'),
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#1c1d21', 
+                                            fontWeight: '500' 
+                                        } 
+                                    }, `${selectedSearchItem.documentExt.replace('.', '').toUpperCase()} Document`)
+                                ),
+                                // Document ID row - commented out
+                                // React.createElement('div', {
+                                //     id: 'sidebar-search-file-info-id',
+                                //     style: {
+                                //         display: 'flex',
+                                //         justifyContent: 'space-between',
+                                //         alignItems: 'center'
+                                //     }
+                                // },
+                                //     React.createElement('span', { 
+                                //         style: { 
+                                //             fontFamily: 'Inter, Helvetica',
+                                //             fontSize: '13px',
+                                //             color: '#666',
+                                //             fontWeight: '400'
+                                //         } 
+                                //     }, 'Document ID'),
+                                //     React.createElement('span', { 
+                                //         style: { 
+                                //             fontFamily: 'monospace',
+                                //             fontSize: '11px',
+                                //             color: '#1c1d21', 
+                                //             fontWeight: '500'
+                                //         } 
+                                //     }, selectedSearchItem.documentID.substring(0, 8) + '...')
+                                // )
+                            ),
+                            
+                            // Divider
+                            React.createElement('div', {
+                                style: {
+                                    height: '1px',
+                                    backgroundColor: '#e4e4e4'
+                                }
+                            }),
+                            
+                            // Action button
+                            React.createElement('button', {
+                                id: 'sidebar-search-file-download-btn',
+                                onClick: () => {
+                                    // Trigger download
+                                    if (window.downloadFile) {
+                                        window.downloadFile(selectedSearchItem.documentID, selectedSearchItem.name);
+                                    }
+                                },
+                                style: {
+                                    width: '100%',
+                                    padding: '12px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'rgb(30, 41, 59)',
+                                    color: '#ffffff',
+                                    fontFamily: 'Inter, Helvetica',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    // transition: 'all 0.2s',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                },
+                                onMouseEnter: (e) => {
+                                    e.target.style.backgroundColor = '#000000';
+                                    // e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                                },
+                                onMouseLeave: (e) => {
+                                    e.target.style.backgroundColor = 'rgb(30, 41, 59)';
+                                    // e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                                }
+                            }, 'Download')
+                        )
+                    ) : React.createElement('div', {
+                        id: 'sidebar-search-requirement-preview',
+                        style: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1px solid #e4e4e4',
+                            maxHeight: '100%'
+                        }
+                    },
+                        // Header with badge
+                        React.createElement('div', {
+                            id: 'sidebar-search-requirement-header',
+                            style: {
+                                // padding: '15px',
+                                padding: '20px',
+
+                                backgroundColor: '#f9f9f9',
+                                borderBottom: '1px solid #e4e4e4'
+                            }
+                        },
+                            React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    marginBottom: '12px'
+                                }
+                            },
+                                // Badge
+                                React.createElement('div', {
+                                    style: {
+                                        padding: '4px 10px',
+                                        backgroundColor: '#1c1d21',
+                                        color: '#ffffff',
+                                        borderRadius: '6px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '11px',
+                                        fontWeight: '700',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, selectedSearchType === 'requirement' 
+                                    ? `${(selectedSearchItem.details?.requirementType === 'functional' || selectedSearchItem.details?.requirementType === 'FR') ? 'FR' : 'NFR'}-${String(selectedSearchItem.details?.requirementSeq || 0).padStart(2, '0')}`
+                                    : `US-${String(selectedSearchItem.details?.storySeq || 0).padStart(2, '0')}`)
+                            ),
+                            // Title
+                            React.createElement('div', {
+                                id: 'sidebar-search-requirement-title',
+                                style: {
+                                    fontFamily: 'Inter, Helvetica',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    color: '#1c1d21',
+                                    lineHeight: '1.4'
+                                }
+                            }, selectedSearchItem.title)
+                        ),
+                        
+                        // Details section
+                        React.createElement('div', {
+                            id: 'sidebar-search-requirement-details',
+                            style: {
+                                padding: '20px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '16px',
+                                overflowY: 'auto',
+                                flex: '1'
+                            }
+                        },
+                            // Description
+                            selectedSearchItem.details?.description && React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        color: '#666',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, 'Description'),
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '13px',
+                                        color: '#1c1d21',
+                                        lineHeight: '1.6'
+                                    }
+                                }, selectedSearchItem.details.description)
+                            ),
+                            
+                            // Role (for both requirements and user stories)
+                            selectedSearchItem.details?.role && React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        color: '#666',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, 'Role'),
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '13px',
+                                        color: '#1c1d21',
+                                        lineHeight: '1.6'
+                                    }
+                                }, selectedSearchItem.details.role)
+                            ),
+                            
+                            // Source References
+                            selectedSearchItem.details?.sourceReference && selectedSearchItem.details.sourceReference.length > 0 && React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        color: '#666',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, 'Source References'),
+                                React.createElement('div', {
+                                    style: {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '6px'
+                                    }
+                                },
+                                    selectedSearchItem.details.sourceReference.map((ref, idx) => 
+                                        React.createElement('div', {
+                                            key: idx,
+                                            style: {
+                                                padding: '10px 12px',
+                                                backgroundColor: '#f5f5f5',
+                                                borderRadius: '6px',
+                                                fontFamily: 'Inter, Helvetica',
+                                                fontSize: '12px',
+                                                color: '#1c1d21',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '4px'
+                                            }
+                                        }, 
+                                            typeof ref === 'string' ? ref : React.createElement(React.Fragment, null,
+                                                ref.documentName && React.createElement('div', {
+                                                    style: { fontWeight: '600', color: '#1c1d21' }
+                                                }, ref.documentName),
+                                                ref.location && React.createElement('div', {
+                                                    style: { fontSize: '11px', color: '#666' }
+                                                }, `Location: ${ref.location}`)
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ) : !sidebarCollapsed && React.createElement(window.sidebarInnerSearchResults, {
                     searchQuery: searchQuery,
                     onResultClick: handleSearchResultClick,
-                    onClose: () => setSearchQuery(''),
+                    onClose: () => {
+                        setSearchQuery('');
+                        setSelectedSearchItem(null);
+                        setSelectedSearchType(null);
+                    },
                     isHomePage: isHomePage,
                     sidebarCollapsed: sidebarCollapsed
                 }),
@@ -2282,7 +2716,7 @@
                                     border: '1px solid #e4e4e4',
                                     borderRadius: '10px',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                    zIndex: 3,
+                                    zIndex: 20,
                                     minWidth: 'calc(100% - 35px)',
                                     padding: '10px',
                                     display: 'flex',

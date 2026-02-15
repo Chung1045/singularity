@@ -132,27 +132,57 @@
 
                 const data = await response.json();
                 console.log('[SearchResults] Requirements API response:', data);
+                console.log('[SearchResults] Response OK:', response.ok);
+                console.log('[SearchResults] Data successful:', data.successful);
                 
                 if (response.ok && data.successful) {
                     const requirements = data.reports || [];
                     console.log('[SearchResults] Total requirements:', requirements.length);
+                    console.log('[SearchResults] Requirements data:', requirements);
+                    console.log('[SearchResults] Search query:', query);
                     
                     // Filter requirements by title, description, or ID
                     const filtered = requirements.filter(req => {
-                        const title = (req.title || '').toLowerCase();
+                        const title = (req.details?.title || req.title || '').toLowerCase();
                         const description = (req.details?.description || '').toLowerCase();
                         const reqId = (req.reportID || '').toLowerCase();
-                        return title.includes(query) || description.includes(query) || reqId.includes(query);
+                        const requirementID = (req.details?.requirementID || '').toLowerCase();
+                        
+                        // Check for formatted ID like FR-01, NFR-01
+                        const reqType = req.details?.requirementType?.toLowerCase();
+                        const reqSeq = req.details?.requirementSeq || 0;
+                        const prefix = (reqType === 'functional' || reqType === 'fr') ? 'fr' : 'nfr';
+                        const formattedId = `${prefix}-${String(reqSeq).padStart(2, '0')}`.toLowerCase();
+                        
+                        const matchTitle = title.includes(query);
+                        const matchDesc = description.includes(query);
+                        const matchId = reqId.includes(query);
+                        const matchReqId = requirementID.includes(query);
+                        const matchFormattedId = formattedId.includes(query);
+                        
+                        console.log(`[SearchResults] Checking requirement "${title}":`, {
+                            title,
+                            formattedId,
+                            matchTitle,
+                            matchDesc,
+                            matchId,
+                            matchReqId,
+                            matchFormattedId
+                        });
+                        
+                        return matchTitle || matchDesc || matchId || matchReqId || matchFormattedId;
                     }).map(req => ({
                         id: req.reportID,
-                        title: req.title,
+                        title: req.details?.title || req.title,
                         reportID: req.reportID,
                         details: req.details
                     }));
                     
                     console.log('[SearchResults] Filtered requirements:', filtered.length);
+                    console.log('[SearchResults] Filtered requirements data:', filtered);
                     return filtered;
                 }
+                console.log('[SearchResults] Requirements: response not ok or not successful');
                 return [];
             } catch (error) {
                 console.error('[SearchResults] Error fetching requirements:', error);
@@ -170,27 +200,55 @@
 
                 const data = await response.json();
                 console.log('[SearchResults] User Stories API response:', data);
+                console.log('[SearchResults] User Stories response.ok:', response.ok);
+                console.log('[SearchResults] User Stories data.successful:', data.successful);
                 
                 if (response.ok && data.successful) {
                     const stories = data.reports || [];
                     console.log('[SearchResults] Total user stories:', stories.length);
+                    console.log('[SearchResults] User stories data:', stories);
+                    console.log('[SearchResults] Search query for stories:', query);
                     
                     // Filter user stories by title or description
                     const filtered = stories.filter(story => {
-                        const title = (story.title || '').toLowerCase();
+                        const title = (story.details?.title || story.title || '').toLowerCase();
                         const description = (story.details?.description || '').toLowerCase();
                         const storyId = (story.reportID || '').toLowerCase();
-                        return title.includes(query) || description.includes(query) || storyId.includes(query);
+                        const storyID = (story.details?.storyID || '').toLowerCase();
+                        
+                        // Check for formatted ID like US-01
+                        const storySeq = story.details?.storySeq || 0;
+                        const formattedId = `us-${String(storySeq).padStart(2, '0')}`.toLowerCase();
+                        
+                        const matchTitle = title.includes(query);
+                        const matchDesc = description.includes(query);
+                        const matchStoryId = storyId.includes(query);
+                        const matchStoryID = storyID.includes(query);
+                        const matchFormattedId = formattedId.includes(query);
+                        
+                        console.log(`[SearchResults] Checking story "${title}":`, {
+                            title,
+                            formattedId,
+                            matchTitle,
+                            matchDesc,
+                            matchStoryId,
+                            matchStoryID,
+                            matchFormattedId
+                        });
+                        
+                        return matchTitle || matchDesc || matchStoryId || matchStoryID || matchFormattedId;
                     }).map(story => ({
                         id: story.reportID,
-                        title: story.title,
+                        title: story.details?.title || story.title,
                         reportID: story.reportID,
                         details: story.details
                     }));
                     
                     console.log('[SearchResults] Filtered user stories:', filtered.length);
+                    console.log('[SearchResults] Filtered user stories data:', filtered);
                     return filtered;
                 }
+                console.log('[SearchResults] User stories: response not ok or not successful');
                 return [];
             } catch (error) {
                 console.error('[SearchResults] Error fetching user stories:', error);
@@ -240,14 +298,18 @@
                             onClick: () => onResultClick('file', file)
                         },
                             React.createElement('div', {
+                                className: 'search-result-item-inner',
                                 style: {
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px'
+                                    gap: '8px',
+                                    minWidth: 0
                                 }
                             },
                                 React.createElement('span', {
-                                    style: { fontWeight: '500' }
+                                    className: 'search-result-item-title',
+                                    style: { fontWeight: '500' },
+                                    title: file.name
                                 }, file.name)
                             )
                         )
@@ -262,7 +324,7 @@
                     React.createElement('div', {
                         id: 'sidebar-search-requirements-header',
                         className: 'search-result-header'
-                    }, `REQUIREMENTS (${results.requirements.length})`),
+                    }, `Requirements (${results.requirements.length})`),
                     
                     results.requirements.map((req, index) => 
                         React.createElement('div', {
@@ -272,38 +334,38 @@
                             onClick: () => onResultClick('requirement', req)
                         },
                             React.createElement('div', {
+                                className: 'search-result-item-inner',
                                 style: {
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '4px'
+                                    gap: '4px',
+                                    minWidth: 0
                                 }
                             },
                                 React.createElement('span', {
-                                    style: { fontWeight: '500' }
+                                    className: 'search-result-item-title',
+                                    style: { fontWeight: '500' },
+                                    title: req.title
                                 }, req.title),
                                 req.details?.description && React.createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        color: '#666',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap'
-                                    }
+                                    className: 'search-result-item-desc',
+                                    style: { fontSize: '11px', color: '#666' },
+                                    title: req.details.description
                                 }, req.details.description)
                             )
                         )
                     )
                 ),
 
-                // User Stories Section (only on non-home pages)
-                !isHomePage && results.userStories.length > 0 && React.createElement('div', {
+                // User Stories Section
+                results.userStories.length > 0 && React.createElement('div', {
                     id: 'sidebar-search-stories-group',
                     className: 'search-result-group'
                 },
                     React.createElement('div', {
                         id: 'sidebar-search-stories-header',
                         className: 'search-result-header'
-                    }, `USER STORIES (${results.userStories.length})`),
+                    }, `User Stories (${results.userStories.length})`),
                     
                     results.userStories.map((story, index) => 
                         React.createElement('div', {
@@ -313,23 +375,23 @@
                             onClick: () => onResultClick('story', story)
                         },
                             React.createElement('div', {
+                                className: 'search-result-item-inner',
                                 style: {
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '4px'
+                                    gap: '4px',
+                                    minWidth: 0
                                 }
                             },
                                 React.createElement('span', {
-                                    style: { fontWeight: '500' }
+                                    className: 'search-result-item-title',
+                                    style: { fontWeight: '500' },
+                                    title: story.title
                                 }, story.title),
                                 story.details?.description && React.createElement('span', {
-                                    style: {
-                                        fontSize: '11px',
-                                        color: '#666',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap'
-                                    }
+                                    className: 'search-result-item-desc',
+                                    style: { fontSize: '11px', color: '#666' },
+                                    title: story.details.description
                                 }, story.details.description)
                             )
                         )
