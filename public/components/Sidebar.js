@@ -1169,8 +1169,8 @@
                     
                     console.log(`[Sidebar] Fetched ${notifications.length} notifications total`);
                     
-                    // Check if there are any NEW notifications (unread AND created within last 5 minutes)
-                    const hasNewNotifications = notifications.some(n => {
+                    // Check if there are any unread notifications (regardless of age)
+                    const hasUnread = notifications.some(n => {
                         const isUnread = n.isRead === 0 || n.isRead === false;
                         const notificationAge = new Date() - new Date(n.createdAt);
                         const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes
@@ -1182,15 +1182,15 @@
                                 isUnread: isUnread,
                                 age: Math.round(notificationAge / 1000) + 's',
                                 isRecent: isRecent,
-                                willShowBadge: isUnread && isRecent
+                                willShowBadge: isUnread // Show badge for any unread notification
                             });
                         }
                         
-                        return isUnread && isRecent;
+                        return isUnread; // Show red dot for any unread notification, regardless of age
                     });
                     
-                    setHasUnreadNotifications(hasNewNotifications);
-                    console.log('[Sidebar] Notification badge status:', hasNewNotifications ? 'SHOW RED BADGE' : 'NO BADGE');
+                    setHasUnreadNotifications(hasUnread);
+                    console.log('[Sidebar] Notification badge status:', hasUnread ? 'SHOW RED BADGE' : 'NO BADGE');
                 }
             } catch (error) {
                 console.error('[Sidebar] Error checking unread notifications:', error);

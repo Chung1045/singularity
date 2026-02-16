@@ -840,6 +840,7 @@ router.post('/agent/analyze-documents', async (req, res) => {
 
         // Get document contents
         let analyzedDocument = [];
+        let finalChatID = chatID; // Track the chatID used (may be created if not provided)
 
         for (const docID of documentIDs) {
             try {
@@ -856,12 +857,16 @@ router.post('/agent/analyze-documents', async (req, res) => {
 
                 const data = {
                     projectID: projectID,
-                    chatID: chatID,
+                    chatID: finalChatID, // Use the tracked chatID
                     requestMessage: `Analyze Document ${documentName}`,
                     attachedDocumentIDs: documentIDs
                 }
 
-                let { conversationID, chatSeq } = await aiDB.saveConversationRequest(data);
+                let { conversationID, chatSeq, chatID: returnedChatID } = await aiDB.saveConversationRequest(data);
+                
+                // Capture the chatID (will be the same if provided, or newly created if not)
+                finalChatID = returnedChatID;
+                
                 await aiDB.saveConversationResponse(chatSeq, conversationID, analysisResult)
 
                 const analyzedDocumentJSON = await agent.parseRequirementsToJSON(docID, analysisResult);
@@ -873,6 +878,7 @@ router.post('/agent/analyze-documents', async (req, res) => {
 
         return res.status(200).json({
             success: true,
+            chatID: finalChatID, // Return the chatID so frontend can track it
             analysis: analyzedDocument,
             documentsAnalyzed: documentIDs.length
         });

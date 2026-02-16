@@ -44,6 +44,17 @@ const QuickPrompts = () => {
         }
     };
 
+    /**
+     * Handle Analyze Documents button click
+     */
+    const handleAnalyzeDocumentsClick = () => {
+        if (typeof window.handleAnalyzeDocuments === 'function') {
+            window.handleAnalyzeDocuments();
+        } else {
+            console.error('handleAnalyzeDocuments function not available');
+        }
+    };
+
     const prompts = [
         {
             category: 'FR/NFR',
@@ -91,6 +102,19 @@ const QuickPrompts = () => {
                         onClick: () => handlePromptClick(item.prompt)
                     }, item.displayText)
                 )
+            ),
+            // Analyze Documents button
+            React.createElement('div', {
+                key: 'quick-prompt-analyze-documents',
+                className: 'quick-prompt-category'
+            },
+                React.createElement('div', {
+                    className: 'quick-prompt-category-title'
+                }, 'Documents'),
+                React.createElement('button', {
+                    className: 'quick-prompt-item',
+                    onClick: handleAnalyzeDocumentsClick
+                }, 'Analyze Documents')
             )
         )
     );

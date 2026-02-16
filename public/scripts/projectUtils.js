@@ -748,13 +748,28 @@ function createFileItem(fileName, documentID) {
 async function fetchProjectReports(projectID) {
     console.log(` fetchProjectReports called with ProjectID: ${projectID}`);
 
-    const reportsListContainer = document.getElementById("div-requirements-list");
-    const reportsListContainerRight = document.getElementById("div-requirements-list-right");
+    // Wait a bit for DOM to be ready if needed (especially for React-rendered components)
+    let reportsListContainer = document.getElementById("div-requirements-list");
+    let reportsListContainerRight = document.getElementById("div-requirements-list-right");
+
+    if (!reportsListContainerRight) {
+        console.log(" Right sidebar container not found, waiting for DOM...");
+        await new Promise(resolve => setTimeout(resolve, 300));
+        reportsListContainerRight = document.getElementById("div-requirements-list-right");
+        if (!reportsListContainerRight) {
+            console.warn(" Right sidebar container still not found after waiting");
+        } else {
+            console.log(" Right sidebar container found after waiting");
+        }
+    }
 
     if (!reportsListContainer && !reportsListContainerRight) {
         console.warn(" Reports list containers not found on this page");
         return;
     }
+
+    console.log(` Found reportsListContainer (left):`, reportsListContainer ? 'yes' : 'no');
+    console.log(` Found reportsListContainerRight:`, reportsListContainerRight ? 'yes' : 'no');
 
     const noReportsLabel = document.getElementById("p-label-requirements-no-entry");
     const noReportsLabelRight = document.getElementById("p-label-requirements-no-entry-right");
@@ -781,8 +796,27 @@ async function fetchProjectReports(projectID) {
             console.log(` Reports Response Data:`, data);
             console.log(` Number of reports: ${data.reports?.length || 0}`);
 
-            if (reportsListContainer) reportsListContainer.innerHTML = '';
-            if (reportsListContainerRight) reportsListContainerRight.innerHTML = '';
+            // Re-check containers before clearing (they might have been recreated by React)
+            const leftContainer = document.getElementById("div-requirements-list");
+            const rightContainer = document.getElementById("div-requirements-list-right");
+            
+            // Clear containers carefully to avoid React re-render conflicts
+            if (leftContainer) {
+                // Remove all child nodes instead of using innerHTML to avoid React issues
+                while (leftContainer.firstChild) {
+                    leftContainer.removeChild(leftContainer.firstChild);
+                }
+            }
+            if (rightContainer) {
+                const childCountBefore = rightContainer.children.length;
+                // Remove all child nodes instead of using innerHTML to avoid React issues
+                while (rightContainer.firstChild) {
+                    rightContainer.removeChild(rightContainer.firstChild);
+                }
+                console.log(` Cleared right sidebar reports container (had ${childCountBefore} children, now has ${rightContainer.children.length})`);
+            } else {
+                console.warn(` Right sidebar container not found when trying to clear`);
+            }
             console.log(` Cleared reports containers`);
 
             if (data.reports && data.reports.length > 0) {
@@ -820,21 +854,26 @@ async function fetchProjectReports(projectID) {
                         }
                     }
 
-                    // Render to right sidebar (if exists)
-                    if (reportsListContainerRight) {
+                    // Render to right sidebar (if exists) - re-check container before rendering
+                    const containerRight = document.getElementById("div-requirements-list-right");
+                    if (containerRight) {
+                        console.log(` Rendering ${requirementsReports.length} requirements report(s) to right sidebar`);
                         const reqHeaderRight = document.createElement('div');
                         reqHeaderRight.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-bottom: 8px; font-family: Inter, Helvetica;';
                         reqHeaderRight.textContent = 'Requirements';
-                        reportsListContainerRight.appendChild(reqHeaderRight);
+                        containerRight.appendChild(reqHeaderRight);
 
                         for (let report of requirementsReports) {
                             console.log(` Rendering report (right): ${report.reportName} (ID: ${report.reportID})`);
                             const reportElement = createReportItem(report.reportName, report.reportID, projectID, report.reportType);
                             const wrapper = document.createElement('div');
-                            reportsListContainerRight.appendChild(wrapper);
+                            containerRight.appendChild(wrapper);
                             const root = ReactDOM.createRoot(wrapper);
                             root.render(reportElement);
                         }
+                        console.log(` Successfully rendered ${requirementsReports.length} requirements reports to right sidebar. Container now has ${containerRight.children.length} children`);
+                    } else {
+                        console.warn(` reportsListContainerRight is null, cannot render requirements reports`);
                     }
                     console.log(` Requirements reports rendered`);
                 }
@@ -861,21 +900,26 @@ async function fetchProjectReports(projectID) {
                         }
                     }
 
-                    // Render to right sidebar (if exists)
-                    if (reportsListContainerRight) {
+                    // Render to right sidebar (if exists) - re-check container before rendering
+                    const containerRightForUS = document.getElementById("div-requirements-list-right");
+                    if (containerRightForUS) {
+                        console.log(` Rendering ${userStoriesReports.length} user stories report(s) to right sidebar`);
                         const usHeaderRight = document.createElement('div');
                         usHeaderRight.style.cssText = 'font-weight: 600; font-size: 13px; color: #1c1d21; margin-top: 12px; margin-bottom: 8px; font-family: Inter, Helvetica;';
                         usHeaderRight.textContent = 'User Stories';
-                        reportsListContainerRight.appendChild(usHeaderRight);
+                        containerRightForUS.appendChild(usHeaderRight);
 
                         for (let report of userStoriesReports) {
                             console.log(` Rendering report (right): ${report.reportName} (ID: ${report.reportID})`);
                             const reportElement = createReportItem(report.reportName, report.reportID, projectID, report.reportType);
                             const wrapper = document.createElement('div');
-                            reportsListContainerRight.appendChild(wrapper);
+                            containerRightForUS.appendChild(wrapper);
                             const root = ReactDOM.createRoot(wrapper);
                             root.render(reportElement);
                         }
+                        console.log(` Successfully rendered ${userStoriesReports.length} user stories reports to right sidebar. Container now has ${containerRightForUS.children.length} children`);
+                    } else {
+                        console.warn(` reportsListContainerRight is null, cannot render user stories reports`);
                     }
                     console.log(` User stories reports rendered`);
                 }
@@ -909,20 +953,22 @@ async function fetchProjectReports(projectID) {
  * @param {string} reportType - The type of report ('requirements' or 'userStories')
  */
 function createReportItem(reportName, reportID, projectID, reportType) {
-    const { useState, useRef, useEffect } = React;
+    const { useState, useRef, useEffect, useMemo } = React;
 
     const ReportItemComponent = () => {
         const [menuOpen, setMenuOpen] = useState(false);
         const [isChecked, setIsChecked] = useState(false);
         const menuRef = useRef(null);
 
-        // Determine icon based on report type
-        const isUserStories = reportType && (
-            reportType.toLowerCase().includes('userstories') ||
-            reportType.toLowerCase().includes('user_stories') ||
-            reportType.toLowerCase().includes('user stories')
-        );
-        const iconSrc = isUserStories ? './img/UserStoriesIcon.svg' : './img/stats-report-svgrepo-com.svg';
+        // Determine icon based on report type - use useMemo to ensure stability
+        const iconSrc = useMemo(() => {
+            const isUserStories = reportType && (
+                reportType.toLowerCase().includes('userstories') ||
+                reportType.toLowerCase().includes('user_stories') ||
+                reportType.toLowerCase().includes('user stories')
+            );
+            return isUserStories ? './img/UserStoriesIcon.svg' : './img/RequirementsIcon.svg';
+        }, [reportType]);
 
         // Close menu when clicking outside
         useEffect(() => {

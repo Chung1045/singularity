@@ -13,6 +13,165 @@
 
 const { useState } = React;
 
+// ===== GLOBAL HANDLERS =====
+
+/**
+ * Handle Analyze Documents - analyzes selected documents from the Source panel and/or attachment dropdown
+ */
+window.handleAnalyzeDocuments = async function() {
+    const projectDropdown = document.getElementById("select-project-drop-down");
+    const projectID = projectDropdown?.value;
+
+    if (!projectID) {
+        window.showNotification?.({ type: 'error', title: 'No Project Selected', message: 'Please select a project first.', actionText: 'OK' });
+        return;
+    }
+
+    // Get files from both sources: Source panel and attachment dropdown chips
+    const selectedSource = ChatUtils.getSelectedSource() || [];
+    
+    // Try both methods to get chip file IDs (fallback)
+    let chipFileIDs = [];
+    try {
+        chipFileIDs = ChatUtils.getChipFileIDs() || [];
+    } catch (e) {
+        console.warn('[Analyze Documents] Error getting chip file IDs from ChatUtils:', e);
+    }
+    
+    // Fallback to FileChipsManager method if ChatUtils didn't return anything
+    if (!chipFileIDs || chipFileIDs.length === 0) {
+        try {
+            chipFileIDs = FileChipsManager?.getSelectedIDs() || [];
+        } catch (e) {
+            console.warn('[Analyze Documents] Error getting chip file IDs from FileChipsManager:', e);
+        }
+    }
+    
+    // Also try direct DOM query as final fallback
+    if (!chipFileIDs || chipFileIDs.length === 0) {
+        try {
+            const chips = document.querySelectorAll('#selected-files-container [data-file-id]');
+            chipFileIDs = Array.from(chips).map(chip => chip.getAttribute('data-file-id')).filter(Boolean);
+        } catch (e) {
+            console.warn('[Analyze Documents] Error getting chip file IDs from DOM:', e);
+        }
+    }
+    
+    console.log('[Analyze Documents] Selected Source:', selectedSource);
+    console.log('[Analyze Documents] Chip File IDs:', chipFileIDs);
+    console.log('[Analyze Documents] Chips container exists:', !!document.getElementById('selected-files-container'));
+    console.log('[Analyze Documents] Number of chips in DOM:', document.querySelectorAll('#selected-files-container [data-file-id]').length);
+    
+    const allAttachedDocuments = ChatUtils.mergeAttachedDocuments(selectedSource, chipFileIDs);
+    
+    console.log('[Analyze Documents] All Attached Documents:', allAttachedDocuments);
+
+    if (!allAttachedDocuments?.length) {
+        window.showNotification?.({ type: 'info', title: 'No Documents Selected', message: 'Please select documents from the Source panel or use the attachment dropdown to select files to analyze.', actionText: 'OK' });
+        return;
+    }
+
+    const projectTitle = projectDropdown.options[projectDropdown.selectedIndex]?.text || 'Project Analysis';
+    ChatUtils.showLoadingIndicator();
+
+    try {
+        const response = await fetch('/api/agent/analyze-documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                projectID,
+                documentIDs: allAttachedDocuments,
+                title: projectTitle,
+                chatID: localStorage.getItem("activeChatID")
+            })
+        });
+
+        ChatUtils.removeLoadingIndicator();
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // Handle chatID - update tracking and refresh chat history
+            const chatID = data.chatID;
+            if (chatID) {
+                window.currentChatID = chatID;
+                localStorage.setItem('activeChatID', chatID);
+                localStorage.setItem('activeChatProjectID', projectID);
+                localStorage.removeItem('wentBackToInitial');
+
+                // Update URL with chatID
+                const currentUrl = new URL(window.location);
+                currentUrl.searchParams.set('chatID', chatID);
+                window.history.pushState({ chatID }, '', currentUrl);
+
+                // Wait a bit for database transaction to commit, then refresh chat history
+                // This ensures the new chat is available when we fetch the list
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Refresh chat history to show the new chat
+                const refreshChatHistory = async () => {
+                    if (typeof window.fetchProjectChats === 'function') {
+                        console.log('[Analyze Documents] Refreshing chat history for project:', projectID);
+                        await window.fetchProjectChats(projectID);
+                        console.log('[Analyze Documents] Chat history refreshed');
+                    } else {
+                        console.warn('[Analyze Documents] fetchProjectChats function not available');
+                    }
+                };
+
+                await refreshChatHistory();
+
+                // Select the new chat item in sidebar after rendering
+                // Try multiple times with increasing delays to ensure the DOM is updated
+                const selectChatItem = async (attempt = 0) => {
+                    const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatID}"]`);
+                    if (newChatItem) {
+                        document.querySelectorAll('.chat-history-item').forEach(item => {
+                            item.classList.remove('selected');
+                            item.style.backgroundColor = 'transparent';
+                        });
+                        newChatItem.classList.add('selected');
+                        newChatItem.style.backgroundColor = '#e0e0e0';
+                        console.log('[Analyze Documents] Chat item selected in sidebar');
+                    } else if (attempt < 5) {
+                        // If not found and we haven't exceeded retries, refresh again and retry
+                        if (attempt === 2 || attempt === 4) {
+                            // Force refresh on attempts 2 and 4
+                            console.log('[Analyze Documents] Chat item not found, refreshing history again...');
+                            await refreshChatHistory();
+                        }
+                        // Retry with increasing delays
+                        setTimeout(() => selectChatItem(attempt + 1), 300 * (attempt + 1));
+                    } else {
+                        console.warn('[Analyze Documents] Could not find chat item in sidebar after multiple attempts. ChatID:', chatID);
+                        // Final attempt - refresh one more time
+                        await refreshChatHistory();
+                    }
+                };
+                
+                // Start selecting after a short delay to allow React to render
+                setTimeout(() => selectChatItem(), 500);
+            }
+
+            ChatUtils.showChatInterface();
+            for (const analysis of data.analysis) {
+                addMessage('ai', analysis || 'Analysis complete.');
+            }
+            
+            // Clear selected file chips after successful analysis
+            ChatUtils.clearSelectedFiles();
+            
+            window.showNotification?.({ type: 'success', title: 'Analysis Complete', message: `Successfully analyzed ${data.documentsAnalyzed} document(s).`, actionText: 'OK' });
+        } else {
+            addMessage('ai', `Error: ${data.message || 'Analysis failed.'}`);
+            window.showNotification?.({ type: 'error', title: 'Analysis Failed', message: data.message || 'Unable to analyze documents.', actionText: 'OK' });
+        }
+    } catch (error) {
+        ChatUtils.removeLoadingIndicator();
+        addMessage('ai', 'Sorry, there was an error analyzing the documents.');
+        window.showNotification?.({ type: 'error', title: 'Error', message: 'An error occurred while analyzing documents.', actionText: 'OK' });
+    }
+};
+
 // Alert Modal sub-component - defined first to ensure it's available
 const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
     return React.createElement('div', {
@@ -252,55 +411,8 @@ const TempHome = ({ csrfToken, userInfo }) => {
 
     const handleProfileRoute = () => window.location.href = "/profile";
 
-    const handleAnalyzeDocuments = async () => {
-        const projectDropdown = document.getElementById("select-project-drop-down");
-        const projectID = projectDropdown?.value;
-
-        if (!projectID) {
-            window.showNotification?.({ type: 'error', title: 'No Project Selected', message: 'Please select a project first.', actionText: 'OK' });
-            return;
-        }
-
-        const selectedSource = ChatUtils.getSelectedSource();
-        if (!selectedSource?.length) {
-            window.showNotification?.({ type: 'info', title: 'No Documents Selected', message: 'Please select documents from the Source panel to analyze.', actionText: 'OK' });
-            return;
-        }
-
-        const projectTitle = projectDropdown.options[projectDropdown.selectedIndex]?.text || 'Project Analysis';
-        ChatUtils.showLoadingIndicator();
-
-        try {
-            const response = await fetch('/api/agent/analyze-documents', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    projectID,
-                    documentIDs: selectedSource,
-                    title: projectTitle,
-                    chatID: localStorage.getItem("activeChatID")
-                })
-            });
-
-            ChatUtils.removeLoadingIndicator();
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                ChatUtils.showChatInterface();
-                for (const analysis of data.analysis) {
-                    addMessage('ai', analysis || 'Analysis complete.');
-                }
-                window.showNotification?.({ type: 'success', title: 'Analysis Complete', message: `Successfully analyzed ${data.documentsAnalyzed} document(s).`, actionText: 'OK' });
-            } else {
-                addMessage('ai', `Error: ${data.message || 'Analysis failed.'}`);
-                window.showNotification?.({ type: 'error', title: 'Analysis Failed', message: data.message || 'Unable to analyze documents.', actionText: 'OK' });
-            }
-        } catch (error) {
-            ChatUtils.removeLoadingIndicator();
-            addMessage('ai', 'Sorry, there was an error analyzing the documents.');
-            window.showNotification?.({ type: 'error', title: 'Error', message: 'An error occurred while analyzing documents.', actionText: 'OK' });
-        }
-    };
+    // Use the global handleAnalyzeDocuments function
+    const handleAnalyzeDocuments = window.handleAnalyzeDocuments;
 
     const handleUploadFiles = async () => {
         setAttachmentMenuOpen(false);
