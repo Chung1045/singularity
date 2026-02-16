@@ -905,12 +905,14 @@ router.post("/agent/chat/export", apiAuthUser, async (req, res) => {
 
     try {
         const chatThreadName = await aiDB.getChatThreadName(projectID, chatID);
-        const fileName = `${chatThreadName}-${Date.now()}.md`;
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+
+        const fileName = `${chatThreadName}-${timestamp}.docx`;
 
         const stream = docGen.generateChatThreadHistDoc(projectID, chatID);
 
         res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-        res.setHeader("Content-Type", "text/markdown");
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
         stream.pipe(res);
 

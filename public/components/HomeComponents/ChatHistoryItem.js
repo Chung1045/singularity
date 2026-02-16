@@ -87,11 +87,17 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 });
 
                 if (response.ok) {
+                    // Simple filename extraction
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    const filename = contentDisposition
+                        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                        : `chat-export-${Date.now()}.docx`;
+
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `chat-export-${Date.now()}.md`;
+                    a.download = filename;
                     a.click();
                     window.URL.revokeObjectURL(url);
 

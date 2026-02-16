@@ -4,6 +4,7 @@ const aiDB = require("./aiAgentService/aiAgentDBService")
 const projectDB = require("./projectDBService")
 const lodash = require('lodash');
 const uuid = require("uuid-v4")
+const { convertMarkdownToDocx } = require("@mohtasham/md-to-docx");
 const { PassThrough } = require('stream');
 const {
     Document,
@@ -482,7 +483,7 @@ ${agentMessage}
 `;
 }
 
-function generateChatThreadHistDoc(projectID, chatID) {  // Note: NOT async
+function generateChatThreadHistDoc(projectID, chatID) {
     const stream = new PassThrough();
 
     // Start the async work but don't await it
@@ -492,19 +493,24 @@ function generateChatThreadHistDoc(projectID, chatID) {  // Note: NOT async
             const chatThread = await aiDB.fetchChatThread(projectID, chatID);
             const chatThreadName = await aiDB.getChatThreadName(projectID, chatID);
 
-            // Write header
-            stream.write(`# ${projectName}\n\n## ${chatThreadName} – Chat Thread History\n\n`);
+            // Build markdown content
+            let markdown = `# ${projectName}\n\n## ${chatThreadName} – Chat Thread History\n\n`;
 
-            // Stream each conversation entry
+            // Add each conversation entry
             if (chatThread && chatThread.conversations) {
                 for (const thread of chatThread.conversations) {
                     const entry = createThreadEntry(thread);
-                    stream.write(entry);
-                    stream.write(`\n---\n`);
+                    markdown += entry;
+                    markdown += `\n---\n`;
                 }
             }
 
-            // Signal end of stream
+            // Convert markdown to docx
+            const blob = await convertMarkdownToDocx(markdown);
+            const buffer = Buffer.from(await blob.arrayBuffer());
+
+            // Write the buffer to the stream
+            stream.write(buffer);
             stream.end();
 
         } catch (error) {
@@ -513,7 +519,7 @@ function generateChatThreadHistDoc(projectID, chatID) {  // Note: NOT async
         }
     })();
 
-    return stream;  // Return the stream immediately
+    return stream;
 }
 
 

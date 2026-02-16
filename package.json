@@ -14,6 +14,7 @@
     "@dr.pogodin/csurf": "^1.16.6",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@huggingface/transformers": "^3.8.1",
+    "@mohtasham/md-to-docx": "^2.6.1",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
     "argon2": "^0.44.0",
