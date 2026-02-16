@@ -196,11 +196,12 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 className: 'chat-item-name',
                 style: {
                     flexGrow: 1,
-                    margin: 0,
+                    // margin: 0,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    marginRight: '20px'
                 }
             }, displayName),
             // Menu wrapper - only visible when checkbox is checked
@@ -211,18 +212,22 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 style: {
                     position: 'relative',
                     display: 'flex',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    
                 }
             },
                 React.createElement('img', {
                     id: `chat-history-item-menu-button-${chatID}`,
                     className: 'chat-menu-button',
                     style: {
-                        padding: "4px",
-                        flexShrink: 0,
+                        // padding: "4px",
+                        // flexShrink: 0,
                         borderRadius: '5px',
                         transition: 'background-color 0.2s',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        maxWidth: '30px',
+                        maxHeight: '30px'
+                        
                     },
                     src: './img/more_vert_24.svg',
                     alt: '',
