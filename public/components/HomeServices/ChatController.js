@@ -596,11 +596,13 @@ const ChatController = {
 
                     if (filesResponse.ok) {
                         const filesData = await filesResponse.json();
+                        console.log('[loadChatThread] Fetched files:', filesData.files?.length || 0);
                         filesData.files?.forEach(file => {
                             const ext = file.documentExt || '';
                             let cleanName = (file.documentName || '').replace(/\.+$/, '');
                             const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
                             fileNameMap.set(file.documentID, fullFileName);
+                            console.log('[loadChatThread] Mapped file:', file.documentID, '->', fullFileName);
                         });
                     }
                 } catch (error) {
@@ -608,15 +610,21 @@ const ChatController = {
                 }
             }
             window.chatFileNameMap = fileNameMap;
+            console.log('[loadChatThread] File name map built with', fileNameMap.size, 'entries');
 
             // Display conversations
             const conversations = data.conversations || [];
             conversations.forEach(conv => {
                 if (conv.conversationMessage) {
-                    addMessage('user', conv.conversationMessage, conv.conversationID, conv.chatSeq, conv.documentIDs || []);
+                    const documentIDs = conv.documentIDs || [];
+                    console.log('[loadChatThread] Adding user message with documentIDs:', documentIDs);
+                    addMessage('user', conv.conversationMessage, conv.conversationID, conv.chatSeq, documentIDs);
                 }
                 if (conv.responseMessage) {
+                    console.log('[loadChatThread] Adding AI response message, length:', conv.responseMessage.length);
                     addMessage('ai', conv.responseMessage);
+                } else {
+                    console.warn('[loadChatThread] No responseMessage found for conversation:', conv.conversationID);
                 }
             });
 
@@ -887,14 +895,14 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
         // if there are attached file IDs
         if (attachedFileIDs?.length) {
-            // build the files container
-            const filesContainer = document.createElement('div');
-            filesContainer.id = `message-files-container-${messageTimestamp}`;
-            filesContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; flex: 1;';
-
-            // iterate over the attached file IDs
+            console.log('[addMessage] Processing attachedFileIDs:', attachedFileIDs);
+            console.log('[addMessage] chatFileNameMap available:', !!window.chatFileNameMap);
+            console.log('[addMessage] chatFileNameMap size:', window.chatFileNameMap?.size || 0);
+            
+            // Collect file names from various sources
+            const fileNames = [];
             attachedFileIDs.forEach(fileId => {
-                let fileName = fileId;
+                let fileName = fileId; // Default to ID if name not found
                 const chipElement = document.querySelector(`[data-file-id="${fileId}"]`);
                 if (chipElement) {
                     // try to get the file name from the chip element
@@ -902,20 +910,31 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
                 } else {
                     // try to get the file name from the source element
                     const sourceElement = document.getElementById(`source-file-name-${fileId}`);
-                    if (sourceElement) fileName = sourceElement.textContent;
-                    else if (window.chatFileNameMap?.has(fileId)) fileName = window.chatFileNameMap.get(fileId);
+                    if (sourceElement) {
+                        fileName = sourceElement.textContent;
+                    } else if (window.chatFileNameMap?.has(fileId)) {
+                        fileName = window.chatFileNameMap.get(fileId);
+                        console.log('[addMessage] Found file name in map:', fileId, '->', fileName);
+                    } else {
+                        console.warn('[addMessage] File name not found for:', fileId);
+                    }
                 }
-
-                // build the file chip
-                const fileChip = document.createElement('div');
-                fileChip.dataset.fileId = fileId;
-                fileChip.style.cssText = 'display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: rgba(195, 171, 111, 0.15); border: 1px solid rgba(195, 171, 111, 0.3); border-radius: 12px; font-size: 11px; color: #666;';
-                fileChip.innerHTML = `📎 ${fileName}`;
-                filesContainer.appendChild(fileChip);
+                fileNames.push(fileName);
             });
 
-            // add the files container to the bottom row
-            bottomRow.appendChild(filesContainer);
+            console.log('[addMessage] Collected file names:', fileNames);
+
+            // Create file name text element instead of chips
+            const fileNameText = document.createElement('span');
+            fileNameText.style.cssText = 'font-size: 12px; color: #666; font-family: Inter, Helvetica; flex: 1; min-width: 0;';
+            fileNameText.textContent = fileNames.join(', ');
+            fileNameText.title = fileNames.join(', '); // Full text on hover
+            
+            // Add file name text to bottom row
+            bottomRow.appendChild(fileNameText);
+            console.log('[addMessage] Added file name text to bottom row');
+        } else {
+            console.log('[addMessage] No attachedFileIDs provided');
         }
 
         // add the bottom row to the content wrapper

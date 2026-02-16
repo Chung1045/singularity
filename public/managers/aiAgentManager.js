@@ -341,14 +341,18 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
         console.log('Number of conversations:', chatThreadData.conversations.length);
 
         // Format the data for the frontend
-        const conversations = chatThreadData.conversations.map(conv => ({
-            conversationID: conv.conversationID,
-            chatSeq: conv.chatSeq,
-            conversationMessage: conv.message,
-            responseMessage: conv.response ? conv.response.message : null,
-            responseTimeDate: conv.response ? conv.response.timestamp : null,
-            documentIDs: conv.attachedDocuments || []
-        }));
+        const conversations = chatThreadData.conversations.map(conv => {
+            const docIDs = conv.attachedDocuments || [];
+            console.log(`[API] Conversation ${conv.conversationID} has ${docIDs.length} attached documents:`, docIDs);
+            return {
+                conversationID: conv.conversationID,
+                chatSeq: conv.chatSeq,
+                conversationMessage: conv.message,
+                responseMessage: conv.response ? conv.response.message : null,
+                responseTimeDate: conv.response ? conv.response.timestamp : null,
+                documentIDs: docIDs
+            };
+        });
 
         console.log('Formatted conversations:', conversations.length);
 
@@ -842,6 +846,30 @@ router.post('/agent/analyze-documents', async (req, res) => {
         let analyzedDocument = [];
         let finalChatID = chatID; // Track the chatID used (may be created if not provided)
 
+        // Save conversation request once for all documents (before processing)
+        // Message text should NOT include file names - they're stored in attachedDocumentIDs
+        const messageText = documentIDs.length === 1 
+            ? 'Analyze Document' 
+            : `Analyze ${documentIDs.length} Documents`;
+        
+        const data = {
+            projectID: projectID,
+            chatID: finalChatID, // Use the tracked chatID
+            requestMessage: messageText,
+            attachedDocumentIDs: documentIDs
+        }
+
+        let { conversationID, chatSeq, chatID: returnedChatID } = await aiDB.saveConversationRequest(data);
+        
+        // Save document references to link files to this conversation
+        if (documentIDs && documentIDs.length > 0) {
+            await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
+        }
+        
+        // Capture the chatID (will be the same if provided, or newly created if not)
+        finalChatID = returnedChatID;
+
+        // Process all documents and collect analysis results
         for (const docID of documentIDs) {
             try {
                 console.log(`  Reading document: ${docID}`);
@@ -855,25 +883,23 @@ router.post('/agent/analyze-documents', async (req, res) => {
                 }
                 analyzedDocument.push(analysisResult);
 
-                const data = {
-                    projectID: projectID,
-                    chatID: finalChatID, // Use the tracked chatID
-                    requestMessage: `Analyze Document ${documentName}`,
-                    attachedDocumentIDs: documentIDs
-                }
-
-                let { conversationID, chatSeq, chatID: returnedChatID } = await aiDB.saveConversationRequest(data);
-                
-                // Capture the chatID (will be the same if provided, or newly created if not)
-                finalChatID = returnedChatID;
-                
-                await aiDB.saveConversationResponse(chatSeq, conversationID, analysisResult)
-
+                // Parse and update requirements for each document
                 const analyzedDocumentJSON = await agent.parseRequirementsToJSON(docID, analysisResult);
                 await aiDB.updateRequirements(projectID, analyzedDocumentJSON);
             } catch (error) {
                 console.error(`  Error reading document ${docID}:`, error.message);
             }
+        }
+
+        // Combine all analysis results into one response message
+        // This ensures only one response is saved per conversation, which matches the frontend display
+        if (analyzedDocument.length > 0) {
+            const combinedResponse = analyzedDocument.join('\n\n');
+            console.log(`[analyze-documents] Saving combined response (${combinedResponse.length} chars) for conversationID: ${conversationID}, chatSeq: ${chatSeq}`);
+            await aiDB.saveConversationResponse(chatSeq, conversationID, combinedResponse);
+            console.log(`[analyze-documents] Response saved successfully`);
+        } else {
+            console.warn(`[analyze-documents] No analysis results to save`);
         }
 
         return res.status(200).json({

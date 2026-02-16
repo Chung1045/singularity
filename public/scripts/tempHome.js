@@ -72,6 +72,43 @@ window.handleAnalyzeDocuments = async function() {
     }
 
     const projectTitle = projectDropdown.options[projectDropdown.selectedIndex]?.text || 'Project Analysis';
+    
+    // Show chat interface first so messages are visible
+    ChatUtils.showChatInterface();
+    
+    // Build file name map for displaying file names in chat
+    let fileNameMap = new Map();
+    try {
+        const filesResponse = await fetch('/api/project/file/list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectID })
+        });
+        if (filesResponse.ok) {
+            const filesData = await filesResponse.json();
+            filesData.files?.forEach(file => {
+                const ext = file.documentExt || '';
+                let cleanName = (file.documentName || '').replace(/\.+$/, '');
+                const fullFileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
+                fileNameMap.set(file.documentID, fullFileName);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching file names:', error);
+    }
+    window.chatFileNameMap = fileNameMap;
+    
+    // Add user message with attached files
+    // File names will be displayed as text in message-bottom-row (handled by addMessage)
+    const userMessageText = allAttachedDocuments.length === 1 
+        ? 'Analyze Document' 
+        : `Analyze ${allAttachedDocuments.length} Documents`;
+    addMessage('user', userMessageText, null, null, allAttachedDocuments);
+    
+    // Remove the file chips container after adding the message to chat
+    ChatUtils.clearSelectedFiles();
+    
+    // Show loading indicator
     ChatUtils.showLoadingIndicator();
 
     try {
@@ -86,7 +123,7 @@ window.handleAnalyzeDocuments = async function() {
             })
         });
 
-        ChatUtils.removeLoadingIndicator();
+        // Wait for response to be fully parsed before removing loading indicator
         const data = await response.json();
 
         if (response.ok && data.success) {
@@ -152,16 +189,17 @@ window.handleAnalyzeDocuments = async function() {
                 setTimeout(() => selectChatItem(), 500);
             }
 
-            ChatUtils.showChatInterface();
+            // Remove loading indicator before adding messages
+            ChatUtils.removeLoadingIndicator();
+            
             for (const analysis of data.analysis) {
                 addMessage('ai', analysis || 'Analysis complete.');
             }
             
-            // Clear selected file chips after successful analysis
-            ChatUtils.clearSelectedFiles();
-            
             window.showNotification?.({ type: 'success', title: 'Analysis Complete', message: `Successfully analyzed ${data.documentsAnalyzed} document(s).`, actionText: 'OK' });
         } else {
+            // Remove loading indicator on error
+            ChatUtils.removeLoadingIndicator();
             addMessage('ai', `Error: ${data.message || 'Analysis failed.'}`);
             window.showNotification?.({ type: 'error', title: 'Analysis Failed', message: data.message || 'Unable to analyze documents.', actionText: 'OK' });
         }
