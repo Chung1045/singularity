@@ -11,6 +11,7 @@
         const [sidebarWidth, setSidebarWidth] = useState(302);
         const [selectedItem, setSelectedItem] = useState(null);
         const [selectedType, setSelectedType] = useState(null);
+        const [fileMetadata, setFileMetadata] = useState({ size: null, date: null });
         const panelRef = useRef(null);
 
         // Track sidebar width changes
@@ -45,8 +46,88 @@
                 setSearchQuery('');
                 setSelectedItem(null);
                 setSelectedType(null);
+                setFileMetadata({ size: null, date: null });
             }
         }, [isOpen]);
+
+        // Helper functions for file metadata
+        const formatFileSize = (bytes) => {
+            if (!bytes || bytes === 0) return 'Unknown';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        };
+
+        const formatDate = (dateString) => {
+            if (!dateString) return 'Unknown';
+            try {
+                const d = new Date(dateString);
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const year = d.getFullYear();
+                let hours = d.getHours();
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'pm' : 'am';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                return `${month}-${day}-${year} ${hours}:${minutes}${ampm}`;
+            } catch (e) {
+                console.error('[SearchPanel] Error formatting date:', e, dateString);
+                return 'Unknown';
+            }
+        };
+
+        // Fetch file metadata when a file is selected
+        useEffect(() => {
+            const fetchFileMetadata = async () => {
+                if (selectedType === 'file' && selectedItem?.documentID) {
+                    try {
+                        const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                        if (!projectID) {
+                            console.warn('[SearchPanel] No projectID available for file stats');
+                            setFileMetadata({ size: null, date: null });
+                            return;
+                        }
+
+                        console.log('[SearchPanel] Fetching file stats for:', selectedItem.documentID);
+
+                        // Fetch file stats from dedicated endpoint
+                        const response = await fetch('/api/project/file/stats', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ projectID, documentID: selectedItem.documentID })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('[SearchPanel] File stats response:', data);
+                            if (data.successful) {
+                                setFileMetadata({
+                                    size: data.size || null,
+                                    date: data.lastModified || null
+                                });
+                                console.log('[SearchPanel] Set file metadata:', { size: data.size, date: data.lastModified });
+                            } else {
+                                console.warn('[SearchPanel] Stats fetch unsuccessful:', data.message);
+                                setFileMetadata({ size: null, date: null });
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            console.error('[SearchPanel] Stats fetch failed:', response.status, errorText);
+                            setFileMetadata({ size: null, date: null });
+                        }
+                    } catch (error) {
+                        console.error('[SearchPanel] Error fetching file metadata:', error);
+                        setFileMetadata({ size: null, date: null });
+                    }
+                } else {
+                    setFileMetadata({ size: null, date: null });
+                }
+            };
+
+            fetchFileMetadata();
+        }, [selectedItem, selectedType]);
 
         // Close panel when clicking outside
         useEffect(() => {
@@ -75,6 +156,7 @@
         const handleBack = () => {
             setSelectedItem(null);
             setSelectedType(null);
+            setFileMetadata({ size: null, date: null });
         };
 
         if (!isOpen) {
@@ -367,7 +449,7 @@
                                 React.createElement('div', {
                                     className: selectedItem.name.length > 30 ? 'file-name-marquee' : '',
                                     style: {
-                                        whiteSpace: 'nowrap',
+                                  
                                         wordBreak: selectedItem.name.length <= 30 ? 'break-word' : 'normal'
                                     }
                                 }, selectedItem.name)
@@ -419,7 +501,7 @@
                                             color: '#666',
                                             fontWeight: '400'
                                         } 
-                                    }, 'Kind'),
+                                    }, 'File Type'),
                                     React.createElement('span', { 
                                         style: { 
                                             fontFamily: 'Inter, Helvetica',
@@ -428,6 +510,56 @@
                                             fontWeight: '500' 
                                         } 
                                     }, `${selectedItem.documentExt.replace('.', '').toUpperCase()} Document`)
+                                ),
+                                React.createElement('div', {
+                                    id: 'search-panel-file-info-size',
+                                    style: {
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }
+                                },
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#666',
+                                            fontWeight: '400'
+                                        } 
+                                    }, 'File Size'),
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#1c1d21', 
+                                            fontWeight: '500' 
+                                        } 
+                                    }, fileMetadata.size ? formatFileSize(fileMetadata.size) : 'Unknown')
+                                ),
+                                React.createElement('div', {
+                                    id: 'search-panel-file-info-date',
+                                    style: {
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }
+                                },
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#666',
+                                            fontWeight: '400'
+                                        } 
+                                    }, 'Upload Date'),
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#1c1d21', 
+                                            fontWeight: '500' 
+                                        } 
+                                    }, fileMetadata.date ? formatDate(fileMetadata.date) : 'Unknown')
                                 ),
                                 // Document ID row - commented out
                                 // React.createElement('div', {

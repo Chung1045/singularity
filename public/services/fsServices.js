@@ -432,6 +432,41 @@ async function getFileMetadata(documentID, projectID) {
     });
 }
 
+/**
+ * Get file stats (size and last modified) from MinIO
+ */
+async function getFileStats(projectID, documentID) {
+    try {
+        const objectPath = `project/${projectID}/${documentID}`;
+        console.log(`[getFileStats] Fetching stats for: ${objectPath}`);
+        const stats = await minioClient.statObject(bucket, objectPath);
+        console.log(`[getFileStats] Stats received:`, {
+            size: stats.size,
+            lastModified: stats.lastModified,
+            etag: stats.etag
+        });
+        
+        // Convert lastModified to ISO string if it's a Date object
+        let lastModified = stats.lastModified;
+        if (lastModified instanceof Date) {
+            lastModified = lastModified.toISOString();
+        } else if (typeof lastModified === 'string') {
+            // Already a string, keep it
+        } else {
+            // Convert to ISO string
+            lastModified = new Date(lastModified).toISOString();
+        }
+        
+        return {
+            size: stats.size || 0,
+            lastModified: lastModified
+        };
+    } catch (err) {
+        console.error(`[getFileStats] Error getting file stats for ${projectID}/${documentID}:`, err.message || err);
+        throw err;
+    }
+}
+
 // async function filePreProcessing(projectID, documentID, fileExt){
 //
 //     switch (fileExt) {
@@ -795,6 +830,7 @@ module.exports = {
     deleteProjectFile,
     deleteProjectFolder,
     deleteReportRecord,
+    getFileStats,
     downloadProjectFile,
     downloadReport,
     FSS_REPORT_REQUIREMENTS,
