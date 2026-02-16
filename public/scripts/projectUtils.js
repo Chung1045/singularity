@@ -922,7 +922,7 @@ function createReportItem(reportName, reportID, projectID, reportType) {
             reportType.toLowerCase().includes('user_stories') ||
             reportType.toLowerCase().includes('user stories')
         );
-        const iconSrc = isUserStories ? './img/UserStoriesIcon.svg' : './img/RequirementsIcon.svg';
+        const iconSrc = isUserStories ? './img/UserStoriesIcon.svg' : './img/stats-report-svgrepo-com.svg';
 
         // Close menu when clicking outside
         useEffect(() => {

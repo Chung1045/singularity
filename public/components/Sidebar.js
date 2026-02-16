@@ -2281,7 +2281,7 @@
                                 React.createElement('img', {
                                     id: 'sidebar-history-icon',
                                     className: 'slash-circle',
-                                    src: './img/slash-circle-1.svg',
+                                    src: './img/history-svgrepo-com.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
@@ -2376,7 +2376,7 @@
                                 React.createElement('img', {
                                     id: 'sidebar-source-icon',
                                     className: 'slash-circle',
-                                    src: './img/slash-circle-1.svg',
+                                    src: './img/documents-outline-svgrepo-com.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
@@ -2508,7 +2508,7 @@
                                 React.createElement('img', {
                                     id: 'sidebar-requirements-icon',
                                     className: 'slash-circle',
-                                    src: './img/slash-circle-1.svg',
+                                    src: './img/RequirementsIcon.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
