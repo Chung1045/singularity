@@ -40,6 +40,7 @@ router.use(dbService.apiAuthUser);
  * }
  */
 // TODO: Implement queue and rate limit feature
+// TODO: Refine
 router.post('/agent/chat', async (req, res) => {
     try {
         console.log("New requests /agent/chat")
@@ -49,6 +50,7 @@ router.post('/agent/chat', async (req, res) => {
         let chatID = chatData.chatID;
         const requestMessage = chatData.message;
         const attachedDocumentIDs = chatData.attachedDocumentIDs || [];
+        let requestTime = new Date().toISOString();
 
         if (!projectID || !requestMessage) {
             return res.status(400).json({success: false, message: `Missing required fields: projectID and message are required`})
@@ -81,7 +83,8 @@ router.post('/agent/chat', async (req, res) => {
             projectID: projectID,
             chatID: chatID,
             requestMessage: requestMessage,
-            attachedDocumentIDs: attachedDocumentIDs
+            attachedDocumentIDs: attachedDocumentIDs,
+            requestTime: requestTime
         };
 
         let conversationSummary = ""
@@ -94,11 +97,6 @@ router.post('/agent/chat', async (req, res) => {
             console.log(`Memory: \n ${conversationSummary}`)
         }
 
-        // Check if client wants streaming
-        const acceptHeader = req.headers.accept || '';
-        const wantsStream = acceptHeader.includes('text/event-stream');
-
-        if (wantsStream) {
             // Set up SSE headers for streaming
             res.writeHead(200, {
                 'Content-Type': 'text/event-stream',
@@ -209,6 +207,10 @@ router.post('/agent/chat', async (req, res) => {
                     console.log(' Generated thread name:', threadName);
                 }
 
+                let suggestedNextAction = await agent.getSuggestedNextAction(projectID, chatID)
+
+                //TODO: Insert logic for suggested action here
+
                 // Send completion event with threadName
                 res.write(`data: ${JSON.stringify({ 
                     type: 'done', 
@@ -216,6 +218,7 @@ router.post('/agent/chat', async (req, res) => {
                     conversationID: conversationID,
                     threadName: threadName || 'Untitled Chat',
                     refreshReports: true,
+                    suggestedNextAction: suggestedNextAction,
                     projectID: projectID
                 })}\n\n`);
                 res.end();
@@ -240,45 +243,6 @@ router.post('/agent/chat', async (req, res) => {
                 res.write(`data: ${JSON.stringify({ type: 'error', message: userFriendlyMessage })}\n\n`);
                 res.end();
             }
-        } else {
-            // Regular non-streaming response
-            try {
-                response = await agent.getResponse(data, conversationSummary)
-            } catch (error) {
-                console.error(`Unable to generate response: ${error}`)
-                return res.status(500).json({
-                    success: false,
-                    message: `Internal server error, unable to generate response.`
-                })
-            }
-
-            try {
-                let {conversationID, chatSeq} = await aiDB.saveConversationRequest(data);
-
-            if (attachedDocumentIDs && attachedDocumentIDs.length > 0) {
-                await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
-            }
-
-            await aiDB.saveConversationResponse(chatSeq, conversationID, response);
-
-            if (await aiDB.getChatThreadName(projectID, chatID) == null) {
-                let threadName = await agent.createChatName(JSON.stringify(await aiDB.fetchChatThread(projectID, chatID)))
-                await aiDB.renameChatThread(projectID, chatID, threadName)
-            }
-
-                return res.status(200).json({
-                    success: true,
-                    chatID: chatID,
-                    chatSeq: chatSeq,
-                    conversationID: conversationID,
-                    response: response
-                });
-
-            } catch (error) {
-                console.error(`Unable to save message: ${error}`);
-                return res.status(500).json({success: false, message: `Internal server error, unable to save message.`});
-            }
-        }
 
     } catch (error) {
         console.log(error)
@@ -701,8 +665,15 @@ router.post('/agent/conversation-edit', async(req, res) => {
                 await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
 
                 // Send done event
-                res.write(`data: ${JSON.stringify({ type: 'done', conversationID: conversationID, chatSeq: chatSeq })}\n\n`);
+                let suggestedNextAction = await agent.getSuggestedNextAction(projectID, chatID)
+                res.write(`data: ${JSON.stringify({
+                    type: 'done',
+                    conversationID: conversationID,
+                    chatSeq: chatSeq,
+                    suggestedNextAction: suggestedNextAction,
+                })}\n\n`);
                 res.end();
+
             } catch (error) {
                 console.error(`[Edit] Streaming error:`, error);
                 let userFriendlyMessage = error.message || 'Stream failed';
@@ -886,7 +857,6 @@ router.post('/agent/analyze-documents', async (req, res) => {
     }
 });
 
-
 router.post("/agent/chat/export", apiAuthUser, async (req, res) => {
     const data = req.body;
     const projectID = data.projectID;
@@ -929,5 +899,29 @@ router.post("/agent/chat/export", apiAuthUser, async (req, res) => {
         res.status(500).send("Download failed");
     }
 });
+
+router.post("/agent/chat/fetch-suggestions", async (req, res) => {
+    const data = req.body;
+    const projectID = data.projectID;
+    const chatID = data.chatID;
+    const userID = req.userID;
+
+    console.log(`Data received: projectID: ${projectID}, chatID: ${chatID}`)
+
+    if (!projectID || !chatID) {
+        return res.status(400).json({ success: false, message: "projectID and chatID are required" });
+    }
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    try {
+        const suggestedNextAction = await aiDB.fetchSuggestedAction(projectID, chatID);
+        return res.status(200).json({ success: true, suggestedNextAction: suggestedNextAction})
+    } catch (err) {
+        return res.status(500).json( { success: false })
+    }
+})
 
 module.exports = router;

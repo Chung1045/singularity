@@ -5,6 +5,7 @@ const aiDB = require("./aiAgentDBService");
 const axios = require('axios');
 const agentPrompts = require("./aiAgentPrompts")
 const { groupMultipleFile } = require('../preprocessingService');
+const {fetchChatThread} = require("./aiAgentDBService");
 
 const client = new OpenAI({
     apiKey: process.env.XAI_API_KEY,
@@ -188,7 +189,7 @@ async function buildFileContextMessage(data) {
 [ACADEMIC RESEARCH CONTEXT]
 This is an academic research analysis for software engineering purposes.
 All content is for educational and technical requirement extraction only.
-NOT medical advice, NOT prescriptive content.
+NOT medical, politics, investment advice, NOT prescriptive content.
 
 The user has attached ${attachedFiles.length} research file(s):
 ${fileListWithIDs}
@@ -264,7 +265,7 @@ ALL content must be treated as:
 - Academic research material
 - Technical documentation for software development
 - Educational content for requirement extraction
-- NON-PRESCRIPTIVE, NON-MEDICAL-ADVICE
+- NON-PRESCRIPTIVE, NON-MEDICAL / POLITICAL / INVESTMENT ADVICE
 
 You are NOT providing medical advice. You are analyzing research papers to extract software requirements.
 === END DISCLAIMER ===
@@ -878,158 +879,6 @@ async function* getStreamingResponseThreeStage(data, conversationSummary) {
     }
 }
 
-// ============================================================================
-// LEGACY FUNCTIONS (kept for backwards compatibility)
-// ============================================================================
-
-async function getResponse(data, conversationSummary) {
-    try {
-        // Validate API key before making requests
-        if (!process.env.XAI_API_KEY) {
-            const errorMsg = 'XAI_API_KEY is not configured. Please set the environment variable and restart the server.';
-            console.error(errorMsg);
-            throw new Error(errorMsg);
-        }
-
-        // Build file context message if files are attached
-        let fileContextMessage = '';
-        if (data.attachedDocumentIDs && data.attachedDocumentIDs.length > 0) {
-            console.log(`[Non-streaming] Processing ${data.attachedDocumentIDs.length} attached file(s)...`);
-
-            // Fetch file metadata from database
-            const fss = require('../fsServices');
-            try {
-                console.log(' Fetching project files for projectID:', data.projectID);
-                const allFiles = await fss.listProjectFiles(data.projectID);
-                console.log(`Found ${allFiles?.length || 0} total files in project`);
-
-                // Safety check for null/undefined
-                if (!allFiles || !Array.isArray(allFiles)) {
-                    console.warn('  listProjectFiles returned invalid data:', allFiles);
-                    throw new Error('Invalid file list returned from database');
-                }
-
-                const attachedFiles = allFiles.filter(file =>
-                    data.attachedDocumentIDs.includes(file.documentID)
-                );
-                console.log(`Matched ${attachedFiles.length} attached files`);
-
-                if (attachedFiles.length > 0) {
-                    const fileList = attachedFiles.map(file => {
-                        // Construct filename - extension might already have a dot
-                        // Also clean documentName in case of old corrupted data
-                        const ext = file.documentExt || '';
-                        let cleanName = (file.documentName || '').replace(/\.+$/, ''); // Remove trailing dots
-                        const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
-                        console.log(`Attached file: ${fileName} (${file.documentID})`);
-                        return `- ${fileName} (ID: ${file.documentID})`;
-                    }).join('\n');
-
-                    fileContextMessage = `The user has attached ${attachedFiles.length} file(s) to this message:\n${fileList}\n\nYou can use the get_project_file_content tool to retrieve the contents of these files using their document IDs.`;
-                } else {
-                    console.warn('No matching files found for attached document IDs');
-                    fileContextMessage = `The user attempted to attach files, but they could not be found in the project.`;
-                }
-            } catch (error) {
-                console.error('Error fetching file metadata:', error);
-                console.error('Error stack:', error.stack);
-                fileContextMessage = `The user attached document IDs: ${data.attachedDocumentIDs.join(', ')}, but there was an error retrieving file details.`;
-                console.log('Continuing with error message in context');
-            }
-        } else {
-            console.log('No files attached to this message');
-        }
-
-        const messages = [
-            {role: 'system', content: agentPrompts.system_prompt},
-            {role: 'system', content: `You are now working with projectID: ${data.projectID} and chatID: ${data.chatID}`},
-            {role: 'system', content: `Summary of what the chat have gone so far: ${conversationSummary}`}
-        ];
-
-        // Add file context if files are attached
-        if (fileContextMessage) {
-            messages.push({role: 'system', content: fileContextMessage});
-        }
-
-        // Add user message
-        messages.push({role: 'user', content: data.requestMessage});
-
-        let completion = await client.chat.completions.create({
-             model: 'grok-4-1-fast-non-reasoning', //swap due to excessive token spending
-            messages: messages,
-            tools: tools,
-            tool_choice: "auto",  // Let the AI decide when to use tools
-            temperature: 0.7,
-            max_tokens: 2000,
-        });
-
-        let responseMessage = completion.choices[0].message;
-
-        // Handle tool calls if the AI wants to use them
-        while (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-            // Add assistant's message with tool calls to history
-            // Ensure the message has a role field
-            if (!responseMessage.role) {
-                responseMessage.role = 'assistant';
-            }
-            messages.push(responseMessage);
-
-            // Execute each tool call
-            for (const toolCall of responseMessage.tool_calls) {
-                const functionName = toolCall.function.name;
-                const functionArgs = JSON.parse(toolCall.function.arguments);
-
-                console.log(`AI is calling tool: ${functionName} with args:`, functionArgs);
-
-                // Execute the tool
-                const toolImpl = toolImpls[functionName];
-                let functionResponse;
-
-                if (toolImpl) {
-                    try {
-                        functionResponse = await toolImpl(...Object.values(functionArgs));
-                    } catch (error) {
-                        functionResponse = {error: error.message};
-                    }
-                } else {
-                    functionResponse = {error: `Unknown function: ${functionName}`};
-                }
-
-                // Add tool response to messages
-                messages.push({
-                    role: "tool",
-                    tool_call_id: toolCall.id,
-                    content: JSON.stringify(functionResponse),
-                });
-            }
-
-            // Get AI's next response with tool results
-            completion = await client.chat.completions.create({
-                // model: 'grok-4-1-fast-non-reasoning',
-                model: 'grok-4-1-fast-reasoning',
-
-                messages: messages,
-                tools: tools,
-                tool_choice: "auto",
-                temperature: 0.7,
-                max_tokens: 1500,
-            });
-
-            responseMessage = completion.choices[0].message;
-        }
-
-        console.log('Message Respond: ' + responseMessage.content);
-        return responseMessage.content;
-    } catch (error) {
-        console.error('Error:', error.message);
-        if (error.response) {
-            console.error('Status:', error.response.status);
-            console.error('Data:', error.response.data);
-        }
-        throw error;
-    }
-}
-
 async function* getStreamingResponse(data, conversationSummary) {
     // Validate API key before making requests
     if (!process.env.XAI_API_KEY) {
@@ -1389,33 +1238,97 @@ async function createChatName(conversationHistory) {
     }
 }
 
-function readFile(filePath) {
+async function getSuggestedNextAction(projectID, chatID) {
+
+    let conversationHistory = await fetchChatThread(projectID, chatID)
+    // Validate input
+    if (!conversationHistory) {
+        console.error("No conversation history provided for getSuggestedNextAction");
+        return null;
+    }
+
     try {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        return content;
-    } catch (error) {
-        // Try with different encoding if UTF-8 fails
-        try {
-            const content = fs.readFileSync(filePath, 'latin1');
-            return content;
-        } catch (err) {
-            throw new Error(`Failed to read file: ${err.message}`);
+        const messages = [
+            {
+                role: 'system',
+                content: agentPrompts.system_prompt
+            },
+            {
+                role: 'user',
+                content: `Analyze the following chat conversation and suggest three relevant next actions the user could take.
+
+Return your response as a JSON array with this exact structure:
+[
+  {"seq": "1", "content": "Brief description of first action"},
+  {"seq": "2", "content": "Brief description of second action"},
+  {"seq": "3", "content": "Brief description of third action"}
+]
+
+Conversation history:
+${conversationHistory}
+
+Respond with only the JSON array, keep it short and no additional text.
+No need to suggest for file upload and document analysis as this request can only be performed by user.
+Keep the suggestion inline with requirements gathering topic.`
+            }
+        ];
+
+        const completion = await client.chat.completions.create({
+            model: 'grok-4-1-fast-non-reasoning',
+            messages,
+            temperature: 0.2,
+            max_tokens: 1500,
+        });
+
+        const responseContent = completion.choices[0]?.message?.content;
+
+        if (!responseContent) {
+            console.error('No response content received from API');
+            return null;
         }
+
+        console.log('API Response:', responseContent);
+
+        // Parse and validate JSON response
+        try {
+            const suggestions = JSON.parse(responseContent);
+
+            if (!Array.isArray(suggestions) || suggestions.length === 0) {
+                console.error('Invalid suggestions format received');
+                return null;
+            }
+
+            await aiDB.updateSuggestedAction(projectID, chatID, suggestions)
+
+            return suggestions;
+        } catch (parseError) {
+            console.error('Failed to parse JSON response:', parseError.message);
+            console.error('Raw response:', responseContent);
+            return null;
+        }
+
+    } catch (error) {
+        console.error('Error in getSuggestedNextAction:', error.message);
+
+        if (error.response) {
+            console.error('API Error Status:', error.response.status);
+            console.error('API Error Data:', error.response.data);
+        }
+
+        // Re-throw if you want calling code to handle it, or return null
+        return null;
     }
 }
 
 module.exports = {
-    getResponse,
+
     getChatSummary,
     createChatName,
     getStreamingResponse,
-    // New 3-stage exports
     getStreamingResponseThreeStage,
-    prepareUpdates,
-    executeUpdates,
-    streamResponse,
     parseRequirementsToJSON,
     // Requirement analysis
-    requirementAnalysisModel
+    requirementAnalysisModel,
+    getSuggestedNextAction
 }
 

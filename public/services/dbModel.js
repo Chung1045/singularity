@@ -103,7 +103,8 @@ const NOTIFICATION_SCHEMA = () => `
         notifID     TEXT PRIMARY KEY NOT NULL UNIQUE,
         receiveUid  TEXT             NOT NULL,
         dateReceive TEXT             NOT NULL,
-        kind        TEXT             NOT NULL CHECK (kind IN ('invitation', 'remove', 'leaving', 'delete', 'create', 'rename')),
+        kind        TEXT             NOT NULL CHECK (kind IN
+                                                     ('invitation', 'remove', 'leaving', 'delete', 'create', 'rename')),
         projectID   TEXT,
         message     TEXT,
         isRead      INTEGER          NOT NULL DEFAULT 0,
@@ -133,7 +134,7 @@ const USERSTORIES_SCHEMA = () => `
         storyRole    TEXT    NOT NULL,
         storyTitle   TEXT    NOT NULL,
         storyContent TEXT    NOT NULL,
-        storySource  TEXT    NOT NULL,
+        storySource  TEXT,
         PRIMARY KEY (storyID, storySeq),
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
@@ -290,6 +291,7 @@ const CONVERSATION_SCHEMA = () => `
         chatSeq             INTEGER NOT NULL,
         chatID              TEXT    NOT NULL,
         conversationMessage TEXT    NOT NULL,
+        requestTime         TEXT    NOT NULL,
         PRIMARY KEY (conversationID, chatSeq),
         FOREIGN KEY (chatID) REFERENCES chat (chatID) ON DELETE CASCADE
     );
@@ -365,6 +367,19 @@ const REPORTS_SCHEMA = () => `
     );
 `
 
+const SUGGESTED_ACTION_SCHEMA = () => `
+    CREATE TABLE IF NOT EXISTS suggested_action
+    (
+        projectID         TEXT    NOT NULL,
+        chatID            TEXT    NOT NULL,
+        suggestionSeq     INTEGER NOT NULL,
+        suggestionContent TEXT    NOT NULL,
+        PRIMARY KEY (projectID, chatID, suggestionSeq),
+        FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
+        FOREIGN KEY (chatID) REFERENCES chat (chatID) ON DELETE CASCADE
+    );
+`
+
 module.exports = {
     USER_TABLE_SCHEMA,
     CREDENTIAL_TABLE_SCHEMA,
@@ -386,7 +401,8 @@ module.exports = {
     CONVERSATION_SCHEMA,
     CONVERSATION_DOC_REF_SCHEMA,
     VOICEANALYSIS_SCHEMA,
-    REQUIREMENTS_STORY_REF_SCHEMA
+    REQUIREMENTS_STORY_REF_SCHEMA,
+    SUGGESTED_ACTION_SCHEMA
 }
 
 

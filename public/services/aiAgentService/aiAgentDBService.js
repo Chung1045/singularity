@@ -93,7 +93,7 @@ async function getChatThreadName(projectID, chatID) {
         });
     });
 }
-
+// TODO: Update with request timestamp
 async function saveConversationRequest(data) {
     let chatID, nextSeq;
     if (!data.chatID){
@@ -112,13 +112,13 @@ async function saveConversationRequest(data) {
 
     const sql = `
         INSERT INTO conversation
-            (conversationID, chatSeq, chatID, conversationMessage)
-        VALUES (?, ?, ?, ?)
+            (conversationID, chatSeq, chatID, conversationMessage, requestTime)
+        VALUES (?, ?, ?, ?, ?)
     `;
 
     let conversationID = uuid();
 
-    await dbRun(sql, [conversationID, nextSeq, chatID, data.requestMessage]);
+    await dbRun(sql, [conversationID, nextSeq, chatID, data.requestMessage, data.requestTime]);
 
     return { chatID: chatID, conversationID: conversationID, chatSeq: nextSeq };
 }
@@ -795,24 +795,44 @@ async function reorderUserStories(projectID) {
     }
 }
 
-async function exportChat(chatID, projectID){
+async function updateSuggestedAction(projectID, chatID, suggestions) {
+    const sql = `
+        INSERT INTO suggested_action (projectID, chatID, suggestionSeq, suggestionContent)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (projectID, chatID, suggestionSeq)
+            DO UPDATE SET suggestionContent = excluded.suggestionContent
+    `;
 
     try {
-        let chatThread = await fetchChatThread(projectID, chatID);
-        console.log(chatThread)
-
-        let conversations = chatThread.conversations;
-        let content = ""
-
-
+        console.log(`Suggestions to save to DB: ${suggestions}`)
+        for (let suggestion of suggestions) {
+            await dbRun(sql, [projectID, chatID, suggestion.seq, suggestion.content]);
+        }
     } catch (err) {
-
+        console.error('updateSuggestedAction failed:', err.message);
+        throw err;
     }
-
-
 }
 
-exportChat("109565be-5e85-4977-ba6b-a22b6c5561b5", "e719a12c-6831-4feb-8e9d-23c3cdcd5837")
+async function fetchSuggestedAction(projectID, chatID) {
+    const sql = `
+        SELECT suggestionSeq, suggestionContent
+        FROM suggested_action
+        WHERE projectID = ? AND chatID = ?
+        ORDER BY suggestionSeq
+    `;
+
+    try {
+        const rows = await dbAll(sql, [projectID, chatID]);
+        return rows.map(row => ({
+            seq: row.suggestionSeq,
+            content: row.suggestionContent
+        }));
+    } catch (err) {
+        console.error('fetchSuggestedAction failed:', err.message);
+        throw err;
+    }
+}
 
 module.exports = {
     conversationEdit,
@@ -838,5 +858,7 @@ module.exports = {
     updateProjectRequirementSourceRef,
     updateProjectRequirementStoryRef,
     updateUserStorySourceRef,
-    getChatThreadName
+    getChatThreadName,
+    updateSuggestedAction,
+    fetchSuggestedAction
 }

@@ -14,10 +14,10 @@ const ChatController = {
         const projectDropdown = document.getElementById("select-project-drop-down");
         // get the project ID
         const projectID = projectDropdown?.value;
-        
+
         if (!projectID) {
             console.error("No project selected");
-            
+
             // Show warning notification if no project is selected
             if (typeof window.showNotification === 'function') {
                 window.showNotification({
@@ -29,7 +29,7 @@ const ChatController = {
             } else {
                 alert('Please create or select a project before starting a chat.');
             }
-            
+
             return;
         }
 
@@ -184,14 +184,14 @@ const ChatController = {
                     tsDiv.textContent = `${tsNow.getHours().toString().padStart(2, '0')}:${tsNow.getMinutes().toString().padStart(2, '0')}`;
                     streamContentWrapper.appendChild(tsDiv);
                     // add the suggestion chips
-                    appendSuggestionChips(streamContentWrapper);
+                    appendSuggestionChips(streamContentWrapper, jsonData.suggestedNextAction);
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'error') {
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
                     ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                     bubble.style.color = '#f44336';
-                    
+
                 } else if (jsonData.type === 'stage') {
                     // if the stage is 2 and the status is complete and the refresh requirements flag is true, dispatch the requirements updated event
                     if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
@@ -398,7 +398,7 @@ const ChatController = {
                     await window.fetchProjectReports?.(jsonData.projectID || data.projectID);
                     window.dispatchEvent(new CustomEvent('reportGenerated', {
                         detail: { projectID: jsonData.projectID || data.projectID, reportType: jsonData.reportType }
-                    }));    
+                    }));
                     // fetch the project reports and dispatch the report generated event
                 } else if (jsonData.type === 'stage') {
                     // if the stage is 2 and the status is complete and the refresh requirements flag is true, dispatch the requirements updated event
@@ -481,14 +481,15 @@ const ChatController = {
                     tsDiv.textContent = `${tsNow.getHours().toString().padStart(2, '0')}:${tsNow.getMinutes().toString().padStart(2, '0')}`;
                     streamContentWrapper.appendChild(tsDiv);
 
+                    // TODO: Need modification
                     // Add suggestion chips after streaming completes
-                    appendSuggestionChips(streamContentWrapper);
+                    appendSuggestionChips(streamContentWrapper, jsonData.suggestedNextAction);
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'error') {
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
-
-                    ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
+                    ChatUtils.setBubbleContent(bubble, `Unable to respond at the moment, please try again`, { allowMarkdown: false });
+                    // ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                     bubble.style.color = '#f44336';
                     throw new Error(jsonData.message);
                 }
@@ -620,6 +621,24 @@ const ChatController = {
                 }
             });
 
+            if (conversations.length > 0 && data.projectID) {
+                try {
+                    const suggestions = await ChatService.fetchSuggestedActions(data.projectID, chatID);
+                    console.log(`Fetched suggestions: ${suggestions}`)
+
+                    // Find the last AI message's content wrapper to attach chips to
+                    const allContentWrappers = document.querySelectorAll('[id^="message-content-wrapper-ai-"]');
+                    const lastContentWrapper = allContentWrappers[allContentWrappers.length - 1];
+
+                    if (lastContentWrapper) {
+                        removeSuggestionChips();
+                        appendSuggestionChips(lastContentWrapper, suggestions);
+                    }
+                } catch (error) {
+                    console.error('Error restoring suggested actions:', error);
+                }
+            }
+
             ChatUtils.scrollToBottom();
         } catch (error) {
             console.error('Error loading chat thread:', error);
@@ -732,13 +751,13 @@ function removeSuggestionChips() {
 /**
  * Creates and appends suggestion chips after an AI message element.
  * @param {HTMLElement} parentContentWrapper - The content wrapper div of the AI message
+ * @param suggestedNextAction - JSON List of the next suggestions to be shown.
  */
-
-function appendSuggestionChips(parentContentWrapper) {
+// TODO: Update with AI suggested actions
+function appendSuggestionChips(parentContentWrapper, suggestedNextAction) {
     if (!parentContentWrapper) return;
 
-    // pick 3 random suggestions
-    const suggestions = pickSuggestions(3);
+    console.log(`Suggested Next Action: ${suggestedNextAction}`)
 
     // build the suggestion chips container
     const container = document.createElement('div');
@@ -756,22 +775,20 @@ function appendSuggestionChips(parentContentWrapper) {
     const chipsWrapper = document.createElement('div');
     chipsWrapper.className = 'suggestion-chips-wrapper';
 
-    // iterate over the suggestions
-    suggestions.forEach((text, index) => {
-        // build the suggestion chip as a list item
+    for (const suggestion of suggestedNextAction) {
         const chip = document.createElement('button');
-        chip.id = `suggestion-chip-${index}`;
+        chip.id = `suggestion-chip-${suggestion.seq}`;
         chip.className = 'suggestion-chip';
-        chip.textContent = text;
-        
+        chip.textContent = suggestion.content;
+
         chip.onclick = () => {
-            
+
             setTimeout(() => {
                 // Fill the input and submit immediately
                 const input = document.getElementById('main-message-input');
                 if (input) {
                     // set the input value
-                    input.value = text;
+                    input.value = suggestion.content;
                     // set the input height
                     input.style.height = 'auto';
                     // set the input height to the scroll height
@@ -785,16 +802,15 @@ function appendSuggestionChips(parentContentWrapper) {
                 if (typeof window.submitConversationRequest === 'function') window.submitConversationRequest();
             }, 100);
         };
-        // add the suggestion chip to the wrapper
         chipsWrapper.appendChild(chip);
-    });
+    }
 
     // add the chips wrapper to container
     container.appendChild(chipsWrapper);
 
     // add the suggestion chips container to the parent content wrapper
     parentContentWrapper.appendChild(container);
-    
+
     // Trigger animation by setting opacity and transform to visible state
     // Use requestAnimationFrame to ensure the browser registers the initial state first
     requestAnimationFrame(() => {
@@ -965,7 +981,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         contentWrapper.appendChild(timestamp);
 
         // add suggestion chips after the AI message
-        appendSuggestionChips(contentWrapper);
+        // appendSuggestionChips(contentWrapper);
 
         // add the avatar and content wrapper to the message div
         messageDiv.appendChild(avatar);

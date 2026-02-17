@@ -211,6 +211,17 @@ const ChatService = {
         });
 
         return response.json();
+    },
+
+    async fetchSuggestedActions(projectID, chatID) {
+        const response = await fetch('/api/agent/chat/fetch-suggestions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectID, chatID })
+        });
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        const data = await response.json();
+        return data.suggestedNextAction || [];
     }
 };
 
