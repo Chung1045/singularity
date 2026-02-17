@@ -51,56 +51,74 @@ async function migrateDatabase(db) {
                 return reject(err);
             }
 
-            if (!columns || columns.length === 0) {
-                // Table doesn't exist yet, no migration needed
-                return resolve();
-            }
-
-            const hasUserAvatarPath = columns.some(col => col.name === 'userAvatarPath');
-            const hasGoogleAvatarUrl = columns.some(col => col.name === 'googleAvatarUrl');
-
             const operations = [];
 
-            if (!hasUserAvatarPath) {
-                console.log('  Adding missing column: userAvatarPath');
-                operations.push(new Promise((res, rej) => {
-                    db.run('ALTER TABLE user ADD COLUMN userAvatarPath TEXT', (err) => {
-                        if (err) {
-                            console.error(' Error adding userAvatarPath:', err);
-                            rej(err);
-                        } else {
-                            console.log(' Added userAvatarPath column');
-                            res();
-                        }
-                    });
-                }));
+            if (columns && columns.length > 0) {
+                const hasUserAvatarPath = columns.some(col => col.name === 'userAvatarPath');
+                const hasGoogleAvatarUrl = columns.some(col => col.name === 'googleAvatarUrl');
+
+                if (!hasUserAvatarPath) {
+                    console.log('  Adding missing column: userAvatarPath');
+                    operations.push(new Promise((res, rej) => {
+                        db.run('ALTER TABLE user ADD COLUMN userAvatarPath TEXT', (err) => {
+                            if (err) {
+                                console.error(' Error adding userAvatarPath:', err);
+                                rej(err);
+                            } else {
+                                console.log(' Added userAvatarPath column');
+                                res();
+                            }
+                        });
+                    }));
+                }
+
+                if (!hasGoogleAvatarUrl) {
+                    console.log('  Adding missing column: googleAvatarUrl');
+                    operations.push(new Promise((res, rej) => {
+                        db.run('ALTER TABLE user ADD COLUMN googleAvatarUrl TEXT', (err) => {
+                            if (err) {
+                                console.error(' Error adding googleAvatarUrl:', err);
+                                rej(err);
+                            } else {
+                                console.log(' Added googleAvatarUrl column');
+                                res();
+                            }
+                        });
+                    }));
+                }
             }
 
-            if (!hasGoogleAvatarUrl) {
-                console.log('  Adding missing column: googleAvatarUrl');
-                operations.push(new Promise((res, rej) => {
-                    db.run('ALTER TABLE user ADD COLUMN googleAvatarUrl TEXT', (err) => {
-                        if (err) {
-                            console.error(' Error adding googleAvatarUrl:', err);
-                            rej(err);
-                        } else {
-                            console.log(' Added googleAvatarUrl column');
-                            res();
-                        }
-                    });
-                }));
-            }
+            // Also ensure conversationTimeDate exists on conversation table
+            db.all("PRAGMA table_info(conversation)", [], (errConv, convColumns) => {
+                if (!errConv && convColumns && convColumns.length > 0) {
+                    const hasConversationTimeDate = convColumns.some(col => col.name === 'conversationTimeDate');
+                    if (!hasConversationTimeDate) {
+                        console.log('  Adding missing column: conversationTimeDate');
+                        operations.push(new Promise((res, rej) => {
+                            db.run('ALTER TABLE conversation ADD COLUMN conversationTimeDate TEXT', (err) => {
+                                if (err) {
+                                    console.error(' Error adding conversationTimeDate:', err);
+                                    rej(err);
+                                } else {
+                                    console.log(' Added conversationTimeDate column');
+                                    res();
+                                }
+                            });
+                        }));
+                    }
+                }
 
-            if (operations.length === 0) {
-                return resolve();
-            }
+                if (operations.length === 0) {
+                    return resolve();
+                }
 
-            Promise.all(operations)
-                .then(() => {
-                    console.log(' Database migration completed');
-                    resolve();
-                })
-                .catch(reject);
+                Promise.all(operations)
+                    .then(() => {
+                        console.log(' Database migration completed');
+                        resolve();
+                    })
+                    .catch(reject);
+            });
         });
     });
 }

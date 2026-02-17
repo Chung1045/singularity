@@ -282,7 +282,7 @@ const CHAT_SCHEMA = () => `
 //     );
 // `
 
-// FIXED - Added column name (chatID):
+// FIXED - Added column name (chatID) and conversationTimeDate:
 const CONVERSATION_SCHEMA = () => `
     CREATE TABLE IF NOT EXISTS conversation
     (
@@ -290,6 +290,7 @@ const CONVERSATION_SCHEMA = () => `
         chatSeq             INTEGER NOT NULL,
         chatID              TEXT    NOT NULL,
         conversationMessage TEXT    NOT NULL,
+        conversationTimeDate TEXT,
         PRIMARY KEY (conversationID, chatSeq),
         FOREIGN KEY (chatID) REFERENCES chat (chatID) ON DELETE CASCADE
     );

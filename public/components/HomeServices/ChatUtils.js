@@ -36,7 +36,7 @@ const ChatUtils = {
     },
 
     /**
-     * Show loading indicator (avatar + "Working on it..." + spinner)
+     * Show loading indicator (avatar + "Loading..." + spinner)
      */
     showLoadingIndicator() {
         const messagesContainer = document.getElementById('chat-messages');
@@ -53,13 +53,14 @@ const ChatUtils = {
         const loadingDiv = document.createElement('div');
         loadingDiv.id = 'ai-loading-indicator';
         loadingDiv.className = 'message ai-message';
+        // Avatar + "Loading..." text + spinner
         loadingDiv.innerHTML = `
             <div class="message-avatar">
                 <img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
             </div>
-            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; font-family: Inter, Helvetica; font-size: 14px; color: #777;">
-                <span>Working on it...</span>
-                <div style="width: 14px; height: 14px; border: 2px solid #ddd; border-top-color: #555; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0;">
+                <div class="loader"></div>
+                <div style="width: 14px; height: 14px; border: 2px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
             </div>
         `;
         messagesContainer.appendChild(loadingDiv);

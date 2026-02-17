@@ -112,15 +112,25 @@ async function saveConversationRequest(data) {
 
     const sql = `
         INSERT INTO conversation
-            (conversationID, chatSeq, chatID, conversationMessage)
-        VALUES (?, ?, ?, ?)
+            (conversationID, chatSeq, chatID, conversationMessage, conversationTimeDate)
+        VALUES (?, ?, ?, ?, ?)
     `;
 
     let conversationID = uuid();
+    // Use timestamp from client if provided, otherwise create new one
+    const conversationTimestamp = data.conversationTimeDate || new Date().toISOString();
+    
+    console.log('[DB saveConversationRequest] ===================================');
+    console.log('[DB saveConversationRequest] data.conversationTimeDate from client:', data.conversationTimeDate);
+    console.log('[DB saveConversationRequest] conversationTimestamp to save:', conversationTimestamp);
+    console.log('[DB saveConversationRequest] conversationID:', conversationID, 'chatSeq:', nextSeq);
+    console.log('[DB saveConversationRequest] timestamp source:', data.conversationTimeDate ? 'CLIENT DATE Correct' : 'SERVER (WRONG!)');
 
-    await dbRun(sql, [conversationID, nextSeq, chatID, data.requestMessage]);
+    await dbRun(sql, [conversationID, nextSeq, chatID, data.requestMessage, conversationTimestamp]);
 
-    return { chatID: chatID, conversationID: conversationID, chatSeq: nextSeq };
+    console.log('[DB saveConversationRequest] User message saved successfully with timestamp:', conversationTimestamp);
+    console.log('[DB saveConversationRequest] ===================================');
+    return { chatID: chatID, conversationID: conversationID, chatSeq: nextSeq, conversationTimeDate: conversationTimestamp };
 }
 
 async function saveConversationRequestRef(data, conversationID, conversationSeq) {
@@ -157,11 +167,14 @@ async function saveConversationResponse(chatSeq, conversationID, responseMessage
         VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const params = [uuid(), 1, conversationID, chatSeq, responseMessage, Date(), 1];
+    // Store timestamp in ISO format and return it
+    const responseTimestamp = new Date().toISOString();
+    const params = [uuid(), 1, conversationID, chatSeq, responseMessage, responseTimestamp, 1];
 
     try {
         await dbRun(sql, params);
-        return true;
+        console.log('[DB] Saved AI response with timestamp:', responseTimestamp);
+        return { success: true, timestamp: responseTimestamp };
     } catch (error) {
         throw error;
     }
@@ -179,13 +192,21 @@ async function deleteConversation(chatID, conversationID) {
     }
 }
 
-async function conversationEdit(chatID, chatSeq, conversationID, newConversationRequest) {
-    const sql = `UPDATE conversation SET conversationMessage = ? WHERE conversationID = ?`
+async function conversationEdit(chatID, chatSeq, conversationID, newConversationRequest, conversationTimeDate = null) {
+    // Update conversation message and optionally the timestamp
+    const sql = conversationTimeDate 
+        ? `UPDATE conversation SET conversationMessage = ?, conversationTimeDate = ? WHERE conversationID = ?`
+        : `UPDATE conversation SET conversationMessage = ? WHERE conversationID = ?`;
     const sql2 = `DELETE FROM conversation WHERE chatID = ? AND chatSeq > ?`
     const sql3 = `DELETE FROM response WHERE conversationID = ?`
 
     try {
-        await dbRun(sql, [newConversationRequest, conversationID]);
+        if (conversationTimeDate) {
+            console.log('[DB] Updating conversation with new timestamp:', conversationTimeDate);
+            await dbRun(sql, [newConversationRequest, conversationTimeDate, conversationID]);
+        } else {
+            await dbRun(sql, [newConversationRequest, conversationID]);
+        }
         await dbRun(sql2, [chatID, chatSeq])
         await dbRun(sql3, [conversationID])
         return true;
@@ -249,6 +270,7 @@ async function fetchChatThread(projectID, chatID) {
                     c.chatSeq,
                     c.chatID,
                     c.conversationMessage,
+                    c.conversationTimeDate,
                     GROUP_CONCAT(DISTINCT cdr.documentID) as documentIDs,
                     r.responseMessage,
                     r.responseTimeDate
@@ -283,16 +305,26 @@ async function fetchChatThread(projectID, chatID) {
                 }
 
                 // Transform flat rows into structured JSON
-                const conversations = rows.map(row => ({
-                    conversationID: row.conversationID,
-                    chatSeq: row.chatSeq,
-                    message: row.conversationMessage,
-                    attachedDocuments: row.documentIDs ? row.documentIDs.split(',') : [],
-                    response: row.responseMessage ? {
-                        message: row.responseMessage,
-                        timestamp: row.responseTimeDate
-                    } : null
-                }));
+                const conversations = rows.map(row => {
+                    console.log('[DB] Row from conversation table:');
+                    console.log('  conversationID:', row.conversationID);
+                    console.log('  chatSeq:', row.chatSeq);
+                    console.log('  conversationMessage:', row.conversationMessage);
+                    console.log('  conversationTimeDate:', row.conversationTimeDate);
+                    console.log('  responseTimeDate:', row.responseTimeDate);
+                    
+                    return {
+                        conversationID: row.conversationID,
+                        chatSeq: row.chatSeq,
+                        message: row.conversationMessage,
+                        timestamp: row.conversationTimeDate,
+                        attachedDocuments: row.documentIDs ? row.documentIDs.split(',') : [],
+                        response: row.responseMessage ? {
+                            message: row.responseMessage,
+                            timestamp: row.responseTimeDate
+                        } : null
+                    };
+                });
 
                 resolve({
                     chatID: chatID,

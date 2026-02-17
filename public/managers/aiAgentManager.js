@@ -81,8 +81,11 @@ router.post('/agent/chat', async (req, res) => {
             projectID: projectID,
             chatID: chatID,
             requestMessage: requestMessage,
-            attachedDocumentIDs: attachedDocumentIDs
+            attachedDocumentIDs: attachedDocumentIDs,
+            conversationTimeDate: chatData.conversationTimeDate || null // Pass client timestamp if provided
         };
+        
+        console.log('[Server] conversationTimeDate from client:', chatData.conversationTimeDate);
 
         let conversationSummary = ""
         let conversationHistory = JSON.stringify(await aiDB.fetchChatThread(projectID, chatID));
@@ -198,8 +201,10 @@ router.post('/agent/chat', async (req, res) => {
                     await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
                 }
 
-                // Save the complete streamed response
-                await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
+                // Save the complete streamed response and get timestamp
+                const saveResult = await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
+                const responseTimestamp = saveResult?.timestamp || new Date().toISOString();
+                console.log('[Stream] Saved AI response with timestamp:', responseTimestamp);
 
                 // Generate thread name if it doesn't exist
                 let threadName = await aiDB.getChatThreadName(projectID, chatID);
@@ -209,14 +214,15 @@ router.post('/agent/chat', async (req, res) => {
                     console.log(' Generated thread name:', threadName);
                 }
 
-                // Send completion event with threadName
+                // Send completion event with threadName and timestamp
                 res.write(`data: ${JSON.stringify({ 
                     type: 'done', 
                     chatSeq: chatSeq,
                     conversationID: conversationID,
                     threadName: threadName || 'Untitled Chat',
                     refreshReports: true,
-                    projectID: projectID
+                    projectID: projectID,
+                    responseTimestamp: responseTimestamp
                 })}\n\n`);
                 res.end();
 
@@ -348,6 +354,7 @@ router.get('/agent/chat/thread/:chatID', async (req, res) => {
                 conversationID: conv.conversationID,
                 chatSeq: conv.chatSeq,
                 conversationMessage: conv.message,
+                conversationTimeDate: conv.timestamp || null,
                 responseMessage: conv.response ? conv.response.message : null,
                 responseTimeDate: conv.response ? conv.response.timestamp : null,
                 documentIDs: docIDs
@@ -616,7 +623,10 @@ router.post('/agent/conversation-edit', async(req, res) => {
     const conversationID = chatData.conversationID;
     const message = chatData.message;
     const attachedDocumentIDs = chatData.attachedDocumentIDs;
+    const conversationTimeDate = chatData.conversationTimeDate;
     const userID = req.userID; // Get userID from auth middleware
+    
+    console.log('[edit] conversationTimeDate from client:', conversationTimeDate);
 
     if (!projectID || !chatID || !conversationID || !chatSeq || !message) {
         return res.status(400).json({success: false, message: `Missing required fields`})
@@ -627,7 +637,7 @@ router.post('/agent/conversation-edit', async(req, res) => {
     }
 
     try {
-        let success = await aiDB.conversationEdit(chatID, chatSeq, conversationID, message)
+        let success = await aiDB.conversationEdit(chatID, chatSeq, conversationID, message, conversationTimeDate)
 
         if (!success) {
             return res.status(500).json({ success: false, message: `Internal server error, unable to complete edit conversation message procedure.` });
@@ -637,7 +647,8 @@ router.post('/agent/conversation-edit', async(req, res) => {
             projectID: projectID,
             chatID: chatID,
             requestMessage: message,
-            attachedDocumentIDs: attachedDocumentIDs
+            attachedDocumentIDs: attachedDocumentIDs,
+            conversationTimeDate: conversationTimeDate || null // Pass client timestamp if provided
         };
 
         let conversationSummary = ""
@@ -698,14 +709,16 @@ router.post('/agent/conversation-edit', async(req, res) => {
                     res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
                 }
 
-                // Save to database
+                // Save to database and get timestamp
                 if (attachedDocumentIDs && attachedDocumentIDs.length > 0) {
                     await aiDB.saveConversationRequestRef(data, conversationID, chatSeq);
                 }
-                await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
+                const saveResult = await aiDB.saveConversationResponse(chatSeq, conversationID, fullResponse);
+                const responseTimestamp = saveResult?.timestamp || new Date().toISOString();
+                console.log('[Edit] Saved AI response with timestamp:', responseTimestamp);
 
-                // Send done event
-                res.write(`data: ${JSON.stringify({ type: 'done', conversationID: conversationID, chatSeq: chatSeq })}\n\n`);
+                // Send done event with timestamp
+                res.write(`data: ${JSON.stringify({ type: 'done', conversationID: conversationID, chatSeq: chatSeq, responseTimestamp: responseTimestamp })}\n\n`);
                 res.end();
             } catch (error) {
                 console.error(`[Edit] Streaming error:`, error);
@@ -814,7 +827,8 @@ router.post('/agent/analyze-documents', async (req, res) => {
     try {
         console.log("New request /agent/analyze-documents");
 
-        const { projectID, documentIDs, title, chatID } = req.body;
+        const { projectID, documentIDs, title, chatID, conversationTimeDate } = req.body;
+        console.log('[analyze-documents] conversationTimeDate from client:', conversationTimeDate);
 
         // Validate required fields
         if (!projectID || !documentIDs || !Array.isArray(documentIDs) || documentIDs.length === 0) {
@@ -856,7 +870,8 @@ router.post('/agent/analyze-documents', async (req, res) => {
             projectID: projectID,
             chatID: finalChatID, // Use the tracked chatID
             requestMessage: messageText,
-            attachedDocumentIDs: documentIDs
+            attachedDocumentIDs: documentIDs,
+            conversationTimeDate: conversationTimeDate || null // Pass client timestamp if provided
         }
 
         let { conversationID, chatSeq, chatID: returnedChatID } = await aiDB.saveConversationRequest(data);

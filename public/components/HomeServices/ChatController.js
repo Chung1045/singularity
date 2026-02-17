@@ -60,6 +60,9 @@ const ChatController = {
             return;
         }
 
+        // Capture timestamp for the edited message
+        const editMessageSendTime = new Date().toISOString();
+
         // get the selected source
         const selectedSource = ChatUtils.getSelectedSource();
         // get the chip file IDs
@@ -73,9 +76,9 @@ const ChatController = {
         ChatUtils.clearSelectedFiles();
         // remove the messages from the sequence
         EditMode.removeMessagesFromSeq(chatSeq);
-        // add the user message
-        // show the loading indicator
-        addMessage('user', userMessage, conversationID, chatSeq, allAttachedDocuments);
+        // add the user message with timestamp
+        console.log('[Edit] User message edited at:', editMessageSendTime);
+        addMessage('user', userMessage, conversationID, chatSeq, allAttachedDocuments, editMessageSendTime);
 
         ChatUtils.showLoadingIndicator();
         // try to stream the edit response
@@ -86,7 +89,8 @@ const ChatController = {
                 chatSeq,
                 conversationID,
                 message: userMessage,
-                attachedDocumentIDs: allAttachedDocuments
+                attachedDocumentIDs: allAttachedDocuments,
+                conversationTimeDate: editMessageSendTime // Send client timestamp to server
             });
         } catch (error) {
             ChatUtils.removeLoadingIndicator();
@@ -175,13 +179,19 @@ const ChatController = {
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
 
-                    // Add timestamp
+                    // Add timestamp (locked when edit streaming stops)
+                    // Use the timestamp from server (when response was saved to DB) or current time as fallback
+                    const responseTimestamp = jsonData.responseTimestamp || new Date().toISOString();
+                    console.log('[Edit] AI response timestamp:', responseTimestamp);
                     const tsDiv = document.createElement('div');
                     tsDiv.id = `message-timestamp-ai-edit-${messageTimestamp}`;
                     tsDiv.className = 'message-timestamp';
                     tsDiv.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
-                    const tsNow = new Date();
-                    tsDiv.textContent = `${tsNow.getHours().toString().padStart(2, '0')}:${tsNow.getMinutes().toString().padStart(2, '0')}`;
+                    const formattedTime = formatMessageTimestamp(responseTimestamp);
+                    console.log('[Edit] AI timestamp formatted:', formattedTime);
+                    tsDiv.textContent = formattedTime;
+                    // Store the timestamp as data attribute to preserve it (locked when streaming stops)
+                    tsDiv.dataset.timestamp = responseTimestamp;
                     streamContentWrapper.appendChild(tsDiv);
                     // add the suggestion chips
                     appendSuggestionChips(streamContentWrapper);
@@ -245,15 +255,21 @@ const ChatController = {
         const chipFileIDs = ChatUtils.getChipFileIDs();
         const allAttachedDocuments = ChatUtils.mergeAttachedDocuments(selectedSource, chipFileIDs);
 
+        // Capture timestamp BEFORE sending to server
+        const userMessageSendTime = new Date().toISOString();
+
         const data = {
             projectID,
             chatID,
             message: userMessage,
-            attachedDocumentIDs: allAttachedDocuments
+            attachedDocumentIDs: allAttachedDocuments,
+            conversationTimeDate: userMessageSendTime // Send client timestamp to server
         };
 
         ChatUtils.showChatInterface();
-        addMessage('user', userMessage, null, null, allAttachedDocuments);
+        console.log('[Send] User message sent at:', userMessageSendTime);
+        // Pass the timestamp explicitly to ensure it's used
+        addMessage('user', userMessage, null, null, allAttachedDocuments, userMessageSendTime);
         ChatUtils.clearInput();
         ChatUtils.clearSelectedFiles();
 
@@ -272,6 +288,7 @@ const ChatController = {
                 if (lastUserMessage) {
                     lastUserMessage.dataset.conversationId = conversationID;
                     lastUserMessage.dataset.chatSeq = chatSeq;
+                    console.log('[Update] Set conversationID:', conversationID, 'chatSeq:', chatSeq, 'on user message');
 
                     const editBtn = lastUserMessage.querySelector('.message-edit-btn');
                     if (editBtn) {
@@ -392,14 +409,19 @@ const ChatController = {
                         await fetchProjectChats(data.projectID);
                     }
                 } else if (jsonData.type === 'reportGenerated') {
+                    console.log('[reportGenerated] ===== REPORT GENERATED EVENT =====');
+                    console.log('[reportGenerated] reportType:', jsonData.reportType);
+                    console.log('[reportGenerated] projectID:', jsonData.projectID || data.projectID);
                     // wait for 500ms
                     await new Promise(resolve => setTimeout(resolve, 500));
                     // fetch the project reports and dispatch the report generated event
+                    console.log('[reportGenerated] Calling fetchProjectReports...');
                     await window.fetchProjectReports?.(jsonData.projectID || data.projectID);
+                    console.log('[reportGenerated] Dispatching reportGenerated custom event...');
                     window.dispatchEvent(new CustomEvent('reportGenerated', {
                         detail: { projectID: jsonData.projectID || data.projectID, reportType: jsonData.reportType }
-                    }));    
-                    // fetch the project reports and dispatch the report generated event
+                    }));
+                    console.log('[reportGenerated] Event dispatched');
                 } else if (jsonData.type === 'stage') {
                     // if the stage is 2 and the status is complete and the refresh requirements flag is true, dispatch the requirements updated event
                     if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
@@ -467,18 +489,27 @@ const ChatController = {
                     }
 
                     // if the fetch project reports function is defined, call it
+                    console.log('[done] Checking if reports need refreshing...');
                     if (typeof window.fetchProjectReports === 'function') {
+                        console.log('[done] Fetching project reports after streaming completes...');
                         await new Promise(resolve => setTimeout(resolve, 500));
                         await window.fetchProjectReports(data.projectID);
+                        console.log('[done] Project reports fetched');
                     }
 
-                    // Add timestamp to the streamed message
+                    // Add timestamp to the streamed message (locked when streaming stops)
+                    // Use the timestamp from server (when response was saved to DB) or current time as fallback
+                    const responseTimestamp = jsonData.responseTimestamp || new Date().toISOString();
+                    console.log('[Stream] AI response timestamp:', responseTimestamp);
                     const tsDiv = document.createElement('div');
                     tsDiv.id = `message-timestamp-ai-stream-${messageTimestamp}`;
                     tsDiv.className = 'message-timestamp';
                     tsDiv.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
-                    const tsNow = new Date();
-                    tsDiv.textContent = `${tsNow.getHours().toString().padStart(2, '0')}:${tsNow.getMinutes().toString().padStart(2, '0')}`;
+                    const formattedTime = formatMessageTimestamp(responseTimestamp);
+                    console.log('[Stream] AI timestamp formatted:', formattedTime);
+                    tsDiv.textContent = formattedTime;
+                    // Store the timestamp as data attribute to preserve it (locked when streaming stops)
+                    tsDiv.dataset.timestamp = responseTimestamp;
                     streamContentWrapper.appendChild(tsDiv);
 
                     // Add suggestion chips after streaming completes
@@ -614,19 +645,36 @@ const ChatController = {
 
             // Display conversations
             const conversations = data.conversations || [];
+            console.log('[loadChatThread] ========== LOADING CONVERSATIONS ==========');
             conversations.forEach(conv => {
                 if (conv.conversationMessage) {
                     const documentIDs = conv.documentIDs || [];
-                    console.log('[loadChatThread] Adding user message with documentIDs:', documentIDs);
-                    addMessage('user', conv.conversationMessage, conv.conversationID, conv.chatSeq, documentIDs);
+                    console.log('[loadChatThread] USER MESSAGE:');
+                    console.log('  - conversationID:', conv.conversationID);
+                    console.log('  - chatSeq:', conv.chatSeq);
+                    console.log('  - message:', conv.conversationMessage);
+                    console.log('  - conversationTimeDate from DB:', conv.conversationTimeDate);
+                    console.log('  - documentIDs:', documentIDs);
+                    // Use timestamp from DB for user message
+                    const conversationTimestamp = conv.conversationTimeDate || null;
+                    console.log('  - timestamp to use:', conversationTimestamp);
+                    addMessage('user', conv.conversationMessage, conv.conversationID, conv.chatSeq, documentIDs, conversationTimestamp);
                 }
                 if (conv.responseMessage) {
-                    console.log('[loadChatThread] Adding AI response message, length:', conv.responseMessage.length);
-                    addMessage('ai', conv.responseMessage);
+                    console.log('[loadChatThread] AI MESSAGE:');
+                    console.log('  - conversationID:', conv.conversationID);
+                    console.log('  - chatSeq:', conv.chatSeq);
+                    console.log('  - message length:', conv.responseMessage.length);
+                    console.log('  - responseTimeDate from DB:', conv.responseTimeDate);
+                    // Use timestamp from DB for AI response
+                    const responseTimestamp = conv.responseTimeDate || null;
+                    console.log('  - timestamp to use:', responseTimestamp);
+                    addMessage('ai', conv.responseMessage, conv.conversationID, conv.chatSeq, [], responseTimestamp);
                 } else {
                     console.warn('[loadChatThread] No responseMessage found for conversation:', conv.conversationID);
                 }
             });
+            console.log('[loadChatThread] ========== DONE LOADING CONVERSATIONS ==========');
 
             ChatUtils.scrollToBottom();
         } catch (error) {
@@ -813,6 +861,55 @@ function appendSuggestionChips(parentContentWrapper) {
 
 // ===== ADD MESSAGE FUNCTION =====
 
+/**
+ * Format a timestamp (Date object or ISO string) with relative date labels
+ * @param {Date|string|null} timestamp - The timestamp to format, or null to use current time
+ * @returns {string} Formatted timestamp string:
+ *   - Today: "Today HH:MM"
+ *   - Yesterday: "Yesterday HH:MM"
+ *   - Older: "dd MMM yyyy HH:MM" (e.g., "17 Feb 2026 14:30")
+ */
+function formatMessageTimestamp(timestamp = null) {
+    const date = timestamp ? (timestamp instanceof Date ? timestamp : new Date(timestamp)) : new Date();
+    
+    // Validate the date
+    if (isNaN(date.getTime())) {
+        console.warn('Invalid timestamp provided:', timestamp);
+        return 'Invalid date';
+    }
+    
+    const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    
+    // Get today's date at midnight in local timezone for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get the message date at midnight in local timezone for comparison
+    const messageDate = new Date(date);
+    messageDate.setHours(0, 0, 0, 0);
+    
+    // Calculate difference in days (positive = past, negative = future)
+    const diffTime = today.getTime() - messageDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+        // Today - same calendar day
+        return `Today ${timeStr}`;
+    } else if (diffDays === 1) {
+        // Yesterday - exactly 1 day ago
+        return `Yesterday ${timeStr}`;
+    } else if (diffDays === -1) {
+        // Tomorrow (shouldn't happen but handle it)
+        return `Tomorrow ${timeStr}`;
+    } else {
+        // Older dates: "dd MMM yyyy HH:MM"
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year} ${timeStr}`;
+    }
+}
 
 /**
  * Adds a message to the chat messages container.
@@ -821,8 +918,15 @@ function appendSuggestionChips(parentContentWrapper) {
  * @param {string} conversationID - The conversation ID
  * @param {string} chatSeq - The chat sequence
  * @param {array} attachedFileIDs - The attached file IDs
+ * @param {string|null} messageTimestampValue - Optional timestamp (ISO string) to use instead of current time
  */
-function addMessage(role, text, conversationID = null, chatSeq = null, attachedFileIDs = []) {
+function addMessage(role, text, conversationID = null, chatSeq = null, attachedFileIDs = [], messageTimestampValue = null) {
+    console.log('[addMessage] ========== ADDING MESSAGE ==========');
+    console.log('[addMessage] role:', role);
+    console.log('[addMessage] conversationID:', conversationID);
+    console.log('[addMessage] chatSeq:', chatSeq);
+    console.log('[addMessage] messageTimestampValue:', messageTimestampValue);
+    
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
 
@@ -838,6 +942,21 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     if (conversationID) messageDiv.dataset.conversationId = conversationID;
     if (chatSeq) messageDiv.dataset.chatSeq = chatSeq;
 
+    // Determine timestamp to use:
+    // - If messageTimestampValue is provided (from DB or caller), use that
+    // - Otherwise, use current time
+    let finalTimestamp;
+    if (messageTimestampValue) {
+        const date = messageTimestampValue instanceof Date ? messageTimestampValue : new Date(messageTimestampValue);
+        finalTimestamp = date.toISOString();
+        console.log('[addMessage] Using provided timestamp:', finalTimestamp);
+    } else {
+        const now = new Date();
+        finalTimestamp = now.toISOString();
+        console.log('[addMessage] No timestamp provided, using current time:', finalTimestamp);
+    }
+    console.log('[addMessage] finalTimestamp:', finalTimestamp);
+
     // build the avatar element
     const avatar = document.createElement('div');
     avatar.id = `message-avatar-${role}-${messageTimestamp}`;
@@ -846,8 +965,9 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     // if the role is user, set the avatar image
     if (role === 'user') {
         // set the avatar image
+        // CSS will handle sizing: default (./img/user.svg) = 80%, uploaded = 100%
         const avatarUrl = window.userAvatarUrl || './img/user.svg';
-        avatar.innerHTML = `<img src="${avatarUrl}" alt="User" style="width: 80%; height: 80%; object-fit: cover; border-radius: 50%;">`;
+        avatar.innerHTML = `<img src="${avatarUrl}" alt="User">`;
     } else {
         // set the AI avatar image
         avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
@@ -883,8 +1003,12 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         timestamp.id = `message-timestamp-user-${messageTimestamp}`;
         timestamp.className = 'message-timestamp';
         timestamp.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
-        const now = new Date();
-        timestamp.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        // Use finalTimestamp
+        const formattedTime = formatMessageTimestamp(finalTimestamp);
+        console.log('[addMessage] USER timestamp formatted:', formattedTime, 'from:', finalTimestamp);
+        timestamp.textContent = formattedTime;
+        // Store the timestamp as data attribute to preserve it
+        timestamp.dataset.timestamp = finalTimestamp;
         contentWrapper.appendChild(timestamp);
 
         // Bottom row with files
@@ -979,8 +1103,12 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         timestamp.id = `message-timestamp-ai-${messageTimestamp}`;
         timestamp.className = 'message-timestamp';
         timestamp.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
-        const now = new Date();
-        timestamp.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        // Use finalTimestamp
+        const formattedTime = formatMessageTimestamp(finalTimestamp);
+        console.log('[addMessage] AI timestamp formatted:', formattedTime, 'from:', finalTimestamp);
+        timestamp.textContent = formattedTime;
+        // Store the timestamp as data attribute to preserve it (locked when streaming stops)
+        timestamp.dataset.timestamp = finalTimestamp;
         contentWrapper.appendChild(timestamp);
 
         // add suggestion chips after the AI message

@@ -98,12 +98,16 @@ window.handleAnalyzeDocuments = async function() {
     }
     window.chatFileNameMap = fileNameMap;
     
+    // Capture timestamp BEFORE sending to server
+    const userMessageSendTime = new Date().toISOString();
+    
     // Add user message with attached files
     // File names will be displayed as text in message-bottom-row (handled by addMessage)
     const userMessageText = allAttachedDocuments.length === 1 
         ? 'Analyze Document' 
         : `Analyze ${allAttachedDocuments.length} Documents`;
-    addMessage('user', userMessageText, null, null, allAttachedDocuments);
+    console.log('[Analyze] User message sent at:', userMessageSendTime);
+    addMessage('user', userMessageText, null, null, allAttachedDocuments, userMessageSendTime);
     
     // Remove the file chips container after adding the message to chat
     ChatUtils.clearSelectedFiles();
@@ -119,7 +123,8 @@ window.handleAnalyzeDocuments = async function() {
                 projectID,
                 documentIDs: allAttachedDocuments,
                 title: projectTitle,
-                chatID: localStorage.getItem("activeChatID")
+                chatID: localStorage.getItem("activeChatID"),
+                conversationTimeDate: userMessageSendTime // Send client timestamp to server
             })
         });
 
