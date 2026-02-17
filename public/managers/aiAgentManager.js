@@ -702,6 +702,23 @@ router.post('/agent/conversation-edit', async(req, res) => {
                         if (trimmedChunk.includes('STAGE_2_COMPLETE')) {
                             res.write(`data: ${JSON.stringify({ type: 'stage', stage: 2, status: 'complete', refreshRequirements: true, projectID: projectID })}\n\n`);
                         }
+                        // Handle report generation events in edit flow too
+                        if (trimmedChunk.includes('REPORT_GENERATED:')) {
+                            try {
+                                const startIdx = trimmedChunk.indexOf('{');
+                                const endIdx = trimmedChunk.lastIndexOf('}');
+                                if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                                    const jsonStr = trimmedChunk.substring(startIdx, endIdx + 1);
+                                    console.log('[Edit] Report generation marker found, JSON string:', jsonStr);
+                                    const reportInfo = JSON.parse(jsonStr);
+                                    console.log('[Edit] Parsed reportInfo:', reportInfo);
+                                    console.log('[Edit] Sending reportGenerated event to client');
+                                    res.write(`data: ${JSON.stringify({ type: 'reportGenerated', reportType: reportInfo.type, projectID: reportInfo.projectID || projectID })}\n\n`);
+                                }
+                            } catch (parseErr) {
+                                console.error('[Edit] Failed to parse report info:', parseErr);
+                            }
+                        }
                         continue;
                     }
 

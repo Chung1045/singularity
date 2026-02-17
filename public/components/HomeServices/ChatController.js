@@ -167,7 +167,22 @@ const ChatController = {
             try {
                 const jsonData = JSON.parse(eventData);
 
-                if (jsonData.type === 'chunk') {
+                if (jsonData.type === 'reportGenerated') {
+                    console.log('[Edit reportGenerated] ===== REPORT GENERATED EVENT =====');
+                    console.log('[Edit reportGenerated] reportType:', jsonData.reportType);
+                    console.log('[Edit reportGenerated] projectID:', jsonData.projectID || data.projectID);
+                    // wait longer for DB write to complete
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // fetch the project reports and dispatch the report generated event
+                    console.log('[Edit reportGenerated] Calling fetchProjectReports...');
+                    await window.fetchProjectReports?.(jsonData.projectID || data.projectID);
+                    console.log('[Edit reportGenerated] fetchProjectReports completed');
+                    console.log('[Edit reportGenerated] Dispatching reportGenerated custom event...');
+                    window.dispatchEvent(new CustomEvent('reportGenerated', {
+                        detail: { projectID: jsonData.projectID || data.projectID, reportType: jsonData.reportType }
+                    }));
+                    console.log('[Edit reportGenerated] Event dispatched - UI should be updated');
+                } else if (jsonData.type === 'chunk') {
                     // console.log('[Edit] Received chunk:', jsonData.content?.substring(0, 50));
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
@@ -178,6 +193,20 @@ const ChatController = {
                 } else if (jsonData.type === 'done') {
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
+
+                    // Refresh reports (in case reports were generated during edit)
+                    console.log('[Edit done] Refreshing project reports...');
+                    if (typeof window.fetchProjectReports === 'function' && data.projectID) {
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        await window.fetchProjectReports(data.projectID);
+                        console.log('[Edit done] Project reports fetched and UI should be updated');
+                        // Force another refresh after a delay
+                        setTimeout(async () => {
+                            console.log('[Edit done] Secondary report refresh...');
+                            await window.fetchProjectReports(data.projectID);
+                            console.log('[Edit done] Secondary refresh complete');
+                        }, 2000);
+                    }
 
                     // Add timestamp (locked when edit streaming stops)
                     // Use the timestamp from server (when response was saved to DB) or current time as fallback
@@ -412,16 +441,17 @@ const ChatController = {
                     console.log('[reportGenerated] ===== REPORT GENERATED EVENT =====');
                     console.log('[reportGenerated] reportType:', jsonData.reportType);
                     console.log('[reportGenerated] projectID:', jsonData.projectID || data.projectID);
-                    // wait for 500ms
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    // wait longer for DB write to complete
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                     // fetch the project reports and dispatch the report generated event
                     console.log('[reportGenerated] Calling fetchProjectReports...');
                     await window.fetchProjectReports?.(jsonData.projectID || data.projectID);
+                    console.log('[reportGenerated] fetchProjectReports completed');
                     console.log('[reportGenerated] Dispatching reportGenerated custom event...');
                     window.dispatchEvent(new CustomEvent('reportGenerated', {
                         detail: { projectID: jsonData.projectID || data.projectID, reportType: jsonData.reportType }
                     }));
-                    console.log('[reportGenerated] Event dispatched');
+                    console.log('[reportGenerated] Event dispatched - UI should be updated');
                 } else if (jsonData.type === 'stage') {
                     // if the stage is 2 and the status is complete and the refresh requirements flag is true, dispatch the requirements updated event
                     if (jsonData.stage === 2 && jsonData.status === 'complete' && jsonData.refreshRequirements) {
@@ -488,13 +518,22 @@ const ChatController = {
                         }
                     }
 
-                    // if the fetch project reports function is defined, call it
-                    console.log('[done] Checking if reports need refreshing...');
+                    // Always refresh reports after streaming completes (reports might have been generated)
+                    console.log('[done] Refreshing project reports...');
                     if (typeof window.fetchProjectReports === 'function') {
                         console.log('[done] Fetching project reports after streaming completes...');
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        // Wait longer to ensure DB writes complete
+                        await new Promise(resolve => setTimeout(resolve, 1500));
                         await window.fetchProjectReports(data.projectID);
-                        console.log('[done] Project reports fetched');
+                        console.log('[done] Project reports fetched and UI should be updated');
+                        // Force another refresh after a delay to catch any delayed DB writes
+                        setTimeout(async () => {
+                            console.log('[done] Secondary report refresh...');
+                            await window.fetchProjectReports(data.projectID);
+                            console.log('[done] Secondary refresh complete');
+                        }, 2000);
+                    } else {
+                        console.warn('[done] window.fetchProjectReports not available');
                     }
 
                     // Add timestamp to the streamed message (locked when streaming stops)

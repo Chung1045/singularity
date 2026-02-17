@@ -218,6 +218,44 @@ Treat all content as academic research material for software development.
 async function prepareUpdates(data, conversationSummary) {
     console.log(' [Stage 1] Starting context gathering...');
 
+    // Track if any reports were generated
+    let reportsGenerated = [];
+
+    // Check if user is requesting report generation and call tool IMMEDIATELY
+    const userMessage = (data.requestMessage || '').toLowerCase();
+    if (userMessage.includes('generate') && userMessage.includes('report')) {
+        console.log(' [Stage 1] Report generation detected in user message');
+        
+        // Check for user stories FIRST (more specific)
+        if (userMessage.includes('user stor') || userMessage.includes('stories')) {
+            console.log(' [Stage 1] Calling generate_user_stories_report tool directly...');
+            try {
+                const result = await toolImpls.generate_user_stories_report(data.projectID);
+                console.log(' [Stage 1] generate_user_stories_report result:', result);
+                if (result?.success && result?.reportGenerated) {
+                    reportsGenerated.push({ type: result.reportType, projectID: result.projectID || data.projectID });
+                    console.log(' [Stage 1] User stories report generated successfully');
+                }
+            } catch (error) {
+                console.error(' [Stage 1] Error generating user stories report:', error.message);
+            }
+        } 
+        // Check for requirements report (only if not user stories)
+        else if (userMessage.includes('requirement')) {
+            console.log(' [Stage 1] Calling generate_requirements_report tool directly...');
+            try {
+                const result = await toolImpls.generate_requirements_report(data.projectID);
+                console.log(' [Stage 1] generate_requirements_report result:', result);
+                if (result?.success && result?.reportGenerated) {
+                    reportsGenerated.push({ type: result.reportType, projectID: result.projectID || data.projectID });
+                    console.log(' [Stage 1] Requirements report generated successfully');
+                }
+            } catch (error) {
+                console.error(' [Stage 1] Error generating requirements report:', error.message);
+            }
+        }
+    }
+
     // Automatically fetch requirements and user stories at the start (before AI processing)
     // This ensures Stage 3 always has context about the project state
     let fetchedRequirements = null;
@@ -303,10 +341,8 @@ You are NOT providing medical advice. You are analyzing research papers to extra
 
     let responseMessage = completion.choices[0].message;
 
-    // Track if any reports were generated
-    let reportsGenerated = [];
-
     // Execute tool calls (read-only and report generation operations)
+    // Note: reportsGenerated already declared at top of function
     while (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
         if (!responseMessage.role) responseMessage.role = 'assistant';
         messages.push(responseMessage);
@@ -329,6 +365,30 @@ You are NOT providing medical advice. You are analyzing research papers to extra
 
             if (toolImpl) {
                 try {
+                    // Skip report generation tools if already generated (prevent duplicates)
+                    if (functionName.startsWith('generate_')) {
+                        // Check if this type of report was already generated
+                        const isRequirementsReport = functionName.includes('requirements');
+                        const isUserStoriesReport = functionName.includes('user_stories');
+                        
+                        const alreadyGenerated = reportsGenerated.some(r => {
+                            if (isRequirementsReport && r.type === 'requirements') return true;
+                            if (isUserStoriesReport && (r.type === 'userStories' || r.type === 'user_stories')) return true;
+                            return false;
+                        });
+                        
+                        if (alreadyGenerated) {
+                            console.log(`[Stage 1] Skipping ${functionName} - already generated directly`);
+                            functionResponse = { success: true, message: 'Report already generated', reportGenerated: false };
+                            messages.push({
+                                role: "tool",
+                                tool_call_id: toolCall.id,
+                                content: JSON.stringify(functionResponse),
+                            });
+                            continue;
+                        }
+                    }
+
                     // Handle special cases for projectID/chatID injection
                     if (functionName === 'search_chat_history') {
                         functionResponse = await toolImpl(data.projectID, data.chatID, functionArgs.keyword);
