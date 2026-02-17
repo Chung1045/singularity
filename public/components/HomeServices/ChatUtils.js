@@ -36,31 +36,33 @@ const ChatUtils = {
     },
 
     /**
-     * Show loading indicator (avatar + "Loading..." + spinner)
+     * Show loading indicator (avatar + "Loading..." + 3x3 grid spinner)
      */
     showLoadingIndicator() {
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
 
-        // Add spinner animation style if not present
-        if (!document.getElementById('spinner-style')) {
-            const style = document.createElement('style');
-            style.id = 'spinner-style';
-            style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
-            document.head.appendChild(style);
-        }
-
         const loadingDiv = document.createElement('div');
         loadingDiv.id = 'ai-loading-indicator';
         loadingDiv.className = 'message ai-message';
-        // Avatar + "Loading..." text + spinner
+        // Avatar + "Loading..." text + 3x3 grid spinner with staggered animation
         loadingDiv.innerHTML = `
             <div class="message-avatar">
                 <img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
             </div>
             <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0;">
                 <div class="loader"></div>
-                <div style="width: 14px; height: 14px; border: 2px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                <div class="grid-spinner">
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                    <div class="grid-spinner-cell"></div>
+                </div>
             </div>
         `;
         messagesContainer.appendChild(loadingDiv);

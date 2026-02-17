@@ -345,6 +345,86 @@
     }
 }
 
+/* 3x3 Grid Spinner that morphs to diagonal dots */
+.grid-spinner {
+    display: grid;
+    grid-template-columns: repeat(3, 4px);
+    grid-template-rows: repeat(3, 4px);
+    gap: 2px;
+    width: 16px;
+    height: 16px;
+}
+
+.grid-spinner-cell {
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 2px;
+    background-color: #1a1a1a;
+}
+
+/* Grid frame cells (outer 8) - appear first, then fade out */
+.grid-spinner-cell:nth-child(1),
+.grid-spinner-cell:nth-child(2),
+.grid-spinner-cell:nth-child(4),
+.grid-spinner-cell:nth-child(6),
+.grid-spinner-cell:nth-child(8),
+.grid-spinner-cell:nth-child(9) {
+    animation: gridFrameOnly 2.8s ease-in-out infinite;
+}
+
+/* Staggered delays for grid cascade (clockwise) */
+.grid-spinner-cell:nth-child(1) { animation-delay: 0s; }      /* Top-left */
+.grid-spinner-cell:nth-child(2) { animation-delay: 0.08s; }   /* Top-center */
+.grid-spinner-cell:nth-child(6) { animation-delay: 0.24s; }   /* Right-middle */
+.grid-spinner-cell:nth-child(9) { animation-delay: 0.32s; }   /* Bottom-right */
+.grid-spinner-cell:nth-child(8) { animation-delay: 0.4s; }    /* Bottom-center */
+.grid-spinner-cell:nth-child(4) { animation-delay: 0.48s; }   /* Left-middle */
+
+/* Diagonal cells (/// pattern) - show in second phase, including center */
+.grid-spinner-cell:nth-child(7),  /* Bottom-left */
+.grid-spinner-cell:nth-child(5),  /* Center */
+.grid-spinner-cell:nth-child(3) { /* Top-right */
+    animation: diagonalSlash 2.8s ease-in-out infinite;
+}
+
+/* Cascade delays for diagonal (bottom-left → center → top-right) */
+.grid-spinner-cell:nth-child(7) { animation-delay: 0s; }      /* Bottom-left first */
+.grid-spinner-cell:nth-child(5) { animation-delay: 0.06s; }   /* Center second */
+.grid-spinner-cell:nth-child(3) { animation-delay: 0.12s; }   /* Top-right last */
+
+/* Grid frame animation - cascade in, hold, fade out */
+@keyframes gridFrameOnly {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    6%, 42% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    48%, 100% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+}
+
+/* Diagonal animation - appear AFTER grid fades, cascade ///, then loop */
+@keyframes diagonalSlash {
+    0%, 50% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    54%, 88% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    94%, 100% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+}
+
 /* Suggestion Chips - Positioned right above input field */
 .suggestion-chips {
     display: flex;
