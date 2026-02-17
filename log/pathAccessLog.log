@@ -1,0 +1,676 @@
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /home
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /login
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /stylesheets/z-index.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /stylesheets/login.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /scripts/tempLogin.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /scripts/zIndexHelper.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /img/Union.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:51] INFO: 
+IP: ::1
+GET /img/eye-closed.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:55] INFO: 
+IP: ::1
+GET /signup
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:55] INFO: 
+IP: ::1
+GET /stylesheets/z-index.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:55] INFO: 
+IP: ::1
+GET /stylesheets/signup.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:55] INFO: 
+IP: ::1
+GET /scripts/zIndexHelper.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:55] INFO: 
+IP: ::1
+GET /scripts/tempSignup.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:12:56] INFO: 
+IP: ::1
+GET /img/union.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:01] INFO: 
+IP: ::1
+POST /api/signup
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:03] INFO: 
+IP: ::1
+GET /home
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /scripts/zIndexHelper.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /scripts/projectUtils.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/sidebar.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/rightSidebar.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /stylesheets/requirementsPanel.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/NotificationPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/Sidebar.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /stylesheets/z-index.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /stylesheets/home.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /stylesheets/chat.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/sidebarInnerSearchResults.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/SearchPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/RightSidebar.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/requirementsPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/fileUploadNotificationModal.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/fileUploadComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeComponents/ChatMessage.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeComponents/homeModals.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeComponents/ChatHistoryItem.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeComponents/QuickPrompts.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeComponents/TutorialModal.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HelpMenu.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatUtils.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatService.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeServices/EditMode.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeServices/ReportService.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeServices/FileChipsManager.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatController.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/addInviteComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /components/projectShareComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /scripts/tempHome.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /scripts/socketInit.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/union.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48%201.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/search-1.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/history-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/down-chevron-black-16112.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/documents-outline-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/RequirementsIcon.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/user.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/double-arrow-right-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/bouncy-logo-animation.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48%201.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/paperclip.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+GET /img/Send.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+POST /api/project/list
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+POST /api/notifications/list
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+POST /api/profile-pic/fetch
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:04] INFO: 
+IP: ::1
+POST /api/profile-pic/fetch
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:13:05] INFO: 
+IP: ::1
+GET /api/user/tutorial/status
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /home
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /scripts/zIndexHelper.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /scripts/projectUtils.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/sidebar.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/rightSidebar.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /stylesheets/requirementsPanel.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/NotificationPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /stylesheets/z-index.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /stylesheets/home.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /stylesheets/chat.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/Sidebar.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/sidebarInnerSearchResults.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/SearchPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/RightSidebar.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/requirementsPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/fileUploadNotificationModal.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/fileUploadComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeComponents/ChatMessage.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeComponents/homeModals.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeComponents/ChatHistoryItem.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeComponents/QuickPrompts.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeComponents/TutorialModal.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HelpMenu.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatUtils.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatService.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeServices/EditMode.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeServices/ReportService.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeServices/FileChipsManager.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatController.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/addInviteComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /components/projectShareComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /scripts/tempHome.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /scripts/socketInit.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/union.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48%201.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/search-1.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/history-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/down-chevron-black-16112.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/documents-outline-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/RequirementsIcon.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/user.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/double-arrow-right-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/bouncy-logo-animation.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48%201.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/paperclip.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+GET /img/Send.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+POST /api/project/list
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+POST /api/notifications/list
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+POST /api/profile-pic/fetch
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:27] INFO: 
+IP: ::1
+POST /api/profile-pic/fetch
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:15:28] INFO: 
+IP: ::1
+GET /api/user/tutorial/status
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /home
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /scripts/zIndexHelper.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /scripts/projectUtils.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/NotificationPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/sidebar.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/rightSidebar.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /stylesheets/requirementsPanel.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /stylesheets/z-index.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /stylesheets/home.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /stylesheets/chat.css
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/Sidebar.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/sidebarInnerSearchResults.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/SearchPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/RightSidebar.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/requirementsPanel.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/fileUploadNotificationModal.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/fileUploadComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeComponents/ChatMessage.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeComponents/homeModals.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeComponents/ChatHistoryItem.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeComponents/QuickPrompts.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeComponents/TutorialModal.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HelpMenu.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatUtils.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatService.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeServices/EditMode.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeServices/ReportService.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeServices/FileChipsManager.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/HomeServices/ChatController.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/addInviteComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /components/projectShareComponent.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /scripts/tempHome.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /scripts/socketInit.js
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/union.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48%201.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/search-1.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/history-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/down-chevron-black-16112.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/documents-outline-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/RequirementsIcon.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/user.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/double-arrow-right-svgrepo-com.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/bouncy-logo-animation.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48%201.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/paperclip.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+GET /img/Send.svg
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+POST /api/project/list
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+POST /api/notifications/list
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+POST /api/profile-pic/fetch
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:28] INFO: 
+IP: ::1
+POST /api/profile-pic/fetch
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+[PATH][2026-02-17 18:20:29] INFO: 
+IP: ::1
+GET /api/user/tutorial/status
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36

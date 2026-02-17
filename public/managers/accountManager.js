@@ -860,4 +860,110 @@ function inferProviderName(transports, userAgent) {
     }
 }
 
+// ===== TUTORIAL ENDPOINTS =====
+
+/**
+ * Get tutorial status for the current user
+ */
+router.get('/api/user/tutorial/status', apiAuthUser, async (req, res) => {
+    try {
+        const tutorialDBService = require('../services/tutorialDBService');
+        const uid = req.userID;
+
+        if (!uid) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // Ensure tutorial exists for this user
+        const tutorial = await tutorialDBService.ensureTutorialExists(uid);
+        const shouldShow = await tutorialDBService.shouldShowTutorial(uid);
+
+        return res.status(200).json({
+            success: true,
+            shouldShow,
+            tutorial
+        });
+    } catch (error) {
+        console.error('Error getting tutorial status:', error);
+        return res.status(500).json({ success: false, message: 'Error getting tutorial status' });
+    }
+});
+
+/**
+ * Mark tutorial as completed
+ */
+router.post('/api/user/tutorial/complete', apiAuthUser, async (req, res) => {
+    try {
+        const tutorialDBService = require('../services/tutorialDBService');
+        const uid = req.userID;
+
+        if (!uid) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const result = await tutorialDBService.completeTutorial(uid);
+        return res.status(200).json({
+            success: true,
+            message: 'Tutorial marked as completed',
+            result
+        });
+    } catch (error) {
+        console.error('Error completing tutorial:', error);
+        return res.status(500).json({ success: false, message: 'Error completing tutorial' });
+    }
+});
+
+/**
+ * Mark tutorial as skipped
+ */
+router.post('/api/user/tutorial/skip', apiAuthUser, async (req, res) => {
+    try {
+        const tutorialDBService = require('../services/tutorialDBService');
+        const uid = req.userID;
+
+        if (!uid) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const result = await tutorialDBService.skipTutorial(uid);
+        return res.status(200).json({
+            success: true,
+            message: 'Tutorial skipped',
+            result
+        });
+    } catch (error) {
+        console.error('Error skipping tutorial:', error);
+        return res.status(500).json({ success: false, message: 'Error skipping tutorial' });
+    }
+});
+
+/**
+ * Update last viewed step in tutorial
+ */
+router.post('/api/user/tutorial/step', apiAuthUser, async (req, res) => {
+    try {
+        const tutorialDBService = require('../services/tutorialDBService');
+        const uid = req.userID;
+        const { stepNum } = req.body;
+
+        if (!uid) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        if (stepNum === undefined || stepNum === null) {
+            return res.status(400).json({ success: false, message: 'Step number is required' });
+        }
+
+        const result = await tutorialDBService.updateLastViewedStep(uid, stepNum);
+        return res.status(200).json({
+            success: true,
+            message: 'Step updated',
+            result
+        });
+    } catch (error) {
+        console.error('Error updating tutorial step:', error);
+        return res.status(500).json({ success: false, message: 'Error updating tutorial step' });
+    }
+});
+
 module.exports = router;

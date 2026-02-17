@@ -49,6 +49,8 @@
     <script src="/components/HomeComponents/homeModals.js"></script>
     <script src="/components/HomeComponents/ChatHistoryItem.js"></script>
     <script src="/components/HomeComponents/QuickPrompts.js"></script>
+    <script src="/components/HomeComponents/TutorialModal.js"></script>
+    <script src="/components/HelpMenu.js"></script>
     <script src="/components/HomeServices/ChatUtils.js"></script>
     <script src="/components/HomeServices/ChatService.js"></script>
     <script src="/components/HomeServices/EditMode.js"></script>
@@ -83,12 +85,69 @@
     console.log("window.TempHome available?", typeof window.TempHome);
     console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
 
+    // Function to check and show tutorial on first login
+    async function checkAndShowTutorial() {
+        try {
+            const response = await fetch('/api/user/tutorial/status', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) {
+                console.warn('Could not check tutorial status');
+                return;
+            }
+
+            const data = await response.json();
+            
+            if (data.success && data.shouldShow) {
+                console.log('Showing welcome tutorial for first-time user');
+                
+                // Show tutorial modal in welcome mode
+                TutorialModal.show({
+                    mode: 'welcome',
+                    // On complete
+                    onComplete: async () => {
+                        try {
+                            await fetch('/api/user/tutorial/complete', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                            console.log('Tutorial completed');
+                        } catch (error) {
+                            console.error('Error marking tutorial as complete:', error);
+                        }
+                    },
+                    // On skip
+                    onSkip: async () => {
+                        try {
+                            await fetch('/api/user/tutorial/skip', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                            console.log('Tutorial skipped');
+                        } catch (error) {
+                            console.error('Error marking tutorial as skipped:', error);
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error checking tutorial status:', error);
+        }
+    }
+
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(React.createElement(window.TempHome, { userInfo, csrfToken }));
 
         // Sidebar component now handles project data initialization automatically
         console.log('TempHome component rendered. Sidebar will load project data.');
+        
+        // Check and show tutorial for first-time users after a short delay to let the page render
+        setTimeout(() => {
+            checkAndShowTutorial();
+        }, 1000);
     } catch (error) {
         console.error("Error rendering TempHome:", error);
         document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + error.message + '</div>';

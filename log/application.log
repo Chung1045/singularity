@@ -1,0 +1,19 @@
+[SERVER][2026-02-17 18:12:05] WARN: Starting HTTP Server, TRAFFIC IS NOT ENCRYPTED!!!
+[SERVER][2026-02-17 18:12:05] WARN: DO NOT USE THIS IN PRODUCTION!!
+[SERVER][2026-02-17 18:12:05] INFO: Server is starting...
+[SERVER][2026-02-17 18:12:05] WARN: SERVER STARTED IN DEVELOPMENT MODE - SECURITY FEATURES DISABLED!
+[SERVER][2026-02-17 18:12:05] WARN: User authentication and CSRF protection are NOT enforced.
+[SERVER][2026-02-17 18:12:20] INFO: Server startup resumed.
+[SERVER][2026-02-17 18:12:21] INFO: Database connection OK.
+[SERVER][2026-02-17 18:12:21] INFO: MinIO connection OK.
+[SERVER][2026-02-17 18:12:21] INFO: XAI API Key found.
+[SERVER][2026-02-17 18:12:21] INFO: Server running on http://localhost:9090
+[SERVER][2026-02-17 18:12:21] INFO: Server is now online
+[SERVER][2026-02-17 18:13:04] INFO: Socket connected: 8IU97L5kjp9Ty-skAAAB
+[SERVER][2026-02-17 18:13:04] INFO: User d95a2519-25e2-45de-874f-d03d4a8f791d registered with socket 8IU97L5kjp9Ty-skAAAB
+[SERVER][2026-02-17 18:15:27] INFO: User d95a2519-25e2-45de-874f-d03d4a8f791d disconnected
+[SERVER][2026-02-17 18:15:27] INFO: Socket connected: -blJLTuSxYoe2pyPAAAD
+[SERVER][2026-02-17 18:15:27] INFO: User d95a2519-25e2-45de-874f-d03d4a8f791d registered with socket -blJLTuSxYoe2pyPAAAD
+[SERVER][2026-02-17 18:20:28] INFO: User d95a2519-25e2-45de-874f-d03d4a8f791d disconnected
+[SERVER][2026-02-17 18:20:28] INFO: Socket connected: Qi0rHwSccDsFePGRAAAF
+[SERVER][2026-02-17 18:20:28] INFO: User d95a2519-25e2-45de-874f-d03d4a8f791d registered with socket Qi0rHwSccDsFePGRAAAF
