@@ -36,6 +36,23 @@ const EditMode = {
             input.focus();
         }
 
+        const inputBox = document.getElementById('input-field-form');
+        inputBox.style.transition = "border 0.5s";
+        inputBox.style.border = "3px solid #000000"
+
+        const suggestionChipsContainer = document.getElementById('suggestion-chips');
+
+        if (!suggestionChipsContainer.querySelector('.chip.cancel-edit')) {
+            const button = document.createElement('button');
+            button.className = 'chip cancel-edit';
+            button.style.background = '#1E293B';
+            button.style.color = '#FFFFFF';
+            button.textContent = 'Cancel Edit';
+            button.addEventListener('click', () => this.cancel());
+
+            suggestionChipsContainer.prepend(button);
+        }
+
         // Find attached file IDs from the message
         let attachedFileIDs = [];
         const messagesContainer = document.getElementById('chat-messages');
@@ -100,6 +117,14 @@ const EditMode = {
 
         // Clear selected files
         ChatUtils.clearSelectedFiles();
+
+        const inputBox = document.getElementById('input-field-form');
+        inputBox.style.transition = "border 0.5s";
+        inputBox.style.border = ""
+
+        const cancelBtn = document.querySelector('.chip.cancel-edit');
+        if (cancelBtn) cancelBtn.remove();
+
     },
 
     /**

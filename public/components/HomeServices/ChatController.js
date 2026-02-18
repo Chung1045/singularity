@@ -60,6 +60,7 @@ const ChatController = {
             return;
         }
 
+
         // get the selected source
         const selectedSource = ChatUtils.getSelectedSource();
         // get the chip file IDs
@@ -73,6 +74,14 @@ const ChatController = {
         ChatUtils.clearSelectedFiles();
         // remove the messages from the sequence
         EditMode.removeMessagesFromSeq(chatSeq);
+
+        const inputBox = document.getElementById('input-field-form');
+        inputBox.style.transition = "border 0.5s";
+        inputBox.style.border = ""
+
+        const cancelBtn = document.querySelector('.chip.cancel-edit');
+        if (cancelBtn) cancelBtn.remove();
+
         // add the user message
         // show the loading indicator
         addMessage('user', userMessage, conversationID, chatSeq, allAttachedDocuments);
