@@ -15,7 +15,7 @@ const FSS_REPORT_REQUIREMENTS_PDF = "requirements_pdf";
 
 const minioClient = new Minio.Client({
     endPoint: process.env.MINIO_END_POINT,
-    port: process.env.MINIO_PORT,
+    port: parseInt(process.env.MINIO_PORT, 10),
     useSSL: false,
     accessKey: process.env.MINIO_ACCESSKEY,
     secretKey: process.env.MINIO_SECRETKEY,
@@ -445,7 +445,7 @@ async function getFileStats(projectID, documentID) {
             lastModified: stats.lastModified,
             etag: stats.etag
         });
-        
+
         // Convert lastModified to ISO string if it's a Date object
         let lastModified = stats.lastModified;
         if (lastModified instanceof Date) {
@@ -456,7 +456,7 @@ async function getFileStats(projectID, documentID) {
             // Convert to ISO string
             lastModified = new Date(lastModified).toISOString();
         }
-        
+
         return {
             size: stats.size || 0,
             lastModified: lastModified
