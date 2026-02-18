@@ -19,8 +19,48 @@
         useEffect(() => {
             if (selectedProjectID && typeof window.fetchProjectReports === 'function') {
                 console.log('[RightSidebar] Project changed, refreshing reports for:', selectedProjectID);
-                window.fetchProjectReports(selectedProjectID);
+                // Wait a bit for React to render the container
+                setTimeout(() => {
+                    const container = document.getElementById("div-requirements-list-right");
+                    if (container) {
+                        console.log('[RightSidebar] Container found, fetching reports');
+                        window.fetchProjectReports(selectedProjectID);
+                    } else {
+                        console.warn('[RightSidebar] Container not found, retrying...');
+                        setTimeout(() => {
+                            window.fetchProjectReports(selectedProjectID);
+                        }, 300);
+                    }
+                }, 100);
             }
+        }, [selectedProjectID]);
+
+        // Listen for reportGenerated event to refresh reports list
+        useEffect(() => {
+            const handleReportGenerated = (event) => {
+                const projectID = event.detail?.projectID || selectedProjectID;
+                if (projectID && typeof window.fetchProjectReports === 'function') {
+                    console.log('[RightSidebar] Report generated event received, refreshing reports for:', projectID);
+                    // Add a delay to ensure database write completes and DOM is ready
+                    setTimeout(() => {
+                        const container = document.getElementById("div-requirements-list-right");
+                        if (container) {
+                            console.log('[RightSidebar] Container found, fetching reports after generation');
+                            window.fetchProjectReports(projectID);
+                        } else {
+                            console.warn('[RightSidebar] Container not found after report generation, retrying...');
+                            setTimeout(() => {
+                                window.fetchProjectReports(projectID);
+                            }, 500);
+                        }
+                    }, 500);
+                }
+            };
+
+            window.addEventListener('reportGenerated', handleReportGenerated);
+            return () => {
+                window.removeEventListener('reportGenerated', handleReportGenerated);
+            };
         }, [selectedProjectID]);
 
         const startResizing = useCallback((e) => {

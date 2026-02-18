@@ -210,6 +210,10 @@
 
                 if (response.ok) {
                     setNotifications(prev => prev.filter(n => n.notificationID !== notificationId));
+                    
+                    // Trigger refresh of notification badge in sidebar
+                    // This ensures the red dot updates based on remaining unread notifications
+                    window.dispatchEvent(new CustomEvent('refreshNotifications'));
                 }
             } catch (error) {
                 console.error('Error dismissing notification:', error);

@@ -560,6 +560,35 @@ router.post("/project/file/download", async (req, res) => {
     }
 });
 
+router.post("/project/file/stats", async (req, res) => {
+    console.log("New request /project/file/stats");
+
+    const { projectID, documentID } = req.body;
+
+    if (!req.cookies.session_id) {
+        console.log("Unauthorized attempt for file stats");
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    if (projectID == null || documentID == null) {
+        return res.status(400).json({ success: false, message: "Missing required field(s)" });
+    }
+
+    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+
+    if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
+
+    try {
+        const stats = await fss.getFileStats(projectID, documentID);
+        return res.status(200).json({ successful: true, size: stats.size, lastModified: stats.lastModified });
+    } catch (err) {
+        console.error("Get file stats failed:", err);
+        return res.status(500).json({ successful: false, message: "Failed to get file stats" });
+    }
+});
+
 router.post("/project/file/list", async(req, res) => {
     console.log("New request /project/file/list");
 

@@ -949,6 +949,23 @@
         const notificationCheckStartTimeRef = useRef(null);
         const NOTIFICATION_CHECK_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
 
+        // Search state
+        const [searchQuery, setSearchQuery] = useState('');
+        const [searchPanelOpen, setSearchPanelOpen] = useState(false);
+        const [selectedSearchItem, setSelectedSearchItem] = useState(null);
+        const [selectedSearchType, setSelectedSearchType] = useState(null);
+        const [fileMetadata, setFileMetadata] = useState({ size: null, date: null });
+        const isHomePage = window.location.pathname === '/' || window.location.pathname === '/home';
+
+        // Reset search state when sidebar collapses
+        useEffect(() => {
+            if (sidebarCollapsed) {
+                setSearchQuery('');
+                setSelectedSearchItem(null);
+                setSelectedSearchType(null);
+            }
+        }, [sidebarCollapsed]);
+
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
             return localStorage.getItem('selectedProjectID') || null;
@@ -1152,8 +1169,8 @@
                     
                     console.log(`[Sidebar] Fetched ${notifications.length} notifications total`);
                     
-                    // Check if there are any NEW notifications (unread AND created within last 5 minutes)
-                    const hasNewNotifications = notifications.some(n => {
+                    // Check if there are any unread notifications (regardless of age)
+                    const hasUnread = notifications.some(n => {
                         const isUnread = n.isRead === 0 || n.isRead === false;
                         const notificationAge = new Date() - new Date(n.createdAt);
                         const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes
@@ -1165,15 +1182,15 @@
                                 isUnread: isUnread,
                                 age: Math.round(notificationAge / 1000) + 's',
                                 isRecent: isRecent,
-                                willShowBadge: isUnread && isRecent
+                                willShowBadge: isUnread // Show badge for any unread notification
                             });
                         }
                         
-                        return isUnread && isRecent;
+                        return isUnread; // Show red dot for any unread notification, regardless of age
                     });
                     
-                    setHasUnreadNotifications(hasNewNotifications);
-                    console.log('[Sidebar] Notification badge status:', hasNewNotifications ? 'SHOW RED BADGE' : 'NO BADGE');
+                    setHasUnreadNotifications(hasUnread);
+                    console.log('[Sidebar] Notification badge status:', hasUnread ? 'SHOW RED BADGE' : 'NO BADGE');
                 }
             } catch (error) {
                 console.error('[Sidebar] Error checking unread notifications:', error);
@@ -1332,6 +1349,99 @@
             setShowCreateProjectModal(false);
             setNewProjectName('');
         };
+
+        // Search result handler
+        const handleSearchResultClick = (type, item) => {
+            console.log('Search result clicked:', type, item);
+            setSelectedSearchItem(item);
+            setSelectedSearchType(type);
+        };
+
+        // Handle back from detail view
+        const handleBackToSearchResults = () => {
+            setSelectedSearchItem(null);
+            setSelectedSearchType(null);
+            setFileMetadata({ size: null, date: null });
+        };
+
+        // Helper functions for file metadata
+        const formatFileSize = (bytes) => {
+            if (!bytes || bytes === 0) return 'Unknown';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        };
+
+        const formatDate = (dateString) => {
+            if (!dateString) return 'Unknown';
+            try {
+                const d = new Date(dateString);
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const year = d.getFullYear();
+                let hours = d.getHours();
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'pm' : 'am';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                return `${month}-${day}-${year} ${hours}:${minutes}${ampm}`;
+            } catch (e) {
+                console.error('[Sidebar] Error formatting date:', e, dateString);
+                return 'Unknown';
+            }
+        };
+
+        // Fetch file metadata when a file is selected
+        useEffect(() => {
+            const fetchFileMetadata = async () => {
+                if (selectedSearchType === 'file' && selectedSearchItem?.documentID) {
+                    try {
+                        const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
+                        if (!projectID) {
+                            console.warn('[Sidebar] No projectID available for file stats');
+                            setFileMetadata({ size: null, date: null });
+                            return;
+                        }
+
+                        console.log('[Sidebar] Fetching file stats for:', selectedSearchItem.documentID);
+
+                        // Fetch file stats from dedicated endpoint
+                        const response = await fetch('/api/project/file/stats', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ projectID, documentID: selectedSearchItem.documentID })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('[Sidebar] File stats response:', data);
+                            if (data.successful) {
+                                setFileMetadata({
+                                    size: data.size || null,
+                                    date: data.lastModified || null
+                                });
+                                console.log('[Sidebar] Set file metadata:', { size: data.size, date: data.lastModified });
+                            } else {
+                                console.warn('[Sidebar] Stats fetch unsuccessful:', data.message);
+                                setFileMetadata({ size: null, date: null });
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            console.error('[Sidebar] Stats fetch failed:', response.status, errorText);
+                            setFileMetadata({ size: null, date: null });
+                        }
+                    } catch (error) {
+                        console.error('[Sidebar] Error fetching file metadata:', error);
+                        setFileMetadata({ size: null, date: null });
+                    }
+                } else {
+                    setFileMetadata({ size: null, date: null });
+                }
+            };
+
+            fetchFileMetadata();
+        }, [selectedSearchItem, selectedSearchType]);
 
         // Fetch avatar URL
         useEffect(() => {
@@ -1603,6 +1713,8 @@
                         className: 'search-file-field',
                         role: 'search',
                         'aria-label': 'Search files',
+                        onSubmit: (e) => e.preventDefault(),
+                        onClick: sidebarCollapsed ? () => setSearchPanelOpen(true) : undefined,
                         style: {
                             marginBottom: '20px',
                             // --- Collapsed: let CSS handle positioning ---
@@ -1612,7 +1724,8 @@
                             }),
                             marginRight: '25px',
                             boxSizing: 'border-box',
-                            display: 'flex'
+                            display: 'flex',
+                            cursor: sidebarCollapsed ? 'pointer' : 'default'
                         }
                     },
                     React.createElement('img', {
@@ -1625,13 +1738,15 @@
                         id: 'sidebar-search-label',
                         htmlFor: 'sidebar-search-input',
                         className: 'visually-hidden'
-                    }, 'Search files'),
+                    }, 'Search files, requirements, stories...'),
                     React.createElement('input', {
                         type: 'search',
                         id: 'sidebar-search-input',
                         className: 'text-wrapper-4',
-                        placeholder: 'Search files',
+                        placeholder: 'Search files, requirements, stories...',
                         'aria-label': 'Search files',
+                        value: searchQuery,
+                        onChange: (e) => setSearchQuery(e.target.value),
                         style: {
                             // --- NEW: Input Stretches ---
                             width: '100%',
@@ -1642,10 +1757,493 @@
                     })
                 ),
 
+                // Search Results or Detail View Component (hidden when collapsed)
+                !sidebarCollapsed && selectedSearchItem ? React.createElement('div', {
+                    id: 'sidebar-search-detail-view',
+                    className: 'search-results-overlay',
+                    style: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '15px',
+                        padding: '15px 20px',
+                        overflowY: 'auto'
+                    }
+                },
+                    // Back button
+                    React.createElement('button', {
+                        id: 'sidebar-search-back-btn',
+                        onClick: handleBackToSearchResults,
+                        style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 12px',
+                            border: '1px solid #e4e4e4',
+                            borderRadius: '8px',
+                            backgroundColor: '#ffffff',
+                            cursor: 'pointer',
+                            fontFamily: 'Inter, Helvetica',
+                            fontSize: '13px',
+                            color: '#1c1d21',
+                            width: 'fit-content',
+                            transition: 'background-color 0.2s'
+                        },
+                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }
+                    },
+                        React.createElement('img', {
+                            src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                            alt: '',
+                            style: { width: '18px', height: '18px', flexShrink: 0 }
+                        }),
+                        'Back to results'
+                    ),
+                    
+                    // Detail content - macOS Quick Look style with sidebar theme
+                    selectedSearchType === 'file' ? React.createElement('div', {
+                        id: 'sidebar-search-file-preview',
+                        style: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1px solid #e4e4e4'
+                        }
+                    },
+                        // File header with icon and name
+                        React.createElement('div', {
+                            id: 'sidebar-search-file-header-section',
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '16px',
+                                padding: '20px',
+                                backgroundColor: '#f9f9f9',
+                                borderBottom: '1px solid #e4e4e4'
+                            }
+                        },
+                            React.createElement('div', {
+                                id: 'sidebar-search-file-icon',
+                                style: {
+                                    width: '60px',
+                                    height: '60px',
+                                    backgroundColor: '#ffffff',
+                                    borderRadius: '10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '20px',
+                                    fontWeight: '700',
+                                    color: '#333333',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                    border: '2px solid #e4e4e4',
+                                    flexShrink: 0
+                                }
+                            }, selectedSearchItem.documentExt.replace('.', '').toUpperCase()),
+                            // File name with marquee
+                            React.createElement('div', {
+                                id: 'sidebar-search-file-name',
+                                className: selectedSearchItem.name.length > 30 ? 'file-name-marquee-container' : '',
+                                style: {
+                                    fontFamily: 'Inter, Helvetica',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    color: '#1c1d21',
+                                    textAlign: 'left',
+                                    flex: '1',
+                                    overflow: 'hidden',
+                                    position: 'relative'
+                                }
+                            },
+                                React.createElement('div', {
+                                    className: selectedSearchItem.name.length > 30 ? 'file-name-marquee' : '',
+                                    style: {
+                                        wordBreak: selectedSearchItem.name.length <= 30 ? 'break-word' : 'normal'
+                                    }
+                                }, selectedSearchItem.name)
+                            )
+                        ),
+                        
+                        // File details section
+                        React.createElement('div', {
+                            id: 'sidebar-search-file-details',
+                            style: {
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px',
+                                overflowY: 'auto',
+                                flex: '1'
+                            }
+                        },
+                            
+                            // Divider
+                            // React.createElement('div', {
+                            //     style: {
+                            //         height: '1px',
+                            //         backgroundColor: '#e4e4e4'
+                            //     }
+                            // }),
+                            
+                            // Info rows
+                            React.createElement('div', {
+                                id: 'sidebar-search-file-info',
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '12px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    id: 'sidebar-search-file-info-type',
+                                    style: {
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }
+                                },
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#666',
+                                            fontWeight: '400'
+                                        } 
+                                    }, 'File Type'),
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#1c1d21', 
+                                            fontWeight: '500' 
+                                        } 
+                                    }, `${selectedSearchItem.documentExt.replace('.', '').toUpperCase()} Document`)
+                                ),
+                                React.createElement('div', {
+                                    id: 'sidebar-search-file-info-size',
+                                    style: {
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }
+                                },
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#666',
+                                            fontWeight: '400'
+                                        } 
+                                    }, 'File Size'),
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#1c1d21', 
+                                            fontWeight: '500' 
+                                        } 
+                                    }, fileMetadata.size ? formatFileSize(fileMetadata.size) : 'Unknown')
+                                ),
+                                React.createElement('div', {
+                                    id: 'sidebar-search-file-info-date',
+                                    style: {
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }
+                                },
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#666',
+                                            fontWeight: '400'
+                                        } 
+                                    }, 'Upload Date'),
+                                    React.createElement('span', { 
+                                        style: { 
+                                            fontFamily: 'Inter, Helvetica',
+                                            fontSize: '13px',
+                                            color: '#1c1d21', 
+                                            fontWeight: '500' 
+                                        } 
+                                    }, fileMetadata.date ? formatDate(fileMetadata.date) : 'Unknown')
+                                ),
+                                // Document ID row - commented out
+                                // React.createElement('div', {
+                                //     id: 'sidebar-search-file-info-id',
+                                //     style: {
+                                //         display: 'flex',
+                                //         justifyContent: 'space-between',
+                                //         alignItems: 'center'
+                                //     }
+                                // },
+                                //     React.createElement('span', { 
+                                //         style: { 
+                                //             fontFamily: 'Inter, Helvetica',
+                                //             fontSize: '13px',
+                                //             color: '#666',
+                                //             fontWeight: '400'
+                                //         } 
+                                //     }, 'Document ID'),
+                                //     React.createElement('span', { 
+                                //         style: { 
+                                //             fontFamily: 'monospace',
+                                //             fontSize: '11px',
+                                //             color: '#1c1d21', 
+                                //             fontWeight: '500'
+                                //         } 
+                                //     }, selectedSearchItem.documentID.substring(0, 8) + '...')
+                                // )
+                            ),
+                            
+                            // Divider
+                            React.createElement('div', {
+                                style: {
+                                    height: '1px',
+                                    backgroundColor: '#e4e4e4'
+                                }
+                            }),
+                            
+                            // Action button
+                            React.createElement('button', {
+                                id: 'sidebar-search-file-download-btn',
+                                onClick: () => {
+                                    // Trigger download
+                                    if (window.downloadFile) {
+                                        window.downloadFile(selectedSearchItem.documentID, selectedSearchItem.name);
+                                    }
+                                },
+                                style: {
+                                    width: '100%',
+                                    padding: '12px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'rgb(30, 41, 59)',
+                                    color: '#ffffff',
+                                    fontFamily: 'Inter, Helvetica',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    // transition: 'all 0.2s',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                },
+                                onMouseEnter: (e) => {
+                                    e.target.style.backgroundColor = '#000000';
+                                    // e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                                },
+                                onMouseLeave: (e) => {
+                                    e.target.style.backgroundColor = 'rgb(30, 41, 59)';
+                                    // e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                                }
+                            }, 'Download')
+                        )
+                    ) : React.createElement('div', {
+                        id: 'sidebar-search-requirement-preview',
+                        style: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1px solid #e4e4e4',
+                            maxHeight: '100%'
+                        }
+                    },
+                        // Header with badge
+                        React.createElement('div', {
+                            id: 'sidebar-search-requirement-header',
+                            style: {
+                                // padding: '15px',
+                                padding: '20px',
+
+                                backgroundColor: '#f9f9f9',
+                                borderBottom: '1px solid #e4e4e4'
+                            }
+                        },
+                            React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    marginBottom: '12px'
+                                }
+                            },
+                                // Badge
+                                React.createElement('div', {
+                                    style: {
+                                        padding: '4px 10px',
+                                        backgroundColor: '#1c1d21',
+                                        color: '#ffffff',
+                                        borderRadius: '6px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '11px',
+                                        fontWeight: '700',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, selectedSearchType === 'requirement' 
+                                    ? `${(selectedSearchItem.details?.requirementType === 'functional' || selectedSearchItem.details?.requirementType === 'FR') ? 'FR' : 'NFR'}-${String(selectedSearchItem.details?.requirementSeq || 0).padStart(2, '0')}`
+                                    : `US-${String(selectedSearchItem.details?.storySeq || 0).padStart(2, '0')}`)
+                            ),
+                            // Title
+                            React.createElement('div', {
+                                id: 'sidebar-search-requirement-title',
+                                style: {
+                                    fontFamily: 'Inter, Helvetica',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    color: '#1c1d21',
+                                    lineHeight: '1.4'
+                                }
+                            }, selectedSearchItem.title)
+                        ),
+                        
+                        // Details section
+                        React.createElement('div', {
+                            id: 'sidebar-search-requirement-details',
+                            style: {
+                                padding: '20px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '16px',
+                                overflowY: 'auto',
+                                flex: '1'
+                            }
+                        },
+                            // Description
+                            selectedSearchItem.details?.description && React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        color: '#666',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, 'Description'),
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '13px',
+                                        color: '#1c1d21',
+                                        lineHeight: '1.6'
+                                    }
+                                }, selectedSearchItem.details.description)
+                            ),
+                            
+                            // Role (for both requirements and user stories)
+                            selectedSearchItem.details?.role && React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        color: '#666',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, 'Role'),
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '13px',
+                                        color: '#1c1d21',
+                                        lineHeight: '1.6'
+                                    }
+                                }, selectedSearchItem.details.role)
+                            ),
+                            
+                            // Source References
+                            selectedSearchItem.details?.sourceReference && selectedSearchItem.details.sourceReference.length > 0 && React.createElement('div', {
+                                style: {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                }
+                            },
+                                React.createElement('div', {
+                                    style: {
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        color: '#666',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }
+                                }, 'Source References'),
+                                React.createElement('div', {
+                                    style: {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '6px'
+                                    }
+                                },
+                                    selectedSearchItem.details.sourceReference.map((ref, idx) => 
+                                        React.createElement('div', {
+                                            key: idx,
+                                            style: {
+                                                padding: '10px 12px',
+                                                backgroundColor: '#f5f5f5',
+                                                borderRadius: '6px',
+                                                fontFamily: 'Inter, Helvetica',
+                                                fontSize: '12px',
+                                                color: '#1c1d21',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '4px'
+                                            }
+                                        }, 
+                                            typeof ref === 'string' ? ref : React.createElement(React.Fragment, null,
+                                                ref.documentName && React.createElement('div', {
+                                                    style: { fontWeight: '600', color: '#1c1d21' }
+                                                }, ref.documentName),
+                                                ref.location && React.createElement('div', {
+                                                    style: { fontSize: '11px', color: '#666' }
+                                                }, `Location: ${ref.location}`)
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ) : !sidebarCollapsed && React.createElement(window.sidebarInnerSearchResults, {
+                    searchQuery: searchQuery,
+                    onResultClick: handleSearchResultClick,
+                    onClose: () => {
+                        setSearchQuery('');
+                        setSelectedSearchItem(null);
+                        setSelectedSearchType(null);
+                    },
+                    isHomePage: isHomePage,
+                    sidebarCollapsed: sidebarCollapsed
+                }),
+
                 // Scrollable wrapper
                 React.createElement('div', {
                         id: 'sidebar-scrollable-wrapper',
-                        className: 'sidebar-scrollable-content'
+                        className: 'sidebar-scrollable-content',
+                        style: {
+                            visibility: searchQuery ? 'hidden' : 'visible'
+                        }
                     },
                     // History section
                     React.createElement('div', {
@@ -1683,7 +2281,7 @@
                                 React.createElement('img', {
                                     id: 'sidebar-history-icon',
                                     className: 'slash-circle',
-                                    src: './img/slash-circle-1.svg',
+                                    src: './img/history-svgrepo-com.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
@@ -1778,7 +2376,7 @@
                                 React.createElement('img', {
                                     id: 'sidebar-source-icon',
                                     className: 'slash-circle',
-                                    src: './img/slash-circle-1.svg',
+                                    src: './img/documents-outline-svgrepo-com.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
@@ -1910,7 +2508,7 @@
                                 React.createElement('img', {
                                     id: 'sidebar-requirements-icon',
                                     className: 'slash-circle',
-                                    src: './img/slash-circle-1.svg',
+                                    src: './img/RequirementsIcon.svg',
                                     alt: ''
                                 }),
                                 React.createElement('span', {
@@ -2118,49 +2716,62 @@
                         title: 'Notifications',
                         style: {
                             position: 'relative',
-                            width: '40px',
+                            width: '100%',
                             height: '40px',
-                            padding: '8px',
+                            padding: '8px 0px',
                             border: 'none',
                             borderRadius: '8px',
                             backgroundColor: 'transparent',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            justifyContent: 'flex-start',
+                            gap: '10px',
                             outline: 'none',
-                            transition: 'background-color 0.2s'
+                            marginLeft: '-5px',
+                            // transition: 'background-color 0.2s'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
-                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                        // onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        // onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                     },
-                        React.createElement('svg', {
-                            width: '20',
-                            height: '20',
-                            viewBox: '0 0 24 24',
-                            fill: 'none',
-                            stroke: '#333',
-                            strokeWidth: '2',
-                            strokeLinecap: 'round',
-                            strokeLinejoin: 'round'
-                        },
-                            React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
-                            React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
-                        ),
-                        // Red dot indicator for unread notifications
-                        hasUnreadNotifications && React.createElement('span', {
-                            id: 'sidebar-notification-unread-badge-collapsed',
+                        React.createElement('div', {
+                            id: 'sidebar-notification-icon-wrapper-collapsed',
                             style: {
-                                position: 'absolute',
-                                top: '6px',
-                                right: '8px',
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#e53935',
-                                borderRadius: '50%',
-                                border: '1px solid #fff'
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginLeft: '30px'
                             }
-                        })
+                        },
+                            React.createElement('svg', {
+                                id: 'sidebar-notification-icon-collapsed',
+                                width: '20',
+                                height: '20',
+                                viewBox: '0 0 24 24',
+                                fill: 'none',
+                                stroke: '#333',
+                                strokeWidth: '2',
+                                strokeLinecap: 'round',
+                                strokeLinejoin: 'round'
+                            },
+                                React.createElement('path', { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' }),
+                                React.createElement('path', { d: 'M13.73 21a2 2 0 0 1-3.46 0' })
+                            ),
+                            // Red dot indicator for unread notifications
+                            hasUnreadNotifications && React.createElement('span', {
+                                id: 'sidebar-notification-unread-badge-collapsed',
+                                style: {
+                                    position: 'absolute',
+                                    top: '-2px',
+                                    right: '-4px',
+                                    width: '8px',
+                                    height: '8px',
+                                    backgroundColor: '#e53935',
+                                    borderRadius: '50%',
+                                    border: '1px solid #fff'
+                                }
+                            })
+                        )
                     )
                 ),
 
@@ -2171,6 +2782,16 @@
                         setNotificationPanelOpen(false);
                     },
                     sidebarCollapsed: sidebarCollapsed
+                }),
+
+                // Search Panel (for collapsed sidebar)
+                window.SearchPanel && React.createElement(window.SearchPanel, {
+                    isOpen: searchPanelOpen,
+                    onClose: () => {
+                        setSearchPanelOpen(false);
+                    },
+                    sidebarCollapsed: sidebarCollapsed,
+                    isHomePage: isHomePage
                 }),
 
                 // Profile section
@@ -2225,7 +2846,7 @@
                                     border: '1px solid #e4e4e4',
                                     borderRadius: '10px',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                    zIndex: 3,
+                                    zIndex: 20,
                                     minWidth: 'calc(100% - 35px)',
                                     padding: '10px',
                                     display: 'flex',
@@ -2301,8 +2922,9 @@
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 transition: 'all 220ms ease',
-                                margin: '9.5px auto',
+                                // margin: '9.5px auto',
                                 // border: 'none',
+                                margin: '20px 0 9.5px 12px',
                                 outline: 'none'
                             }
                         },
