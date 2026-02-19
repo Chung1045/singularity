@@ -111,7 +111,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     type: 'confirm',
                     title: 'Error',
                     message: 'Unable to export chat',
-                    actionText: 'OK',
+                    actionText: 'OK'
                 });
             }
         }
