@@ -189,7 +189,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 style: {
                     position: 'relative',
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'center'
                     
                 }
             },
