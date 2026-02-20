@@ -211,7 +211,7 @@ const FileChip = ({ fileId }) => {
             color: '#666',
             fontFamily: "'Inter', Helvetica"
         }
-    }, `📎 ${fileName}`);
+    }, `${fileName}`);
 };
 
 // Export components

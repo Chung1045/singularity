@@ -844,6 +844,7 @@ async function exportChat(chatID, projectID){
 
 }
 
+// can it be removed or to make it be dynamic?
 exportChat("109565be-5e85-4977-ba6b-a22b6c5561b5", "e719a12c-6831-4feb-8e9d-23c3cdcd5837")
 
 module.exports = {

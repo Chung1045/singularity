@@ -111,7 +111,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     type: 'confirm',
                     title: 'Error',
                     message: 'Unable to export chat',
-                    actionText: 'OK',
+                    actionText: 'OK'
                 });
             }
         }
@@ -189,7 +189,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                 style: {
                     position: 'relative',
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'center'
                     
                 }
             },
