@@ -1,4 +1,4 @@
-require('dotenv').config(); // currently used in cursor AI
+require('dotenv').config();
 
 const express = require('express');
 const session = require('express-session');
@@ -125,6 +125,25 @@ async function serverSetUp() {
     app.use(passport.initialize());
     app.use(passport.session());
 
+    // CSRF protection setup (moved here from checkServerEnvironment)
+    if (process.env.ENABLE_USER_CHECKING === 'true') {
+        const csrfProtection = csrf({
+            cookie: {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+            }
+        });
+        app.use(csrfProtection);
+        serverLogger.warn(`The server is started in production mode with user checking enabled.`)
+    } else {
+        // Mock CSRF token for development
+        app.use((req, res, next) => {
+            req.csrfToken = () => 'disabled';
+            next();
+        });
+    }
+
     app.set('view engine', 'ejs');
     app.set('views', __dirname + '/public/views');
 
@@ -139,18 +158,7 @@ async function serverSetUp() {
 }
 
 async function checkServerEnvironment() {
-
-    if (process.env.ENABLE_USER_CHECKING === 'true') {
-        const csrfProtection = csrf({
-            cookie: {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-            }
-        });
-        app.use(csrfProtection);
-        serverLogger.warn(`The server is started in production mode with user checking enabled.`)
-    } else {
+    if (process.env.ENABLE_USER_CHECKING !== 'true') {
         const red = '\x1b[31m';
         const yellow = '\x1b[33m';
         const reset = '\x1b[0m';
@@ -177,12 +185,8 @@ async function checkServerEnvironment() {
 
         console.warn(`${yellow}Proceeding with server startup...${reset}\n`);
         serverLogger.info(`Server startup resumed.`);
-
-        app.use((req, res, next) => {
-            req.csrfToken = () => 'disabled';
-            next();
-        });
     }
+
     // Add cache control for static files in development
     if (process.env.NODE_ENV !== 'production') {
         app.use((req, res, next) => {
