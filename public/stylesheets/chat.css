@@ -455,7 +455,6 @@
     transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    margin-left: 45px;
 }
 
 .chip:hover {
@@ -670,6 +669,8 @@
     flex-direction: column;
     padding: 12px 0 0 0;
     margin-top: 10px;
+    width: calc(100% - 52px); /* Account for avatar width (40px) + gap (12px) */
+    max-width: 600px; /* Match the message bubble width */
 
     /* See if you want to delete these */
     opacity: 0;
@@ -747,16 +748,16 @@
         padding: 10px 0 0 0;
         margin-top: 10px;
     }
-    
+
     .suggestion-chips-label {
         font-size: 12px;
         margin-bottom: 6px;
     }
-    
+
     .suggestion-chips-wrapper {
         gap: 4px;
     }
-    
+
     .suggestion-chip {
         font-size: 12px;
         padding: 8px 10px;
@@ -815,7 +816,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    
+
 }
 
 .quick-prompt-category-title {
@@ -863,20 +864,20 @@
         padding: 16px 0;
         width: 90%;
     }
-    
+
     .quick-prompts-title {
         font-size: 16px;
     }
-    
+
     .quick-prompts-grid {
         grid-template-columns: 1fr;
         gap: 12px;
     }
-    
+
     .quick-prompt-category-title {
         font-size: 12px;
     }
-    
+
     .quick-prompt-item {
         font-size: 13px;
         padding: 8px 4px;
@@ -888,11 +889,11 @@
         padding: 12px 0;
         width: 90%;
     }
-    
+
     .quick-prompts-title {
         font-size: 15px;
     }
-    
+
     .quick-prompt-item {
         font-size: 12px;
         padding: 6px 4px;

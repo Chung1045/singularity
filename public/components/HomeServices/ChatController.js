@@ -1139,14 +1139,14 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         editBtn.onclick = () => conversationID && chatSeq ? EditMode.start(text, conversationID, chatSeq) : alert('Please wait for the message to finish sending.');
         avatarWrapper.appendChild(editBtn);
 
+        // TODO: Update
         // build the cancel button
-        const cancelBtn = document.createElement('button');
-        cancelBtn.id = `message-cancel-btn-${messageTimestamp}`;
-        cancelBtn.className = 'message-cancel-btn';
-        cancelBtn.innerHTML = 'Cancel';
-        cancelBtn.style.cssText = 'background: transparent; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #e57373; display: none; margin-top: 8px;';
-        cancelBtn.onclick = () => EditMode.cancel();
-        avatarWrapper.appendChild(cancelBtn);
+        const editIndicator = document.createElement('button');
+        editIndicator.id = `message-cancel-btn-${messageTimestamp}`;
+        editIndicator.className = 'message-cancel-btn';
+        editIndicator.innerHTML = 'Editing';
+        editIndicator.style.cssText = 'background: transparent; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #e57373; display: none; margin-top: 8px;';
+        avatarWrapper.appendChild(editIndicator);
 
         // add the avatar wrapper and content wrapper to the message div
         messageDiv.appendChild(avatarWrapper);
