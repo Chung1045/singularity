@@ -599,6 +599,7 @@ CSS FOR MESSAGE / ANIMATION HERE
 
 #message .alert-text {
   flex: 1;
+  text-align: center;
 }
 
 #message.hidden {
