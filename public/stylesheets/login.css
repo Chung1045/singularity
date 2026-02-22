@@ -344,6 +344,158 @@ a {
   line-height: 16px;
 }
 
+/* =====================
+   MOBILE PORTRAIT VIEW
+   ===================== */
+@media (max-width: 500px) {
+  html, body {
+    align-items: center;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* Frame: full width, card centered both axes */
+  .frame {
+    min-width: unset;
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  /* Login card: 417px wide, flex column so panels stack */
+  .frame .login {
+    width: min(417px, 100%);
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    margin: 24px auto;
+  }
+
+  .frame .content-background {
+    display: none;
+  }
+
+  /* ── Right panel ──
+     Override all absolute positioning — make it a flex column
+     so logo + form flow naturally and auto-size the panel */
+  .frame .right-content {
+    position: relative;
+    top: auto;
+    left: 0;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 24px 16px;
+    gap: 20px;
+  }
+
+  /* Logo row: icon left, text right */
+  .frame .logo {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .frame .union {
+    position: relative;
+    top: auto;
+    left: auto;
+    order: -1;        /* pulls icon before logo-text in the row */
+    width: 20px;
+    height: 20px;
+  }
+
+  .frame .logo-text {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+  }
+
+  /* Content: override absolute positioning, auto height */
+  .frame .content {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;           /* override desktop's height: 120% */
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  /* Input field containers — stretch to container width */
+  .frame .div-3,
+  .frame .div-wrapper,
+  .frame .text-wrapper-3 {
+    width: 100%;
+  }
+
+  /* ── Left panel ──
+     Remove the grey panel; only group content remains visible */
+  .frame .left-content {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    background-color: transparent;
+    border-radius: 0;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  /* Group: single horizontal row — "Don't have an account?" | Sign Up */
+  .frame .group {
+    margin-top: 0;
+    height: auto;
+    width: 100%;
+    transform: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    /* border-top: 1px solid #e4e4e4; */
+  }
+
+  /* "Don't have an account?" — left side, fills remaining space */
+  .frame .if-you-already-have {
+    order: 1;
+    flex: 1;
+    width: auto;
+    height: auto;
+    transform: none;
+    justify-content: flex-start;
+    font-size: 12px;
+  }
+
+  /* Sign Up wrapper — right side, auto-width */
+  .frame .login-wrapper {
+    order: 2;
+    width: auto;
+    transform: none;
+  }
+
+  .frame .sign-in-wrapper {
+    /* width: auto; */
+    padding: 0 18px;
+    height: 32px;
+  }
+
+  /* Hide "Greetings!" — not needed on mobile */
+  .frame .welcome {
+    display: none;
+  }
+}
+
 /*
 *
 CSS FOR MESSAGE / ANIMATION HERE
