@@ -517,7 +517,7 @@ CSS FOR MESSAGE / ANIMATION HERE
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 320px;
+  min-width: 380px;
   max-width: 500px;
 }
 
