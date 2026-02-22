@@ -15,7 +15,11 @@
     <script src="/scripts/zIndexHelper.js"></script>
 </head>
 <body>
-<div id="message" class="hidden"><span id="messageText"></span><span id="close">x</span></div>
+<div id="message" class="hidden">
+  <span class="alert-icon" id="alert-icon"><img src="/img/Info.svg" alt="alert" /></span>
+  <span class="alert-text" id="messageText"></span>
+  <span id="close"><img src="/img/close.svg" alt="close" /></span>
+</div>
 <div id="root">Loading...</div>
 
 <!-- Load your component -->
@@ -39,7 +43,7 @@
 
 <script>
 $('#close').on('click', function() {
-  $('#message').toggleClass('hidden');
+  $('#message').addClass('hidden');
 });
 </script>
 </body>

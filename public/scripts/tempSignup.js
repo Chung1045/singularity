@@ -39,7 +39,7 @@ const TempSignup = ({ csrfToken }) => {
         const messageTextEl = document.getElementById('messageText');
 
         if (errorFields.length > 0 && !messageShown && messageEl && messageTextEl) {
-            messageTextEl.textContent = `⚠️ Warning: Please fill in your credentials`;
+            messageTextEl.textContent = `Warning: Please fill in your credentials`;
             messageEl.classList.remove('hidden');
             setMessageShown(true);
         }
@@ -194,7 +194,7 @@ const TempSignup = ({ csrfToken }) => {
                 const messageTextEl = document.getElementById('messageText');
 
                 if (messageEl && messageTextEl) {
-                    messageTextEl.textContent = `✓ ${result.message}, redirecting...`;
+                    messageTextEl.textContent = `${result.message}, redirecting...`;
                     messageEl.classList.remove('hidden');
 
                     // Redirect after 2 seconds

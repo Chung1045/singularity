@@ -167,40 +167,24 @@
 
 const { useState, useEffect } = React;
 
-const Message = ({ text, visible, onClose, showClose = true, emoji = '👋' }) => {
-    // Use useEffect to apply/remove the 'hidden' class for animations
-    useEffect(() => {
-        const messageElement = document.getElementById('message');
-        if (messageElement) {
-            if (visible) {
-                messageElement.classList.remove('hidden');
-            } else {
-                // The timeout allows the slide-down animation to complete
-                setTimeout(() => messageElement.classList.add('hidden'), 500);
-            }
-        }
-    }, [visible]);
-
-    // Render nothing if not visible
-    if (!visible) {
-        return null;
-    }
-
+const Message = ({ text, visible, onClose, showClose = true }) => {
     return React.createElement(
         'div',
         {
-            // MUST keep 'message' here for the useEffect logic to work
             id: 'message',
-            className: 'hidden'
+            className: visible ? '' : 'hidden'
         },
-        `${emoji} ${text}`,
+        React.createElement('span', { className: 'alert-icon' },
+            React.createElement('img', { src: '/img/Info.svg', alt: 'alert' })
+        ),
+        React.createElement('span', { className: 'alert-text' }, text),
         showClose ? React.createElement(
             'span',
             {
-                id: 'message-close-btn', // Added ID
+                id: 'message-close-btn',
                 onClick: onClose
             },
-            'x'
+            React.createElement('img', { src: '/img/close.svg', alt: 'close' })
         ) : null
     );
 };
