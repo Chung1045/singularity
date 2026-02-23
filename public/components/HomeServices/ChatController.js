@@ -77,7 +77,7 @@ const ChatController = {
         EditMode.removeMessagesFromSeq(chatSeq);
 
         const inputBox = document.getElementById('input-field-form');
-        inputBox.style.transition = "border 0.5s";
+        // inputBox.style.transition = "border 0.5s";
         inputBox.style.border = ""
 
         const cancelBtn = document.querySelector('.chip.cancel-edit');
@@ -1070,7 +1070,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         const timestamp = document.createElement('div');
         timestamp.id = `message-timestamp-user-${messageTimestamp}`;
         timestamp.className = 'message-timestamp';
-        timestamp.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px;';
+        timestamp.style.cssText = 'font-size: 12px; color: #999; padding-left: 12px; height:10px; line-height: 10px; vertical-align: 10em; ';
         // Use finalTimestamp
         const formattedTime = formatMessageTimestamp(finalTimestamp);
         console.log('[addMessage] USER timestamp formatted:', formattedTime, 'from:', finalTimestamp);
