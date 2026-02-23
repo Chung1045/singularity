@@ -334,6 +334,23 @@
     19px 19px  0 0px, 38px 19px  0 0px, 57px 19px  0 0px;
   transform: translateX(-38px);
   animation: l26 2s infinite linear;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loader::before {
+  content: "Working on it...";
+  font-family: Inter, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #777;
+  animation: l1 1s linear infinite alternate;
+}
+
+@keyframes l1 {
+  to {
+    opacity: 0;
+  }
 }
 @keyframes l26 {
   12.5% {box-shadow: 
