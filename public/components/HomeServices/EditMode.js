@@ -40,8 +40,8 @@ const EditMode = {
         }
 
         const inputBox = document.getElementById('input-field-form');
-        inputBox.style.transition = "border 0.5s";
-        inputBox.style.border = "3px solid #000000"
+        // inputBox.style.transition = "border 0.5s";
+        inputBox.style.border = "2px solid #000000"
 
         const suggestionChipsContainer = document.getElementById('suggestion-chips');
 
@@ -122,7 +122,7 @@ const EditMode = {
         ChatUtils.clearSelectedFiles();
 
         const inputBox = document.getElementById('input-field-form');
-        inputBox.style.transition = "border 0.5s";
+        // inputBox.style.transition = "border 0.5s";
         inputBox.style.border = ""
 
         const cancelBtn = document.querySelector('.chip.cancel-edit');
@@ -204,7 +204,7 @@ const EditMode = {
 
             const messageBubble = msg.querySelector('.message-bubble.user-bubble');
             if (messageBubble) {
-                messageBubble.style.transition = "border 0.5s";
+                // messageBubble.style.transition = "border 0.5s";
                 messageBubble.style.border = null
             }
         });
@@ -220,8 +220,8 @@ const EditMode = {
 
                 const messageBubble = msg.querySelector('.message-bubble.user-bubble');
                 if (messageBubble) {
-                    messageBubble.style.transition = "border 0.5s";
-                    messageBubble.style.border = "3px solid #000"
+                    // messageBubble.style.transition = "border 0.5s";
+                    messageBubble.style.border = "2px solid #000"
                 }
 
             }
@@ -246,7 +246,7 @@ const EditMode = {
         });
 
         document.querySelectorAll('.message-bubble.user-bubble').forEach(bubble => {
-            bubble.style.transition = "border 0.5s";
+            // bubble.style.transition = "border 0.5s";
             bubble.style.border = null
         });
 
