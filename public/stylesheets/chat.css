@@ -324,7 +324,7 @@
     }
 }
 
-/* Loading indicator ("Working on it..." text) */
+/* Loading indicator */
 /* "Loading..." fading text */
 .loader-text {
     font-weight: bold;
@@ -336,10 +336,12 @@
 .loader-text:before {
     content: "Loading...";
 }
-@keyframes l1 {
-    to { opacity: 0; }
-}
 
+@keyframes l1 {
+    to {
+        opacity: 0;
+    }
+}
 
 /* Suggestion Chips - Positioned right above input field */
 .suggestion-chips {

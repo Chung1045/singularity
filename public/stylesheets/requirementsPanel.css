@@ -187,10 +187,10 @@ button {
 }
 
 /* Focus states for accessibility */
-button:focus-visible {
+/* button:focus-visible {
     outline: 2px solid #1c1d21;
     outline-offset: 2px;
-}
+} */
 
 /* Focus visible for close button */
 #requirements-panel-container button[aria-label="Close panel"]:focus-visible {

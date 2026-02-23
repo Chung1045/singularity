@@ -465,7 +465,7 @@ const TempLogin = ({ csrfToken }) => {
                             React.createElement('div', { className: 'sign-in', id: 'text-signup-btn' }, 'Sign Up')
                         )
                     ),
-                    React.createElement('div', { className: 'if-you-already-have', id: 'text-no-account' }, "Didn't have an account?"),
+                    React.createElement('div', { className: 'if-you-already-have', id: 'text-no-account' }, "Don't have an account?"),
                     React.createElement('div', { className: 'welcome', id: 'text-greetings' }, 'Greetings!')
                 )
             )
