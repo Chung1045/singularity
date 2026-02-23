@@ -462,6 +462,273 @@ display: flex;
     height: 50px;
 }
 
+/* =====================
+   MOBILE PORTRAIT VIEW
+   ===================== */
+@media (max-width: 480px) {
+  html, body {
+    align-items: center;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* Frame: full viewport, center the card */
+  .frame {
+    min-width: unset;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Sign-up wrapper: 417px wide, centered, auto height */
+  .frame .sign-up {
+    width: min(417px, 100%);
+    height: auto;
+    margin: 24px auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* White card */
+  .frame .login {
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+  }
+
+  .frame .content-background {
+    display: none;
+  }
+
+  
+  /* ── Left panel (form) ──
+     Override absolute positioning, become a flex column */
+  .frame .left-content {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 24px 16px;
+    gap: 20px;
+  }
+
+
+
+  /* Logo row: icon left, text right */
+  .frame .logo {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .frame .union {
+    position: relative;
+    top: auto;
+    left: auto;
+    order: -1;
+    width: 20px;
+    height: 20px;
+  }
+
+  .frame .logo-text {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+  }
+
+  .frame .p {
+    position: relative;
+    width: fit-content;
+    font-family: "SF Pro-SemiboldItalic", Helvetica;
+    font-weight: 400;
+    font-style: italic;
+    color: #333438;
+    font-size: 14px;
+    letter-spacing: 0;
+    line-height: normal;
+    white-space: nowrap;
+    margin-top: 5px;
+  }
+
+
+  /* Form content area: override absolute, auto height */
+  .frame .content {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  /* Form row height: override fixed 448px */
+  .frame .div-2 {
+    height: auto;
+  }
+
+  /* Input field containers: full width */
+  .frame .div-3,
+  .frame .div-wrapper-2,
+  .frame .text-wrapper-5,
+  .frame .text-wrapper-8 {
+    width: 100%;
+  }
+
+  /* Input label font size */
+  .frame .text-wrapper-5,
+  .frame .text-wrapper-8 {
+    font-size: 14px;
+  }
+
+  .frame .text-wrapper-2 {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    height: 29px;
+    margin-top: -1.00px;
+    font-family: "SF Pro-Bold", Helvetica;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 14px;
+    text-align: center;
+    letter-spacing: 0;
+    line-height: 16px;
+}
+
+.frame .text-wrapper-10 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 362px;
+    margin-top: -1.00px;
+    margin-left: -1.00px;
+    margin-right: -1.00px;
+    font-family: "Urbanist-Bold", Helvetica;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 14px;
+    text-align: center;
+    letter-spacing: 0;
+    line-height: 16px;
+    position: relative;
+    height: 50px;
+}
+
+.frame .span {
+    font-family: "SF Pro-Regular", Helvetica;
+    font-weight: 400;
+    color: #333438;
+    font-size: 14px;
+    letter-spacing: 0;
+    line-height: 14px;
+}
+
+  /* Input text: 16px prevents iOS Safari auto-zoom */
+  .frame .div-wrapper-2 input {
+    font-size: 16px !important;
+  }
+
+  /* Terms text: override absolute */
+  .frame .by-continuing-you-wrapper {
+    height: auto;
+  }
+
+  .frame .by-continuing-you {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    font-size: 12px;
+  }
+
+  /* Sign Up button: full width */
+  .frame .login-2 {
+    width: 100%;
+  }
+
+  /* Form comes first visually even though right-content is first in DOM */
+  .frame .left-content {
+    order: 1;
+  }
+
+  /* ── Right panel ──
+     Strip grey background, become the bottom row */
+  .frame .right-content {
+    order: 2;
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    background-color: transparent !important;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  /* Group: single horizontal row — text | Sign In button */
+  .frame .group {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    /* border-top: 1px solid #e4e4e4; */
+  }
+
+  /* Hide "Welcome!" */
+  .frame .text-wrapper {
+    display: none;
+  }
+
+  /* "If you already have an account." — left side, fills space */
+  .frame .div {
+    order: 1;
+    flex: 1;
+    width: auto;
+    height: auto;
+    margin-left: 0;
+    text-align: left;
+    justify-content: flex-start;
+    font-size: 12px;
+  }
+
+  /* Sign In button wrapper — right side, compact */
+  .frame .div-wrapper {
+    order: 2;
+    margin-left: 0;
+    /*! width: auto; */
+    height: 32px;
+    padding: 0 18px;
+  }
+}
+
 /*
 *
 CSS FOR MESSAGE / ANIMATION HERE

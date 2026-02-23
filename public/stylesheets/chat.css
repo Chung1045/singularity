@@ -220,6 +220,7 @@
 /* Message Bubble */
 .message-bubble {
     max-width: 600px;
+    min-width: 0;           /* allows flex child to shrink below content size */
     width: fit-content;
     height: auto;
     padding: 12px 16px;
@@ -227,6 +228,7 @@
     font-size: 15px;
     line-height: 1.5;
     word-wrap: break-word;
+    overflow: hidden;       /* clips any child that still tries to overflow */
 }
 
 .user-message .message-bubble {
@@ -323,107 +325,21 @@
 }
 
 /* Loading indicator ("Working on it..." text) */
-.loader {
-    /* font-weight: bold; */
-    font-family: Inter, Helvetica, sans-serif;
+/* "Loading..." fading text */
+.loader-text {
+    font-weight: bold;
+    font-family: Inter, sans-serif;
     font-size: 14px;
-    color: #777;
-    justify-content: left;
-    display: flex;
-    height: 22.5px;
-    align-items: center;
+    color: #555;
     animation: l1 1s linear infinite alternate;
 }
-
-.loader:before {
+.loader-text:before {
     content: "Loading...";
 }
-
 @keyframes l1 {
-    to {
-        opacity: 0;
-    }
+    to { opacity: 0; }
 }
 
-/* 3x3 Grid Spinner that morphs to diagonal dots */
-.grid-spinner {
-    display: grid;
-    grid-template-columns: repeat(3, 4px);
-    grid-template-rows: repeat(3, 4px);
-    gap: 2px;
-    width: 16px;
-    height: 16px;
-}
-
-.grid-spinner-cell {
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 2px;
-    background-color: #1a1a1a;
-}
-
-/* Grid frame cells (outer 8) - appear first, then fade out */
-.grid-spinner-cell:nth-child(1),
-.grid-spinner-cell:nth-child(2),
-.grid-spinner-cell:nth-child(4),
-.grid-spinner-cell:nth-child(6),
-.grid-spinner-cell:nth-child(8),
-.grid-spinner-cell:nth-child(9) {
-    animation: gridFrameOnly 2.8s ease-in-out infinite;
-}
-
-/* Staggered delays for grid cascade (clockwise) */
-.grid-spinner-cell:nth-child(1) { animation-delay: 0s; }      /* Top-left */
-.grid-spinner-cell:nth-child(2) { animation-delay: 0.08s; }   /* Top-center */
-.grid-spinner-cell:nth-child(6) { animation-delay: 0.24s; }   /* Right-middle */
-.grid-spinner-cell:nth-child(9) { animation-delay: 0.32s; }   /* Bottom-right */
-.grid-spinner-cell:nth-child(8) { animation-delay: 0.4s; }    /* Bottom-center */
-.grid-spinner-cell:nth-child(4) { animation-delay: 0.48s; }   /* Left-middle */
-
-/* Diagonal cells (/// pattern) - show in second phase, including center */
-.grid-spinner-cell:nth-child(7),  /* Bottom-left */
-.grid-spinner-cell:nth-child(5),  /* Center */
-.grid-spinner-cell:nth-child(3) { /* Top-right */
-    animation: diagonalSlash 2.8s ease-in-out infinite;
-}
-
-/* Cascade delays for diagonal (bottom-left → center → top-right) */
-.grid-spinner-cell:nth-child(7) { animation-delay: 0s; }      /* Bottom-left first */
-.grid-spinner-cell:nth-child(5) { animation-delay: 0.06s; }   /* Center second */
-.grid-spinner-cell:nth-child(3) { animation-delay: 0.12s; }   /* Top-right last */
-
-/* Grid frame animation - cascade in, hold, fade out */
-@keyframes gridFrameOnly {
-    0% {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-    6%, 42% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    48%, 100% {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-}
-
-/* Diagonal animation - appear AFTER grid fades, cascade ///, then loop */
-@keyframes diagonalSlash {
-    0%, 50% {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-    54%, 88% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    94%, 100% {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-}
 
 /* Suggestion Chips - Positioned right above input field */
 .suggestion-chips {
@@ -496,9 +412,13 @@
     background: #f4f4f4;
     padding: 10px;
     border-radius: 5px;
-    overflow-x: auto;
+    max-width: 100%;
+    overflow-x: hidden;
+    white-space: pre-wrap;  /* wraps long lines instead of scrolling */
+    word-break: break-all;  /* breaks long tokens (URLs, identifiers) that have no spaces */
     margin-bottom: 0.5em;
     border: 1px solid #e0e0e0;
+    box-sizing: border-box;
 }
 
 .ai-message .message-bubble code {
@@ -514,6 +434,8 @@
     padding: 0;
     border-radius: 0;
     font-size: 0.9em;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 .ai-message .message-bubble h1,
