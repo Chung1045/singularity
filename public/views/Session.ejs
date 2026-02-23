@@ -43,14 +43,14 @@
 <body>
 <div id="root"></div>
 
-<script src="/scripts/tempSessions.js"></script>
+<script src="/scripts/Sessions.js"></script>
 
 <script>
     const csrfToken = "<%= csrfToken %>";
     const sessions = <%- JSON.stringify(sessions || []) %>;
     const loginAttempts = <%- JSON.stringify(loginAttempts || []) %>;
     const userInfo  = <%- JSON.stringify(userInfo || {}) %>;
-    
+
     // Make userInfo globally available for socket initialization
     window.userInfo = userInfo;
 
@@ -88,7 +88,7 @@
                 }
             };
             document.body.appendChild(modalContainer);
-            
+
             const modalRoot = ReactDOM.createRoot(modalContainer);
             // Store projectID for use in callback
             const currentProjectID = projectID;
@@ -115,7 +115,7 @@
             );
         }
     };
-    
+
     window.addEventListener('openFileUpload', handleOpenFileUpload);
 
     const root = ReactDOM.createRoot(document.getElementById('root'));

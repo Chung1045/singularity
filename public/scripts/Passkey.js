@@ -76,28 +76,21 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                 body: JSON.stringify({ attResp })
             });
 
-            const verificationJSON = await verificationResp.json();
-
             if (verificationResp.ok) {
-                // Old: alert("Passkey registered successfully!");
-                // Old: location.reload();
                 showAlert('Success', 'Passkey registered successfully!', () => {
                     location.reload();
                 });
             } else {
-                // Old: alert("Registration failed: " + (verificationJSON.error || "Unknown error"));
-                showAlert('Error', 'Registration failed: ' + (verificationJSON.error || "Unknown error"));
+                showAlert('Error', 'Passkey registration failed. Please try again or contact support if the issue persists.');
             }
         } catch (error) {
             console.error(error);
-            // Old: alert("Error: " + error.message);
-            showAlert('Error', 'Error: ' + error.message);
+            showAlert('Error', 'Passkey registration failed. Please try again or contact support if the issue persists.');
         }
     };
 
-    // Passkey deletion function moved inside component
+    // Passkey deletion function moved inside a component
     const deletePasskey = async (passkeyID, passkeyName) => {
-        // Old: if (confirm(`Are you sure you want to delete this passkey? (${passkeyName}`)) {
         showModal(
             'Delete Passkey',
             `Are you sure you want to delete this passkey? (${passkeyName})`,
@@ -115,18 +108,14 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                     });
 
                     if (resp.ok) {
-                        // Old: alert("Passkey deleted");
-                        // Old: location.reload();
                         showAlert('Success', 'Passkey deleted', () => {
                             location.reload();
                         });
                     } else {
-                        // Old: alert("Failed to delete passkey");
-                        showAlert('Error', 'Failed to delete passkey');
+                        showAlert('Error', 'Failed to delete passkey. Please try again or contact support if the issue persists.');
                     }
                 } catch (e) {
-                    // Old: alert("Error: " + e.message);
-                    showAlert('Error', 'Error: ' + e.message);
+                    showAlert('Error', 'Failed to delete passkey. Please try again or contact support if the issue persists.');
                 }
             }
         );
@@ -158,7 +147,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
         try {
             const response = await fetch('/api/logout', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'CSRF-Token': csrfToken,
                     'Content-Type': 'application/json'
                 },
@@ -202,28 +191,28 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
     // ADDED: Function to format ISO date to readable format (MM/DD/YYYY HH:MM am/pm)
     const formatDate = (isoDateString) => {
         if (!isoDateString) return 'Unknown date';
-        
+
         try {
             const date = new Date(isoDateString);
-            
+
             // Check if date is valid
             if (isNaN(date.getTime())) return 'Unknown date';
-            
+
             const month = date.getMonth() + 1; // 0-indexed, so add 1
             const day = date.getDate();
             const year = date.getFullYear();
-            
+
             let hours = date.getHours();
             const minutes = date.getMinutes();
             const ampm = hours >= 12 ? 'pm' : 'am';
-            
+
             // Convert to 12-hour format
             hours = hours % 12;
             hours = hours ? hours : 12; // 0 should be 12
-            
+
             // Pad minutes with zero if needed
             const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-            
+
             return `${month}/${day}/${year} ${hours}:${minutesStr} ${ampm}`;
         } catch (error) {
             console.error('Error formatting date:', error);
@@ -508,7 +497,7 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
                             ),
 
                             // Passkey list or empty state message
-                            passkeys.length === 0 
+                            passkeys.length === 0
                                 ? React.createElement('div', {
                                         id: 'DIV_NO_PASSKEYS_MESSAGE',
                                     style: {

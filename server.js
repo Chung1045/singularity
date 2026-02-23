@@ -125,13 +125,15 @@ async function serverSetUp() {
     app.use(passport.initialize());
     app.use(passport.session());
 
+    app.set('trust proxy', 1);
+
     // CSRF protection setup (moved here from checkServerEnvironment)
     if (process.env.ENABLE_USER_CHECKING === 'true') {
         const csrfProtection = csrf({
             cookie: {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
+                sameSite: 'lax'
             }
         });
         app.use(csrfProtection);

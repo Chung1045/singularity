@@ -164,6 +164,21 @@ const ChatService = {
     },
 
     /**
+     * Delete a conversation
+     * @param {string} projectID
+     * @param {string} chatID
+     * @param {string} conversationID
+     * @returns {Promise<Object>}
+     */
+    async deleteConversation(projectID, chatID, conversationID) {
+        const response = await fetch('/api/agent/conversation-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectID, chatID, conversationID })
+        })
+    },
+
+    /**
      * Delete a chat
      * @param {string} projectID
      * @param {string} chatID

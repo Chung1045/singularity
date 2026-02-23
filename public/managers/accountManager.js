@@ -43,7 +43,7 @@ const upload = multer({
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLEOAUTH_CALLBACK_URL,
+    callbackURL: getGoogleOAuthRedirectURL(),
     scope: ['profile', 'email'],
     passReqToCallback: true
 }, async (req, accessToken, refreshToken, profile, done) => {
@@ -382,8 +382,8 @@ router.post("/passkey/verify-register", apiAuthUser, async (req, res) => {
         const verification = await verifyRegistrationResponse({
             response: attResp,
             expectedChallenge,
-            expectedOrigin: 'http://localhost:9090', // match your frontend
-            expectedRPID: 'localhost',
+            expectedOrigin: getExpectedOrigin(), // match your frontend
+            expectedRPID: getExpectedRPID(),
         });
         console.log(`Credential: ${JSON.stringify(verification.registrationInfo.credential)}`)
 
@@ -456,8 +456,8 @@ router.post("/passkey/verify-authentication", apiAuthUser, async (req, res) => {
             let verification = await verifyAuthenticationResponse({
                 response: credential,
                 expectedChallenge: expectedChallenge,
-                expectedOrigin: "http://localhost:9090",
-                expectedRPID: "localhost",
+                expectedOrigin: getExpectedOrigin(),
+                expectedRPID: getExpectedRPID(),
                 credential: {
                     id: passkey.keyID,
                     publicKey: passkey.publicKey,
@@ -859,5 +859,50 @@ function inferProviderName(transports, userAgent) {
         return 'Passkey';
     }
 }
+
+function getServerOrigin() {
+    if (process.env.ENABLE_HTTPS === 'true') {
+        return `https://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
+    } else {
+        return `http://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
+    }
+}
+
+function getExpectedRPID() {
+    return process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost';
+}
+
+function getExpectedOrigin() {
+    if (process.env.EXPECTED_ORIGIN_DOMAIN === 'localhost' ||
+        process.env.EXPECTED_ORIGIN_DOMAIN === '127.0.0.1' ||
+        process.env.EXPECTED_ORIGIN_DOMAIN == null) {
+
+        if (process.env.PORT != null) {
+            return `${getServerOrigin()}:${process.env.PORT}`;
+        } else {
+            return `${getServerOrigin()}:9090`;
+        }
+    } else {
+        return `${getServerOrigin()}`;
+    }
+}
+
+function getGoogleOAuthRedirectURL() {
+
+    if (process.env.EXPECTED_ORIGIN_DOMAIN === 'localhost' ||
+        process.env.EXPECTED_ORIGIN_DOMAIN === '127.0.0.1' ||
+        process.env.EXPECTED_ORIGIN_DOMAIN == null) {
+
+        if (process.env.PORT != null) {
+            return `${getServerOrigin()}:${process.env.PORT}/auth/google/callback`;
+        } else {
+            return `${getServerOrigin()}:9090/auth/google/callback`;
+        }
+    } else {
+        return `${getServerOrigin()}/auth/google/callback`;
+    }
+}
+
+console.log(getExpectedRPID())
 
 module.exports = router;
