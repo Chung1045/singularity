@@ -15,11 +15,13 @@ body {
   justify-content: center;
     min-height: 100vh;
 }
-/* a blue color as a generic focus style */
+
+/* a blue color as a generic focus style
 button:focus-visible {
     outline: 2px solid #4a90e2 !important;
     outline: -webkit-focus-ring-color auto 5px !important;
-}
+} */
+
 a {
     text-decoration: none;
 }
@@ -45,13 +47,17 @@ a {
     height: 625px;
 }
 
+    /* flex: 1; */
 .frame .login {
     flex: 1;
-    width: 866px;
+    width: auto;
     position: relative;
     background-color: #ffffff;
     border-radius: 20px;
+    align-items: center;
 }
+    
+
 
 .frame .content-background {
     position: absolute;
@@ -462,6 +468,258 @@ display: flex;
     height: 50px;
 }
 
+/* =====================
+   MOBILE PORTRAIT VIEW
+   ===================== */
+@media (max-width: 500px) {
+  html, body {
+    align-items: center;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* Frame: full viewport, center the card */
+  .frame {
+    min-width: unset;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    /* align-items: center; */
+  }
+
+
+
+  /* Sign-up wrapper: centered, auto height */
+  .frame .sign-up {
+    width: min(445px, 100%);
+    height: auto;
+    margin: 24px auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* White card */
+  .frame .login {
+    flex: none;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+  }
+
+  .frame .content-background {
+    display: none;
+  }
+
+  /* Left panel (form) — stack on top, comes first visually */
+  .frame .left-content {
+    order: 1;
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 24px 16px;
+    gap: 20px;
+    background-color: #ffffff;
+    border-radius: 20px;
+  }
+
+  /* Logo row: icon left, text right */
+  .frame .logo {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .frame .union {
+    position: relative;
+    top: auto;
+    left: auto;
+    order: -1;
+    width: 20px;
+    height: 20px;
+  }
+
+  .frame .logo-text {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+  }
+
+  /* Slogan subtitle */
+  .frame .p {
+    position: relative;
+    width: fit-content;
+    font-size: 14px;
+    white-space: nowrap;
+    margin-top: 5px;
+  }
+
+  /* Form content area: override absolute, auto height */
+  .frame .content {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  /* Form inputs column: override fixed 448px height */
+  .frame .div-2 {
+    height: auto;
+    width: 100%;
+  }
+
+  /* Field wrappers: flow layout so label → input → message stack cleanly */
+  .frame .div-3 {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    min-height: unset;
+    padding-bottom: 0;
+    margin-right: 0;
+    margin-bottom: 4px;
+    gap: 4px;
+  }
+
+  /* Labels: pull out of absolute positioning */
+  .frame .text-wrapper-5,
+  .frame .text-wrapper-8 {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    font-size: 13px;
+  }
+
+  /* Input wrapper: pull out of absolute positioning, proper touch height */
+  .frame .div-wrapper-2 {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: 40px;
+  }
+
+  /* 16px prevents iOS Safari auto-zoom on focus */
+  .frame .div-wrapper-2 input {
+    font-size: 16px !important;
+  }
+
+  /* Validation messages: reset the desktop 50px offset */
+  .frame .div-3 > div[style*="margin-top: 50px"] {
+    margin-top: 2px !important;
+    margin-bottom: 0 !important;
+    font-size: 12px !important;
+  }
+
+  /* Terms text */
+  .frame .by-continuing-you-wrapper {
+    height: auto;
+  }
+
+  .frame .by-continuing-you {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    font-size: 12px;
+  }
+
+  /* Sign Up button: full width */
+  .frame .login-2 {
+    width: 100%;
+  }
+
+  /* Right panel (Sign In link) — horizontal row at bottom */
+  .frame .right-content {
+    order: 2;
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    gap: 12px;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  .frame .right-content.expanded {
+    height: auto;
+  }
+
+  /* Group: single horizontal row — text | Sign In button */
+  .frame .group {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    /* padding: 14px 24px; */
+  }
+
+  /* Hide "Welcome!" heading */
+  .frame .text-wrapper {
+    display: none;
+  }
+
+  /* "If you already have an account." — left side, fills space */
+  .frame .div {
+    order: 1;
+    flex: 1;
+    width: auto;
+    height: auto;
+    transform: none;
+    justify-content: flex-start;
+    font-size: 12px;
+    text-align: left;
+  }
+
+  /* Sign In button wrapper — right side, compact */
+  .frame .div-wrapper {
+    order: 2;
+    width: auto;
+    height: 32px;
+    padding: 0 18px;
+    transform: none;
+  }
+
+  .frame .text-wrapper-2 {
+    font-size: 12px;
+  }
+
+  .frame .text-wrapper-4 {
+    font-size: 18px;
+  }
+}
+
 /*
 *
 CSS FOR MESSAGE / ANIMATION HERE
@@ -485,6 +743,7 @@ CSS FOR MESSAGE / ANIMATION HERE
   gap: 10px;
   min-width: 320px;
   max-width: 500px;
+  z-index: 1;
 }
 
 #message .alert-icon {
@@ -525,5 +784,18 @@ CSS FOR MESSAGE / ANIMATION HERE
 
 #message #close:hover {
   opacity: 0.9;
+}
+
+@media (max-width: 500px) {
+  #message {
+    bottom: auto;
+    top: 0;
+    min-width: calc(100% - 32px);
+    transform: translate(-50%, 16px);
+  }
+
+  #message.hidden {
+    transform: translate(-50%, -150%);
+  }
 }
 

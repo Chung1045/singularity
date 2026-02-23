@@ -50,19 +50,8 @@ const ChatUtils = {
             <div class="message-avatar">
                 <img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
             </div>
-            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0;">
-                <div class="loader"></div>
-                <div class="grid-spinner">
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                    <div class="grid-spinner-cell"></div>
-                </div>
+            <div style="padding: 8px 4px;">
+                <div class="loader-text"></div>
             </div>
         `;
         messagesContainer.appendChild(loadingDiv);

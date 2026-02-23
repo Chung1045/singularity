@@ -575,6 +575,9 @@ const TempHome = ({ csrfToken, userInfo }) => {
                         React.createElement('button', { className: 'chip', onClick: handleAnalyzeDocuments }, 'Analyze Documents')
                     ),
 
+                    // Anchor for dynamic suggestion chips (injected above input)
+                    React.createElement('div', { id: 'suggestion-chips-anchor' }),
+
                     // Input field
                     React.createElement('form', {
                         id: 'input-field-form',

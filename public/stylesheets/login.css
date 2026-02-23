@@ -27,14 +27,13 @@ html, body {
   justify-content: center;
 
 }
-button:focus-visible {
+/* button:focus-visible {
   outline: 2px solid #4a90e2 !important;
-}
+} */
 a {
   text-decoration: none;
 }
 .frame {
-  /* background-image: url(./img/rectangle-22465.svg); */
   background-size: 100% 100%;
   width: 100%;
   min-width: 1440px;
@@ -67,7 +66,6 @@ a {
   left: 433px;
   width: 423px;
   height: 350px;
-  /* background-image: url(./img/right-content-background.svg); */
   background-size: 100% 100%;
 }
 .frame .logo {
@@ -599,6 +597,7 @@ CSS FOR MESSAGE / ANIMATION HERE
 
 #message .alert-text {
   flex: 1;
+  text-align: center;
 }
 
 #message.hidden {

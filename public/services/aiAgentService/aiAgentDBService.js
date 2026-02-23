@@ -721,6 +721,45 @@ async function getStoryTitle(storyID, projectID) {
     });
 }
 
+async function updateSuggestedAction(projectID, chatID, suggestions) {
+    const sql = `
+        INSERT INTO suggested_action (projectID, chatID, suggestionSeq, suggestionContent)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (projectID, chatID, suggestionSeq)
+            DO UPDATE SET suggestionContent = excluded.suggestionContent
+    `;
+
+    try {
+        console.log(`Suggestions to save to DB: ${suggestions}`)
+        for (let suggestion of suggestions) {
+            await dbRun(sql, [projectID, chatID, suggestion.seq, suggestion.content]);
+        }
+    } catch (err) {
+        console.error('updateSuggestedAction failed:', err.message);
+        throw err;
+    }
+}
+
+async function fetchSuggestedAction(projectID, chatID) {
+    const sql = `
+        SELECT suggestionSeq, suggestionContent
+        FROM suggested_action
+        WHERE projectID = ? AND chatID = ?
+        ORDER BY suggestionSeq
+    `;
+
+    try {
+        const rows = await dbAll(sql, [projectID, chatID]);
+        return rows.map(row => ({
+            seq: row.suggestionSeq,
+            content: row.suggestionContent
+        }));
+    } catch (err) {
+        console.error('fetchSuggestedAction failed:', err.message);
+        throw err;
+    }
+}
+
 async function searchChatHistory(projectID, chatID, keyword){
     const sql = `
         SELECT chatSeq, conversationMessage
@@ -865,6 +904,8 @@ module.exports = {
     saveConversationRequest,
     saveConversationRequestRef,
     saveConversationResponse,
+    fetchSuggestedAction,
+    updateSuggestedAction,
     searchChatHistory,
     updateRequirements,
     updateProjectUserStories,

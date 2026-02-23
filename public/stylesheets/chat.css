@@ -220,6 +220,7 @@
 /* Message Bubble */
 .message-bubble {
     max-width: 600px;
+    min-width: 0;           /* allows flex child to shrink below content size */
     width: fit-content;
     height: auto;
     padding: 12px 16px;
@@ -227,6 +228,7 @@
     font-size: 15px;
     line-height: 1.5;
     word-wrap: break-word;
+    overflow: hidden;       /* clips any child that still tries to overflow */
 }
 
 .user-message .message-bubble {
@@ -259,6 +261,30 @@
     font-family: 'Inter', Helvetica;
 }
 
+/* SVG icon action buttons on user messages */
+.message-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 3px;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.message-action-btn img {
+    display: block;
+    pointer-events: none;
+}
+
+.message-action-btn:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.06);
+}
+
 /* AI message timestamp alignment */
 .ai-message .message-timestamp {
     text-align: left;
@@ -280,11 +306,7 @@
     border: 1px solid #e0e0e0;
 }
 
-/* Message Edit Button - positioned under avatar */
-/* Show edit button only on hover of the message */
-.user-message:hover .message-edit-btn {
-    opacity: 1 !important;
-}
+/* Message Edit Button */
 
 /* Typing Indicator */
 .typing-bubble {
@@ -329,106 +351,22 @@
     }
 }
 
-/* Loading indicator ("Working on it..." text) */
-.loader {
-    /* font-weight: bold; */
-    font-family: Inter, Helvetica, sans-serif;
+/* Loading indicator */
+/* "Loading..." fading text */
+.loader-text {
+    font-weight: bold;
+    font-family: Inter, sans-serif;
     font-size: 14px;
-    color: #777;
-    justify-content: left;
-    display: flex;
-    height: 22.5px;
-    align-items: center;
+    color: #555;
     animation: l1 1s linear infinite alternate;
 }
-
-.loader:before {
+.loader-text:before {
     content: "Loading...";
 }
 
 @keyframes l1 {
     to {
         opacity: 0;
-    }
-}
-
-/* 3x3 Grid Spinner that morphs to diagonal dots */
-.grid-spinner {
-    display: grid;
-    grid-template-columns: repeat(3, 4px);
-    grid-template-rows: repeat(3, 4px);
-    gap: 2px;
-    width: 16px;
-    height: 16px;
-}
-
-.grid-spinner-cell {
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 2px;
-    background-color: #1a1a1a;
-}
-
-/* Grid frame cells (outer 8) - appear first, then fade out */
-.grid-spinner-cell:nth-child(1),
-.grid-spinner-cell:nth-child(2),
-.grid-spinner-cell:nth-child(4),
-.grid-spinner-cell:nth-child(6),
-.grid-spinner-cell:nth-child(8),
-.grid-spinner-cell:nth-child(9) {
-    animation: gridFrameOnly 2.8s ease-in-out infinite;
-}
-
-/* Staggered delays for grid cascade (clockwise) */
-.grid-spinner-cell:nth-child(1) { animation-delay: 0s; }      /* Top-left */
-.grid-spinner-cell:nth-child(2) { animation-delay: 0.08s; }   /* Top-center */
-.grid-spinner-cell:nth-child(6) { animation-delay: 0.24s; }   /* Right-middle */
-.grid-spinner-cell:nth-child(9) { animation-delay: 0.32s; }   /* Bottom-right */
-.grid-spinner-cell:nth-child(8) { animation-delay: 0.4s; }    /* Bottom-center */
-.grid-spinner-cell:nth-child(4) { animation-delay: 0.48s; }   /* Left-middle */
-
-/* Diagonal cells (/// pattern) - show in second phase, including center */
-.grid-spinner-cell:nth-child(7),  /* Bottom-left */
-.grid-spinner-cell:nth-child(5),  /* Center */
-.grid-spinner-cell:nth-child(3) { /* Top-right */
-    animation: diagonalSlash 2.8s ease-in-out infinite;
-}
-
-/* Cascade delays for diagonal (bottom-left → center → top-right) */
-.grid-spinner-cell:nth-child(7) { animation-delay: 0s; }      /* Bottom-left first */
-.grid-spinner-cell:nth-child(5) { animation-delay: 0.06s; }   /* Center second */
-.grid-spinner-cell:nth-child(3) { animation-delay: 0.12s; }   /* Top-right last */
-
-/* Grid frame animation - cascade in, hold, fade out */
-@keyframes gridFrameOnly {
-    0% {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-    6%, 42% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    48%, 100% {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-}
-
-/* Diagonal animation - appear AFTER grid fades, cascade ///, then loop */
-@keyframes diagonalSlash {
-    0%, 50% {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-    54%, 88% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    94%, 100% {
-        opacity: 0;
-        transform: scale(0.6);
     }
 }
 
@@ -444,7 +382,7 @@
     max-width: 800px; /* Match the input field width */
     /*margin: 0 auto; !* Center it *!*/
 
-    margin-left: 150px;
+    /* margin-left: 150px; */
     margin-bottom: -25px;
 
 }
@@ -505,8 +443,8 @@
     border-radius: 5px;
     max-width: 100%;
     overflow-x: hidden;
-    white-space: pre-wrap;  /* wraps long lines instead of scrolling /
-    word-break: break-all;  / breaks long tokens (URLs, identifiers) that have no spaces */
+    white-space: pre-wrap;  /* wraps long lines instead of scrolling */
+    word-break: break-all;  /* breaks long tokens (URLs, identifiers) that have no spaces */
     margin-bottom: 0.5em;
     border: 1px solid #e0e0e0;
     box-sizing: border-box;
@@ -517,6 +455,13 @@
     background: rgba(0, 0, 0, 0.05);
     padding: 2px 4px;
     border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.ai-message .message-bubble pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
     font-size: 0.9em;
     white-space: pre-wrap;
     word-break: break-all;
@@ -610,7 +555,7 @@
         width: 100%;
         max-width: 800px; /* Match the input field width */
         /*margin: 0 auto; !* Center it *!*/
-        margin-left: 50px;
+        /* margin-left: 50px; */
         margin-bottom: -25px;
 
     }
@@ -656,7 +601,7 @@
         width: 100%;
         max-width: 800px; /* Match the input field width */
         /*margin: 0 auto; !* Center it *!*/
-        margin-left: 50px;
+        margin-left: 150px;
         margin-bottom: -25px;
 
     }
@@ -669,18 +614,18 @@
     }
 }
 
-/* ===== Suggestion Chips (after AI messages) ===== */
+/* ===== Suggestion Chips anchor (sits just above the input field) ===== */
+#suggestion-chips-anchor {
+    width: 100%;
+}
+
 .suggestion-chips-container {
     display: flex;
     flex-direction: column;
-    padding: 12px 0 0 0;
-    margin-top: 10px;
-    width: calc(100% - 52px); /* Account for avatar width (40px) + gap (12px) */
-    max-width: 600px; /* Match the message bubble width */
-
-    /* See if you want to delete these */
+    padding: 10px 0 6px 0;
+    width: 100%;
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
@@ -751,8 +696,7 @@
 
 @media (max-width: 768px) {
     .suggestion-chips-container {
-        padding: 10px 0 0 0;
-        margin-top: 10px;
+        padding: 8px 0 4px 0;
     }
 
     .suggestion-chips-label {
