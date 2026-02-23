@@ -92,10 +92,10 @@ a {
     position: absolute;
     top: 230px;
     left: calc(50.00% - 80px);
-    width: 164px;
-    height: 119px;
+    width: auto;
+    height: auto;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     gap: 12px;
 }
@@ -527,3 +527,171 @@ CSS FOR MESSAGE / ANIMATION HERE
   opacity: 0.9;
 }
 
+/* Mobile Portrait View */
+@media (max-width: 500px) {
+    html, body {
+        align-items: center;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    /* Frame: full width, card centered both axes */
+    .frame {
+        min-width: unset;
+        min-height: 100vh;
+        width: 100%;
+    }
+
+    /* Sign-up card: 445px wide, flex column so panels stack */
+    .frame .sign-up {
+        width: min(445px, 100%);
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        border-radius: 20px;
+        margin: 24px auto;
+    }
+
+    .frame .login {
+        width: 100%;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        border-radius: 20px;
+    }
+
+    .frame .content-background {
+        display: none;
+    }
+
+    /* Left panel (form) — stack on top */
+    .frame .left-content {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: 100%;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 24px 16px;
+        gap: 20px;
+        background-color: #ffffff;
+        border-radius: 20px;
+    }
+
+    /* Logo */
+    .frame .logo {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: 100%;
+        height: auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .frame .union {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: 20px;
+        height: 20px;
+    }
+
+    .frame .logo-text {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: auto;
+        height: auto;
+    }
+
+    /* Content: form fields */
+    .frame .content {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: 100%;
+        height: auto;
+        padding: 0;
+        background-color: transparent;
+        border-radius: 0;
+    }
+
+    /* Input field containers — stretch to container width */
+    .frame .div-3,
+    .frame .div-wrapper-2,
+    .frame .text-wrapper-5,
+    .frame .text-wrapper-8 {
+        width: 100%;
+    }
+
+    .frame .div-2 {
+        height: auto !important;
+        width: 100%;
+    }
+
+    /* Terms & conditions text */
+    .frame .by-continuing-you,
+    .frame .by-continuing-you-wrapper {
+        width: 100%;
+        font-size: 12px;
+    }
+
+    /* Right panel (Sign In button & text) — horizontal row at bottom */
+    .frame .right-content {
+        position: relative;
+        top: auto;
+        left: 0;
+        width: 100%;
+        height: auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        gap: 12px;
+        background-color: transparent;
+        border-radius: 0;
+    }
+
+    /* Text: "If you already have an account" — left side, fills space */
+    .frame .div {
+        order: 1;
+        flex: 1;
+        width: auto;
+        height: auto;
+        transform: none;
+        justify-content: flex-start;
+        font-size: 12px;
+        text-align: left;
+    }
+
+    /* Sign In wrapper — right side, auto-width */
+    .frame .div-wrapper {
+        order: 2;
+        width: auto;
+        transform: none;
+    }
+
+    .frame .div-wrapper-2 {
+        height: 32px;
+        padding: 0 18px;
+    }
+
+    .frame .text-wrapper-2 {
+        font-size: 12px;
+    }
+
+    /* Adjust text sizes for mobile */
+    .frame .text-wrapper-4 {
+        font-size: 18px;
+    }
+
+    .frame .text-wrapper-5,
+    .frame .text-wrapper-8 {
+        font-size: 12px;
+    }
+}
