@@ -47,13 +47,17 @@ a {
     height: 625px;
 }
 
+    /* flex: 1; */
 .frame .login {
     flex: 1;
-    width: 866px;
+    width: auto;
     position: relative;
     background-color: #ffffff;
     border-radius: 20px;
+    align-items: center;
 }
+    
+
 
 .frame .content-background {
     position: absolute;
@@ -94,10 +98,10 @@ a {
     position: absolute;
     top: 230px;
     left: calc(50.00% - 80px);
-    width: auto;
-    height: auto;
+    width: 164px;
+    height: 119px;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
     gap: 12px;
 }
@@ -467,7 +471,7 @@ display: flex;
 /* =====================
    MOBILE PORTRAIT VIEW
    ===================== */
-@media (max-width: 480px) {
+@media (max-width: 500px) {
   html, body {
     align-items: center;
     height: auto;
@@ -481,12 +485,14 @@ display: flex;
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
+    /* align-items: center; */
   }
 
-  /* Sign-up wrapper: 417px wide, centered, auto height */
+
+
+  /* Sign-up wrapper: centered, auto height */
   .frame .sign-up {
-    width: min(417px, 100%);
+    width: min(445px, 100%);
     height: auto;
     margin: 24px auto;
     display: flex;
@@ -495,6 +501,7 @@ display: flex;
 
   /* White card */
   .frame .login {
+    flex: none;
     width: 100%;
     height: auto;
     display: flex;
@@ -506,10 +513,9 @@ display: flex;
     display: none;
   }
 
-  
-  /* ── Left panel (form) ──
-     Override absolute positioning, become a flex column */
+  /* Left panel (form) — stack on top, comes first visually */
   .frame .left-content {
+    order: 1;
     position: relative;
     top: auto;
     left: auto;
@@ -519,9 +525,9 @@ display: flex;
     flex-direction: column;
     padding: 24px 24px 16px;
     gap: 20px;
+    background-color: #ffffff;
+    border-radius: 20px;
   }
-
-
 
   /* Logo row: icon left, text right */
   .frame .logo {
@@ -553,20 +559,14 @@ display: flex;
     height: auto;
   }
 
+  /* Slogan subtitle */
   .frame .p {
     position: relative;
     width: fit-content;
-    font-family: "SF Pro-SemiboldItalic", Helvetica;
-    font-weight: 400;
-    font-style: italic;
-    color: #333438;
     font-size: 14px;
-    letter-spacing: 0;
-    line-height: normal;
     white-space: nowrap;
     margin-top: 5px;
   }
-
 
   /* Form content area: override absolute, auto height */
   .frame .content {
@@ -580,76 +580,58 @@ display: flex;
     border-radius: 0;
   }
 
-  /* Form row height: override fixed 448px */
+  /* Form inputs column: override fixed 448px height */
   .frame .div-2 {
     height: auto;
-  }
-
-  /* Input field containers: full width */
-  .frame .div-3,
-  .frame .div-wrapper-2,
-  .frame .text-wrapper-5,
-  .frame .text-wrapper-8 {
     width: 100%;
   }
 
-  /* Input label font size */
-  .frame .text-wrapper-5,
-  .frame .text-wrapper-8 {
-    font-size: 14px;
+  /* Field wrappers: flow layout so label → input → message stack cleanly */
+  .frame .div-3 {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    min-height: unset;
+    padding-bottom: 0;
+    margin-right: 0;
+    margin-bottom: 4px;
+    gap: 4px;
   }
 
-  .frame .text-wrapper-2 {
+  /* Labels: pull out of absolute positioning */
+  .frame .text-wrapper-5,
+  .frame .text-wrapper-8 {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 160px;
-    height: 29px;
-    margin-top: -1.00px;
-    font-family: "SF Pro-Bold", Helvetica;
-    font-weight: 700;
-    color: #ffffff;
-    font-size: 14px;
-    text-align: center;
-    letter-spacing: 0;
-    line-height: 16px;
-}
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    font-size: 13px;
+  }
 
-.frame .text-wrapper-10 {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 362px;
-    margin-top: -1.00px;
-    margin-left: -1.00px;
-    margin-right: -1.00px;
-    font-family: "Urbanist-Bold", Helvetica;
-    font-weight: 700;
-    color: #ffffff;
-    font-size: 14px;
-    text-align: center;
-    letter-spacing: 0;
-    line-height: 16px;
+  /* Input wrapper: pull out of absolute positioning, proper touch height */
+  .frame .div-wrapper-2 {
     position: relative;
-    height: 50px;
-}
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: 40px;
+  }
 
-.frame .span {
-    font-family: "SF Pro-Regular", Helvetica;
-    font-weight: 400;
-    color: #333438;
-    font-size: 14px;
-    letter-spacing: 0;
-    line-height: 14px;
-}
-
-  /* Input text: 16px prevents iOS Safari auto-zoom */
+  /* 16px prevents iOS Safari auto-zoom on focus */
   .frame .div-wrapper-2 input {
     font-size: 16px !important;
   }
 
-  /* Terms text: override absolute */
+  /* Validation messages: reset the desktop 50px offset */
+  .frame .div-3 > div[style*="margin-top: 50px"] {
+    margin-top: 2px !important;
+    margin-bottom: 0 !important;
+    font-size: 12px !important;
+  }
+
+  /* Terms text */
   .frame .by-continuing-you-wrapper {
     height: auto;
   }
@@ -668,13 +650,7 @@ display: flex;
     width: 100%;
   }
 
-  /* Form comes first visually even though right-content is first in DOM */
-  .frame .left-content {
-    order: 1;
-  }
-
-  /* ── Right panel ──
-     Strip grey background, become the bottom row */
+  /* Right panel (Sign In link) — horizontal row at bottom */
   .frame .right-content {
     order: 2;
     position: relative;
@@ -682,12 +658,18 @@ display: flex;
     left: auto;
     width: 100%;
     height: auto;
-    background-color: transparent !important;
-    border-radius: 0;
     display: flex;
+    flex-direction: row;
     align-items: center;
-    justify-content: flex-start;
-    padding: 0;
+    justify-content: space-between;
+    padding: 14px 24px;
+    gap: 12px;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  .frame .right-content.expanded {
+    height: auto;
   }
 
   /* Group: single horizontal row — text | Sign In button */
@@ -700,11 +682,10 @@ display: flex;
     flex-direction: row;
     align-items: center;
     gap: 12px;
-    padding: 14px 24px;
-    /* border-top: 1px solid #e4e4e4; */
+    /* padding: 14px 24px; */
   }
 
-  /* Hide "Welcome!" */
+  /* Hide "Welcome!" heading */
   .frame .text-wrapper {
     display: none;
   }
@@ -715,19 +696,27 @@ display: flex;
     flex: 1;
     width: auto;
     height: auto;
-    margin-left: 0;
-    text-align: left;
+    transform: none;
     justify-content: flex-start;
     font-size: 12px;
+    text-align: left;
   }
 
   /* Sign In button wrapper — right side, compact */
   .frame .div-wrapper {
     order: 2;
-    margin-left: 0;
-    /*! width: auto; */
+    width: auto;
     height: 32px;
     padding: 0 18px;
+    transform: none;
+  }
+
+  .frame .text-wrapper-2 {
+    font-size: 12px;
+  }
+
+  .frame .text-wrapper-4 {
+    font-size: 18px;
   }
 }
 
@@ -754,6 +743,7 @@ CSS FOR MESSAGE / ANIMATION HERE
   gap: 10px;
   min-width: 320px;
   max-width: 500px;
+  z-index: 1;
 }
 
 #message .alert-icon {
@@ -796,171 +786,16 @@ CSS FOR MESSAGE / ANIMATION HERE
   opacity: 0.9;
 }
 
-/* Mobile Portrait View */
 @media (max-width: 500px) {
-    html, body {
-        align-items: center;
-        height: auto;
-        min-height: 100vh;
-    }
+  #message {
+    bottom: auto;
+    top: 0;
+    min-width: calc(100% - 32px);
+    transform: translate(-50%, 16px);
+  }
 
-    /* Frame: full width, card centered both axes */
-    .frame {
-        min-width: unset;
-        min-height: 100vh;
-        width: 100%;
-    }
-
-    /* Sign-up card: 445px wide, flex column so panels stack */
-    .frame .sign-up {
-        width: min(445px, 100%);
-        height: auto;
-        display: flex;
-        flex-direction: column;
-        border-radius: 20px;
-        margin: 24px auto;
-    }
-
-    .frame .login {
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-direction: column;
-        border-radius: 20px;
-    }
-
-    .frame .content-background {
-        display: none;
-    }
-
-    /* Left panel (form) — stack on top */
-    .frame .left-content {
-        position: relative;
-        top: auto;
-        left: auto;
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-direction: column;
-        padding: 24px 24px 16px;
-        gap: 20px;
-        background-color: #ffffff;
-        border-radius: 20px;
-    }
-
-    /* Logo */
-    .frame .logo {
-        position: relative;
-        top: auto;
-        left: auto;
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .frame .union {
-        position: relative;
-        top: auto;
-        left: auto;
-        width: 20px;
-        height: 20px;
-    }
-
-    .frame .logo-text {
-        position: relative;
-        top: auto;
-        left: auto;
-        width: auto;
-        height: auto;
-    }
-
-    /* Content: form fields */
-    .frame .content {
-        position: relative;
-        top: auto;
-        left: auto;
-        width: 100%;
-        height: auto;
-        padding: 0;
-        background-color: transparent;
-        border-radius: 0;
-    }
-
-    /* Input field containers — stretch to container width */
-    .frame .div-3,
-    .frame .div-wrapper-2,
-    .frame .text-wrapper-5,
-    .frame .text-wrapper-8 {
-        width: 100%;
-    }
-
-    .frame .div-2 {
-        height: auto;
-        width: 100%;
-    }
-
-    /* Terms & conditions text */
-    .frame .by-continuing-you,
-    .frame .by-continuing-you-wrapper {
-        width: 100%;
-        font-size: 12px;
-    }
-
-    /* Right panel (Sign In button & text) — horizontal row at bottom */
-    .frame .right-content {
-        position: relative;
-        top: auto;
-        left: 0;
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 24px;
-        gap: 12px;
-        background-color: transparent;
-        border-radius: 0;
-    }
-
-    /* Text: "If you already have an account" — left side, fills space */
-    .frame .div {
-        order: 1;
-        flex: 1;
-        width: auto;
-        height: auto;
-        transform: none;
-        justify-content: flex-start;
-        font-size: 12px;
-        text-align: left;
-    }
-
-    /* Sign In wrapper — right side, auto-width */
-    .frame .div-wrapper {
-        order: 2;
-        width: auto;
-        transform: none;
-    }
-
-    .frame .div-wrapper-2 {
-        height: 32px;
-        padding: 0 18px;
-    }
-
-    .frame .text-wrapper-2 {
-        font-size: 12px;
-    }
-
-    /* Adjust text sizes for mobile */
-    .frame .text-wrapper-4 {
-        font-size: 18px;
-    }
-
-    .frame .text-wrapper-5,
-    .frame .text-wrapper-8 {
-        font-size: 12px;
-    }
+  #message.hidden {
+    transform: translate(-50%, -150%);
+  }
 }
+
