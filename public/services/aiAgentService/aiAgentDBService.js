@@ -722,35 +722,41 @@ async function getStoryTitle(storyID, projectID) {
 }
 
 async function updateSuggestedAction(projectID, chatID, suggestions) {
-    const deleteSQL = `DELETE FROM suggested_action WHERE projectID = ? AND chatID = ?`;
-    const insertSQL = `INSERT INTO suggested_action (projectID, chatID, suggestionSeq, suggestionContent) VALUES (?, ?, ?, ?)`;
+    const sql = `
+        INSERT INTO suggested_action (projectID, chatID, suggestionSeq, suggestionContent)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (projectID, chatID, suggestionSeq)
+            DO UPDATE SET suggestionContent = excluded.suggestionContent
+    `;
 
     try {
-        await dbRun(deleteSQL, [projectID, chatID]);
-        for (const suggestion of suggestions) {
-            await dbRun(insertSQL, [projectID, chatID, suggestion.seq, suggestion.content]);
+        console.log(`Suggestions to save to DB: ${suggestions}`)
+        for (let suggestion of suggestions) {
+            await dbRun(sql, [projectID, chatID, suggestion.seq, suggestion.content]);
         }
-        return true;
-    } catch (error) {
-        console.error('Error in updateSuggestedAction:', error);
-        throw error;
+    } catch (err) {
+        console.error('updateSuggestedAction failed:', err.message);
+        throw err;
     }
 }
 
 async function fetchSuggestedAction(projectID, chatID) {
     const sql = `
-        SELECT suggestionSeq as seq, suggestionContent as content
+        SELECT suggestionSeq, suggestionContent
         FROM suggested_action
         WHERE projectID = ? AND chatID = ?
-        ORDER BY suggestionSeq ASC
+        ORDER BY suggestionSeq
     `;
 
     try {
         const rows = await dbAll(sql, [projectID, chatID]);
-        return rows || [];
-    } catch (error) {
-        console.error('Error in fetchSuggestedAction:', error);
-        throw error;
+        return rows.map(row => ({
+            seq: row.suggestionSeq,
+            content: row.suggestionContent
+        }));
+    } catch (err) {
+        console.error('fetchSuggestedAction failed:', err.message);
+        throw err;
     }
 }
 
