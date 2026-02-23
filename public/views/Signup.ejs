@@ -3,39 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temp Login</title>
+    <title>Signup</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
-    <link rel="stylesheet" href="/stylesheets/z-index.css" />
-    <link rel="stylesheet" href="/stylesheets/login.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="/stylesheets/z-index.css">
+    <link rel="stylesheet" href="/stylesheets/signup.css">
     <!-- Load z-index helper -->
     <script src="/scripts/zIndexHelper.js"></script>
 </head>
 <body>
+<div id="message" class="hidden"><span id="messageText"></span><span id="close">x</span></div>
 <div id="root">Loading...</div>
-<div id="message" class="hidden">👋 <span id="message-text"></span><span id="close">x</span></div>
 
 <!-- Load your component -->
-<script src="/scripts/tempLogin.js"></script>
+<script src="/scripts/Signup.js"></script>
 
 <!-- Render the component -->
 <script>
     console.log('React:', typeof React);
     console.log('ReactDOM:', typeof ReactDOM);
-    console.log('TempLogin:', typeof window.TempLogin);
-    console.log('SimpleWebAuthn:', typeof window.SimpleWebAuthnBrowser);
     console.log('CSRF Token:', "<%= csrfToken %>");
 
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(window.TempLogin, { csrfToken: "<%= csrfToken %>" }));
+        root.render(React.createElement(window.TempSignup, { csrfToken: "<%= csrfToken %>" }));
         console.log('React component rendered successfully');
     } catch (error) {
         console.error('Error rendering React component:', error);
         document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px;">Error: ' + error.message + '</div>';
     }
+</script>
+
+<script>
+$('#close').on('click', function() {
+  $('#message').toggleClass('hidden');
+});
 </script>
 </body>
 </html>

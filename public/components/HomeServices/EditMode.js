@@ -29,6 +29,9 @@ const EditMode = {
      * @param {number} chatSeq
      */
     start(text, conversationID, chatSeq) {
+
+        console.log(`chatSeq is ${chatSeq}`)
+
         // Set input value
         const input = document.getElementById('main-message-input') || document.getElementById('message-input');
         if (input) {
@@ -191,13 +194,36 @@ const EditMode = {
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
 
+        // First, reset ALL messages
+        messagesContainer.querySelectorAll('.message').forEach(msg => {
+            const editingLabel = msg.querySelector(".message-edit-indicator");
+            if (editingLabel) editingLabel.style.display = 'none';
+
+            const editButton = msg.querySelector(".message-edit-btn");
+            if (editButton) editButton.style.display = "block";
+
+            const messageBubble = msg.querySelector('.message-bubble.user-bubble');
+            if (messageBubble) {
+                messageBubble.style.transition = "border 0.5s";
+                messageBubble.style.border = null
+            }
+        });
+
+        // Then apply editing state to the specific message
         messagesContainer.querySelectorAll('.message').forEach(msg => {
             if (msg.dataset.conversationId === conversationID && parseInt(msg.dataset.chatSeq) === chatSeq) {
-                const editBtn = msg.querySelector('.message-edit-btn');
-                const cancelBtn = msg.querySelector('.message-cancel-btn');
+                const editingLabel = msg.querySelector(".message-edit-indicator");
+                if (editingLabel) editingLabel.style.display = 'block';
 
-                if (editBtn) editBtn.style.display = 'none';
-                if (cancelBtn) cancelBtn.style.display = 'inline-block';
+                const editButton = msg.querySelector(".message-edit-btn");
+                if (editButton) editButton.style.display = "none";
+
+                const messageBubble = msg.querySelector('.message-bubble.user-bubble');
+                if (messageBubble) {
+                    messageBubble.style.transition = "border 0.5s";
+                    messageBubble.style.border = "3px solid #000"
+                }
+
             }
         });
     },
@@ -211,6 +237,19 @@ const EditMode = {
             const editBtn = btn.parentNode?.querySelector('.message-edit-btn');
             if (editBtn) editBtn.style.display = '';
         });
+
+        document.querySelectorAll(".message-edit-indicator").forEach(indicator => {
+            indicator.style.display = 'none'
+        });
+        document.querySelectorAll(".message-edit-btn").forEach(btn => {
+            btn.style.display = 'block'
+        });
+
+        document.querySelectorAll('.message-bubble.user-bubble').forEach(bubble => {
+            bubble.style.transition = "border 0.5s";
+            bubble.style.border = null
+        });
+
     },
 
     /**

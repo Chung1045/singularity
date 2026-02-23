@@ -32,11 +32,11 @@ router.get("/", (req, res) => {
 });
 
 router.get("/signup", (req, res) => {
-    res.render("tempSignup", { csrfToken: req.csrfToken() || '' });
+    res.render("Signup", { csrfToken: req.csrfToken() || '' });
 });
 
 router.get("/login", (req, res) => {
-    res.render("tempLogin", { csrfToken: req.csrfToken() });
+    res.render("Login", { csrfToken: req.csrfToken() });
 });
 
 /* ----------------------------------------
@@ -60,7 +60,7 @@ router.get("/home", async (req, res) => {
         const userInfo = await dbService.getUserInfo(userID)
 
         console.log(" Session OK — showing home");
-        res.render("tempHome", { csrfToken: req.csrfToken() || '', userInfo: userInfo });
+        res.render("Home", { csrfToken: req.csrfToken() || '', userInfo: userInfo });
     } catch(err) {
         console.error(`Error occurred at /home : ${err.message}`)
         res.send("Server error")
@@ -87,7 +87,7 @@ router.get("/passkeys", async (req, res) => {
 
     const userInfo = await dbService.getUserInfo(userID)
 
-    res.render("tempPasskey", {
+    res.render("Passkey", {
         csrfToken: req.csrfToken(),
         userInfo
     });
@@ -101,7 +101,7 @@ router.get("/profile", async (req, res) => {
     if (!userID) return res.redirect("/login");
 
     const userInfo = await dbService.getUserInfo(userID);
-    res.render("tempUserProfile", { csrfToken: req.csrfToken(), userInfo });
+    res.render("UserProfile", { csrfToken: req.csrfToken(), userInfo });
 });
 
 /* ----------------------------------------
@@ -115,7 +115,7 @@ router.get("/session", async (req, res) => {
     const loginAttempts = await dbService.listLoginAttempts(userID);
     const userInfo = await dbService.getUserInfo(userID)
 
-    res.render("tempSession", {
+    res.render("Session", {
         csrfToken: req.csrfToken(),
         sessions,
         loginAttempts,
@@ -130,7 +130,7 @@ router.get("/change-password", async (req, res) => {
     const userID = await getUserID(req);
     if (!userID) return res.redirect("/login");
 
-    res.render("tempChangePassword", { csrfToken: req.csrfToken() });
+    res.render("ChangePassword", { csrfToken: req.csrfToken() });
 });
 
 /* ----------------------------------------

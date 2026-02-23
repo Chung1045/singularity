@@ -44,13 +44,13 @@
 <body>
 <div id="root"></div>
 
-<script src="/scripts/tempPasskey.js"></script>
+<script src="/scripts/Passkey.js"></script>
 
 <script>
     const csrfToken = "<%= csrfToken %>";
     const passkeys = <%- JSON.stringify(passkeys || []) %>;
     const userInfo  = <%- JSON.stringify(userInfo || {}) %>;
-    
+
     // Make userInfo globally available for socket initialization
     window.userInfo = userInfo;
 
@@ -90,7 +90,7 @@
                 }
             };
             document.body.appendChild(modalContainer);
-            
+
             const modalRoot = ReactDOM.createRoot(modalContainer);
             // Store projectID for use in callback
             const currentProjectID = projectID;
@@ -117,7 +117,7 @@
             );
         }
     };
-    
+
     window.addEventListener('openFileUpload', handleOpenFileUpload);
 
     const root = ReactDOM.createRoot(document.getElementById('root'));

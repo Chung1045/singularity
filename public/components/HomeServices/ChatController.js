@@ -1036,15 +1036,17 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
     // build the bubble element
     const bubble = document.createElement('div');
     bubble.id = `message-bubble-${role}-${messageTimestamp}`;
-    bubble.className = 'message-bubble';
+
 
     // if the role is AI, set the bubble content
     if (role === 'ai') {
         bubble.dataset.role = 'ai';
+        bubble.className = 'message-bubble';
         // set the bubble content
         ChatUtils.setBubbleContent(bubble, text, { allowMarkdown: true });
     } else {
         // set the bubble text content
+        bubble.className = 'message-bubble user-bubble';
         bubble.textContent = text;
     }
 
@@ -1058,6 +1060,11 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         // add the bubble to the content wrapper
         contentWrapper.appendChild(bubble);
 
+        const actionInfoDiv = document.createElement('div');
+        actionInfoDiv.id = `message-action-info-wrapper-user-${messageTimestamp}`;
+        actionInfoDiv.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px;';
+        contentWrapper.appendChild(actionInfoDiv);
+
         // build the timestamp element
         const timestamp = document.createElement('div');
         timestamp.id = `message-timestamp-user-${messageTimestamp}`;
@@ -1069,7 +1076,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         timestamp.textContent = formattedTime;
         // Store the timestamp as data attribute to preserve it
         timestamp.dataset.timestamp = finalTimestamp;
-        contentWrapper.appendChild(timestamp);
+        actionInfoDiv.appendChild(timestamp);
 
         // Bottom row with files
         const bottomRow = document.createElement('div');
@@ -1130,23 +1137,29 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         avatarWrapper.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 4px;';
         avatarWrapper.appendChild(avatar);
 
-        // build the edit button
-        const editBtn = document.createElement('button');
-        editBtn.id = `message-edit-btn-${messageTimestamp}`;
-        editBtn.className = 'message-edit-btn';
-        editBtn.innerHTML = 'Edit';
-        editBtn.style.cssText = 'background: transparent; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #999; opacity: 0; margin-top: 9px;';
-        editBtn.onclick = () => conversationID && chatSeq ? EditMode.start(text, conversationID, chatSeq) : alert('Please wait for the message to finish sending.');
-        avatarWrapper.appendChild(editBtn);
+        const deleteButton = document.createElement('div');
+        deleteButton.id = `message-delete-btn-${messageTimestamp}`;
+        deleteButton.className = 'message-actionLabel';
+        deleteButton.innerHTML = 'Delete';
+        deleteButton.style.cssText = 'background: transparent; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: #e57373;';
+        deleteButton.onclick = async () => initDelete(conversationID);
+        actionInfoDiv.prepend(deleteButton);
 
-        // TODO: Update
-        // build the cancel button
-        const editIndicator = document.createElement('button');
+        const editIndicator = document.createElement('div');
         editIndicator.id = `message-cancel-btn-${messageTimestamp}`;
-        editIndicator.className = 'message-cancel-btn';
+        editIndicator.className = 'message-actionLabel message-edit-indicator';
         editIndicator.innerHTML = 'Editing';
-        editIndicator.style.cssText = 'background: transparent; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #e57373; display: none; margin-top: 8px;';
-        avatarWrapper.appendChild(editIndicator);
+        editIndicator.style.cssText = 'background: transparent; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: #000; display: none';
+        actionInfoDiv.prepend(editIndicator);
+
+        // build the edit button
+        const editBtn = document.createElement('div');
+        editBtn.id = `message-edit-btn-${messageTimestamp}`;
+        editBtn.className = 'message-actionLabel message-edit-btn';
+        editBtn.innerHTML = 'Edit';
+        editBtn.style.cssText = 'background: transparent; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: #999; opacity: 0;';
+        editBtn.onclick = () => conversationID && chatSeq ? EditMode.start(text, conversationID, chatSeq) : alert('Please wait for the message to finish sending.');
+        actionInfoDiv.prepend(editBtn);
 
         // add the avatar wrapper and content wrapper to the message div
         messageDiv.appendChild(avatarWrapper);
@@ -1344,6 +1357,51 @@ function openRequirementsPanel() {
         return;
     }
     window.dispatchEvent(new CustomEvent('openRequirementsPanel', { detail: { projectID } }));
+}
+
+async function initDelete(conversationID) {
+    const confirmDelete = await window.showNotification({
+        type: 'confirm',
+        title: 'Warning',
+        message: 'Are you sure you want to delete this conversation message?\nThis cannot be reversed!',
+        actionText: 'Delete',
+        cancelText: 'Cancel'
+    });
+
+    if (!confirmDelete) return;
+
+    let projectID = localStorage.getItem('activeChatProjectID');
+    let chatID = localStorage.getItem('activeChatID');
+    if (!projectID || !chatID) return;
+
+    try {
+        const response = await fetch('/api/agent/conversation-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectID, chatID, conversationID })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            window.showNotification?.({ type: 'success', title: 'Conversation Message Deletion', message: `Conversation message deleted.`, actionText: 'OK' });
+            loadChatThread(chatID)
+        } else {
+            await window.showNotification?.({
+                type: 'error',
+                title: 'Error',
+                message: 'Unable to delete conversation message.',
+                actionText: 'OK'
+            });
+        }
+    } catch (error) {
+        await window.showNotification?.({
+            type: 'error',
+            title: 'Error',
+            message: 'Unable to delete conversation message.',
+            actionText: 'OK'
+        });
+    }
+
 }
 
 // ===== GLOBAL EXPORTS =====

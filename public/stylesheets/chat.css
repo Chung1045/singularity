@@ -252,6 +252,13 @@
     font-family: 'Inter', Helvetica;
 }
 
+/* Message action label styling */
+.message-actionLabel {
+    font-size: 11px;
+    color: #999;
+    font-family: 'Inter', Helvetica;
+}
+
 /* AI message timestamp alignment */
 .ai-message .message-timestamp {
     text-align: left;
