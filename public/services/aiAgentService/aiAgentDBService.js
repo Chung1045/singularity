@@ -721,6 +721,39 @@ async function getStoryTitle(storyID, projectID) {
     });
 }
 
+async function updateSuggestedAction(projectID, chatID, suggestions) {
+    const deleteSQL = `DELETE FROM suggested_action WHERE projectID = ? AND chatID = ?`;
+    const insertSQL = `INSERT INTO suggested_action (projectID, chatID, suggestionSeq, suggestionContent) VALUES (?, ?, ?, ?)`;
+
+    try {
+        await dbRun(deleteSQL, [projectID, chatID]);
+        for (const suggestion of suggestions) {
+            await dbRun(insertSQL, [projectID, chatID, suggestion.seq, suggestion.content]);
+        }
+        return true;
+    } catch (error) {
+        console.error('Error in updateSuggestedAction:', error);
+        throw error;
+    }
+}
+
+async function fetchSuggestedAction(projectID, chatID) {
+    const sql = `
+        SELECT suggestionSeq as seq, suggestionContent as content
+        FROM suggested_action
+        WHERE projectID = ? AND chatID = ?
+        ORDER BY suggestionSeq ASC
+    `;
+
+    try {
+        const rows = await dbAll(sql, [projectID, chatID]);
+        return rows || [];
+    } catch (error) {
+        console.error('Error in fetchSuggestedAction:', error);
+        throw error;
+    }
+}
+
 async function searchChatHistory(projectID, chatID, keyword){
     const sql = `
         SELECT chatSeq, conversationMessage
@@ -865,6 +898,8 @@ module.exports = {
     saveConversationRequest,
     saveConversationRequestRef,
     saveConversationResponse,
+    fetchSuggestedAction,
+    updateSuggestedAction,
     searchChatHistory,
     updateRequirements,
     updateProjectUserStories,

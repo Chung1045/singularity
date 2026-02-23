@@ -856,6 +856,7 @@ function removeSuggestionChips() {
  */
 function appendSuggestionChips(parentContentWrapper, suggestedNextAction) {
     if (!parentContentWrapper) return;
+    if (!Array.isArray(suggestedNextAction) || suggestedNextAction.length === 0) return;
 
     console.log(`Suggested Next Action: ${suggestedNextAction}`)
 
