@@ -34,7 +34,6 @@ a {
   text-decoration: none;
 }
 .frame {
-  /* background-image: url(./img/rectangle-22465.svg); */
   background-size: 100% 100%;
   width: 100%;
   min-width: 1440px;
@@ -67,7 +66,6 @@ a {
   left: 433px;
   width: 423px;
   height: 350px;
-  /* background-image: url(./img/right-content-background.svg); */
   background-size: 100% 100%;
 }
 .frame .logo {
