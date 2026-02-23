@@ -200,7 +200,7 @@ const EditMode = {
             if (editingLabel) editingLabel.style.display = 'none';
 
             const editButton = msg.querySelector(".message-edit-btn");
-            if (editButton) editButton.style.display = "block";
+            if (editButton) editButton.style.display = "flex";
 
             const messageBubble = msg.querySelector('.message-bubble.user-bubble');
             if (messageBubble) {
@@ -212,8 +212,8 @@ const EditMode = {
         // Then apply editing state to the specific message
         messagesContainer.querySelectorAll('.message').forEach(msg => {
             if (msg.dataset.conversationId === conversationID && parseInt(msg.dataset.chatSeq) === chatSeq) {
-                const editingLabel = msg.querySelector(".message-edit-indicator");
-                if (editingLabel) editingLabel.style.display = 'block';
+            const editingLabel = msg.querySelector(".message-edit-indicator");
+            if (editingLabel) editingLabel.style.display = 'inline-flex';
 
                 const editButton = msg.querySelector(".message-edit-btn");
                 if (editButton) editButton.style.display = "none";
@@ -242,7 +242,7 @@ const EditMode = {
             indicator.style.display = 'none'
         });
         document.querySelectorAll(".message-edit-btn").forEach(btn => {
-            btn.style.display = 'block'
+            btn.style.display = 'flex'
         });
 
         document.querySelectorAll('.message-bubble.user-bubble').forEach(bubble => {

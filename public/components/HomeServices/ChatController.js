@@ -1063,7 +1063,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
         const actionInfoDiv = document.createElement('div');
         actionInfoDiv.id = `message-action-info-wrapper-user-${messageTimestamp}`;
-        actionInfoDiv.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px;';
+        actionInfoDiv.style.cssText = 'display: flex; justify-content: flex-end; align-items: center; gap: 8px;';
         contentWrapper.appendChild(actionInfoDiv);
 
         // build the timestamp element
@@ -1138,11 +1138,12 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         avatarWrapper.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 4px;';
         avatarWrapper.appendChild(avatar);
 
-        const deleteButton = document.createElement('div');
+        const deleteButton = document.createElement('button');
         deleteButton.id = `message-delete-btn-${messageTimestamp}`;
-        deleteButton.className = 'message-actionLabel';
-        deleteButton.innerHTML = 'Delete';
-        deleteButton.style.cssText = 'background: transparent; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: #e57373;';
+        deleteButton.className = 'message-action-btn message-delete-btn';
+        deleteButton.type = 'button';
+        deleteButton.title = 'Delete';
+        deleteButton.innerHTML = `<img src="./img/delete_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg" alt="Delete" width="16" height="16">`;
         deleteButton.onclick = async () => initDelete(conversationID);
         actionInfoDiv.prepend(deleteButton);
 
@@ -1154,11 +1155,12 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         actionInfoDiv.prepend(editIndicator);
 
         // build the edit button
-        const editBtn = document.createElement('div');
+        const editBtn = document.createElement('button');
         editBtn.id = `message-edit-btn-${messageTimestamp}`;
-        editBtn.className = 'message-actionLabel message-edit-btn';
-        editBtn.innerHTML = 'Edit';
-        editBtn.style.cssText = 'background: transparent; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: #999; opacity: 0;';
+        editBtn.className = 'message-action-btn message-edit-btn';
+        editBtn.type = 'button';
+        editBtn.title = 'Edit';
+        editBtn.innerHTML = `<img src="./img/edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg" alt="Edit" width="16" height="16">`;
         editBtn.onclick = () => conversationID && chatSeq ? EditMode.start(text, conversationID, chatSeq) : alert('Please wait for the message to finish sending.');
         actionInfoDiv.prepend(editBtn);
 

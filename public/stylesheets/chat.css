@@ -261,6 +261,30 @@
     font-family: 'Inter', Helvetica;
 }
 
+/* SVG icon action buttons on user messages */
+.message-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 3px;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.message-action-btn img {
+    display: block;
+    pointer-events: none;
+}
+
+.message-action-btn:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.06);
+}
+
 /* AI message timestamp alignment */
 .ai-message .message-timestamp {
     text-align: left;
@@ -282,11 +306,7 @@
     border: 1px solid #e0e0e0;
 }
 
-/* Message Edit Button - positioned under avatar */
-/* Show edit button only on hover of the message */
-.user-message:hover .message-edit-btn {
-    opacity: 1 !important;
-}
+/* Message Edit Button */
 
 /* Typing Indicator */
 .typing-bubble {
@@ -594,18 +614,18 @@
     }
 }
 
-/* ===== Suggestion Chips (after AI messages) ===== */
+/* ===== Suggestion Chips anchor (sits just above the input field) ===== */
+#suggestion-chips-anchor {
+    width: 100%;
+}
+
 .suggestion-chips-container {
     display: flex;
     flex-direction: column;
-    padding: 12px 0 0 0;
-    margin-top: 10px;
-    width: calc(100% - 52px); /* Account for avatar width (40px) + gap (12px) */
-    max-width: 600px; /* Match the message bubble width */
-
-    /* See if you want to delete these */
+    padding: 10px 0 6px 0;
+    width: 100%;
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
@@ -676,8 +696,7 @@
 
 @media (max-width: 768px) {
     .suggestion-chips-container {
-        padding: 10px 0 0 0;
-        margin-top: 10px;
+        padding: 8px 0 4px 0;
     }
 
     .suggestion-chips-label {
