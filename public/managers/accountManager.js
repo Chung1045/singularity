@@ -894,12 +894,12 @@ function getGoogleOAuthRedirectURL() {
         process.env.EXPECTED_ORIGIN_DOMAIN == null) {
 
         if (process.env.PORT != null) {
-            return `${getServerOrigin()}:${process.env.PORT}/auth/google/callback`;
+            return `${getServerOrigin()}:${process.env.PORT}/api/auth/google/callback`;
         } else {
-            return `${getServerOrigin()}:9090/auth/google/callback`;
+            return `${getServerOrigin()}:9090/api/auth/google/callback`;
         }
     } else {
-        return `${getServerOrigin()}/auth/google/callback`;
+        return `${getServerOrigin()}/api/auth/google/callback`;
     }
 }
 

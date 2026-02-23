@@ -503,24 +503,23 @@
     background: #f4f4f4;
     padding: 10px;
     border-radius: 5px;
-    overflow-x: auto;
+    max-width: 100%;
+    overflow-x: hidden;
+    white-space: pre-wrap;  /* wraps long lines instead of scrolling /
+    word-break: break-all;  / breaks long tokens (URLs, identifiers) that have no spaces */
     margin-bottom: 0.5em;
     border: 1px solid #e0e0e0;
+    box-sizing: border-box;
 }
 
-.ai-message .message-bubble code {
+.ai-message .message-bubble pre code {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     background: rgba(0, 0, 0, 0.05);
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 0.9em;
-}
-
-.ai-message .message-bubble pre code {
-    background: none;
-    padding: 0;
-    border-radius: 0;
-    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 .ai-message .message-bubble h1,
