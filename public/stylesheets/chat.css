@@ -430,7 +430,7 @@
     box-sizing: border-box;
 }
 
-.ai-message .message-bubble code {
+.ai-message .message-bubble pre code {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     background: rgba(0, 0, 0, 0.05);
     padding: 2px 4px;
