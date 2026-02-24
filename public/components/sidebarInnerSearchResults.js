@@ -1,9 +1,9 @@
 (function () {
     const { useState, useEffect } = React;
 
-    window.sidebarInnerSearchResults = function sidebarInnerSearchResults({ 
-        searchQuery, 
-        onResultClick, 
+    window.sidebarInnerSearchResults = function sidebarInnerSearchResults({
+        searchQuery,
+        onResultClick,
         onClose,
         isHomePage = false,
         sidebarCollapsed = false,
@@ -24,7 +24,7 @@
             }
 
             setLoading(true);
-            
+
             // Perform search across all data sources
             performSearch(searchQuery)
                 .then(data => {
@@ -40,11 +40,11 @@
         const performSearch = async (query) => {
             const lowerQuery = query.toLowerCase();
             console.log('[SearchResults] Performing search for:', lowerQuery);
-            
+
             try {
                 // Get current project ID from global function
                 const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : null;
-                
+
                 if (!projectID) {
                     console.warn('[SearchResults] No project selected for search');
                     return {
@@ -62,13 +62,13 @@
                     fetchRequirements(projectID, lowerQuery),
                     fetchUserStories(projectID, lowerQuery)
                 ]);
-                
+
                 console.log('[SearchResults] Results:', {
                     files: filesData.length,
                     requirements: requirementsData.length,
                     userStories: userStoriesData.length
                 });
-                
+
                 return {
                     files: filesData,
                     requirements: requirementsData,
@@ -88,17 +88,20 @@
             try {
                 const response = await fetch('/api/project/file/list', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ projectID })
                 });
 
                 const data = await response.json();
                 console.log('[SearchResults] Files API response:', data);
-                
+
                 if (response.ok) {
                     const files = data.files || [];
                     console.log('[SearchResults] Total files:', files.length);
-                    
+
                     // Filter files by name or extension
                     const filtered = files.filter(file => {
                         const fileName = (file.documentName || '').toLowerCase();
@@ -111,7 +114,7 @@
                         documentName: file.documentName,
                         documentExt: file.documentExt
                     }));
-                    
+
                     console.log('[SearchResults] Filtered files:', filtered.length);
                     return filtered;
                 }
@@ -126,7 +129,10 @@
             try {
                 const response = await fetch('/api/project/list/requirements', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ projectID })
                 });
 
@@ -134,32 +140,32 @@
                 console.log('[SearchResults] Requirements API response:', data);
                 console.log('[SearchResults] Response OK:', response.ok);
                 console.log('[SearchResults] Data successful:', data.successful);
-                
+
                 if (response.ok && data.successful) {
                     const requirements = data.reports || [];
                     console.log('[SearchResults] Total requirements:', requirements.length);
                     console.log('[SearchResults] Requirements data:', requirements);
                     console.log('[SearchResults] Search query:', query);
-                    
+
                     // Filter requirements by title, description, or ID
                     const filtered = requirements.filter(req => {
                         const title = (req.details?.title || req.title || '').toLowerCase();
                         const description = (req.details?.description || '').toLowerCase();
                         const reqId = (req.reportID || '').toLowerCase();
                         const requirementID = (req.details?.requirementID || '').toLowerCase();
-                        
+
                         // Check for formatted ID like FR-01, NFR-01
                         const reqType = req.details?.requirementType?.toLowerCase();
                         const reqSeq = req.details?.requirementSeq || 0;
                         const prefix = (reqType === 'functional' || reqType === 'fr') ? 'fr' : 'nfr';
                         const formattedId = `${prefix}-${String(reqSeq).padStart(2, '0')}`.toLowerCase();
-                        
+
                         const matchTitle = title.includes(query);
                         const matchDesc = description.includes(query);
                         const matchId = reqId.includes(query);
                         const matchReqId = requirementID.includes(query);
                         const matchFormattedId = formattedId.includes(query);
-                        
+
                         console.log(`[SearchResults] Checking requirement "${title}":`, {
                             title,
                             formattedId,
@@ -169,7 +175,7 @@
                             matchReqId,
                             matchFormattedId
                         });
-                        
+
                         return matchTitle || matchDesc || matchId || matchReqId || matchFormattedId;
                     }).map(req => ({
                         id: req.reportID,
@@ -177,7 +183,7 @@
                         reportID: req.reportID,
                         details: req.details
                     }));
-                    
+
                     console.log('[SearchResults] Filtered requirements:', filtered.length);
                     console.log('[SearchResults] Filtered requirements data:', filtered);
                     return filtered;
@@ -194,7 +200,10 @@
             try {
                 const response = await fetch('/api/project/list/user-stories', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ projectID })
                 });
 
@@ -202,30 +211,30 @@
                 console.log('[SearchResults] User Stories API response:', data);
                 console.log('[SearchResults] User Stories response.ok:', response.ok);
                 console.log('[SearchResults] User Stories data.successful:', data.successful);
-                
+
                 if (response.ok && data.successful) {
                     const stories = data.reports || [];
                     console.log('[SearchResults] Total user stories:', stories.length);
                     console.log('[SearchResults] User stories data:', stories);
                     console.log('[SearchResults] Search query for stories:', query);
-                    
+
                     // Filter user stories by title or description
                     const filtered = stories.filter(story => {
                         const title = (story.details?.title || story.title || '').toLowerCase();
                         const description = (story.details?.description || '').toLowerCase();
                         const storyId = (story.reportID || '').toLowerCase();
                         const storyID = (story.details?.storyID || '').toLowerCase();
-                        
+
                         // Check for formatted ID like US-01
                         const storySeq = story.details?.storySeq || 0;
                         const formattedId = `us-${String(storySeq).padStart(2, '0')}`.toLowerCase();
-                        
+
                         const matchTitle = title.includes(query);
                         const matchDesc = description.includes(query);
                         const matchStoryId = storyId.includes(query);
                         const matchStoryID = storyID.includes(query);
                         const matchFormattedId = formattedId.includes(query);
-                        
+
                         console.log(`[SearchResults] Checking story "${title}":`, {
                             title,
                             formattedId,
@@ -235,7 +244,7 @@
                             matchStoryID,
                             matchFormattedId
                         });
-                        
+
                         return matchTitle || matchDesc || matchStoryId || matchStoryID || matchFormattedId;
                     }).map(story => ({
                         id: story.reportID,
@@ -243,7 +252,7 @@
                         reportID: story.reportID,
                         details: story.details
                     }));
-                    
+
                     console.log('[SearchResults] Filtered user stories:', filtered.length);
                     console.log('[SearchResults] Filtered user stories data:', filtered);
                     return filtered;
@@ -260,8 +269,8 @@
             return null; // Don't render if no query or sidebar is collapsed
         }
 
-        const hasResults = results.files.length > 0 || 
-                          results.requirements.length > 0 || 
+        const hasResults = results.files.length > 0 ||
+                          results.requirements.length > 0 ||
                           results.userStories.length > 0;
 
         return React.createElement('div', {
@@ -275,11 +284,11 @@
             }, 'Searching...'),
 
             // Results
-            !loading && React.createElement('div', { 
+            !loading && React.createElement('div', {
                 id: 'sidebar-search-results-content',
-                className: 'search-results-content' 
+                className: 'search-results-content'
             },
-                
+
                 // Files Section
                 results.files.length > 0 && React.createElement('div', {
                     id: 'sidebar-search-files-group',
@@ -289,8 +298,8 @@
                         id: 'sidebar-search-files-header',
                         className: 'search-result-header'
                     }, `FILES (${results.files.length})`),
-                    
-                    results.files.map((file, index) => 
+
+                    results.files.map((file, index) =>
                         React.createElement('div', {
                             key: file.id || index,
                             id: `sidebar-search-file-item-${index}`,
@@ -325,8 +334,8 @@
                         id: 'sidebar-search-requirements-header',
                         className: 'search-result-header'
                     }, `Requirements (${results.requirements.length})`),
-                    
-                    results.requirements.map((req, index) => 
+
+                    results.requirements.map((req, index) =>
                         React.createElement('div', {
                             key: req.id || index,
                             id: `sidebar-search-requirement-item-${index}`,
@@ -366,8 +375,8 @@
                         id: 'sidebar-search-stories-header',
                         className: 'search-result-header'
                     }, `User Stories (${results.userStories.length})`),
-                    
-                    results.userStories.map((story, index) => 
+
+                    results.userStories.map((story, index) =>
                         React.createElement('div', {
                             key: story.id || index,
                             id: `sidebar-search-story-item-${index}`,

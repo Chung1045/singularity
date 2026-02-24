@@ -184,6 +184,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
                     },
                     body: JSON.stringify({
                         projectID: selectedProjectID,
@@ -858,7 +859,7 @@
             ),
 
             // Project Share Modal
-            showShareModal && window.ProjectShareModal && 
+            showShareModal && window.ProjectShareModal &&
             React.createElement(window.ProjectShareModal, {
                 isOpen: showShareModal,
                 onClose: () => setShowShareModal(false),
@@ -875,7 +876,7 @@
                          onProfileRoute,
                          userMenuOpen,
                          setUserMenuOpen,
-                         userInfo
+                         userInfo,
                      }) => {
         // --- Resizing Logic ---
         const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -987,10 +988,12 @@
         const fetchProjects = useCallback(async () => {
             console.log("[Sidebar] Fetching projects...");
             try {
+
                 const response = await fetch('/api/project/list', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
                     },
                     body: JSON.stringify({})
                 });
@@ -999,7 +1002,7 @@
                     const data = await response.json();
 
                     if (data.projects && data.projects.length > 0) {
-                        console.log(`[Sidebar] Received ${data.projects.length} project(s):`, 
+                        console.log(`[Sidebar] Received ${data.projects.length} project(s):`,
                             data.projects.map(p => `${p.projectName} (${p.projectID})`));
                         setHasProjects(true);
                         setProjects(data.projects);
@@ -1159,22 +1162,25 @@
                 console.log('[Sidebar] Checking for unread notifications...');
                 const response = await fetch('/api/notifications/list', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({})
                 });
 
                 if (response.ok) {
                     const data = await response.json();
                     const notifications = data.notifications || [];
-                    
+
                     console.log(`[Sidebar] Fetched ${notifications.length} notifications total`);
-                    
+
                     // Check if there are any unread notifications (regardless of age)
                     const hasUnread = notifications.some(n => {
                         const isUnread = n.isRead === 0 || n.isRead === false;
                         const notificationAge = new Date() - new Date(n.createdAt);
                         const isRecent = notificationAge < 5 * 60 * 1000; // 5 minutes
-                        
+
                         if (isUnread) {
                             console.log(`[Sidebar] Unread notification found:`, {
                                 type: n.notificationType,
@@ -1185,10 +1191,10 @@
                                 willShowBadge: isUnread // Show badge for any unread notification
                             });
                         }
-                        
+
                         return isUnread; // Show red dot for any unread notification, regardless of age
                     });
-                    
+
                     setHasUnreadNotifications(hasUnread);
                     console.log('[Sidebar] Notification badge status:', hasUnread ? 'SHOW RED BADGE' : 'NO BADGE');
                 }
@@ -1260,7 +1266,10 @@
             try {
                 const response = await fetch('/api/project/create', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ projectName: newProjectName.trim() })
                 });
 
@@ -1409,7 +1418,10 @@
                         // Fetch file stats from dedicated endpoint
                         const response = await fetch('/api/project/file/stats', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': window.csrfToken
+                            },
                             body: JSON.stringify({ projectID, documentID: selectedSearchItem.documentID })
                         });
 
@@ -1449,7 +1461,10 @@
                 try {
                     let response = await fetch('/api/profile-pic/fetch', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CSRF-Token': window.csrfToken
+                        },
                         body: JSON.stringify({})
                     });
 
@@ -1798,7 +1813,7 @@
                         }),
                         'Back to results'
                     ),
-                    
+
                     // Detail content - macOS Quick Look style with sidebar theme
                     selectedSearchType === 'file' ? React.createElement('div', {
                         id: 'sidebar-search-file-preview',
@@ -1865,7 +1880,7 @@
                                 }, selectedSearchItem.name)
                             )
                         ),
-                        
+
                         // File details section
                         React.createElement('div', {
                             id: 'sidebar-search-file-details',
@@ -1878,7 +1893,7 @@
                                 flex: '1'
                             }
                         },
-                            
+
                             // Divider
                             // React.createElement('div', {
                             //     style: {
@@ -1886,7 +1901,7 @@
                             //         backgroundColor: '#e4e4e4'
                             //     }
                             // }),
-                            
+
                             // Info rows
                             React.createElement('div', {
                                 id: 'sidebar-search-file-info',
@@ -1904,21 +1919,21 @@
                                         alignItems: 'center'
                                     }
                                 },
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
                                             color: '#666',
                                             fontWeight: '400'
-                                        } 
+                                        }
                                     }, 'File Type'),
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
-                                            color: '#1c1d21', 
-                                            fontWeight: '500' 
-                                        } 
+                                            color: '#1c1d21',
+                                            fontWeight: '500'
+                                        }
                                     }, `${selectedSearchItem.documentExt.replace('.', '').toUpperCase()} Document`)
                                 ),
                                 React.createElement('div', {
@@ -1929,21 +1944,21 @@
                                         alignItems: 'center'
                                     }
                                 },
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
                                             color: '#666',
                                             fontWeight: '400'
-                                        } 
+                                        }
                                     }, 'File Size'),
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
-                                            color: '#1c1d21', 
-                                            fontWeight: '500' 
-                                        } 
+                                            color: '#1c1d21',
+                                            fontWeight: '500'
+                                        }
                                     }, fileMetadata.size ? formatFileSize(fileMetadata.size) : 'Unknown')
                                 ),
                                 React.createElement('div', {
@@ -1954,21 +1969,21 @@
                                         alignItems: 'center'
                                     }
                                 },
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
                                             color: '#666',
                                             fontWeight: '400'
-                                        } 
+                                        }
                                     }, 'Upload Date'),
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
-                                            color: '#1c1d21', 
-                                            fontWeight: '500' 
-                                        } 
+                                            color: '#1c1d21',
+                                            fontWeight: '500'
+                                        }
                                     }, fileMetadata.date ? formatDate(fileMetadata.date) : 'Unknown')
                                 ),
                                 // Document ID row - commented out
@@ -1980,25 +1995,25 @@
                                 //         alignItems: 'center'
                                 //     }
                                 // },
-                                //     React.createElement('span', { 
-                                //         style: { 
+                                //     React.createElement('span', {
+                                //         style: {
                                 //             fontFamily: 'Inter, Helvetica',
                                 //             fontSize: '13px',
                                 //             color: '#666',
                                 //             fontWeight: '400'
-                                //         } 
+                                //         }
                                 //     }, 'Document ID'),
-                                //     React.createElement('span', { 
-                                //         style: { 
+                                //     React.createElement('span', {
+                                //         style: {
                                 //             fontFamily: 'monospace',
                                 //             fontSize: '11px',
-                                //             color: '#1c1d21', 
+                                //             color: '#1c1d21',
                                 //             fontWeight: '500'
-                                //         } 
+                                //         }
                                 //     }, selectedSearchItem.documentID.substring(0, 8) + '...')
                                 // )
                             ),
-                            
+
                             // Divider
                             React.createElement('div', {
                                 style: {
@@ -2006,7 +2021,7 @@
                                     backgroundColor: '#e4e4e4'
                                 }
                             }),
-                            
+
                             // Action button
                             React.createElement('button', {
                                 id: 'sidebar-search-file-download-btn',
@@ -2086,7 +2101,7 @@
                                         fontWeight: '700',
                                         letterSpacing: '0.5px'
                                     }
-                                }, selectedSearchType === 'requirement' 
+                                }, selectedSearchType === 'requirement'
                                     ? `${(selectedSearchItem.details?.requirementType === 'functional' || selectedSearchItem.details?.requirementType === 'FR') ? 'FR' : 'NFR'}-${String(selectedSearchItem.details?.requirementSeq || 0).padStart(2, '0')}`
                                     : `US-${String(selectedSearchItem.details?.storySeq || 0).padStart(2, '0')}`)
                             ),
@@ -2102,7 +2117,7 @@
                                 }
                             }, selectedSearchItem.title)
                         ),
-                        
+
                         // Details section
                         React.createElement('div', {
                             id: 'sidebar-search-requirement-details',
@@ -2142,7 +2157,7 @@
                                     }
                                 }, selectedSearchItem.details.description)
                             ),
-                            
+
                             // Role (for both requirements and user stories)
                             selectedSearchItem.details?.role && React.createElement('div', {
                                 style: {
@@ -2170,7 +2185,7 @@
                                     }
                                 }, selectedSearchItem.details.role)
                             ),
-                            
+
                             // Source References
                             selectedSearchItem.details?.sourceReference && selectedSearchItem.details.sourceReference.length > 0 && React.createElement('div', {
                                 style: {
@@ -2196,7 +2211,7 @@
                                         gap: '6px'
                                     }
                                 },
-                                    selectedSearchItem.details.sourceReference.map((ref, idx) => 
+                                    selectedSearchItem.details.sourceReference.map((ref, idx) =>
                                         React.createElement('div', {
                                             key: idx,
                                             style: {
@@ -2210,7 +2225,7 @@
                                                 flexDirection: 'column',
                                                 gap: '4px'
                                             }
-                                        }, 
+                                        },
                                             typeof ref === 'string' ? ref : React.createElement(React.Fragment, null,
                                                 ref.documentName && React.createElement('div', {
                                                     style: { fontWeight: '600', color: '#1c1d21' }

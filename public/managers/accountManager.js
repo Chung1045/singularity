@@ -309,7 +309,7 @@ router.get('/auth/google/callback',
     }
 );
 
-router.post("/passkey/gen-option", apiAuthUser,async (req, res) => {
+router.post("/passkey/gen-option", apiAuthUser, async (req, res) => {
     try {
 
         if (!req.cookies.session_id){
@@ -352,7 +352,7 @@ router.post("/passkey/gen-option", apiAuthUser,async (req, res) => {
     }
 });
 
-router.post("/passkey/gen-auth-option", apiAuthUser, async (req, res) => {
+router.post("/passkey/gen-auth-option", async (req, res) => {
     try {
         const options = await generateAuthenticationOptions({
             rpID: process.env.domain || 'localhost',
@@ -429,7 +429,7 @@ router.post("/passkey/verify-register", apiAuthUser, async (req, res) => {
     }
 })
 
-router.post("/passkey/verify-authentication", apiAuthUser, async (req, res) => {
+router.post("/passkey/verify-authentication", async (req, res) => {
     try {
         const { credential } = req.body;
         const expectedChallenge = req.session.challenge;

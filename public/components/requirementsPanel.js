@@ -68,7 +68,10 @@
             try {
                 const response = await fetch('/api/project/list/requirements', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -98,7 +101,10 @@
             try {
                 const response = await fetch('/api/project/list/user-stories', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -118,7 +124,10 @@
             try {
                 const response = await fetch('/api/project/report/list', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -141,7 +150,10 @@
             try {
                 const response = await fetch('/api/agent/document-generation/requirements', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CSRF-Token': window.csrfToken
+                        },
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -170,7 +182,10 @@
             try {
                 const response = await fetch('/api/agent/document-generation/user-stories', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -196,7 +211,10 @@
             try {
                 const response = await fetch('/api/project/report/download', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({
                         projectID: projectID,
                         reportID: reportID
@@ -226,7 +244,7 @@
             const confirmDelete = await window.showNotification({
                 type: 'confirm',
                 title: 'Warning',
-                message: 'Are you sure you want to delete this report?\nThis cannot be reversed!',
+                message: 'Are you sure you want to delete this report?\nYou will not be able to recover the deleted report!',
                 actionText: 'Delete',
                 cancelText: 'Cancel'
             });
@@ -236,7 +254,10 @@
             try {
                 const response = await fetch('/api/project/report/delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({
                         projectID: projectID,
                         reportID: reportID
@@ -263,7 +284,7 @@
             const type = mainTab === "requirements" ? "requirement" : mainTab
             const confirmDelete = await window.ConfirmModal.show({
                 title: 'Warning',
-                message: `Are you sure you want to delete this ${type}? This cannot be reversed!`,
+                message: `Are you sure you want to delete this ${type} forever?`,
                 confirmText: 'Delete',
                 cancelText: 'Cancel'
             });
@@ -276,7 +297,10 @@
                 if (mainTab === "requirements") {
                     response = await fetch('/api/project/delete/requirements', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CSRF-Token': window.csrfToken
+                        },
                         body: JSON.stringify({
                             projectID: projectID,
                             requirementID: id
@@ -285,7 +309,10 @@
                 } else if (mainTab === "user-stories") {
                     response = await fetch('/api/project/delete/user-stories', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CSRF-Token': window.csrfToken
+                        },
                         body: JSON.stringify({
                             projectID: projectID,
                             storyID: id

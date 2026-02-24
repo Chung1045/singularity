@@ -48,7 +48,9 @@ async function fetchProjectChats(projectID) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'CSRF-Token': csrfToken
             },
+
             body: JSON.stringify({
                 projectID: projectID
             })
@@ -152,7 +154,10 @@ function createChatHistoryItem(threadName, chatID) {
 
                 const response = await fetch('/api/agent/chat-delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ projectID, chatID })
                 });
 
@@ -375,6 +380,7 @@ async function fetchProjectFiles(projectID) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'CSRF-Token': csrfToken
             },
             body: JSON.stringify({
                 projectID: projectID
@@ -477,7 +483,10 @@ function createFileItem(fileName, documentID) {
 
                 const response = await fetch('/api/project/file/rename', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ projectID, documentID, newFileName: `${finalName}.${ext}` })
                 });
 
@@ -505,7 +514,10 @@ function createFileItem(fileName, documentID) {
 
                 const response = await fetch('/api/project/file/download', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ projectID, documentID })
                 });
 
@@ -546,7 +558,10 @@ function createFileItem(fileName, documentID) {
 
                 const response = await fetch('/api/project/file/delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ projectID, documentID })
                 });
 
@@ -782,6 +797,7 @@ async function fetchProjectReports(projectID) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'CSRF-Token': csrfToken
             },
             credentials: 'include', // Include cookies for authentication
             body: JSON.stringify({
@@ -799,7 +815,7 @@ async function fetchProjectReports(projectID) {
             // Re-check containers before clearing (they might have been recreated by React)
             const leftContainer = document.getElementById("div-requirements-list");
             const rightContainer = document.getElementById("div-requirements-list-right");
-            
+
             // Clear containers carefully to avoid React re-render conflicts
             if (leftContainer) {
                 // Remove all child nodes instead of using innerHTML to avoid React issues
@@ -995,7 +1011,10 @@ function createReportItem(reportName, reportID, projectID, reportType) {
             try {
                 const response = await fetch('/api/project/report/download', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     credentials: 'include',
                     body: JSON.stringify({
                         projectID: projectID,
@@ -1049,7 +1068,10 @@ function createReportItem(reportName, reportID, projectID, reportType) {
             try {
                 const response = await fetch('/api/project/report/delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
                     credentials: 'include', // Include cookies for authentication
                     body: JSON.stringify({
                         projectID: projectID,
@@ -1274,7 +1296,10 @@ async function downloadReport(reportID, reportName, projectID) {
     try {
         const response = await fetch('/api/project/report/download', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': csrfToken
+            },
             credentials: 'include', // Include cookies for authentication
             body: JSON.stringify({
                 projectID: projectID,
@@ -1325,7 +1350,10 @@ async function downloadFile(documentID, fileName) {
 
         const response = await fetch('/api/project/file/download', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': csrfToken
+            },
             body: JSON.stringify({ projectID, documentID })
         });
 

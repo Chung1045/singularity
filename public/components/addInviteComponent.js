@@ -49,10 +49,13 @@
             try {
                 const response = await fetch('/api/project/search-users', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
+                    body: JSON.stringify({
                         projectID: projectID,
-                        query: query.trim() 
+                        query: query.trim()
                     })
                 });
 
@@ -85,7 +88,10 @@
             try {
                 const response = await fetch('/api/project/invite', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({
                         projectID: projectID,
                         invitedUserId: userId
@@ -97,10 +103,10 @@
                     if (data.success) {
                         // Add to invited set
                         setInvitedUsers(prev => new Set(prev).add(userId));
-                        
+
                         // Refresh notification badge
                         window.dispatchEvent(new CustomEvent('refreshNotifications'));
-                        
+
                         // Show success notification
                         if (window.showNotification) {
                             await window.showNotification({
@@ -185,7 +191,7 @@
                             fontFamily: '"Inter", Helvetica'
                         }
                     }, 'Add invite'),
-                    
+
                     // Close button
                     React.createElement('button', {
                         id: 'add-invite-modal-close-btn',
@@ -304,7 +310,7 @@
                     ),
 
                     // Search results / User list
-                    loading ? 
+                    loading ?
                         React.createElement('div', {
                             id: 'add-invite-loading-state',
                             style: {
@@ -342,7 +348,7 @@
                             gap: '12px'
                         }
                     },
-                        searchResults.map(user => 
+                        searchResults.map(user =>
                             React.createElement('div', {
                                 id: `add-invite-user-card-${user.userID}`,
                                 key: user.userID,
@@ -359,7 +365,7 @@
                                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                             },
                                 // Avatar
-                                user.profilePicture 
+                                user.profilePicture
                                     ? React.createElement('img', {
                                         src: user.profilePicture,
                                         alt: user.displayName,
@@ -412,7 +418,7 @@
                                             marginBottom: '2px'
                                         }
                                     }, user.displayName || 'Invited User'),
-                                    
+
                                     React.createElement('div', {
                                         id: `add-invite-user-username-${user.userID}`,
                                         style: {
@@ -422,7 +428,7 @@
                                             marginBottom: '2px'
                                         }
                                     }, `@${user.username || 'invited_user'}`),
-                                    
+
                                     React.createElement('div', {
                                         id: `add-invite-user-email-${user.userID}`,
                                         style: {

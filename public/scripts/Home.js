@@ -29,7 +29,7 @@ window.handleAnalyzeDocuments = async function() {
 
     // Get files from both sources: Source panel and attachment dropdown chips
     const selectedSource = ChatUtils.getSelectedSource() || [];
-    
+
     // Try both methods to get chip file IDs (fallback)
     let chipFileIDs = [];
     try {
@@ -37,7 +37,7 @@ window.handleAnalyzeDocuments = async function() {
     } catch (e) {
         console.warn('[Analyze Documents] Error getting chip file IDs from ChatUtils:', e);
     }
-    
+
     // Fallback to FileChipsManager method if ChatUtils didn't return anything
     if (!chipFileIDs || chipFileIDs.length === 0) {
         try {
@@ -46,7 +46,7 @@ window.handleAnalyzeDocuments = async function() {
             console.warn('[Analyze Documents] Error getting chip file IDs from FileChipsManager:', e);
         }
     }
-    
+
     // Also try direct DOM query as final fallback
     if (!chipFileIDs || chipFileIDs.length === 0) {
         try {
@@ -56,14 +56,14 @@ window.handleAnalyzeDocuments = async function() {
             console.warn('[Analyze Documents] Error getting chip file IDs from DOM:', e);
         }
     }
-    
+
     console.log('[Analyze Documents] Selected Source:', selectedSource);
     console.log('[Analyze Documents] Chip File IDs:', chipFileIDs);
     console.log('[Analyze Documents] Chips container exists:', !!document.getElementById('selected-files-container'));
     console.log('[Analyze Documents] Number of chips in DOM:', document.querySelectorAll('#selected-files-container [data-file-id]').length);
-    
+
     const allAttachedDocuments = ChatUtils.mergeAttachedDocuments(selectedSource, chipFileIDs);
-    
+
     console.log('[Analyze Documents] All Attached Documents:', allAttachedDocuments);
 
     if (!allAttachedDocuments?.length) {
@@ -72,16 +72,19 @@ window.handleAnalyzeDocuments = async function() {
     }
 
     const projectTitle = projectDropdown.options[projectDropdown.selectedIndex]?.text || 'Project Analysis';
-    
+
     // Show chat interface first so messages are visible
     ChatUtils.showChatInterface();
-    
+
     // Build file name map for displaying file names in chat
     let fileNameMap = new Map();
     try {
         const filesResponse = await fetch('/api/project/file/list', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify({ projectID })
         });
         if (filesResponse.ok) {
@@ -97,28 +100,31 @@ window.handleAnalyzeDocuments = async function() {
         console.error('Error fetching file names:', error);
     }
     window.chatFileNameMap = fileNameMap;
-    
+
     // Capture timestamp BEFORE sending to server
     const userMessageSendTime = new Date().toISOString();
-    
+
     // Add user message with attached files
     // File names will be displayed as text in message-bottom-row (handled by addMessage)
-    const userMessageText = allAttachedDocuments.length === 1 
-        ? 'Analyze Document' 
+    const userMessageText = allAttachedDocuments.length === 1
+        ? 'Analyze Document'
         : `Analyze ${allAttachedDocuments.length} Documents`;
     console.log('[Analyze] User message sent at:', userMessageSendTime);
     addMessage('user', userMessageText, null, null, allAttachedDocuments, userMessageSendTime);
-    
+
     // Remove the file chips container after adding the message to chat
     ChatUtils.clearSelectedFiles();
-    
+
     // Show loading indicator
     ChatUtils.showLoadingIndicator();
 
     try {
         const response = await fetch('/api/agent/analyze-documents', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify({
                 projectID,
                 documentIDs: allAttachedDocuments,
@@ -189,18 +195,18 @@ window.handleAnalyzeDocuments = async function() {
                         await refreshChatHistory();
                     }
                 };
-                
+
                 // Start selecting after a short delay to allow React to render
                 setTimeout(() => selectChatItem(), 500);
             }
 
             // Remove loading indicator before adding messages
             ChatUtils.removeLoadingIndicator();
-            
+
             for (const analysis of data.analysis) {
                 addMessage('ai', analysis || 'Analysis complete.');
             }
-            
+
             window.showNotification?.({ type: 'success', title: 'Analysis Complete', message: `Successfully analyzed ${data.documentsAnalyzed} document(s).`, actionText: 'OK' });
         } else {
             // Remove loading indicator on error
@@ -253,6 +259,7 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
 };
 
 const TempHome = ({ csrfToken, userInfo }) => {
+    window.csrfToken = csrfToken;
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
@@ -295,7 +302,10 @@ const TempHome = ({ csrfToken, userInfo }) => {
             try {
                 const response = await fetch('/api/profile-pic/fetch', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({})
                 });
 
@@ -406,7 +416,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
         const timer = setTimeout(() => {
             const quickPromptsContainer = document.getElementById('quick-prompts-container');
             const chatInterface = document.getElementById('chat-interface');
-            
+
             if (quickPromptsContainer && chatInterface) {
                 // Show quick prompts if on initial screen (chat interface is hidden)
                 if (chatInterface.style.display !== 'flex') {
@@ -439,7 +449,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
         $.ajax({
             url: '/api/logout',
             method: 'POST',
-            headers: { 'CSRF-Token': csrfToken },
+            headers: { 'CSRF-Token': window.csrfToken },
             data: JSON.stringify({}),
             contentType: 'application/json',
             success: () => {
@@ -486,6 +496,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
     };
 
     const username = userInfo?.userName || userInfo?.email || 'User';
+    console.log(`Home.js CSRF Token Value: ${window.csrfToken}`);
 
     // ===== RENDER =====
     return React.createElement('div', {
@@ -502,7 +513,8 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 onProfileRoute: handleProfileRoute,
                 userMenuOpen,
                 setUserMenuOpen,
-                userInfo
+                userInfo,
+                csrfToken: csrfToken,
             }),
 
             // Alert Modal
@@ -518,6 +530,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                 },
                 onClick: (e) => e.target === e.currentTarget && setShowFileUpload(false)
             },
+
                 React.createElement(window.FileUploadComponent, {
                     projectID: currentProjectID,
                     onClose: () => setShowFileUpload(false),

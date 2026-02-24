@@ -54,12 +54,12 @@
         // Fetch notifications when panel opens
         useEffect(() => {
             const wasOpen = prevIsOpenRef.current;
-            
+
             if (isOpen && !wasOpen) {
                 // Panel just opened - fetch notifications
                 fetchNotifications();
             }
-            
+
             // Update ref for next render
             prevIsOpenRef.current = isOpen;
         }, [isOpen]);
@@ -85,7 +85,10 @@
             try {
                 const response = await fetch('/api/notifications/list', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({})
                 });
 
@@ -105,15 +108,18 @@
             try {
                 await fetch('/api/notification/mark-read', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ notifID: notificationId })
                 });
-                
+
                 // Update local state to reflect read status
-                setNotifications(prev => prev.map(n => 
+                setNotifications(prev => prev.map(n =>
                     n.notificationID === notificationId ? { ...n, isRead: 1 } : n
                 ));
-                
+
                 // Trigger refresh of notification badge in sidebar
                 window.dispatchEvent(new CustomEvent('refreshNotifications'));
             } catch (error) {
@@ -125,10 +131,13 @@
             try {
                 // Mark as read when accepting
                 await markNotificationAsRead(notificationId);
-                
+
                 const response = await fetch('/api/notifications/accept-invitation', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ notificationId, projectId })
                 });
 
@@ -143,7 +152,7 @@
                     });
                     // Refresh projects in sidebar
                     window.dispatchEvent(new CustomEvent('refreshProjects'));
-                    
+
                     // Refresh notifications to show the "successfully joined" notification
                     setTimeout(() => {
                         fetchNotifications();
@@ -158,10 +167,13 @@
             try {
                 // Mark as read when declining
                 await markNotificationAsRead(notificationId);
-                
+
                 const response = await fetch('/api/notifications/decline-invitation', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ notificationId })
                 });
 
@@ -189,7 +201,7 @@
 
                 await Promise.all(promises);
                 setNotifications([]);
-                
+
                 // Trigger refresh of notification badge in sidebar
                 window.dispatchEvent(new CustomEvent('refreshNotifications'));
             } catch (error) {
@@ -201,16 +213,19 @@
             try {
                 // Mark as read before dismissing
                 await markNotificationAsRead(notificationId);
-                
+
                 const response = await fetch('/api/notification/remove', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ notifID: notificationId })
                 });
 
                 if (response.ok) {
                     setNotifications(prev => prev.filter(n => n.notificationID !== notificationId));
-                    
+
                     // Trigger refresh of notification badge in sidebar
                     // This ensures the red dot updates based on remaining unread notifications
                     window.dispatchEvent(new CustomEvent('refreshNotifications'));
@@ -399,7 +414,7 @@
         // Check if this is an invitation that requires action from the user
         // Only show Accept/Decline for "You are invited to join..." messages
         // Don't show for owner's "You invited..." or collaborator's "You have successfully joined..." messages
-        const isActionableInvitation = notification.notificationType === 'collaboration_invite' && 
+        const isActionableInvitation = notification.notificationType === 'collaboration_invite' &&
                                        notification.notificationMessage.includes('You are invited to join');
 
         // Handler to mark as read when clicking on the notification
@@ -408,7 +423,7 @@
             if (e.target.tagName === 'BUTTON') {
                 return;
             }
-            
+
             // Mark as read if it's unread
             if (isUnread && onMarkAsRead) {
                 onMarkAsRead(notification.notificationID);

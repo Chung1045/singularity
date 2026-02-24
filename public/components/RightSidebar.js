@@ -6,6 +6,7 @@
      * A draggable right sidebar with resizable width (matches left sidebar)
      * Contains the Requirements/Report section moved from left sidebar
      */
+
     window.RightSidebar = function RightSidebar({ selectedProjectID }) {
         // --- Resizing Logic (matching left sidebar) ---
         const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -14,6 +15,8 @@
         });
         const [isResizing, setIsResizing] = useState(false);
         const sidebarRef = useRef(null);
+
+        console.log('[RightSidebar] selectedProjectID:', selectedProjectID);
 
         // Refresh reports when selectedProjectID changes
         useEffect(() => {

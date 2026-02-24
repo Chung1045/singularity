@@ -2,7 +2,7 @@
     const { useState, useEffect, useRef } = React;
     console.log('[FileUpload] fileUploadComponent.js loading...');
 
-    window.FileUploadComponent = ({ projectID, onClose, onFilesUploaded }) => {
+    window.FileUploadComponent = ({ projectID, onClose, onFilesUploaded}) => {
         console.log('[FileUpload] Component rendered with projectID:', projectID);
         const [uploadStage, setUploadStage] = useState('initial');
         const [selectedFiles, setSelectedFiles] = useState([]);
@@ -17,7 +17,7 @@
         const uploadAbortController = useRef(null);
 
         // Preserve existing checked state - new files start unchecked
-        useEffect(() => {
+        useEffect(() => {``
             setCheckedTempIDs(prev => {
                 const newSet = new Set();
                 selectedFiles.forEach(file => {
@@ -174,8 +174,11 @@
                     const renamedFile = new File([fileData.file], fileData.originalName, { type: fileData.file.type });
                     formData.append('file', renamedFile);
                     formData.append('projectID', projectID);
-                    const response = await fetch('/api/project/file/upload', { 
-                        method: 'POST', 
+                    const response = await fetch('/api/project/file/upload', {
+                        method: 'POST',
+                        headers: {
+                            'CSRF-Token': window.csrfToken
+                        },
                         body: formData,
                         signal: uploadAbortController.current.signal
                     });

@@ -132,7 +132,7 @@ async function serverSetUp() {
         const csrfProtection = csrf({
             cookie: {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: false,
                 sameSite: 'lax'
             }
         });
