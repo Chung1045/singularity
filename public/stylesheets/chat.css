@@ -383,7 +383,9 @@
     /*margin: 0 auto; !* Center it *!*/
 
     /* margin-left: 150px; */
-    margin-bottom: -25px;
+    /* margin-bottom: -25px; */
+    /* margin-bottom: -50px; */
+
 
 }
 
@@ -602,7 +604,7 @@
         max-width: 800px; /* Match the input field width */
         /*margin: 0 auto; !* Center it *!*/
         margin-left: 150px;
-        margin-bottom: -25px;
+        margin-bottom: -50px;
 
     }
 
