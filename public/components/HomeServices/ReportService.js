@@ -23,7 +23,10 @@ const ReportService = {
         try {
             const response = await fetch('/api/agent/document-generation/user-stories', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': window.csrfToken
+                },
                 body: JSON.stringify({ projectID })
             });
 
@@ -75,7 +78,10 @@ const ReportService = {
         try {
             const response = await fetch('/api/agent/document-generation/requirements', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': window.csrfToken
+                },
                 body: JSON.stringify({ projectID })
             });
 
@@ -116,7 +122,10 @@ const ReportService = {
         try {
             const response = await fetch('/api/project/report/download', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': window.csrfToken
+                },
                 credentials: 'include',
                 body: JSON.stringify({ projectID, reportID })
             });
@@ -162,7 +171,10 @@ const ReportService = {
         try {
             const response = await fetch('/api/project/report/list', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': window.csrfToken
+                },
                 credentials: 'include',
                 body: JSON.stringify({ projectID })
             });
@@ -230,7 +242,10 @@ const ReportService = {
     async fetchList(projectID) {
         const response = await fetch('/api/project/report/list', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             credentials: 'include',
             body: JSON.stringify({ projectID })
         });

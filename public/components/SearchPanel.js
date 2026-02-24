@@ -95,7 +95,10 @@
                         // Fetch file stats from dedicated endpoint
                         const response = await fetch('/api/project/file/stats', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': csrfToken
+                            },
                             body: JSON.stringify({ projectID, documentID: selectedItem.documentID })
                         });
 
@@ -221,7 +224,7 @@
                         color: '#000'
                     }
                 }, 'Search'),
-                
+
                 React.createElement('button', {
                     id: 'search-panel-close-btn',
                     onClick: onClose,
@@ -388,7 +391,7 @@
                         }),
                         'Back to results'
                     ),
-                    
+
                     // Detail content - macOS Quick Look style with sidebar theme
                     selectedType === 'file' ? React.createElement('div', {
                         id: 'search-panel-file-preview',
@@ -450,13 +453,13 @@
                                 React.createElement('div', {
                                     className: selectedItem.name.length > 30 ? 'file-name-marquee' : '',
                                     style: {
-                                  
+
                                         wordBreak: selectedItem.name.length <= 30 ? 'break-word' : 'normal'
                                     }
                                 }, selectedItem.name)
                             )
                         ),
-                        
+
                         // File details section
                         React.createElement('div', {
                             id: 'search-panel-file-details',
@@ -469,7 +472,7 @@
                                 flex: '1'
                             }
                         },
-                            
+
                             // Divider
                             // React.createElement('div', {
                             //     style: {
@@ -477,7 +480,7 @@
                             //         backgroundColor: '#e4e4e4'
                             //     }
                             // }),
-                            
+
                             // Info rows
                             React.createElement('div', {
                                 id: 'search-panel-file-info',
@@ -495,21 +498,21 @@
                                         alignItems: 'center'
                                     }
                                 },
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
                                             color: '#666',
                                             fontWeight: '400'
-                                        } 
+                                        }
                                     }, 'File Type'),
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
-                                            color: '#1c1d21', 
-                                            fontWeight: '500' 
-                                        } 
+                                            color: '#1c1d21',
+                                            fontWeight: '500'
+                                        }
                                     }, `${selectedItem.documentExt.replace('.', '').toUpperCase()} Document`)
                                 ),
                                 React.createElement('div', {
@@ -520,21 +523,21 @@
                                         alignItems: 'center'
                                     }
                                 },
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
                                             color: '#666',
                                             fontWeight: '400'
-                                        } 
+                                        }
                                     }, 'File Size'),
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
-                                            color: '#1c1d21', 
-                                            fontWeight: '500' 
-                                        } 
+                                            color: '#1c1d21',
+                                            fontWeight: '500'
+                                        }
                                     }, fileMetadata.size ? formatFileSize(fileMetadata.size) : 'Unknown')
                                 ),
                                 React.createElement('div', {
@@ -545,21 +548,21 @@
                                         alignItems: 'center'
                                     }
                                 },
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
                                             color: '#666',
                                             fontWeight: '400'
-                                        } 
+                                        }
                                     }, 'Upload Date'),
-                                    React.createElement('span', { 
-                                        style: { 
+                                    React.createElement('span', {
+                                        style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
-                                            color: '#1c1d21', 
-                                            fontWeight: '500' 
-                                        } 
+                                            color: '#1c1d21',
+                                            fontWeight: '500'
+                                        }
                                     }, fileMetadata.date ? formatDate(fileMetadata.date) : 'Unknown')
                                 ),
                                 // Document ID row - commented out
@@ -571,25 +574,25 @@
                                 //         alignItems: 'center'
                                 //     }
                                 // },
-                                //     React.createElement('span', { 
-                                //         style: { 
+                                //     React.createElement('span', {
+                                //         style: {
                                 //             fontFamily: 'Inter, Helvetica',
                                 //             fontSize: '13px',
                                 //             color: '#666',
                                 //             fontWeight: '400'
-                                //         } 
+                                //         }
                                 //     }, 'Document ID'),
-                                //     React.createElement('span', { 
-                                //         style: { 
+                                //     React.createElement('span', {
+                                //         style: {
                                 //             fontFamily: 'monospace',
                                 //             fontSize: '11px',
-                                //             color: '#1c1d21', 
+                                //             color: '#1c1d21',
                                 //             fontWeight: '500'
-                                //         } 
+                                //         }
                                 //     }, selectedItem.documentID.substring(0, 8) + '...')
                                 // )
                             ),
-                            
+
                             // Divider
                             React.createElement('div', {
                                 style: {
@@ -597,7 +600,7 @@
                                     backgroundColor: '#e4e4e4'
                                 }
                             }),
-                            
+
                             // Action button
                             React.createElement('button', {
                                 id: 'search-panel-file-download-btn',
@@ -675,7 +678,7 @@
                                         fontWeight: '700',
                                         letterSpacing: '0.5px'
                                     }
-                                }, selectedType === 'requirement' 
+                                }, selectedType === 'requirement'
                                     ? `${(selectedItem.details?.requirementType === 'functional' || selectedItem.details?.requirementType === 'FR') ? 'FR' : 'NFR'}-${String(selectedItem.details?.requirementSeq || 0).padStart(2, '0')}`
                                     : `US-${String(selectedItem.details?.storySeq || 0).padStart(2, '0')}`)
                             ),
@@ -691,7 +694,7 @@
                                 }
                             }, selectedItem.title)
                         ),
-                        
+
                         // Details section
                         React.createElement('div', {
                             id: 'search-panel-requirement-details',
@@ -731,7 +734,7 @@
                                     }
                                 }, selectedItem.details.description)
                             ),
-                            
+
                             // Role (for both requirements and user stories)
                             selectedItem.details?.role && React.createElement('div', {
                                 style: {
@@ -759,7 +762,7 @@
                                     }
                                 }, selectedItem.details.role)
                             ),
-                            
+
                             // Source References
                             selectedItem.details?.sourceReference && selectedItem.details.sourceReference.length > 0 && React.createElement('div', {
                                 style: {
@@ -785,7 +788,7 @@
                                         gap: '6px'
                                     }
                                 },
-                                    selectedItem.details.sourceReference.map((ref, idx) => 
+                                    selectedItem.details.sourceReference.map((ref, idx) =>
                                         React.createElement('div', {
                                             key: idx,
                                             style: {
@@ -799,7 +802,7 @@
                                                 flexDirection: 'column',
                                                 gap: '4px'
                                             }
-                                        }, 
+                                        },
                                             typeof ref === 'string' ? ref : React.createElement(React.Fragment, null,
                                                 ref.documentName && React.createElement('div', {
                                                     style: { fontWeight: '600', color: '#1c1d21' }

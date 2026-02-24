@@ -82,7 +82,10 @@ function createChatHistoryItem(chatThreadName, chatID) {
 
                 const response = await fetch('/api/agent/chat/export', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ projectID, chatID })
                 });
 
@@ -190,7 +193,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'center'
-                    
+
                 }
             },
                 React.createElement('img', {
@@ -204,7 +207,7 @@ function createChatHistoryItem(chatThreadName, chatID) {
                         cursor: 'pointer',
                         maxWidth: '30px',
                         maxHeight: '30px'
-                        
+
                     },
                     src: './img/more_vert_24.svg',
                     alt: '',

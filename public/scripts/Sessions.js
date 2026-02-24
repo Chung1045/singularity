@@ -2,6 +2,7 @@
 const { useState } = React;
 
 const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
+    window.csrfToken = csrfToken;
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
         return saved !== null ? JSON.parse(saved) : true;
@@ -637,7 +638,7 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                             width: '100%',
                                             maxHeight: '300px',
                                             overflowY: 'auto',
-                                            
+
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: isMobile ? '10px' : '15px',

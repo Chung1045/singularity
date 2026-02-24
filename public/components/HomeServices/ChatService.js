@@ -202,7 +202,10 @@ const ChatService = {
     async fetchProjectChats(projectID) {
         const response = await fetch('/api/agent/all-chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify({ projectID })
         });
 
@@ -221,7 +224,10 @@ const ChatService = {
     async analyzeDocuments(data) {
         const response = await fetch('/api/agent/analyze-documents', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify(data)
         });
 
@@ -231,8 +237,11 @@ const ChatService = {
     async fetchSuggestedActions(projectID, chatID) {
         const response = await fetch('/api/agent/chat/fetch-suggestions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectID, chatID })
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
+            body: JSON.stringify({ projectID, chatID})
         });
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         const data = await response.json();

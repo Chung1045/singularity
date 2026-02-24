@@ -264,7 +264,10 @@ const EditMode = {
         try {
             const response = await fetch('/api/project/file/list', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': window.csrfToken
+                },
                 body: JSON.stringify({ projectID })
             });
 

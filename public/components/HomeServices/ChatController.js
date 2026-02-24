@@ -116,7 +116,8 @@ const ChatController = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'text/event-stream'
+                'Accept': 'text/event-stream',
+                'CSRF-Token': window.csrfToken
             },
             body: JSON.stringify(data)
         });
@@ -375,7 +376,8 @@ const ChatController = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'text/event-stream'
+                'Accept': 'text/event-stream',
+                'CSRF-Token': window.csrfToken
             },
             body: JSON.stringify(data)
         });
@@ -667,7 +669,10 @@ const ChatController = {
                 try {
                     const filesResponse = await fetch('/api/project/file/list', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CSRF-Token': window.csrfToken
+                        },
                         body: JSON.stringify({ projectID: data.projectID })
                     });
 
@@ -724,7 +729,7 @@ const ChatController = {
 
             if (conversations.length > 0 && data.projectID) {
                 try {
-                    const suggestions = await ChatService.fetchSuggestedActions(data.projectID, chatID);
+                    const suggestions = await ChatService.fetchSuggestedActions(data.projectID, chatID, window.csrfToken);
                     console.log(`Fetched suggestions: ${suggestions}`)
 
                     // Find the last AI message's content wrapper to attach chips to
@@ -1271,7 +1276,10 @@ async function fetchProjectChats(projectID) {
 async function fetchProjectFiles(projectID) {
     const response = await fetch('/api/project/file/list', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'CSRF-Token': window.csrfToken
+        },
         body: JSON.stringify({ projectID })
     });
 
@@ -1322,7 +1330,10 @@ async function showUploadedFilesSelectionModal() {
     try {
         const response = await fetch('/api/project/file/list', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify({ projectID })
         });
 
@@ -1380,7 +1391,10 @@ async function initDelete(conversationID) {
     try {
         const response = await fetch('/api/agent/conversation-delete', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify({ projectID, chatID, conversationID })
         });
 

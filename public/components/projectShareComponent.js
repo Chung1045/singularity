@@ -46,7 +46,10 @@
             try {
                 const response = await fetch('/api/project/collaborators', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
                     body: JSON.stringify({ projectID })
                 });
 
@@ -84,10 +87,13 @@
             try {
                 const response = await fetch('/api/project/remove-collaborator', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
+                    body: JSON.stringify({
                         projectID,
-                        userId 
+                        userId
                     })
                 });
 
@@ -132,10 +138,13 @@
         try {
             const response = await fetch('/api/project/remove-invite', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': window.csrfToken
+                },
+                body: JSON.stringify({
                     projectID,
-                    inviteId 
+                    inviteId
                 })
             });
 
@@ -180,10 +189,13 @@
         try {
             const response = await fetch('/api/project/invite', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': window.csrfToken
+                },
+                body: JSON.stringify({
                     projectID,
-                    invitedUserId: userId 
+                    invitedUserId: userId
                 })
             });
 
@@ -192,10 +204,10 @@
                 if (data.success) {
                     // Remove from cancelled list
                     setCancelledInvites(prev => prev.filter(u => u.userID !== userId));
-                    
+
                     // Refresh notification badge
                     window.dispatchEvent(new CustomEvent('refreshNotifications'));
-                    
+
                     await window.showNotification({
                         type: 'success',
                         title: 'Invitation Sent',
@@ -225,10 +237,13 @@
             try {
                 const response = await fetch('/api/project/accept-invite', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
+                    body: JSON.stringify({
                         projectID,
-                        inviteId 
+                        inviteId
                     })
                 });
 
@@ -434,7 +449,7 @@
                             padding: '24px'
                         }
                     },
-                        loading ? 
+                        loading ?
                             React.createElement('div', {
                                 id: 'project-share-loading-state',
                                 style: {
@@ -489,7 +504,7 @@
                                     }
                                 },
                                     // Avatar
-                                    projectData.owner.profilePicture 
+                                    projectData.owner.profilePicture
                                         ? React.createElement('img', {
                                             src: projectData.owner.profilePicture,
                                             alt: projectData.owner.displayName,
@@ -540,7 +555,7 @@
                                                 marginBottom: '2px'
                                             }
                                         }, projectData.owner.displayName || 'Owner'),
-                                        
+
                                         React.createElement('div', {
                                             style: {
                                                 fontSize: '13px',
@@ -549,7 +564,7 @@
                                                 marginBottom: '2px'
                                             }
                                         }, `@${projectData.owner.username || 'owner'}`),
-                                        
+
                                         React.createElement('div', {
                                             style: {
                                                 fontSize: '13px',
@@ -562,7 +577,7 @@
                             ),
 
                             // Collaborators Section
-                            projectData.collaborators && projectData.collaborators.length > 0 && 
+                            projectData.collaborators && projectData.collaborators.length > 0 &&
                             React.createElement('div', {
                                 id: 'project-share-collaborators-section'
                             },
@@ -574,7 +589,7 @@
                                         fontWeight: '600',
                                         color: '#000000',
                                         fontFamily: '"Inter", Helvetica',
-                                       
+
                                     }
                                 }, 'Collaborators'),
 
@@ -586,7 +601,7 @@
                                         gap: '8px'
                                     }
                                 },
-                                    projectData.collaborators.map(collaborator => 
+                                    projectData.collaborators.map(collaborator =>
                                         React.createElement('div', {
                                             id: `project-share-collaborator-card-${collaborator.userID}`,
                                             key: collaborator.userID,
@@ -601,7 +616,7 @@
                                             }
                                         },
                                             // Avatar
-                                            collaborator.profilePicture 
+                                            collaborator.profilePicture
                                                 ? React.createElement('img', {
                                                     src: collaborator.profilePicture,
                                                     alt: collaborator.displayName,
@@ -652,7 +667,7 @@
                                                         marginBottom: '2px'
                                                     }
                                                 }, collaborator.displayName || 'Invited User'),
-                                                
+
                                                 React.createElement('div', {
                                                     style: {
                                                         fontSize: '13px',
@@ -661,7 +676,7 @@
                                                         marginBottom: '2px'
                                                     }
                                                 }, `@${collaborator.username || 'invited_user'}`),
-                                                
+
                                                 React.createElement('div', {
                                                     style: {
                                                         fontSize: '13px',
@@ -710,7 +725,7 @@
                                         fontWeight: '600',
                                         color: '#000000',
                                         fontFamily: '"Inter", Helvetica',
-                                        
+
                                     }
                                 }, 'Added Collaboration'),
 
@@ -722,7 +737,7 @@
                                         gap: '8px'
                                     }
                                 },
-                                    [...(projectData.pendingInvites || []), ...cancelledInvites].map(invite => 
+                                    [...(projectData.pendingInvites || []), ...cancelledInvites].map(invite =>
                                         React.createElement('div', {
                                             id: `project-share-pending-card-${invite.inviteID || invite.userID}`,
                                             key: invite.inviteID || invite.userID,
@@ -737,7 +752,7 @@
                                             }
                                         },
                                             // Avatar
-                                            invite.profilePicture 
+                                            invite.profilePicture
                                                 ? React.createElement('img', {
                                                     src: invite.profilePicture,
                                                     alt: invite.displayName,
@@ -788,7 +803,7 @@
                                                         marginBottom: '2px'
                                                     }
                                                 }, invite.displayName || 'Invited User'),
-                                                
+
                                                 React.createElement('div', {
                                                     style: {
                                                         fontSize: '13px',
@@ -797,7 +812,7 @@
                                                         marginBottom: '2px'
                                                     }
                                                 }, `@${invite.username || 'invited_user'}`),
-                                                
+
                                                 React.createElement('div', {
                                                     style: {
                                                         fontSize: '13px',
@@ -900,7 +915,7 @@
             ),
 
             // Add Invite Modal (nested)
-            showAddInvite && window.AddInviteModal && 
+            showAddInvite && window.AddInviteModal &&
             React.createElement(window.AddInviteModal, {
                 isOpen: showAddInvite,
                 onClose: () => {

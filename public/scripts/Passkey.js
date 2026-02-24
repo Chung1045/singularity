@@ -2,6 +2,7 @@
 const { useState } = React;
 
 const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
+    window.csrfToken = csrfToken;
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
         return saved !== null ? JSON.parse(saved) : true;
