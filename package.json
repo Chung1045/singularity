@@ -10,9 +10,7 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "overrides": {
-      "onnxruntime-node": "1.17.3"
-    },
+  
   "dependencies": {
     "@dr.pogodin/csurf": "^1.16.6",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
