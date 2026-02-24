@@ -10,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "overrides": {
+      "onnxruntime-node": "1.17.3"
+    },
   "dependencies": {
     "@dr.pogodin/csurf": "^1.16.6",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -46,5 +49,8 @@
     "uuid-v4": "^0.1.0",
     "wavefile": "^11.0.0",
     "winston": "^3.19.0"
+
+    
+
   }
 }

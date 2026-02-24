@@ -265,3 +265,12 @@ a {
     margin-bottom: -0.13px;
     aspect-ratio: 3;
 }
+
+/* Overlay breakpoint: left sidebar is always collapsed (72px icon strip), main content fills the rest */
+@media (max-width: 1040px) {
+  .sidebar-expand .main-screen.chat-mode {
+    left: 72px;
+    right: 0;
+    width: auto;
+  }
+}

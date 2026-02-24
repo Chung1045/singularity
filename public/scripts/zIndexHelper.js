@@ -19,6 +19,8 @@ window.ZIndex = {
     DROPDOWN: 20,
     TOOLTIP: 21,
     MENU: 22,
+    SIDEBAR_OVERLAY_BACKDROP: 24,
+    SIDEBAR_OVERLAY: 25,
 
     // Modal Layer (30-39)
     MODAL_BACKDROP: 30,

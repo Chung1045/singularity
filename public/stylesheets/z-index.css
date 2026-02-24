@@ -22,6 +22,10 @@
     --z-chat-topbar: 12;
     --z-chat-input: 13;
 
+    /* Sidebar Overlay (24-25): sidebar overlaid on content at narrow widths */
+    --z-sidebar-overlay-backdrop: 24;
+    --z-sidebar-overlay: 25;
+
     /* Overlay Layer (20-29) */
     --z-dropdown: 20;
     --z-tooltip: 21;

@@ -6,7 +6,7 @@
 (function() {
     const { useState, useEffect, useRef } = React;
 
-    const SearchPanel = ({ isOpen, onClose, sidebarCollapsed, isHomePage = false }) => {
+    const SearchPanel = ({ isOpen, onClose, sidebarCollapsed, isHomePage = false, isOverlay }) => {
         const [searchQuery, setSearchQuery] = useState('');
         const [sidebarWidth, setSidebarWidth] = useState(302);
         const [selectedItem, setSelectedItem] = useState(null);
@@ -163,8 +163,9 @@
             return null;
         }
 
-        const panelLeft = `${sidebarWidth}px`;
-        const backdropLeft = `${sidebarWidth + 400}px`; // sidebar + panel width
+        const effectiveSidebarWidth = isOverlay ? 320 : sidebarWidth;
+        const panelLeft = `${effectiveSidebarWidth}px`;
+        const backdropLeft = `${effectiveSidebarWidth + 400}px`; // sidebar + panel width
 
         return React.createElement(React.Fragment, null,
             // Backdrop (only on the right side, after the panel)

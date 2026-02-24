@@ -279,6 +279,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
     const [selectedProjectID, setSelectedProjectID] = useState(null);
 
     const isMobile = windowWidth <= 480;
+    const isOverlay = windowWidth <= 1040;
 
     // ===== EFFECTS =====
 
@@ -288,6 +289,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Auto-collapse sidebar when entering overlay breakpoint
+    React.useEffect(() => {
+        if (isOverlay) {
+            setSidebarCollapsed(true);
+        }
+    }, [isOverlay]);
 
     // Fetch user avatar
     React.useEffect(() => {
@@ -493,10 +501,23 @@ const TempHome = ({ csrfToken, userInfo }) => {
         onClick: () => setUserMenuOpen(false)
     },
         React.createElement('div', { className: 'group' },
+            // Sidebar overlay backdrop (narrow screens only, when sidebar is open)
+            isOverlay && !sidebarCollapsed && React.createElement('div', {
+                className: 'sidebar-overlay-backdrop',
+                style: {
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                    zIndex: window.ZIndex?.SIDEBAR_OVERLAY_BACKDROP || 24,
+                    animation: 'backdrop-fade-in 200ms ease forwards',
+                },
+                onClick: () => setSidebarCollapsed(true)
+            }),
+
             // Sidebar
             React.createElement(window.Sidebar, {
                 sidebarCollapsed,
                 setSidebarCollapsed,
+                isOverlay,
                 username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
