@@ -1518,7 +1518,7 @@
                         React.createElement('img', {
                             id: 'sidebar-header-logo-img',
                             className: 'union',
-                            src: './img/union.svg',
+                            src: './img/Union.svg',
                             alt: 'Singularity Icon'
                         })
                     )
