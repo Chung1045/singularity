@@ -1493,8 +1493,8 @@
                     top: 0,
                     left: 0,
                     height: '100vh',
-                    width: '320px',
-                    minWidth: '320px',
+                    width: '360px',
+                    minWidth: '360px',
                     zIndex: window.ZIndex?.SIDEBAR_OVERLAY || 25,
                 } : {
                     width: sidebarCollapsed ? 'auto' : `${sidebarWidth}px`,
