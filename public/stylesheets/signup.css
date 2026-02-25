@@ -29,16 +29,16 @@ a {
 .frame {
     background-size: 100% 100%;
     width: 100%;
-    min-width: 1440px;
-    min-height: 900px;
+    min-height: 100vh;
     display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .frame .sign-up {
-    margin-top: 150px;
     width: 866px;
     height: 625px;
-    margin-left: 287px;
+    margin: 60px auto;
     display: flex;
     transition: height 0.3s ease;
 }
@@ -469,9 +469,9 @@ display: flex;
 }
 
 /* =====================
-   MOBILE PORTRAIT VIEW
+   RESPONSIVE: tablet + mobile (≤ 920px)
    ===================== */
-@media (max-width: 500px) {
+@media (max-width: 920px) {
   html, body {
     align-items: center;
     height: auto;
@@ -485,16 +485,14 @@ display: flex;
     width: 100%;
     display: flex;
     justify-content: center;
-    /* align-items: center; */
+    align-items: flex-start;
   }
 
-
-
-  /* Sign-up wrapper: centered, auto height */
+  /* Sign-up wrapper: responsive width, auto height */
   .frame .sign-up {
-    width: min(445px, 100%);
+    width: min(500px, 92%);
     height: auto;
-    margin: 24px auto;
+    margin: 32px auto;
     display: flex;
     flex-direction: column;
   }
