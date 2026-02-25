@@ -45,7 +45,7 @@ a {
 
 .frame .login {
   width: 866px;
-  height: 510px;
+  height: 478px;
   position: relative;
   background-color: #ffffff;
   border-radius: 20px;
@@ -267,7 +267,7 @@ a {
   top: 10px;
   left: 10px;
   width: 423px;
-  height: 490px;
+  height: 457px;
   display: flex;
   justify-content: center;
   /* background-image: url(./img/left-content-background.svg); */

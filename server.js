@@ -101,26 +101,6 @@ global.io = io;
 global.userSockets = userSockets;
 
 async function serverSetUp() {
-    // Security Headers Middleware
-    app.use((req, res, next) => {
-        // Remove X-Powered-By header to prevent information leakage
-        res.removeHeader('X-Powered-By');
-        
-        // Set X-Content-Type-Options to prevent MIME type sniffing
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        
-        // Set X-Frame-Options to prevent clickjacking attacks
-        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-        
-        // Content Security Policy header
-        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'self'");
-        
-        // Remove Server header or obscure it
-        res.setHeader('Server', 'WebServer');
-        
-        next();
-    });
-
     app.use((req, res, next) => {
         logAccessedPath(req)
         next();
