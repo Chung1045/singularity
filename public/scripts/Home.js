@@ -262,6 +262,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
     window.csrfToken = csrfToken;
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        if (window.innerWidth <= 1040) return true;
         const saved = localStorage.getItem('sidebarCollapsed');
         return saved !== null ? JSON.parse(saved) : true;
     });
@@ -297,10 +298,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Auto-collapse sidebar when entering overlay breakpoint
+    // Collapse sidebar when entering overlay breakpoint; restore saved state when leaving
     React.useEffect(() => {
         if (isOverlay) {
             setSidebarCollapsed(true);
+        } else {
+            const saved = localStorage.getItem('sidebarCollapsed');
+            setSidebarCollapsed(saved !== null ? JSON.parse(saved) : false);
         }
     }, [isOverlay]);
 

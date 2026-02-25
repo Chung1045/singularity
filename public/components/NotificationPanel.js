@@ -252,7 +252,7 @@
 
         if (!isOpen) return null;
 
-        const effectiveSidebarWidth = (isOverlay && !sidebarCollapsed) ? 350 : sidebarWidth;
+        const effectiveSidebarWidth = (isOverlay && !sidebarCollapsed) ? 361 : sidebarWidth;
         const panelLeft = `${effectiveSidebarWidth}px`;
         const backdropLeft = `${effectiveSidebarWidth + 400}px`; // sidebar + panel width
 
