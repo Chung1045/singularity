@@ -131,7 +131,6 @@ async function serverSetUp() {
         },
         crossOriginEmbedderPolicy: false,
     }));
-    // ────────────────────────────────────────────────────────────────────────
 
     app.use((req, res, next) => {
         logAccessedPath(req)
