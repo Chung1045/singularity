@@ -227,18 +227,18 @@ display: flex;
 }
 
 .frame .content {
-    display: flex;
-    flex-direction: column;
-    width: 94.56%;
-    height: 114.00%;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 20px;
-    position: absolute;
-    top: 12.69%;
-    left: 2.60%;
-    background-color: #ffffff;
-    border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  width: 94.56%;
+  height: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 20px;
+  position: absolute;
+  top: 10%;
+  left: 2.60%;
+  background-color: #ffffff;
+  border-radius: 10px;
 }
 
 .frame .slogan {
