@@ -24,14 +24,13 @@ const Message = ({ text, visible, onClose, showClose = true }) => {
 
 
 const TempLogin = ({ csrfToken }) => {
-    console.log(`csrfToken in Login: ${csrfToken}`)
     const [usernameEmail, setUsernameEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [message, setMessage] = useState({ text: '', visible: false, showClose: true, emoji: '👋' });
+    const [message, setMessage] = useState({ text: '', visible: false, showClose: true, emoji: undefined });
 
-    const showSlideUpMessage = (text, showClose = true, autoHideDuration = 5000, emoji = '⚠️') => {
+    const showSlideUpMessage = (text, showClose = true, autoHideDuration = 5000, emoji = undefined) => {
         setMessage({ text, visible: true, showClose, emoji });
         if (autoHideDuration > 0) {
             setTimeout(() => {
@@ -45,7 +44,7 @@ const TempLogin = ({ csrfToken }) => {
     };
 
     const handleLoginSuccess = () => {
-        showSlideUpMessage('Login successful! Redirecting...', false, 0, '✅');
+        showSlideUpMessage('Login successful! Redirecting...', false, 0, '!');
         setTimeout(() => {
             window.location.href = '/home';
         }, 2000);
@@ -53,12 +52,12 @@ const TempLogin = ({ csrfToken }) => {
 
     const handleLogin = async () => {
         if (!usernameEmail.trim()) {
-            showSlideUpMessage('Please enter your username or email address', true, 5000, '⚠️');
+            showSlideUpMessage('Please enter your username or email address', true, 5000, '!');
             return;
         }
 
         if (!password.trim()) {
-            showSlideUpMessage('Please enter your password', true, 5000, '⚠️');
+            showSlideUpMessage('Please enter your password', true, 5000, '!');
             return;
         }
 
@@ -77,12 +76,12 @@ const TempLogin = ({ csrfToken }) => {
                 handleLoginSuccess();
             } else {
                 const data = await response.json();
-                showSlideUpMessage(data.message || 'Login failed. Please try again.', true, 5000, '❌');
+                showSlideUpMessage(data.message || 'Login failed. Please try again.', true, 5000, '!');
                 setIsLoading(false);
             }
         } catch (error) {
             console.error('Login error:', error);
-            showSlideUpMessage('Login failed. Please try again.', true, 5000, '❌');
+            showSlideUpMessage('Login failed. Please try again.', true, 5000, '!');
             setIsLoading(false);
         }
     };
@@ -170,7 +169,7 @@ const TempLogin = ({ csrfToken }) => {
                             React.createElement('div', { className: 'text-wrapper-3', id: 'label-username' }, 'Username or email address'),
                             React.createElement('div', { className: 'div-wrapper', id: 'username-input-wrapper' },
                                 React.createElement('input', {
-                                    id: 'input-username', // ID ADDED
+                                    id: 'input-username',
                                     type: 'text',
                                     className: 'text-wrapper-4',
                                     value: usernameEmail,
@@ -195,7 +194,7 @@ const TempLogin = ({ csrfToken }) => {
                             React.createElement('div', { className: 'text-wrapper-3', id: 'label-password' }, 'Password'),
                             React.createElement('div', { className: 'div-wrapper', id: 'password-input-wrapper', style: { position: 'relative' } },
                                 React.createElement('input', {
-                                    id: 'input-password', // ID ADDED
+                                    id: 'input-password',
                                     type: showPassword ? 'text' : 'password',
                                     className: 'text-wrapper-4',
                                     value: password,
@@ -214,7 +213,7 @@ const TempLogin = ({ csrfToken }) => {
                                     }
                                 }),
                                 React.createElement('button', {
-                                        id: 'btn-toggle-password', // ID ADDED
+                                        id: 'btn-toggle-password',
                                         type: 'button',
                                         onClick: () => setShowPassword(!showPassword),
                                         style: {
@@ -233,7 +232,7 @@ const TempLogin = ({ csrfToken }) => {
                                         'aria-label': showPassword ? 'Hide password' : 'Show password'
                                     },
                                     React.createElement('img', {
-                                        id: 'icon-toggle-password', // ID ADDED
+                                        id: 'icon-toggle-password',
                                         src: showPassword ? './img/eye-open.svg' : './img/eye-closed.svg',
                                         alt: showPassword ? 'Hide password' : 'Show password',
                                         style: { width: '14px', height: '14px', opacity: 0.6 }
@@ -254,7 +253,7 @@ const TempLogin = ({ csrfToken }) => {
 
                         // Login Button
                         React.createElement('div', {
-                                id: 'btn-login-submit', // ID ADDED
+                                id: 'btn-login-submit',
                                 className: 'login-2',
                                 onClick: handleLogin,
                                 style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
@@ -267,7 +266,7 @@ const TempLogin = ({ csrfToken }) => {
 
                         // Continue with Google
                         React.createElement('div', {
-                                id: 'btn-google-auth', // ID ADDED
+                                id: 'btn-google-auth',
                                 className: 'div-wrapper-2',
                                 onClick: handleGoogleOAuth,
                                 style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
@@ -277,7 +276,7 @@ const TempLogin = ({ csrfToken }) => {
 
                         // Sign in with Passkey
                         React.createElement('div', {
-                                id: 'btn-passkey-auth', // ID ADDED
+                                id: 'btn-passkey-auth',
                                 className: 'div-wrapper-2',
                                 onClick: handlePasskeyLogin,
                                 style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
@@ -293,7 +292,7 @@ const TempLogin = ({ csrfToken }) => {
                 React.createElement('div', { className: 'group', id: 'left-panel-content-group' },
                     React.createElement('div', { className: 'login-wrapper', id: 'wrapper-signup-btn' },
                         React.createElement('div', {
-                                id: 'btn-signup-redirect', // ID ADDED
+                                id: 'btn-signup-redirect',
                                 className: 'sign-in-wrapper',
                                 onClick: handleSignup,
                                 style: { cursor: 'pointer' }

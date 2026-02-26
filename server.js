@@ -102,7 +102,7 @@ global.io = io;
 global.userSockets = userSockets;
 
 async function serverSetUp() {
-    // ── Security headers ────────────────────────────────────────────────────
+    // Security headers
     app.disable('x-powered-by');
 
     app.use(helmet({
@@ -112,12 +112,14 @@ async function serverSetUp() {
                 scriptSrc:       ["'self'", "'unsafe-inline'",
                                   "cdn.tailwindcss.com",
                                   "unpkg.com",
-                                  "cdnjs.cloudflare.com"],
+                                  "cdnjs.cloudflare.com",
+                                  "code.jquery.com"],
                 styleSrc:        ["'self'", "'unsafe-inline'",
                                   "cdn.tailwindcss.com",
                                   "cdnjs.cloudflare.com",
-                                  "fonts.googleapis.com"],
-                fontSrc:         ["'self'", "fonts.gstatic.com", "data:"],
+                                  "fonts.googleapis.com",
+                                  "cdn.jsdelivr.net"],
+                fontSrc:         ["'self'", "fonts.gstatic.com", "anima-uploads.s3.amazonaws.com", "cdn.jsdelivr.net", "data:"],
                 imgSrc:          ["'self'", "data:", "https:"],
                 connectSrc:      ["'self'", "wss:", "ws:"],
                 frameSrc:        ["'none'"],
