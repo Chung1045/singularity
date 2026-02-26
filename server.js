@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const helmet = require('helmet');
 const session = require('express-session');
 const csrf = require('@dr.pogodin/csurf');
 const cookieParser = require('cookie-parser');
@@ -101,6 +102,35 @@ global.io = io;
 global.userSockets = userSockets;
 
 async function serverSetUp() {
+    // ── Security headers ────────────────────────────────────────────────────
+    app.disable('x-powered-by');
+
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc:      ["'self'"],
+                scriptSrc:       ["'self'", "'unsafe-inline'",
+                                  "cdn.tailwindcss.com",
+                                  "unpkg.com",
+                                  "cdnjs.cloudflare.com"],
+                styleSrc:        ["'self'", "'unsafe-inline'",
+                                  "cdn.tailwindcss.com",
+                                  "cdnjs.cloudflare.com",
+                                  "fonts.googleapis.com"],
+                fontSrc:         ["'self'", "fonts.gstatic.com", "data:"],
+                imgSrc:          ["'self'", "data:", "https:"],
+                connectSrc:      ["'self'", "wss:", "ws:"],
+                frameSrc:        ["'none'"],
+                frameAncestors:  ["'none'"],
+                formAction:      ["'self'"],
+                objectSrc:       ["'none'"],
+                baseUri:         ["'self'"],
+            },
+        },
+        crossOriginEmbedderPolicy: false,
+    }));
+    // ────────────────────────────────────────────────────────────────────────
+
     app.use((req, res, next) => {
         logAccessedPath(req)
         next();
