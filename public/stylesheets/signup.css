@@ -393,21 +393,23 @@ display: flex;
 }
 
 .frame .by-continuing-you {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 360px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: left;
-    font-family: "SF Pro-Regular", Helvetica;
-    font-weight: 400;
-    color: #333438;
-    font-size: 20px;
-    letter-spacing: 0;
-    line-height: 14px;
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 360px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  font-family: "SF Pro-Regular", Helvetica;
+  font-weight: 400;
+  color: #333438;
+  font-size: 20px;
+  letter-spacing: 0;
+  line-height: 14px;
+  bottom: 10px;
 }
+
 
 .frame .span {
     font-family: "SF Pro-Regular", Helvetica;

@@ -541,7 +541,7 @@ const TempSignup = ({ csrfToken }) => {
                                 )
                             ),
 
-                            React.createElement('hr', { id: 'divider-line', style: { marginBottom: '1px', width: '100%', height: '0.3px', backgroundColor: '#E4E4E4' } }),
+                            React.createElement('hr', { id: 'divider-line', style: { marginBottom: '0', width: '100%', height: '0.3px', backgroundColor: '#E4E4E4', marginTop: '10px' } }),
 
                             // Submit
                             React.createElement('div', { className: 'login-wrapper', id: 'submit-btn-wrapper' },
