@@ -376,7 +376,7 @@ a {
 
   /* Login card: responsive width, flex column so panels stack */
   .frame .login {
-    width: min(500px, 100%);
+    width: min(500px, 90%);
     height: auto;
     display: flex;
     flex-direction: column;

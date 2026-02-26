@@ -492,7 +492,7 @@ display: flex;
 
   /* Sign-up wrapper: responsive width, auto height */
   .frame .sign-up {
-    width: min(500px, 100%);
+    width: min(500px, 90%);
     height: auto;
     margin: 32px auto;
     display: flex;
