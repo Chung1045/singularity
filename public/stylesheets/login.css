@@ -36,8 +36,7 @@ a {
 .frame {
   background-size: 100% 100%;
   width: 100%;
-  min-width: 1440px;
-  min-height: 900px;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -343,9 +342,9 @@ a {
 }
 
 /* =====================
-   MOBILE PORTRAIT VIEW
+   RESPONSIVE: tablet + mobile (≤ 920px)
    ===================== */
-@media (max-width: 500px) {
+@media (max-width: 920px) {
   html, body {
     align-items: center;
     height: auto;
@@ -375,14 +374,14 @@ a {
   }
 
 
-  /* Login card: 445px wide, flex column so panels stack */
+  /* Login card: responsive width, flex column so panels stack */
   .frame .login {
-    width: min(445px, 100%);
+    width: min(500px, 90%);
     height: auto;
     display: flex;
     flex-direction: column;
     border-radius: 20px;
-    margin: 24px auto;
+    margin: 32px auto;
   }
 
   .frame .content-background {

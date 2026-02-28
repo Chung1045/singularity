@@ -937,8 +937,7 @@
                                                             style: {
                                                                 fontFamily: 'Inter, Helvetica',
                                                                 fontSize: '14px',
-                                                                color: '#22c55e',
-                                                                whiteSpace: 'nowrap'
+                                                                color: '#22c55e'
                                                             }
                                                         }, `• ${src.location}`)
                                                     )

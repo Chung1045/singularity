@@ -871,6 +871,7 @@
     const Sidebar = ({
                          sidebarCollapsed,
                          setSidebarCollapsed,
+                         isOverlay,
                          username,
                          onLogout,
                          onProfileRoute,
@@ -1480,20 +1481,29 @@
             fetchAvatar();
         }, []);
 
+        const overlayOpen = isOverlay && !sidebarCollapsed;
+
         return React.createElement('aside', {
                 id: 'sidebar',
                 ref: sidebarRef,
-                className: 'side-bar',
+                className: 'side-bar' + (overlayOpen ? ' side-bar--overlay' : ''),
                 'aria-label': 'Sidebar navigation',
-                // Dynamic width style
-                style: {
+                style: overlayOpen ? {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    height: '100vh',
+                    width: '360px',
+                    minWidth: '360px',
+                    zIndex: window.ZIndex?.SIDEBAR_OVERLAY || 25,
+                } : {
                     width: sidebarCollapsed ? 'auto' : `${sidebarWidth}px`,
                     minWidth: sidebarCollapsed ? 'auto' : `${sidebarWidth}px`,
                     position: 'relative',
                 }
             },
-            // Resizing Handle
-            !sidebarCollapsed && React.createElement('div', {
+            // Resizing Handle — hidden in overlay mode
+            !sidebarCollapsed && !isOverlay && React.createElement('div', {
                 id: 'sidebar-resizer',
                 className: 'sidebar-resizer',
                 onMouseDown: startResizing,
@@ -1533,7 +1543,7 @@
                         React.createElement('img', {
                             id: 'sidebar-header-logo-img',
                             className: 'union',
-                            src: './img/union.svg',
+                            src: './img/Union.svg',
                             alt: 'Singularity Icon'
                         })
                     )
@@ -2796,7 +2806,8 @@
                     onClose: () => {
                         setNotificationPanelOpen(false);
                     },
-                    sidebarCollapsed: sidebarCollapsed
+                    sidebarCollapsed: sidebarCollapsed,
+                    isOverlay: isOverlay
                 }),
 
                 // Search Panel (for collapsed sidebar)
@@ -2806,7 +2817,8 @@
                         setSearchPanelOpen(false);
                     },
                     sidebarCollapsed: sidebarCollapsed,
-                    isHomePage: isHomePage
+                    isHomePage: isHomePage,
+                    isOverlay: isOverlay
                 }),
 
                 // Profile section

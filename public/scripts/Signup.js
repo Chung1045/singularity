@@ -245,7 +245,7 @@ const TempSignup = ({ csrfToken }) => {
                         React.createElement('p', { className: 'div', id: 'welcome-sub-text' }, 'If you already have an account.'),
                         React.createElement('div', {
                                 className: 'div-wrapper',
-                                id: 'btn-signin-redirect', // ID Added
+                                id: 'btn-signin-redirect',
                                 onClick: () => window.location.href = '/login',
                                 style: { cursor: 'pointer' }
                             },
@@ -284,7 +284,7 @@ const TempSignup = ({ csrfToken }) => {
                                         }
                                     },
                                     React.createElement('input', {
-                                        id: 'input-username', // ID Added
+                                        id: 'input-username',
                                         type: 'text',
                                         placeholder: 'Username',
                                         value: formData.username,
@@ -295,7 +295,7 @@ const TempSignup = ({ csrfToken }) => {
                                     })
                                 ),
                                 errors.username && React.createElement('div', {
-                                    id: 'error-msg-username', // ID Added
+                                    id: 'error-msg-username',
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -304,7 +304,7 @@ const TempSignup = ({ csrfToken }) => {
                                     }
                                 }, errors.username),
                                 validFields.username && !errors.username && React.createElement('div', {
-                                    id: 'success-msg-username', // ID Added
+                                    id: 'success-msg-username',
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -327,7 +327,7 @@ const TempSignup = ({ csrfToken }) => {
                                         }
                                     },
                                     React.createElement('input', {
-                                        id: 'input-email', // ID Added
+                                        id: 'input-email',
                                         type: 'email',
                                         placeholder: 'someone@example.com',
                                         value: formData.email,
@@ -338,7 +338,7 @@ const TempSignup = ({ csrfToken }) => {
                                     })
                                 ),
                                 errors.email && React.createElement('div', {
-                                    id: 'error-msg-email', // ID Added
+                                    id: 'error-msg-email',
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -347,7 +347,7 @@ const TempSignup = ({ csrfToken }) => {
                                     }
                                 }, errors.email),
                                 validFields.email && !errors.email && React.createElement('div', {
-                                    id: 'success-msg-email', // ID Added
+                                    id: 'success-msg-email',
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -370,7 +370,7 @@ const TempSignup = ({ csrfToken }) => {
                                         }
                                     },
                                     React.createElement('input', {
-                                        id: 'input-firstname', // ID Added
+                                        id: 'input-firstname',
                                         type: 'text',
                                         placeholder: 'First Name',
                                         value: formData.firstName,
@@ -381,7 +381,7 @@ const TempSignup = ({ csrfToken }) => {
                                     })
                                 ),
                                 errors.firstName && React.createElement('div', {
-                                    id: 'error-msg-firstname', // ID Added
+                                    id: 'error-msg-firstname',
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -390,7 +390,7 @@ const TempSignup = ({ csrfToken }) => {
                                     }
                                 }, errors.firstName),
                                 validFields.firstName && !errors.firstName && React.createElement('div', {
-                                    id: 'success-msg-firstname', // ID Added
+                                    id: 'success-msg-firstname',
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -413,7 +413,7 @@ const TempSignup = ({ csrfToken }) => {
                                         }
                                     },
                                     React.createElement('input', {
-                                        id: 'input-lastname', // ID Added
+                                        id: 'input-lastname',
                                         type: 'text',
                                         placeholder: 'Last Name',
                                         value: formData.lastName,
@@ -424,7 +424,7 @@ const TempSignup = ({ csrfToken }) => {
                                     })
                                 ),
                                 errors.lastName && React.createElement('div', {
-                                    id: 'error-msg-lastname', // ID Added
+                                    id: 'error-msg-lastname',
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -433,7 +433,7 @@ const TempSignup = ({ csrfToken }) => {
                                     }
                                 }, errors.lastName),
                                 validFields.lastName && !errors.lastName && React.createElement('div', {
-                                    id: 'success-msg-lastname', // ID Added
+                                    id: 'success-msg-lastname',
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -456,7 +456,7 @@ const TempSignup = ({ csrfToken }) => {
                                         }
                                     },
                                     React.createElement('input', {
-                                        id: 'input-password', // ID Added
+                                        id: 'input-password',
                                         type: 'password',
                                         placeholder: '',
                                         value: formData.password,
@@ -467,7 +467,7 @@ const TempSignup = ({ csrfToken }) => {
                                     })
                                 ),
                                 errors.password && React.createElement('div', {
-                                    id: 'error-msg-password', // ID Added
+                                    id: 'error-msg-password',
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -476,7 +476,7 @@ const TempSignup = ({ csrfToken }) => {
                                     }
                                 }, errors.password),
                                 validFields.password && !errors.password && React.createElement('div', {
-                                    id: 'success-msg-password', // ID Added
+                                    id: 'success-msg-password',
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -499,7 +499,7 @@ const TempSignup = ({ csrfToken }) => {
                                         }
                                     },
                                     React.createElement('input', {
-                                        id: 'input-confirm-password', // ID Added
+                                        id: 'input-confirm-password',
                                         type: 'password',
                                         placeholder: '',
                                         value: formData.confirmPassword,
@@ -510,7 +510,7 @@ const TempSignup = ({ csrfToken }) => {
                                     })
                                 ),
                                 errors.confirmPassword && React.createElement('div', {
-                                    id: 'error-msg-confirm-password', // ID Added
+                                    id: 'error-msg-confirm-password',
                                     style: {
                                         color: '#dc2626',
                                         fontSize: '11px',
@@ -519,7 +519,7 @@ const TempSignup = ({ csrfToken }) => {
                                     }
                                 }, errors.confirmPassword),
                                 validFields.confirmPassword && !errors.confirmPassword && React.createElement('div', {
-                                    id: 'success-msg-confirm-password', // ID Added
+                                    id: 'success-msg-confirm-password',
                                     style: {
                                         color: '#22c55e',
                                         fontSize: '11px',
@@ -541,12 +541,12 @@ const TempSignup = ({ csrfToken }) => {
                                 )
                             ),
 
-                            React.createElement('hr', { id: 'divider-line', style: { marginBottom: '1px', width: '100%', height: '0.3px', backgroundColor: '#E4E4E4' } }),
+                            React.createElement('hr', { id: 'divider-line', style: { marginBottom: '0', width: '100%', height: '0.3px', backgroundColor: '#E4E4E4', marginTop: '10px' } }),
 
                             // Submit
                             React.createElement('div', { className: 'login-wrapper', id: 'submit-btn-wrapper' },
                                 React.createElement('div', {
-                                        id: 'btn-signup-submit', // ID Added
+                                        id: 'btn-signup-submit',
                                         className: 'login-2',
                                         onClick: handleSubmit,
                                         style: { cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }
@@ -562,7 +562,7 @@ const TempSignup = ({ csrfToken }) => {
 
         // Custom Modal
         modal.isOpen && React.createElement('div', {
-                id: 'modal-overlay', // ID Added
+                id: 'modal-overlay',
                 style: {
                     position: 'fixed',
                     top: 0,
@@ -583,7 +583,7 @@ const TempSignup = ({ csrfToken }) => {
                 }
             },
             React.createElement('div', {
-                    id: 'modal-content-box', // ID Added
+                    id: 'modal-content-box',
                     style: {
                         backgroundColor: '#ffffff',
                         borderRadius: '15px',
@@ -598,7 +598,7 @@ const TempSignup = ({ csrfToken }) => {
                     onClick: (e) => e.stopPropagation()
                 },
                 React.createElement('div', {
-                    id: 'modal-title', // ID Added
+                    id: 'modal-title',
                     style: {
                         fontFamily: 'SF Pro, sans-serif',
                         fontWeight: 700,
@@ -608,7 +608,7 @@ const TempSignup = ({ csrfToken }) => {
                     }
                 }, modal.title),
                 React.createElement('div', {
-                    id: 'modal-message', // ID Added
+                    id: 'modal-message',
                     style: {
                         fontFamily: 'SF Pro, sans-serif',
                         fontWeight: 400,
@@ -618,7 +618,7 @@ const TempSignup = ({ csrfToken }) => {
                     }
                 }, modal.message),
                 React.createElement('div', {
-                        id: 'modal-btn-container', // ID Added
+                        id: 'modal-btn-container',
                         style: {
                             display: 'flex',
                             gap: '10px',
@@ -627,7 +627,7 @@ const TempSignup = ({ csrfToken }) => {
                         }
                     },
                     React.createElement('button', {
-                        id: 'btn-modal-ok', // ID Added
+                        id: 'btn-modal-ok',
                         style: {
                             padding: '12px 24px',
                             borderRadius: '10px',

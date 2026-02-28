@@ -6,7 +6,7 @@
 (function() {
     const { useState, useEffect, useRef } = React;
 
-    const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed }) => {
+    const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed, isOverlay }) => {
         const [notifications, setNotifications] = useState([]);
         const [loading, setLoading] = useState(false);
         const [sidebarWidth, setSidebarWidth] = useState(302);
@@ -252,8 +252,9 @@
 
         if (!isOpen) return null;
 
-        const panelLeft = `${sidebarWidth}px`;
-        const backdropLeft = `${sidebarWidth + 400}px`; // sidebar + panel width
+        const effectiveSidebarWidth = (isOverlay && !sidebarCollapsed) ? 361 : sidebarWidth;
+        const panelLeft = `${effectiveSidebarWidth}px`;
+        const backdropLeft = `${effectiveSidebarWidth + 400}px`; // sidebar + panel width
 
         return React.createElement(React.Fragment, null,
             // Backdrop (only on the right side, after the panel)
