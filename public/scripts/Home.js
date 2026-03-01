@@ -260,6 +260,7 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
 
 const WelcomeOverlayComponent = ({ onGetStarted }) => {
     return React.createElement('div', {
+        id: 'welcome-overlay',
         style: {
             position: 'fixed',
             top: 0,
@@ -275,17 +276,19 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
         }
     },
         React.createElement('div', {
+            id: 'welcome-card',
             style: {
                 backgroundColor: '#ECECEC',
                 borderRadius: '16px',
                 border: '1px solid #d9d9d9',
-                maxWidth: '690px',
+                maxWidth: '720px',
                 width: '100%',
-                padding: '34px 32px 26px',
+                padding: '35px 35px 35px 35px',
                 boxShadow: '0 18px 42px rgba(0, 0, 0, 0.18)'
             }
         },
             React.createElement('div', {
+                id: 'welcome-header-row',
                 style: {
                     display: 'flex',
                     alignItems: 'center',
@@ -293,8 +296,9 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
                     marginBottom: '24px'
                 }
             },
-                React.createElement('img', { src: './img/union.svg', alt: 'Singularity', style: { width: '36px', height: '36px' } }),
+                React.createElement('img', { id: 'welcome-logo', src: './img/union.svg', alt: 'Singularity', style: { width: '36px', height: '36px' } }),
                 React.createElement('h1', {
+                    id: 'welcome-brand-title',
                     style: {
                         margin: 0,
                         fontFamily: '"Playfair Display", serif',
@@ -306,15 +310,17 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
                 }, 'Singularity')
             ),
             React.createElement('h2', {
+                id: 'welcome-heading',
                 style: {
                     margin: '0 0 18px 0',
                     fontFamily: 'SF Pro, sans-serif',
                     fontWeight: 700,
-                    fontSize: '18px',
+                    fontSize: '25px',
                     color: '#111319'
                 }
             }, 'Welcome!'),
             React.createElement('p', {
+                id: 'welcome-description-1',
                 style: {
                     margin: '0 0 18px 0',
                     fontFamily: 'SF Pro, sans-serif',
@@ -324,6 +330,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
                 }
             }, 'This is Singularity, an agent powered requirement conversation platform.'),
             React.createElement('p', {
+                id: 'welcome-description-2',
                 style: {
                     margin: '0 0 18px 0',
                     fontFamily: 'SF Pro, sans-serif',
@@ -333,6 +340,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
                 }
             }, 'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'),
             React.createElement('p', {
+                id: 'welcome-description-3',
                 style: {
                     margin: '0 0 30px 0',
                     fontFamily: 'SF Pro, sans-serif',
@@ -342,6 +350,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
                 }
             }, 'Feel free to start a project and chat to the agent with documentations for requirement suggestions.'),
             React.createElement('button', {
+                id: 'welcome-get-started-button',
                 type: 'button',
                 style: {
                     width: '100%',
