@@ -258,8 +258,112 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
     );
 };
 
+const WelcomeOverlayComponent = ({ onGetStarted }) => {
+    return React.createElement('div', {
+        style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: (window.ZIndex?.MODAL || 31) + 20,
+            padding: '24px'
+        }
+    },
+        React.createElement('div', {
+            style: {
+                backgroundColor: '#ECECEC',
+                borderRadius: '16px',
+                border: '1px solid #d9d9d9',
+                maxWidth: '690px',
+                width: '100%',
+                padding: '34px 32px 26px',
+                boxShadow: '0 18px 42px rgba(0, 0, 0, 0.18)'
+            }
+        },
+            React.createElement('div', {
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '24px'
+                }
+            },
+                React.createElement('img', { src: './img/union.svg', alt: 'Singularity', style: { width: '36px', height: '36px' } }),
+                React.createElement('h1', {
+                    style: {
+                        margin: 0,
+                        fontFamily: '"Playfair Display", serif',
+                        fontWeight: 700,
+                        fontSize: '30px',
+                        letterSpacing: '0.08em',
+                        color: '#111319'
+                    }
+                }, 'Singularity')
+            ),
+            React.createElement('h2', {
+                style: {
+                    margin: '0 0 18px 0',
+                    fontFamily: 'SF Pro, sans-serif',
+                    fontWeight: 700,
+                    fontSize: '18px',
+                    color: '#111319'
+                }
+            }, 'Welcome!'),
+            React.createElement('p', {
+                style: {
+                    margin: '0 0 18px 0',
+                    fontFamily: 'SF Pro, sans-serif',
+                    fontSize: '20px',
+                    lineHeight: 1.35,
+                    color: '#5a5a5a'
+                }
+            }, 'This is Singularity, an agent powered requirement conversation platform.'),
+            React.createElement('p', {
+                style: {
+                    margin: '0 0 18px 0',
+                    fontFamily: 'SF Pro, sans-serif',
+                    fontSize: '20px',
+                    lineHeight: 1.35,
+                    color: '#5a5a5a'
+                }
+            }, 'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'),
+            React.createElement('p', {
+                style: {
+                    margin: '0 0 30px 0',
+                    fontFamily: 'SF Pro, sans-serif',
+                    fontSize: '20px',
+                    lineHeight: 1.35,
+                    color: '#5a5a5a'
+                }
+            }, 'Feel free to start a project and chat to the agent with documentations for requirement suggestions.'),
+            React.createElement('button', {
+                type: 'button',
+                style: {
+                    width: '100%',
+                    height: '56px',
+                    border: 'none',
+                    borderRadius: '14px',
+                    cursor: 'pointer',
+                    backgroundColor: '#1E2B44',
+                    color: '#ffffff',
+                    fontFamily: 'SF Pro, sans-serif',
+                    fontWeight: 700,
+                    fontSize: '18px'
+                },
+                onClick: onGetStarted
+            }, 'Get Started')
+        )
+    );
+};
+
 const TempHome = ({ csrfToken, userInfo }) => {
     window.csrfToken = csrfToken;
+    const shouldShowWelcomeOnLoad = new URLSearchParams(window.location.search).get('welcome') === '1';
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         if (window.innerWidth <= 1040) return true;
@@ -285,6 +389,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
     const [requirementsPanelProjectID, setRequirementsPanelProjectID] = useState(null);
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
     const [selectedProjectID, setSelectedProjectID] = useState(null);
+    const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(shouldShowWelcomeOnLoad);
 
     const isMobile = windowWidth <= 480;
     const isOverlay = windowWidth <= 1040;
@@ -507,6 +612,13 @@ const TempHome = ({ csrfToken, userInfo }) => {
         showUploadedFilesSelectionModal();
     };
 
+    const handleWelcomeGetStarted = () => {
+        setShowWelcomeOverlay(false);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('welcome');
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    };
+
     const username = userInfo?.userName || userInfo?.email || 'User';
     console.log(`Home.js CSRF Token Value: ${window.csrfToken}`);
 
@@ -544,6 +656,9 @@ const TempHome = ({ csrfToken, userInfo }) => {
 
             // Alert Modal
             modal.isOpen && React.createElement(AlertModalComponent, { modal, closeModal, isMobile }),
+
+            // One-time signup welcome overlay
+            showWelcomeOverlay && React.createElement(WelcomeOverlayComponent, { onGetStarted: handleWelcomeGetStarted }),
 
             // File Upload Modal
             showFileUpload && window.FileUploadComponent && React.createElement('div', {
