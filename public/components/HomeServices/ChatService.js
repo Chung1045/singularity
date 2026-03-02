@@ -132,7 +132,10 @@ const ChatService = {
     async loadThread(chatID) {
         const response = await fetch(`/api/agent/chat/thread/${chatID}`, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
         });
 
         if (!response.ok) {
@@ -150,7 +153,10 @@ const ChatService = {
     async editConversation(data) {
         const response = await fetch('/api/agent/conversation-edit', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify(data)
         });
 
@@ -173,7 +179,10 @@ const ChatService = {
     async deleteConversation(projectID, chatID, conversationID) {
         const response = await fetch('/api/agent/conversation-delete', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify({ projectID, chatID, conversationID })
         })
     },
@@ -187,7 +196,10 @@ const ChatService = {
     async deleteChat(projectID, chatID) {
         const response = await fetch('/api/agent/chat-delete', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': window.csrfToken
+            },
             body: JSON.stringify({ projectID, chatID })
         });
 

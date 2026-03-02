@@ -123,7 +123,7 @@
 
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(window.TempUserProfile, {userInfo, csrfToken}));
+        root.render(React.createElement(window.UserProfile, {userInfo, csrfToken}));
         console.log('React component rendered successfully');
     } catch (error) {
         console.error('Error rendering React component:', error);

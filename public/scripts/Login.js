@@ -23,7 +23,7 @@ const Message = ({ text, visible, onClose, showClose = true }) => {
 };
 
 
-const TempLogin = ({ csrfToken }) => {
+const Login = ({ csrfToken }) => {
     const [usernameEmail, setUsernameEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -309,6 +309,6 @@ const TempLogin = ({ csrfToken }) => {
 };
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TempLogin;
+    module.exports = Login;
 }
-window.TempLogin = TempLogin;
+window.Login = Login;

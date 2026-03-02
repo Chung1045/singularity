@@ -188,6 +188,20 @@ async function serverSetUp() {
     app.use("/api", aiAgentManagerRouter);
     app.use("/test", testRouteManager);
     app.use("/", routeManager);
+
+    app.use((req, res) => {
+        if (req.originalUrl.startsWith("/api/")) {
+            return res.status(404).json({
+                success: false,
+                message: "API endpoint not found"
+            });
+        }
+
+        res.status(404).render("Error", {
+            statusCode: 404,
+            errorMessage: "The page you are looking for does not exist."
+        });
+    });
 }
 
 async function checkServerEnvironment() {

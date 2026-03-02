@@ -586,6 +586,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
                     },
                     body: JSON.stringify({
                         projectID: selectedProjectID

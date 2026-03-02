@@ -140,5 +140,18 @@ router.get("/csrf-token", (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
 
+router.get("/support", (req, res) => {
+    const supportUrl = process.env.USER_SUPPORT_URL;
+
+    if (!supportUrl) {
+        return res.status(503).render("Error", {
+            statusCode: 503,
+            errorMessage: "Support service is currently unavailable."
+        });
+    }
+
+    res.redirect(302, supportUrl);
+});
+
 module.exports = router;
 

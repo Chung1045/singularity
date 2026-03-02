@@ -258,7 +258,7 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
     );
 };
 
-const TempHome = ({ csrfToken, userInfo }) => {
+const Home = ({ csrfToken, userInfo }) => {
     window.csrfToken = csrfToken;
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -715,4 +715,4 @@ function deleteSourceDocument(documentID) {
 }
 
 // Export
-Object.assign(window, { TempHome });
+Object.assign(window, { Home });

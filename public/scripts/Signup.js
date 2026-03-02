@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-const TempSignup = ({ csrfToken }) => {
+const Signup = ({ csrfToken }) => {
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -652,4 +652,4 @@ const TempSignup = ({ csrfToken }) => {
 };
 
 // Make available globally
-window.TempSignup = TempSignup;
+window.Signup = Signup;
