@@ -311,11 +311,11 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
         React.createElement('h1', {
           id: 'welcome-brand-title',
           style: {
-            margin: 0,
+            margin: 2,
             fontFamily: '"Playfair Display", serif',
             fontWeight: 700,
             fontSize: '22px',
-            letterSpacing: '0.08em',
+            letterSpacing: '0.04em',
             color: '#111319'
           }
         }, 'Singularity')
@@ -325,10 +325,10 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
       React.createElement('h2', {
         id: 'welcome-heading',
         style: {
-          margin: '0 0 10px 0',
+          margin: '0 0 15px 0',
           fontFamily: 'SF Pro, sans-serif',
           fontWeight: 700,
-          fontSize: '22px',
+          fontSize: '20px',
           color: '#111319'
         }
       }, 'Welcome!'),
@@ -337,11 +337,11 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
       React.createElement('p', {
         id: 'welcome-description-1',
         style: {
-          margin: '0 0 6px 0',
+          margin: '0 0 15px 0',
           fontFamily: 'SF Pro, sans-serif',
-          fontSize: '16px',
-          lineHeight: 1.3,
-          color: '#5a5a5a'
+          fontSize: '14px',
+          lineHeight: 1.4,
+          color: '#6b7280'
         }
       }, 'This is Singularity, an agent powered requirement conversation platform.'),
 
@@ -349,11 +349,11 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
       React.createElement('p', {
         id: 'welcome-description-2',
         style: {
-          margin: '0 0 6px 0',
+          margin: '0 0 15px 0',
           fontFamily: 'SF Pro, sans-serif',
-          fontSize: '16px',
-          lineHeight: 1.3,
-          color: '#5a5a5a'
+          fontSize: '14px',
+          lineHeight: 1.4,
+          color: '#6b7280'
         }
       }, 'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'),
 
@@ -363,31 +363,32 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
         style: {
           margin: '0 0 15px 0',
           fontFamily: 'SF Pro, sans-serif',
-          fontSize: '16px',
-          lineHeight: 1.3,
-          color: '#5a5a5a'
+          fontSize: '14px',
+          lineHeight: 1.4,
+          color: '#6b7280',
+          marginBottom: '15px'
         }
       }, 'Feel free to start a project and chat to the agent with documentations for requirement suggestions.'),
 
-      // Get Started Button
+      // Get Started Button — marginTop: auto pushes it to the bottom of the fixed-height card
       React.createElement('button', {
         id: 'welcome-get-started-button',
         type: 'button',
         style: {
-          width: '490px',
+          width: '100%',
           height: '37px',
           border: 'none',
-          borderRadius: '12px',
+          borderRadius: '10px',
           cursor: 'pointer',
           backgroundColor: '#1E2B44',
           color: '#ffffff',
           fontFamily: 'SF Pro, sans-serif',
           fontWeight: 700,
-          fontSize: '16px',
+          fontSize: '15px',
           lineHeight: '37px',
           padding: 0,
-          display: 'block',
-          margin: '0 auto'
+          marginTop: 'auto',
+          flexShrink: 0
         },
         onClick: onGetStarted
       }, 'Get Started')
