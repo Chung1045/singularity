@@ -284,7 +284,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
         width: '550px',
         height: '335px',
         maxWidth: '100%',
-        padding: '24px',
+        padding: '30px',
         boxShadow: '0 18px 42px rgba(0, 0, 0, 0.18)',
         boxSizing: 'border-box',
         display: 'flex',
@@ -306,7 +306,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
           id: 'welcome-logo',
           src: './img/union.svg',
           alt: 'Singularity',
-          style: { width: '36px', height: '36px' }
+          style: { width: '30px', height: '30px' }
         }),
         React.createElement('h1', {
           id: 'welcome-brand-title',
@@ -314,7 +314,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
             margin: 0,
             fontFamily: '"Playfair Display", serif',
             fontWeight: 700,
-            fontSize: '28px',
+            fontSize: '22px',
             letterSpacing: '0.08em',
             color: '#111319'
           }
@@ -361,7 +361,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
       React.createElement('p', {
         id: 'welcome-description-3',
         style: {
-          margin: '0 0 16px 0',
+          margin: '0 0 15px 0',
           fontFamily: 'SF Pro, sans-serif',
           fontSize: '16px',
           lineHeight: 1.3,
@@ -374,16 +374,20 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
         id: 'welcome-get-started-button',
         type: 'button',
         style: {
-          width: '100%',
-          height: '50px',
+          width: '490px',
+          height: '37px',
           border: 'none',
-          borderRadius: '14px',
+          borderRadius: '12px',
           cursor: 'pointer',
           backgroundColor: '#1E2B44',
           color: '#ffffff',
           fontFamily: 'SF Pro, sans-serif',
           fontWeight: 700,
-          fontSize: '17px'
+          fontSize: '16px',
+          lineHeight: '37px',
+          padding: 0,
+          display: 'block',
+          margin: '0 auto'
         },
         onClick: onGetStarted
       }, 'Get Started')
@@ -783,7 +787,7 @@ const TempHome = ({ csrfToken, userInfo }) => {
                             attachmentMenuOpen && React.createElement('div', {
                                 id: 'attachment-dropdown-menu',
                                 style: {
-                                    position: 'absolute', bottom: '100%', left: '0', marginBottom: '8px',
+                                    position: 'absolute', bottom: '100%', left: '0', marginBottom: '7px',
                                     backgroundColor: '#ffffff', border: '1.67px solid #e4e4e4',
                                     borderRadius: '11.12px', boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
                                     minWidth: '180px', zIndex: window.ZIndex?.DROPDOWN || 20, overflow: 'hidden'
