@@ -259,115 +259,136 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
 };
 
 const WelcomeOverlayComponent = ({ onGetStarted }) => {
-    return React.createElement('div', {
-        id: 'welcome-overlay',
-        style: {
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: (window.ZIndex?.MODAL || 31) + 20,
-            padding: '24px'
-        }
+  return React.createElement('div', {
+    id: 'welcome-overlay',
+    style: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.45)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: (window.ZIndex?.MODAL || 31) + 20,
+      padding: '24px'
+    }
+  },
+    React.createElement('div', {
+      id: 'welcome-card',
+      style: {
+        backgroundColor: '#ffffff',
+        borderRadius: '16px',
+        border: '1px solid #d9d9d9',
+        width: '550px',
+        height: '335px',
+        maxWidth: '100%',
+        padding: '24px',
+        boxShadow: '0 18px 42px rgba(0, 0, 0, 0.18)',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column'
+      }
     },
-        React.createElement('div', {
-            id: 'welcome-card',
-            style: {
-                backgroundColor: '#ECECEC',
-                borderRadius: '16px',
-                border: '1px solid #d9d9d9',
-                maxWidth: '720px',
-                width: '100%',
-                padding: '35px 35px 35px 35px',
-                boxShadow: '0 18px 42px rgba(0, 0, 0, 0.18)'
-            }
+
+      // Logo + Brand Row
+      React.createElement('div', {
+        id: 'welcome-header-row',
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          marginBottom: '12px'
+        }
+      },
+        React.createElement('img', {
+          id: 'welcome-logo',
+          src: './img/union.svg',
+          alt: 'Singularity',
+          style: { width: '36px', height: '36px' }
+        }),
+        React.createElement('h1', {
+          id: 'welcome-brand-title',
+          style: {
+            margin: 0,
+            fontFamily: '"Playfair Display", serif',
+            fontWeight: 700,
+            fontSize: '28px',
+            letterSpacing: '0.08em',
+            color: '#111319'
+          }
+        }, 'Singularity')
+      ),
+
+      // Welcome Heading
+      React.createElement('h2', {
+        id: 'welcome-heading',
+        style: {
+          margin: '0 0 10px 0',
+          fontFamily: 'SF Pro, sans-serif',
+          fontWeight: 700,
+          fontSize: '22px',
+          color: '#111319'
+        }
+      }, 'Welcome!'),
+
+      // Description 1
+      React.createElement('p', {
+        id: 'welcome-description-1',
+        style: {
+          margin: '0 0 6px 0',
+          fontFamily: 'SF Pro, sans-serif',
+          fontSize: '16px',
+          lineHeight: 1.3,
+          color: '#5a5a5a'
+        }
+      }, 'This is Singularity, an agent powered requirement conversation platform.'),
+
+      // Description 2
+      React.createElement('p', {
+        id: 'welcome-description-2',
+        style: {
+          margin: '0 0 6px 0',
+          fontFamily: 'SF Pro, sans-serif',
+          fontSize: '16px',
+          lineHeight: 1.3,
+          color: '#5a5a5a'
+        }
+      }, 'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'),
+
+      // Description 3
+      React.createElement('p', {
+        id: 'welcome-description-3',
+        style: {
+          margin: '0 0 16px 0',
+          fontFamily: 'SF Pro, sans-serif',
+          fontSize: '16px',
+          lineHeight: 1.3,
+          color: '#5a5a5a'
+        }
+      }, 'Feel free to start a project and chat to the agent with documentations for requirement suggestions.'),
+
+      // Get Started Button
+      React.createElement('button', {
+        id: 'welcome-get-started-button',
+        type: 'button',
+        style: {
+          width: '100%',
+          height: '50px',
+          border: 'none',
+          borderRadius: '14px',
+          cursor: 'pointer',
+          backgroundColor: '#1E2B44',
+          color: '#ffffff',
+          fontFamily: 'SF Pro, sans-serif',
+          fontWeight: 700,
+          fontSize: '17px'
         },
-            React.createElement('div', {
-                id: 'welcome-header-row',
-                style: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    marginBottom: '24px'
-                }
-            },
-                React.createElement('img', { id: 'welcome-logo', src: './img/union.svg', alt: 'Singularity', style: { width: '36px', height: '36px' } }),
-                React.createElement('h1', {
-                    id: 'welcome-brand-title',
-                    style: {
-                        margin: 0,
-                        fontFamily: '"Playfair Display", serif',
-                        fontWeight: 700,
-                        fontSize: '30px',
-                        letterSpacing: '0.08em',
-                        color: '#111319'
-                    }
-                }, 'Singularity')
-            ),
-            React.createElement('h2', {
-                id: 'welcome-heading',
-                style: {
-                    margin: '0 0 18px 0',
-                    fontFamily: 'SF Pro, sans-serif',
-                    fontWeight: 700,
-                    fontSize: '25px',
-                    color: '#111319'
-                }
-            }, 'Welcome!'),
-            React.createElement('p', {
-                id: 'welcome-description-1',
-                style: {
-                    margin: '0 0 18px 0',
-                    fontFamily: 'SF Pro, sans-serif',
-                    fontSize: '20px',
-                    lineHeight: 1.35,
-                    color: '#5a5a5a'
-                }
-            }, 'This is Singularity, an agent powered requirement conversation platform.'),
-            React.createElement('p', {
-                id: 'welcome-description-2',
-                style: {
-                    margin: '0 0 18px 0',
-                    fontFamily: 'SF Pro, sans-serif',
-                    fontSize: '20px',
-                    lineHeight: 1.35,
-                    color: '#5a5a5a'
-                }
-            }, 'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'),
-            React.createElement('p', {
-                id: 'welcome-description-3',
-                style: {
-                    margin: '0 0 30px 0',
-                    fontFamily: 'SF Pro, sans-serif',
-                    fontSize: '20px',
-                    lineHeight: 1.35,
-                    color: '#5a5a5a'
-                }
-            }, 'Feel free to start a project and chat to the agent with documentations for requirement suggestions.'),
-            React.createElement('button', {
-                id: 'welcome-get-started-button',
-                type: 'button',
-                style: {
-                    width: '100%',
-                    height: '56px',
-                    border: 'none',
-                    borderRadius: '14px',
-                    cursor: 'pointer',
-                    backgroundColor: '#1E2B44',
-                    color: '#ffffff',
-                    fontFamily: 'SF Pro, sans-serif',
-                    fontWeight: 700,
-                    fontSize: '18px'
-                },
-                onClick: onGetStarted
-            }, 'Get Started')
-        )
-    );
+        onClick: onGetStarted
+      }, 'Get Started')
+    )
+  );
 };
 
 const TempHome = ({ csrfToken, userInfo }) => {
