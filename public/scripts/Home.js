@@ -306,7 +306,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
           id: 'welcome-logo',
           src: './img/union.svg',
           alt: 'Singularity',
-          style: { width: '30px', height: '30px' }
+          style: { width: '30px', height: '30px', marginTop: '5px' }
         }),
         React.createElement('h1', {
           id: 'welcome-brand-title',
@@ -341,7 +341,8 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
           fontFamily: 'SF Pro, sans-serif',
           fontSize: '14px',
           lineHeight: 1.4,
-          color: '#6b7280'
+          color: '#6b7280',
+          width: '490px'
         }
       }, 'This is Singularity, an agent powered requirement conversation platform.'),
 
@@ -353,7 +354,8 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
           fontFamily: 'SF Pro, sans-serif',
           fontSize: '14px',
           lineHeight: 1.4,
-          color: '#6b7280'
+          color: '#6b7280',
+          width: '490px'
         }
       }, 'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'),
 
@@ -366,7 +368,8 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
           fontSize: '14px',
           lineHeight: 1.4,
           color: '#6b7280',
-          marginBottom: '15px'
+          marginBottom: '15px',
+          width: '490px'
         }
       }, 'Feel free to start a project and chat to the agent with documentations for requirement suggestions.'),
 
@@ -375,7 +378,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
         id: 'welcome-get-started-button',
         type: 'button',
         style: {
-          width: '100%',
+        //   width: '100%',
           height: '37px',
           border: 'none',
           borderRadius: '10px',
@@ -388,7 +391,8 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
           lineHeight: '37px',
           padding: 0,
           marginTop: 'auto',
-          flexShrink: 0
+          flexShrink: 0,
+          width: '490px'
         },
         onClick: onGetStarted
       }, 'Get Started')
