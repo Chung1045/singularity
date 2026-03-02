@@ -1,7 +1,7 @@
 (function() {
 const { useState } = React;
 
-const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
+const Passkey = ({ csrfToken, passkeys, userInfo }) => {
     window.csrfToken = csrfToken;
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
@@ -652,8 +652,8 @@ const TempPasskey = ({ csrfToken, passkeys, userInfo }) => {
 };
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TempPasskey;
+    module.exports = Passkey;
 }
 
-window.TempPasskey = TempPasskey;
+window.Passkey = Passkey;
 })();

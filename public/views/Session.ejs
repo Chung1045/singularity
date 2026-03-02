@@ -119,7 +119,7 @@
     window.addEventListener('openFileUpload', handleOpenFileUpload);
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(window.TempSession, { csrfToken, sessions, loginAttempts, userInfo }));
+    root.render(React.createElement(window.Session, { csrfToken, sessions, loginAttempts, userInfo }));
 </script>
 
 <!-- Socket.io initialization for real-time notifications - load AFTER userInfo is set -->

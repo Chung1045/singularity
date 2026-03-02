@@ -337,6 +337,36 @@ async function updateUserAvatar(userID, avatarPath) {
     });
 }
 
+async function deleteUserAccount(userID) {
+    const sql1 = `DELETE FROM project WHERE projectOwnerUid = ?`;
+    const sql2 = `DELETE FROM notification WHERE receiveUid = ?`;
+    const sql3 = `DELETE FROM projectShare WHERE collabUid = ?`;
+    const sql4 = `DELETE FROM credential WHERE uid = ?`;
+    const sql5 = `DELETE FROM user WHERE uid = ?`;
+
+    return new Promise((resolve, reject) => {
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+
+            db.run(sql1, [userID]);
+            db.run(sql2, [userID]);
+            db.run(sql3, [userID]);
+            db.run(sql4, [userID]);
+            db.run(sql5, [userID], function (err) {
+                if (err) {
+                    db.run("ROLLBACK");
+                    console.error("Error deleting user account:", err);
+                    return reject(err);
+                }
+
+                db.run("COMMIT");
+                console.log(`User ${userID} and related data deleted.`);
+                resolve({ deletedUser: this.changes });
+            });
+        });
+    });
+}
+
 module.exports = {
     isGoogleOAuthUserExist,
     getUIDfromOAuth,
@@ -351,6 +381,7 @@ module.exports = {
     listSessions,
     listLoginAttempts,
     deleteAllLoginAttempts,
+    deleteUserAccount,
     logoutSession,
     getUserInfo,
     apiAuthUser,

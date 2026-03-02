@@ -80,12 +80,12 @@
     console.log("tempHome.ejs → userInfo received:", userInfo);
     console.log("window.Sidebar available?", typeof window.Sidebar);
     console.log("window.RightSidebar available?", typeof window.RightSidebar);
-    console.log("window.TempHome available?", typeof window.TempHome);
+    console.log("window.Home available?", typeof window.Home);
     console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
 
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(window.TempHome, { userInfo, csrfToken }));
+        root.render(React.createElement(window.Home, { userInfo, csrfToken }));
 
         // Sidebar component now handles project data initialization automatically
         console.log('TempHome component rendered. Sidebar will load project data.');
