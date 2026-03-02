@@ -199,7 +199,7 @@ const Signup = ({ csrfToken }) => {
 
                     // Redirect after 2 seconds
                     setTimeout(() => {
-                        window.location.href = '/home';
+                        window.location.href = '/home?welcome=1';
                     }, 2000);
                 }
             } else {

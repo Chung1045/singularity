@@ -260,6 +260,7 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
 
 const Home = ({ csrfToken, userInfo }) => {
     window.csrfToken = csrfToken;
+    const shouldShowWelcomeOnLoad = new URLSearchParams(window.location.search).get('welcome') === '1';
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         if (window.innerWidth <= 1040) return true;
@@ -285,6 +286,7 @@ const Home = ({ csrfToken, userInfo }) => {
     const [requirementsPanelProjectID, setRequirementsPanelProjectID] = useState(null);
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
     const [selectedProjectID, setSelectedProjectID] = useState(null);
+    const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(shouldShowWelcomeOnLoad);
 
     const isMobile = windowWidth <= 480;
     const isOverlay = windowWidth <= 1040;
@@ -507,6 +509,13 @@ const Home = ({ csrfToken, userInfo }) => {
         showUploadedFilesSelectionModal();
     };
 
+    const handleWelcomeGetStarted = () => {
+        setShowWelcomeOverlay(false);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('welcome');
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    };
+
     const username = userInfo?.userName || userInfo?.email || 'User';
     console.log(`Home.js CSRF Token Value: ${window.csrfToken}`);
 
@@ -544,6 +553,9 @@ const Home = ({ csrfToken, userInfo }) => {
 
             // Alert Modal
             modal.isOpen && React.createElement(AlertModalComponent, { modal, closeModal, isMobile }),
+
+            // One-time signup welcome overlay
+            showWelcomeOverlay && React.createElement(WelcomeOverlayComponent, { onGetStarted: handleWelcomeGetStarted }),
 
             // File Upload Modal
             showFileUpload && window.FileUploadComponent && React.createElement('div', {
@@ -638,7 +650,7 @@ const Home = ({ csrfToken, userInfo }) => {
                             attachmentMenuOpen && React.createElement('div', {
                                 id: 'attachment-dropdown-menu',
                                 style: {
-                                    position: 'absolute', bottom: '100%', left: '0', marginBottom: '8px',
+                                    position: 'absolute', bottom: '100%', left: '0', marginBottom: '7px',
                                     backgroundColor: '#ffffff', border: '1.67px solid #e4e4e4',
                                     borderRadius: '11.12px', boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
                                     minWidth: '180px', zIndex: window.ZIndex?.DROPDOWN || 20, overflow: 'hidden'
