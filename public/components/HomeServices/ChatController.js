@@ -142,7 +142,7 @@ const ChatController = {
         const avatar = document.createElement('div');
         avatar.id = `message-avatar-ai-edit-${messageTimestamp}`;
         avatar.className = 'message-avatar';
-        avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
+        avatar.innerHTML = `<img src="./img/union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
         // build the bubble element
         const bubble = document.createElement('div');
@@ -403,7 +403,7 @@ const ChatController = {
         const avatar = document.createElement('div');
         avatar.id = `message-avatar-ai-stream-${messageTimestamp}`;
         avatar.className = 'message-avatar';
-        avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
+        avatar.innerHTML = `<img src="./img/union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
 
         // build the bubble element
         const bubble = document.createElement('div');
@@ -1036,7 +1036,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
         avatar.innerHTML = `<img src="${avatarUrl}" alt="User">`;
     } else {
         // set the AI avatar image
-        avatar.innerHTML = `<img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
+        avatar.innerHTML = `<img src="./img/union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">`;
     }
 
     // build the bubble element

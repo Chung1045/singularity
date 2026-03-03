@@ -710,21 +710,5 @@ const Home = ({ csrfToken, userInfo }) => {
     );
 };
 
-function removeReport(reportID){
-    // your logic here
-}
-
-function renameSourceDocument(documentID, newDocumentName) {
-    // your logic here
-}
-
-function downloadSourceDocument(documentID) {
-    // your logic here
-}
-
-function deleteSourceDocument(documentID) {
-    // your logic here
-}
-
 // Export
 Object.assign(window, { Home });

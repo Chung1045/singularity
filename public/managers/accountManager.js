@@ -330,7 +330,7 @@ router.post("/passkey/gen-option", apiAuthUser, async (req, res) => {
 
         const options = await generateRegistrationOptions({
             rpName: 'Singularity',
-            rpID: process.env.domain || 'localhost',
+            rpID: process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost',
             userID: new TextEncoder().encode(userID),
             userName: userInfo.userName, // Required to have non-empty value :/
             userDisplayName: userInfo.userName, // Required to have non-empty value :/
@@ -356,7 +356,7 @@ router.post("/passkey/gen-option", apiAuthUser, async (req, res) => {
 router.post("/passkey/gen-auth-option", async (req, res) => {
     try {
         const options = await generateAuthenticationOptions({
-            rpID: process.env.domain || 'localhost',
+            rpID: process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost',
             allowCredentials: [],
             userVerification: 'required',
             timeout: 60000,
@@ -894,10 +894,10 @@ function inferProviderName(transports, userAgent) {
 }
 
 function getServerOrigin() {
-    if (process.env.ENABLE_HTTPS === 'true') {
-        return `https://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
-    } else {
+    if (process.env.USE_NGINX_SSL === 'true' || process.env.ENABLE_HTTPS === 'false') {
         return `http://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
+    } else {
+        return `https://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
     }
 }
 
