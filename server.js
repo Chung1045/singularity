@@ -18,7 +18,6 @@ const accountManagerRouter = require("./public/managers/accountManager");
 const aiAgentManagerRouter = require("./public/managers/aiAgentManager");
 const projectManagerRouter = require("./public/managers/projectManager");
 const notifManager = require("./public/managers/notificationManager");
-const testRouteManager = require("./public/managers/testRoutesManager");
 
 const PORT = process.env.PORT || 9090;
 
@@ -27,8 +26,12 @@ let server = null
 
 async function createServer() {
     try {
-        if (process.env.ENABLE_HTTPS === 'true') {
-            serverLogger.info("Starting HTTPS Server");
+
+        if (process.env.USE_NGINX_SSL === 'true') {
+            serverLogger.info("Starting HTTP Server with nginx https SSL");
+            server = http.createServer(app)
+        } else if (process.env.ENABLE_HTTPS === 'true') {
+            serverLogger.info("Starting local HTTPS Server");
 
             if (!process.env.SSL_KEY_PATH || !process.env.SSL_CERT_PATH) {
                 throw new Error("SSL Key or Certificate paths not found");
@@ -186,7 +189,6 @@ async function serverSetUp() {
     app.use("/api", projectManagerRouter);
     app.use("/api", notifManager);
     app.use("/api", aiAgentManagerRouter);
-    app.use("/test", testRouteManager);
     app.use("/", routeManager);
 
     app.use((req, res) => {
