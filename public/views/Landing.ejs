@@ -11,6 +11,13 @@
 </head>
 <body>
 
+    <!-- Slide-up notification (same style as login/signup) -->
+    <div id="message" class="hidden">
+        <span class="alert-icon"><img src="/img/Info.svg" alt="alert"></span>
+        <span class="alert-text" id="message-text"></span>
+        <span id="message-close-btn"><img src="/img/close.svg" alt="close"></span>
+    </div>
+
     <!-- Navbar -->
     <nav id="ld-nav">
         <a href="/" id="ld-nav-logo">
@@ -45,6 +52,26 @@
         </div>
 
     </main>
+
+    <script>
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('loggedout') === '1') {
+                const msg     = document.getElementById('message');
+                const msgText = document.getElementById('message-text');
+                msgText.textContent = 'You have been logged out successfully.';
+                msg.classList.remove('hidden');
+                // clean URL
+                window.history.replaceState({}, '', '/');
+                // close button
+                document.getElementById('message-close-btn').addEventListener('click', function () {
+                    msg.classList.add('hidden');
+                });
+                // auto hide after 4s
+                setTimeout(function () { msg.classList.add('hidden'); }, 4000);
+            }
+        })();
+    </script>
 
 </body>
 </html>

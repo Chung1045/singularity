@@ -468,7 +468,7 @@ const Home = ({ csrfToken, userInfo }) => {
             contentType: 'application/json',
             success: () => {
                 showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
-                setTimeout(() => window.location = "/", 3000);
+                setTimeout(() => window.location = "/?loggedout=1", 3000);
             },
             error: (xhr) => {
                 showAlert('Error', xhr.responseJSON?.message || "An error occurred. Please try again.");
