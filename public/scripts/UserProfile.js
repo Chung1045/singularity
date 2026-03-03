@@ -338,7 +338,6 @@ const UserProfile = ({userInfo, csrfToken}) => {
                 username: username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
-                onSupportRoute: handleSupportRoute,
                 userMenuOpen: userMenuOpen,
                 setUserMenuOpen: setUserMenuOpen,
                 userInfo: userInfo

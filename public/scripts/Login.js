@@ -154,7 +154,7 @@ const Login = ({ csrfToken }) => {
                     React.createElement('div', { className: 'logo-text', id: 'singularity-logo-text-wrapper' },
                         React.createElement('div', { className: 'text-wrapper', id: 'singularity-logo-text' }, 'Singularity')
                     ),
-                    React.createElement('img', { className: 'union', src: 'img/Union.svg', alt: 'Union', id: 'singularity-logo-icon' })
+                    React.createElement('img', { className: 'union', src: 'img/union.svg', alt: 'Union', id: 'singularity-logo-icon' })
                 ),
 
                 React.createElement('div', { className: 'content', id: 'login-form-area' },

@@ -48,7 +48,7 @@ const ChatUtils = {
         // Avatar + "Loading..." text + 3x3 grid spinner with staggered animation
         loadingDiv.innerHTML = `
             <div class="message-avatar">
-                <img src="./img/Union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
+                <img src="./img/union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
             </div>
             <div style="padding: 8px 4px;">
                 <div class="loader-text"></div>
@@ -97,7 +97,7 @@ const ChatUtils = {
         if (chatTopBar) chatTopBar.style.display = 'none';
         if (suggestionChips) suggestionChips.style.display = 'none';
         if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
-        
+
         // Show quick prompts when on initial screen (no active chat)
         if (quickPromptsContainer) {
             quickPromptsContainer.style.display = 'flex';

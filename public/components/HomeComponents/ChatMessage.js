@@ -4,7 +4,7 @@
  */
 
 const ChatMessage = ({ role, text, conversationID, chatSeq, attachedFileIDs = [], onEdit }) => {
-    const avatarUrl = role === 'user' ? (window.userAvatarUrl || './img/user.svg') : './img/Union.svg';
+    const avatarUrl = role === 'user' ? (window.userAvatarUrl || './img/user.svg') : './img/union.svg';
 
     const renderAvatar = () => {
         if (role === 'user') {
@@ -15,7 +15,7 @@ const ChatMessage = ({ role, text, conversationID, chatSeq, attachedFileIDs = []
             });
         }
         return React.createElement('img', {
-            src: './img/Union.svg',
+            src: './img/union.svg',
             alt: 'AI',
             style: { width: '50%', height: '50%', objectFit: 'contain' }
         });

@@ -893,10 +893,10 @@ function inferProviderName(transports, userAgent) {
 }
 
 function getServerOrigin() {
-    if (process.env.ENABLE_HTTPS === 'true') {
-        return `https://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
-    } else {
+    if (process.env.USE_NGINX_SSL === 'true' || process.env.ENABLE_HTTPS === 'false') {
         return `http://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
+    } else {
+        return `https://${process.env.EXPECTED_ORIGIN_DOMAIN || 'localhost'}`;
     }
 }
 
