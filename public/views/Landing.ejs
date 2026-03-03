@@ -33,9 +33,9 @@
     <!-- Hero -->
     <main id="ld-hero">
 
-        <!-- Left: image -->
+        <!-- Left: image slideshow -->
         <div id="ld-hero-image-panel">
-            <img src="/img/LDPic_1.png" alt="" id="ld-hero-img">
+            <div class="ld-slide active" style="background-image:url('/img/LDPic_1.png')"></div>
         </div>
 
         <!-- Right: text -->
@@ -52,6 +52,19 @@
         </div>
 
     </main>
+
+    <script>
+        // Slideshow
+        (function () {
+            const slides = document.querySelectorAll('.ld-slide');
+            let current = 0;
+            setInterval(function () {
+                slides[current].classList.remove('active');
+                current = (current + 1) % slides.length;
+                slides[current].classList.add('active');
+            }, 4000);
+        })();
+    </script>
 
     <script>
         (function () {
