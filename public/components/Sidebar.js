@@ -985,10 +985,12 @@
         // Projects state
         const [hasProjects, setHasProjects] = useState(false);
         const [projects, setProjects] = useState([]);
+        const [projectsLoading, setProjectsLoading] = useState(true);
 
         // Fetch projects
         const fetchProjects = useCallback(async () => {
             console.log("[Sidebar] Fetching projects...");
+            setProjectsLoading(true);
             try {
 
                 const response = await fetch('/api/project/list', {
@@ -1029,6 +1031,8 @@
             } catch (error) {
                 console.error("Error fetching projects:", error);
                 return null;
+            } finally {
+                setProjectsLoading(false);
             }
         }, []);
 
@@ -1550,11 +1554,20 @@
                     )
                 ),
 
-                // Project dropdown
+                // Project dropdown (with skeleton while loading)
+                projectsLoading && !sidebarCollapsed && React.createElement('div', {
+                    className: 'sk-sidebar-inline',
+                    style: { marginLeft: '21px', marginRight: '25px', marginBottom: '15px' }
+                },
+                    React.createElement('div', { className: 'sk-box', style: { width: '100%', height: '36px', borderRadius: '8px' } }),
+                    React.createElement('div', { className: 'sk-box w-3-4', style: { height: '28px', borderRadius: '8px' } }),
+                    React.createElement('div', { className: 'sk-box w-1-2', style: { height: '28px', borderRadius: '8px' } })
+                ),
+
                 React.createElement('div', {
                         id: 'sidebar-project-dropdown-wrapper',
                         style: {
-                            display: !sidebarCollapsed ? 'flex' : 'none',
+                            display: !sidebarCollapsed && !projectsLoading ? 'flex' : 'none',
                             alignItems: 'center',
                             gap: '10px',
                             marginLeft: '21px',

@@ -1,0 +1,225 @@
+/* ============================================================
+   Singularity — Landing Page
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #f0ebe1;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ---------- Navbar ---------- */
+#ld-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 35px;
+    
+    /* backdrop-filter: blur(12px); */
+    /* -webkit-backdrop-filter: blur(12px); */
+    /* border-bottom: 1px solid rgba(255,255,255,0.07); */
+    z-index: 100;
+}
+
+#ld-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#ld-nav-logo-icon {
+    width: 24px;
+    height: 24px;
+    /* filter: invert(1); */
+}
+
+#ld-nav-logo-text {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    color: #000000;
+    margin-left: 5px;
+}
+
+
+#ld-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ld-nav-btn {
+    padding: 10px 18px;
+    border-radius: 7px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+
+.ld-nav-btn--outline {
+    
+    background: #000;
+    color: #fff;
+    border: 1.5px solid transparent;
+    font-weight: 600;
+}
+
+
+.ld-nav-btn--fill {
+    
+    background: #000;
+    color: #fff;
+    border: 1.5px solid transparent;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+/* ---------- Hero ---------- */
+#ld-hero {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    display: flex;
+}
+
+/* Left: Image */
+#ld-hero-image-panel {
+    position: relative;
+    width: 42%;
+    height: 100%;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.ld-slide {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center top;
+    opacity: 0;
+    transition: opacity 1.2s ease-in-out;
+}
+
+.ld-slide.active {
+    opacity: 1;
+}
+
+/* fade image edge into right panel */
+#ld-hero-image-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 90%, #f0ebe1 100%);
+    pointer-events: none;
+}
+
+/* Right: Text */
+#ld-hero-text-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: #f0ebe1;
+    overflow: hidden;
+}
+
+#ld-hero-text-inner {
+    padding: 0 0 0 125px;
+    max-width: 700px;
+    animation: ld-fadein 0.7s ease forwards;
+}
+
+@keyframes ld-fadein {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+#ld-hero-headline {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: clamp(26px, 2.8vw, 38px);
+    line-height: 1.2;
+    color: #0d0e1a;
+    margin-bottom: 24px;
+}
+
+#ld-hero-sub {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: clamp(22px, 2.4vw, 32px);
+    line-height: 1.2;
+    color: #0d0e1a;
+    margin-bottom: 16px;
+}
+
+#ld-hero-sub em {
+    font-weight: 400;
+    font-style: italic;
+}
+
+#ld-accent {
+    color: #7c3aed;
+    animation: ld-glow 3s ease-in-out infinite;
+}
+
+@keyframes ld-glow {
+    0%, 100% { text-shadow: none; }
+    50%       { text-shadow: 0 0 16px rgba(124,58,237,0.4); }
+}
+
+#ld-hero-tagline {
+    font-size: 20px;
+    font-weight: 300;
+    font-style: italic;
+    color: #6b7280;
+    letter-spacing: 0.01em;
+    margin-top: 40px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ---------- Slide-up Message (matches login/signup style) ---------- */
+#message {
+    background: #fff;
+    border-radius: 10px;
+    bottom: 0;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.12);
+    color: #4a4a4a;
+    font-weight: 600;
+    font-size: 13px;
+    left: 50%;
+    padding: 12px 18px;
+    position: fixed;
+    transform: translate(-50%, -24px);
+    transition: transform 0.5s cubic-bezier(1, -0.5, .25, 1.25);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 380px;
+    max-width: 500px;
+    z-index: 200;
+}
+#message .alert-icon { flex-shrink: 0; display: flex; align-items: center; }
+#message .alert-icon img { width: 16px; height: 16px; object-fit: contain; }
+#message .alert-text { flex: 1; text-align: center; }
+#message.hidden { transform: translate(-50%, 100%); }
+#message #message-close-btn {
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0.4;
+    padding: 0 2px;
+    transition: opacity 0.15s ease;
+}
+#message #message-close-btn img { width: 14px; height: 14px; object-fit: contain; }
+#message #message-close-btn:hover { opacity: 0.9; }

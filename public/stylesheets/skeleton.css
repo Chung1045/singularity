@@ -1,0 +1,154 @@
+/* ============================================================
+   Singularity — Skeleton / Shimmer Loader
+   ============================================================ */
+
+@keyframes sk-shimmer {
+    0%   { background-position: -600px 0; }
+    100% { background-position:  600px 0; }
+}
+
+.sk-box {
+    background: linear-gradient(90deg, #ebebeb 25%, #d6d6d6 50%, #ebebeb 75%);
+    background-size: 600px 100%;
+    animation: sk-shimmer 1.4s ease-in-out infinite;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* ── Page-level full-screen skeleton wrapper ─────────────── */
+.sk-page {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #f8f4ed;
+    font-family: inherit;
+}
+
+/* ── Sidebar skeleton ────────────────────────────────────── */
+.sk-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--materials-controlssidebar, #f6f6f6);
+    border-right: 1px solid #e4e4e4;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sk-sidebar-logo {
+    width: 120px;
+    height: 22px;
+    margin-bottom: 10px;
+}
+
+.sk-sidebar-row {
+    width: 100%;
+    height: 36px;
+    border-radius: 8px;
+}
+
+.sk-sidebar-row.short { width: 70%; }
+.sk-sidebar-row.medium { width: 85%; }
+
+/* ── Main content skeleton ───────────────────────────────── */
+.sk-main {
+    flex: 1;
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+}
+
+.sk-title {
+    width: 200px;
+    height: 28px;
+}
+
+.sk-subtitle {
+    width: 140px;
+    height: 18px;
+}
+
+.sk-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e4e4e4;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sk-line {
+    height: 14px;
+    border-radius: 4px;
+}
+
+.sk-line.w-full  { width: 100%; }
+.sk-line.w-3-4   { width: 75%; }
+.sk-line.w-1-2   { width: 50%; }
+.sk-line.w-1-3   { width: 33%; }
+.sk-line.w-1-4   { width: 25%; }
+
+.sk-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.sk-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.sk-table-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.sk-table-row .sk-line { flex: 1; }
+.sk-table-row .sk-line.w-1-4 { flex: 0 0 25%; }
+.sk-table-row .sk-line.w-1-3 { flex: 0 0 33%; }
+
+/* ── Chat area skeleton (Home) ───────────────────────────── */
+.sk-chat-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.sk-input-bar {
+    width: 100%;
+    max-width: 700px;
+    height: 50px;
+    border-radius: 14px;
+    margin-top: auto;
+}
+
+/* ── Sidebar inline skeleton (React-managed) ─────────────── */
+.sk-sidebar-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.sk-sidebar-inline .sk-box {
+    height: 32px;
+    border-radius: 8px;
+    width: 100%;
+}
+
+.sk-sidebar-inline .sk-box.w-3-4 { width: 75%; }
+.sk-sidebar-inline .sk-box.w-1-2 { width: 50%; }

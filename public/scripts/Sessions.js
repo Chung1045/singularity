@@ -268,7 +268,14 @@ const Session = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                                 fontSize: '14px',
                                 color: '#000000'
                             }
-                        }, isCurrent ? currentLocation : (session.sessionLocation || "Unknown Location"))
+                        }, isCurrent
+                            ? (currentLocation === 'Detecting location...'
+                                ? React.createElement('span', {
+                                    className: 'sk-box',
+                                    style: { display: 'inline-block', width: '120px', height: '14px', borderRadius: '4px' }
+                                  })
+                                : currentLocation)
+                            : (session.sessionLocation || "Unknown Location"))
                     ),
                     React.createElement(
                         "div",

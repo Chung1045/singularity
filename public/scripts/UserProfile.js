@@ -14,6 +14,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarLoading, setAvatarLoading] = useState(true);
     const [avatarUrl, setAvatarUrl] = useState(() => {
         // Prioritize uploaded avatar, then Google avatar, then default
         return userInfo?.userAvatarPath || userInfo?.googleAvatarUrl || './img/size-48.svg';
@@ -96,30 +97,30 @@ const UserProfile = ({userInfo, csrfToken}) => {
     };
 
     async function fetchProfilePics(){
-        let response = await fetch('/api/profile-pic/fetch', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'CSRF-Token': csrfToken
-            },
-            body: JSON.stringify({})
-        });
+        try {
+            let response = await fetch('/api/profile-pic/fetch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({})
+            });
 
-        let profileImgData = await response.json();
+            let profileImgData = await response.json();
 
-        console.log('Full response:', profileImgData);
+            console.log('Full response:', profileImgData);
 
-        if (profileImgData.success) {
-            console.log('Data:', profileImgData.data);
+            if (profileImgData.success) {
+                console.log('Data:', profileImgData.data);
 
-            const imageData = profileImgData.data[0]?.image;
-
-            if (imageData) {
-                document.getElementById('profile-avatar-image').src = imageData;
-
-            } else {
-                document.getElementById('profile-avatar-image').src = '';
+                const imageData = profileImgData.data[0]?.image;
+                if (imageData) {
+                    setAvatarUrl(imageData);
+                }
             }
+        } finally {
+            setAvatarLoading(false);
         }
     }
 
@@ -435,16 +436,18 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 justifyContent: 'center'
                             }
                         },
-                            React.createElement('img', {
-                                id: 'profile-avatar-image',
-                                src: './img/user.svg',
-                                alt: 'User',
-                                onError: handleAvatarError,
-                                style: {
-                                    objectFit: 'cover',
-                                    width: '100%'
-                                }
-                            })
+                            avatarLoading
+                                ? React.createElement('div', {
+                                    className: 'sk-box',
+                                    style: { width: '100%', height: '100%', borderRadius: '50%', position: 'absolute', inset: 0 }
+                                  })
+                                : React.createElement('img', {
+                                    id: 'profile-avatar-image',
+                                    src: avatarUrl || './img/user.svg',
+                                    alt: 'User',
+                                    onError: handleAvatarError,
+                                    style: { objectFit: 'cover', width: '100%' }
+                                  })
                         ),
                         // Hidden file input
                         React.createElement('input', {

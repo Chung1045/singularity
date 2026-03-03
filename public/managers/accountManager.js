@@ -275,6 +275,7 @@ router.post("/logout", apiAuthUser, async (req, res) => {
     }
 
     if (await sessionDBService.destroySession(req.cookies.session_id)){
+        res.clearCookie('session_id');
         req.session.destroy((error) => {
             if (error) {
                 console.error(`Error when destroying session: ${error}`)
