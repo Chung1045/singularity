@@ -121,7 +121,7 @@
     window.addEventListener('openFileUpload', handleOpenFileUpload);
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(window.TempPasskey, { csrfToken, passkeys, userInfo }));
+    root.render(React.createElement(window.Passkey, { csrfToken, passkeys, userInfo }));
 </script>
 
 <!-- Socket.io initialization for real-time notifications - load AFTER userInfo is set -->

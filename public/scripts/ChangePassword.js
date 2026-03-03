@@ -130,7 +130,7 @@
 
 const { useState } = React;
 
-const TempChangePassword = ({ csrfToken }) => {
+const ChangePassword = ({ csrfToken }) => {
     const [formData, setFormData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -729,4 +729,4 @@ const TempChangePassword = ({ csrfToken }) => {
 };
 
 // Make available globally
-window.TempChangePassword = TempChangePassword;
+window.ChangePassword = ChangePassword;

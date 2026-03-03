@@ -253,12 +253,12 @@ router.post("/login", async (req, res) => {
                 if (uidResponse){
                     await logLoginAttempt(req, res, uidResponse)
                 }
-                return res.status(401).json({success: false, message: "Password is incorrect. Please try again."})
+                return res.status(401).json({success: false, message: "Please check your credentials and try again"})
             }
 
         } else {
             console.log("Username or Email address not found")
-            return res.status(400).json({success: false, message: "Username or Email address not found"})
+            return res.status(400).json({success: false, message: "Please check your credentials and try again"})
         }
 
     } catch (error){
@@ -809,6 +809,38 @@ router.post("/profile-pic/fetch", apiAuthUser, async(req, res) => {
     }
 
 })
+
+router.post("/account/delete", apiAuthUser, async (req, res) => {
+    const userID = req.userID;
+
+    if (!userID) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        });
+    }
+
+    try {
+        const result = await dbService.deleteUserAccount(userID);
+
+        if (result) {
+            req.session.destroy(() => {}); // destroy session after deletion
+            return res.status(200).json({ success: true });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to delete account"
+        });
+
+    } catch (err) {
+        console.error("Delete account error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to delete account"
+        });
+    }
+});
 
 function inferProviderName(transports, userAgent) {
     const ua = userAgent.toLowerCase();

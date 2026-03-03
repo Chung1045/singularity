@@ -1,6 +1,6 @@
 (function() {
 const { useState } = React;
-const TempUserProfile = ({userInfo, csrfToken}) => {
+const UserProfile = ({userInfo, csrfToken}) => {
     window.csrfToken = csrfToken;
     // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
@@ -211,6 +211,10 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         window.location.href = "/change-password"
     }
 
+    function handleSupport() {
+        window.location.href = "/support"
+    }
+
     const getAccountType = () => {
     // Priority 1: Check if user has passkeys (this takes highest priority)
     if (userInfo?.hasPasskey) {
@@ -254,8 +258,43 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
         showModal(
             'Delete Account',
             'Are you sure you want to delete your account? This action cannot be undone.',
-            () => {
-                console.log("Delete account requested");
+            async () => {
+                try {
+                    const response = await fetch('/api/account/delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'CSRF-Token': window.csrfToken
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showAlert(
+                            "Account Deleted Successfully",
+                            "You will be redirect to login page shortly"
+                            )
+
+                        setTimeout(() => {
+                            window.location.href = "/login";
+                        }, 10000)
+
+                    } else {
+                        showAlert(
+                            "Error",
+                            "There are some problem trying to delete your account, please try again later, or contact support for assistance",
+                        );
+                    }
+
+                } catch (error) {
+                    console.error('Delete account error:', error);
+                    showAlert(
+                        "Error",
+                        "Something went wrong while trying to delete your account, please try again later, or contact support for assistance",
+                    );
+                }
             }
         );
     }
@@ -299,6 +338,7 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                 username: username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
+                onSupportRoute: handleSupportRoute,
                 userMenuOpen: userMenuOpen,
                 setUserMenuOpen: setUserMenuOpen,
                 userInfo: userInfo
@@ -974,6 +1014,54 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
                                     })
                                 )
                             ),
+                            // Support Option
+                            React.createElement('div', {
+                                    id: 'btn-support',
+                                    onClick: handleSupport,
+                                    style: {
+                                        display: 'flex',
+                                        height: '50px',
+                                        alignItems: 'center',
+                                        gap: '15px',
+                                        padding: '20px',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer'
+                                    }
+                                },
+                                React.createElement('div', {
+                                    id: 'support-text',
+                                    style: {
+                                        flex: '1',
+                                        fontFamily: 'SF Pro-Semibold, Helvetica',
+                                        fontWeight: 'bold',
+                                        color: '#000000',
+                                        fontSize: '20px',
+                                        letterSpacing: '0',
+                                        lineHeight: 'normal'
+                                    }
+                                }, 'Support'),
+                                React.createElement('div', {
+                                        id: 'change-password-icon-container',
+                                        style: {
+                                            width: '24px',
+                                            height: '24px',
+                                            position: 'relative'
+                                        }
+                                    },
+                                    React.createElement('img', {
+                                        id: 'change-password-icon-image',
+                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
+                                        alt: '',
+                                        style: {
+                                            position: 'absolute',
+                                            width: '24px',
+                                            height: '24px',
+                                            top: '8.33%',
+                                            left: '26.04%'
+                                        }
+                                    })
+                                )
+                            ),
                             // Delete Account
                             React.createElement('div', {
                                 id: 'btn-delete-account',
@@ -1116,6 +1204,6 @@ const TempUserProfile = ({userInfo, csrfToken}) => {
 };
 
 // Make available globally
-window.TempUserProfile = TempUserProfile;
+window.UserProfile = UserProfile;
 
 })();

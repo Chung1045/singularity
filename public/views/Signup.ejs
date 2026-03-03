@@ -33,7 +33,7 @@
 
     try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(window.TempSignup, { csrfToken: "<%= csrfToken %>" }));
+        root.render(React.createElement(window.Signup, { csrfToken: "<%= csrfToken %>" }));
         console.log('React component rendered successfully');
     } catch (error) {
         console.error('Error rendering React component:', error);

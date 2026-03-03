@@ -1,7 +1,7 @@
 (function() {
 const { useState } = React;
 
-const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
+const Session = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
     window.csrfToken = csrfToken;
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
@@ -821,9 +821,9 @@ const TempSession = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
 };
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TempSession;
+    module.exports = Session;
 }
 
-window.TempSession = TempSession;
+window.Session = Session;
 
 })();
