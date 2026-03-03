@@ -1,0 +1,188 @@
+/* ============================================================
+   Singularity — Landing Page
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0d0e1a;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ---------- Navbar ---------- */
+#ld-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 35px;
+    
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    /* border-bottom: 1px solid rgba(255,255,255,0.07); */
+    z-index: 100;
+}
+
+#ld-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#ld-nav-logo-icon {
+    width: 24px;
+    height: 24px;
+    /* filter: invert(1); */
+}
+
+#ld-nav-logo-text {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    color: #000000;
+    margin-left: 5px;
+}
+
+
+#ld-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ld-nav-btn {
+    padding: 6px 18px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    /*! transition: all 0.18s ease; */
+}
+
+.ld-nav-btn--outline {
+    /*! border: 1.5px solid rgba(255,255,255,0.3); */
+    /*! color: #fff; */
+    /*! background: black; */
+    background: #000;
+    color: #fff;
+    border: 1.5px solid transparent;
+    font-weight: 600;
+}
+.ld-nav-btn--outline:hover {
+    border-color: rgba(255,255,255,0.65);
+    background: rgba(255,255,255,0.07);
+}
+
+.ld-nav-btn--fill {
+    /*! background: #f0ebe1; */
+    /*! color: #0d0e1a; */
+    /*! border: 1.5px solid transparent; */
+    /*! font-weight: 600; */
+    background: #000;
+    color: #fff;
+    border: 1.5px solid transparent;
+    font-weight: 600;
+}
+/* ---------- Hero ---------- */
+#ld-hero {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    display: flex;
+}
+
+/* Left: Image */
+#ld-hero-image-panel {
+    position: relative;
+    width: 42%;
+    height: 100%;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+#ld-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+}
+
+/* fade image edge into right panel */
+#ld-hero-image-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 55%, #f0ebe1 100%);
+    pointer-events: none;
+}
+
+/* Right: Text */
+#ld-hero-text-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: #f0ebe1;
+    overflow: hidden;
+}
+
+#ld-hero-text-inner {
+    padding: 0 0 0 125px;
+    max-width: 700px;
+    animation: ld-fadein 0.7s ease forwards;
+}
+
+@keyframes ld-fadein {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+#ld-hero-headline {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: clamp(26px, 2.8vw, 38px);
+    line-height: 1.2;
+    color: #0d0e1a;
+    margin-bottom: 24px;
+}
+
+#ld-hero-sub {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: clamp(22px, 2.4vw, 32px);
+    line-height: 1.2;
+    color: #0d0e1a;
+    margin-bottom: 16px;
+}
+
+#ld-hero-sub em {
+    font-weight: 400;
+    font-style: italic;
+}
+
+#ld-accent {
+    color: #7c3aed;
+    animation: ld-glow 3s ease-in-out infinite;
+}
+
+@keyframes ld-glow {
+    0%, 100% { text-shadow: none; }
+    50%       { text-shadow: 0 0 16px rgba(124,58,237,0.4); }
+}
+
+#ld-hero-tagline {
+    font-size: 14px;
+    font-weight: 300;
+    font-style: italic;
+    color: #6b7280;
+    letter-spacing: 0.01em;
+}

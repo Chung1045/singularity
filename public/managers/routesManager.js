@@ -26,9 +26,13 @@ async function requireLogin(req, res) {
  * Public pages
  * ---------------------------------------- */
 
-router.get("/", (req, res) => {
-    if (req.cookies.session_id) return res.redirect("/home");
-    res.redirect("/login");
+router.get("/", async (req, res) => {
+    const sessionID = req.cookies?.session_id;
+    if (sessionID) {
+        const active = await sessionDBService.isSessionActive(sessionID);
+        if (active) return res.redirect("/home");
+    }
+    res.render("Landing");
 });
 
 router.get("/signup", (req, res) => {
