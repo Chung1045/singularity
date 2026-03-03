@@ -118,7 +118,7 @@ a { text-decoration: none; color: inherit; }
     content: '';
     position: absolute;
     inset: 0;
-    /* background: linear-gradient(to right, transparent 55%, #f0ebe1 100%); */
+    background: linear-gradient(to right, transparent 90%, #f0ebe1 100%);
     pointer-events: none;
 }
 
