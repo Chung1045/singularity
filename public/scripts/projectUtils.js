@@ -13,6 +13,26 @@
  */
 
 /**
+ * Inject shimmer skeleton rows into a sidebar list container.
+ * @param {HTMLElement} container
+ * @param {number} count
+ */
+function injectSidebarSkeleton(container, count = 3) {
+    container.innerHTML = '';
+    const widths = ['100%', '80%', '90%', '75%', '85%'];
+    for (let i = 0; i < count; i++) {
+        const row = document.createElement('div');
+        row.className = 'sk-sidebar-skeleton-row';
+        row.style.cssText = 'padding: 4px 0;';
+        const box = document.createElement('div');
+        box.className = 'sk-box';
+        box.style.cssText = `height:30px;border-radius:8px;width:${widths[i % widths.length]};display:block;`;
+        row.appendChild(box);
+        container.appendChild(row);
+    }
+}
+
+/**
  * Fetch and display project chat history
  * @param {string} projectID - The UUID of the project
  */
@@ -38,7 +58,7 @@ async function fetchProjectChats(projectID) {
     }
 
     console.log("Clearing chat history container...");
-    chatHistoryContainer.innerHTML = '';
+    injectSidebarSkeleton(chatHistoryContainer, 4);
 
     let data = null;
 
@@ -65,6 +85,7 @@ async function fetchProjectChats(projectID) {
 
             if (data.chats && Array.isArray(data.chats)) {
                 console.log("Number of chats:", data.chats.length);
+                chatHistoryContainer.innerHTML = '';
 
                 if (data.chats.length > 0) {
                     for (let chat of data.chats) {
@@ -374,6 +395,8 @@ async function fetchProjectFiles(projectID) {
         console.log("Source list container not found on this page");
         return;
     }
+
+    injectSidebarSkeleton(sourceListContainer, 3);
 
     try {
         const response = await fetch('/api/project/file/list', {
@@ -782,6 +805,9 @@ async function fetchProjectReports(projectID) {
         console.warn(" Reports list containers not found on this page");
         return;
     }
+
+    if (reportsListContainer) injectSidebarSkeleton(reportsListContainer, 3);
+    if (reportsListContainerRight) injectSidebarSkeleton(reportsListContainerRight, 3);
 
     console.log(` Found reportsListContainer (left):`, reportsListContainer ? 'yes' : 'no');
     console.log(` Found reportsListContainerRight:`, reportsListContainerRight ? 'yes' : 'no');

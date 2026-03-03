@@ -11,6 +11,8 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [deletingPasskeyID, setDeletingPasskeyID] = useState(null);
 
     const showAlert = (title, message, onConfirm = null) => {
         setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
@@ -38,6 +40,7 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
     // Passkey registration function moved inside component
     const registerPasskey = async () => {
         console.log("Running");
+        setIsRegistering(true);
         if (!csrfToken) {
             // Old: alert("CSRF token missing!");
             showAlert('Error', 'CSRF token missing!');
@@ -87,6 +90,8 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
         } catch (error) {
             console.error(error);
             showAlert('Error', 'Passkey registration failed. Please try again or contact support if the issue persists.');
+        } finally {
+            setIsRegistering(false);
         }
     };
 
@@ -96,6 +101,7 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
             'Delete Passkey',
             `Are you sure you want to delete this passkey? (${passkeyName})`,
             async () => {
+                setDeletingPasskeyID(passkeyID);
                 try {
                     console.log("PasskeyID: " + passkeyID);
 
@@ -117,6 +123,8 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                     }
                 } catch (e) {
                     showAlert('Error', 'Failed to delete passkey. Please try again or contact support if the issue persists.');
+                } finally {
+                    setDeletingPasskeyID(null);
                 }
             }
         );
@@ -329,18 +337,21 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
             // Delete button
             React.createElement('button', {
                     id: 'BTN_DELETE_PASSKEY_' + keyID,
-                onClick: () => deletePasskey(keyID, passkey.keyName),
+                onClick: () => !deletingPasskeyID && deletePasskey(keyID, passkey.keyName),
+                disabled: deletingPasskeyID === keyID,
                 style: {
                     width: isMobile ? '20px' : '24px',
                     height: isMobile ? '20px' : '24px',
                     background: 'none',
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: deletingPasskeyID === keyID ? 'not-allowed' : 'pointer',
+                    opacity: deletingPasskeyID === keyID ? 0.4 : 1,
                     padding: '0',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    transition: 'opacity 0.2s ease'
                 }
             },
                 React.createElement('img', {
@@ -467,7 +478,8 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                             },
                                 React.createElement('button', {
                                         id: 'BTN_CREATE_PASSKEY',
-                                    onClick: () => registerPasskey(),
+                                    onClick: () => !isRegistering && registerPasskey(),
+                                    disabled: isRegistering,
                                     style: {
                                         display: 'inline-flex',
                                         alignItems: 'center',
@@ -475,25 +487,28 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                                         padding: isMobile ? '8px 12px' : '8px 12px',
                                         borderRadius: isMobile ? '8px' : '10px',
                                         border: '1px solid #000000',
-                                        background: '#fff',
-                                        cursor: 'pointer',
+                                        background: isRegistering ? '#f5f5f5' : '#fff',
+                                        cursor: isRegistering ? 'not-allowed' : 'pointer',
+                                        opacity: isRegistering ? 0.6 : 1,
                                         fontFamily: 'Urbanist-SemiBold, Helvetica',
                                         fontWeight: '600',
                                         color: '#000000',
-                                        fontSize: isMobile ? '14px' : '16px'
+                                        fontSize: isMobile ? '14px' : '16px',
+                                        transition: 'opacity 0.2s ease'
                                     }
                                 },
-                                    React.createElement('img', {
-                                        id: 'IMG_CREATE_PASSKEY_ICON',
-                                        src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                                        alt: 'Add',
-                                        style: {
-                                            width: isMobile ? '20px' : '24px',
-                                            height: isMobile ? '20px' : '24px',
-                                            marginRight: isMobile ? '2px' : '5px'
-                                        }
-                                    }),
-                                    React.createElement('span', null, 'Create Passkey')
+                                    isRegistering
+                                        ? React.createElement('span', {
+                                            className: 'sk-box',
+                                            style: { width: '16px', height: '16px', borderRadius: '50%', display: 'inline-block', marginRight: '6px', flexShrink: 0 }
+                                          })
+                                        : React.createElement('img', {
+                                            id: 'IMG_CREATE_PASSKEY_ICON',
+                                            src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
+                                            alt: 'Add',
+                                            style: { width: isMobile ? '20px' : '24px', height: isMobile ? '20px' : '24px', marginRight: isMobile ? '2px' : '5px' }
+                                          }),
+                                    React.createElement('span', null, isRegistering ? 'Registering...' : 'Create Passkey')
                                 )
                             ),
 
