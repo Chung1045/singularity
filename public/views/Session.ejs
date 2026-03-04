@@ -85,7 +85,7 @@
     // Make userInfo globally available for socket initialization
     window.userInfo = userInfo;
 
-    console.log("tempSession.ejs → userInfo received:", userInfo);
+    console.log("tempSession.ejs ??userInfo received:", userInfo);
     console.log("CSRF:", csrfToken);
     console.log('FileUploadComponent available:', typeof window.FileUploadComponent);
 
@@ -160,7 +160,7 @@
 <script src="/components/faqPipComponent.js"></script>
 <script>
     ReactDOM.createRoot(document.getElementById('faq-pip-root')).render(
-        React.createElement(FaqPipComponent, { href: 'https://your-link-here.com' })
+        React.createElement(FaqPipComponent, null)
     );
 </script>
 

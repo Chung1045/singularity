@@ -4,7 +4,9 @@
  * Uses React.useState for hover state — no inline event mutation needed.
  */
 
-const FaqPipComponent = ({href} = {}) => {
+const NOTION_SUPPORT_URL = 'https://www.notion.so/chungsat/Singularity-31792c4b044d801fb5aedf2b529353b8';
+
+const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
     const [expanded, setExpanded] = React.useState(false);
 
     return React.createElement('div', {

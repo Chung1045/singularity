@@ -98,7 +98,7 @@
     // Make userInfo globally available for socket initialization
     window.userInfo = userInfo;
 
-    console.log("tempHome.ejs → userInfo received:", userInfo);
+    console.log("tempHome.ejs ??userInfo received:", userInfo);
     console.log("window.Sidebar available?", typeof window.Sidebar);
     console.log("window.RightSidebar available?", typeof window.RightSidebar);
     console.log("window.Home available?", typeof window.Home);
@@ -123,7 +123,7 @@
 <script src="/components/faqPipComponent.js"></script>
 <script>
     ReactDOM.createRoot(document.getElementById('faq-pip-root')).render(
-        React.createElement(FaqPipComponent, { href: 'https://your-link-here.com' })
+        React.createElement(FaqPipComponent, null)
     );
 </script>
 
