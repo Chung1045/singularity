@@ -4,7 +4,7 @@
  * Uses React.useState for hover state — no inline event mutation needed.
  */
 
-const FaqPipComponent = ({ href = 'https://your-link-here.com' } = {}) => {
+const FaqPipComponent = ({href} = {}) => {
     const [expanded, setExpanded] = React.useState(false);
 
     return React.createElement('div', {
