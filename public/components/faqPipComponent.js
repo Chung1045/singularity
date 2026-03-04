@@ -1,57 +1,54 @@
-(function () {
-    function FaqPipComponent({ href = 'https://your-link-here.com' } = {}) {
-        var container = document.createElement('div');
-        container.style.cssText = [
-            'position:fixed',
-            'right:0',
-            'bottom:0',
-            'transform:translateY(-50%)',
-            'z-index:var(--z-critical)',
-            '-webkit-tap-highlight-color:transparent'
-        ].join(';');
+/**
+ * FaqPipComponent
+ * A fixed pip button on the right edge of the screen linking to an FAQ/help page.
+ * Uses React.useState for hover state — no inline event mutation needed.
+ */
 
-        var link = document.createElement('a');
-        link.href = href;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.style.cssText = [
-            'display:flex',
-            'align-items:center',
-            'justify-content:center',
-            'width:12px',
-            'height:44px',
-            'background-color:#1E2B44',
-            'border-radius:6px 0 0 6px',
-            'cursor:pointer',
-            'transition:width 0.2s ease',
-            'overflow:hidden',
-            'text-decoration:none'
-        ].join(';');
+const FaqPipComponent = ({ href = 'https://your-link-here.com' } = {}) => {
+    const [expanded, setExpanded] = React.useState(false);
 
-        var icon = document.createElement('span');
-        icon.textContent = '?';
-        icon.style.cssText = [
-            'color:#ffffff',
-            'font-size:16px',
-            'font-weight:bold',
-            'opacity:0',
-            'transition:opacity 0.15s ease',
-            'pointer-events:none'
-        ].join(';');
+    return React.createElement('div', {
+        style: {
+            position: 'fixed',
+            right: 0,
+            bottom: 0,
+            transform: 'translateY(-50%)',
+            zIndex: 'var(--z-critical)',
+            WebkitTapHighlightColor: 'transparent'
+        }
+    },
+        React.createElement('a', {
+            href,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: expanded ? '44px' : '12px',
+                height: '44px',
+                backgroundColor: '#1E2B44',
+                borderRadius: '6px 0 0 6px',
+                cursor: 'pointer',
+                transition: 'width 0.2s ease',
+                overflow: 'hidden',
+                textDecoration: 'none'
+            },
+            onMouseEnter: () => setExpanded(true),
+            onMouseLeave: () => setExpanded(false)
+        },
+            React.createElement('span', {
+                style: {
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    opacity: expanded ? 1 : 0,
+                    transition: 'opacity 0.15s ease',
+                    pointerEvents: 'none'
+                }
+            }, '?')
+        )
+    );
+};
 
-        link.addEventListener('mouseenter', function () {
-            link.style.width = '44px';
-            icon.style.opacity = '1';
-        });
-        link.addEventListener('mouseleave', function () {
-            link.style.width = '12px';
-            icon.style.opacity = '0';
-        });
-
-        link.appendChild(icon);
-        container.appendChild(link);
-        return container;
-    }
-
-    window.FaqPipComponent = FaqPipComponent;
-})();
+window.FaqPipComponent = FaqPipComponent;
