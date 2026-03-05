@@ -85,7 +85,7 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
       transition: 'width 0.26s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease, box-shadow 0.22s ease',
       overflow: 'hidden',
       cursor: 'pointer',
-      zIndex: (window.ZIndex?.CRITICAL || 50),
+      zIndex: 1,
       pointerEvents: isVisible ? 'auto' : 'none',
       WebkitTapHighlightColor: 'transparent',
     },

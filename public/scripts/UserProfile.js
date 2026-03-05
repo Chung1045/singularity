@@ -368,7 +368,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                     alignItems: 'flex-start',
                     padding: '36px 30px 40px 30px',
                     backgroundColor: '#ffffff',
-                    overflowY: 'auto',
+                    // overflowY: 'auto',
                     minHeight: '100vh',
                     width: `calc(100vw - ${sidebarCollapsed ? '65px' : '256px'})`,
                     transition: 'width 220ms ease'
