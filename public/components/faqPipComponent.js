@@ -60,7 +60,7 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
     },
     onMouseEnter: showCollapsed,
     onMouseLeave: hideCompletely,
-    onTouchStart: handleTouch, // mobile
+    onTouchStart: handleTouch, // mobile fix
   },
     React.createElement('a', {
       href,
@@ -69,7 +69,7 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
       style: {
         position: 'absolute',
         right: 0,
-        bottom: 0,
+        top: '50%',
         transform: 'translateY(-50%)',
         width: width,
         height: '44px',
