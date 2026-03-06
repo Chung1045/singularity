@@ -241,7 +241,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
             success: function(response) {
                 showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
                 setTimeout(() => {
-                    window.location = "/login";
+                    window.location = "/?loggedout=1";
                 }, 3000);
             },
             error: function(xhr) {

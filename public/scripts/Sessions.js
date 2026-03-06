@@ -80,10 +80,9 @@ const Session = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
             if (response.ok) {
                 const data = await response.json();
                 // Old: alert("Logout response: " + JSON.stringify(data));
-                // Old: window.location = "/login";
                 showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
                 setTimeout(() => {
-                    window.location = "/login";
+                    window.location = "/?loggedout=1";
                 }, 3000);
             } else {
                 const errorData = await response.json().catch(() => ({}));
