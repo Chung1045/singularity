@@ -67,8 +67,8 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
     style: {
       position: 'fixed',
       right: 0,
-      bottom: '50%',
-      transform: 'translateY(50%)',
+      bottom: 0 ,
+      transform: 'translateY(-50%)',
       width: width,
       height: '44px',
       backgroundColor: '#1E2B44',
