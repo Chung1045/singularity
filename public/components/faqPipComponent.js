@@ -67,8 +67,8 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
     style: {
       position: 'fixed',
       right: 0,
-      bottom: 0,
-      transform: 'translateY(-50%)',
+      bottom: '50%',
+      transform: 'translateY(50%)',
       width: width,
       height: '44px',
       backgroundColor: '#1E2B44',
@@ -91,7 +91,18 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
     },
     onClick: handleClick,
   },
-  mode === 'expanded' ? '?' : null
+    mode === 'expanded'
+      ? React.createElement('img', {
+          src: './img/Help circle.svg',
+          alt: 'Help',
+          style: {
+            width: '24px',
+            height: '24px',
+            objectFit: 'contain',
+            filter: 'brightness(0) invert(1)' // 让SVG变成白色
+          }
+        })
+      : null
   );
 };
 
