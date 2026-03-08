@@ -23,9 +23,13 @@ const UserProfile = ({userInfo, csrfToken}) => {
     const [googleAvatarError, setGoogleAvatarError] = useState(false);
 
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [windowHeight, setWindowHeight] = useState(window.innerHeight);
 
     React.useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+            setWindowHeight(window.innerHeight);
+        };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -34,6 +38,35 @@ const UserProfile = ({userInfo, csrfToken}) => {
 
     // Define responsive breakpoints for MacBook compatibility
     const isSmallDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerWidth < 1440;
+    const isCompactHeight = windowHeight <= 920;
+    const isCompactWidth = windowWidth <= 1280;
+    const isCompactProfile = isCompactWidth || isCompactHeight;
+    const shouldScrollProfile = isMobile || windowHeight <= 820 || (isCompactWidth && windowHeight <= 900);
+
+    const mainContentPadding = shouldScrollProfile ? '20px 20px 16px 20px' : '26px 30px 40px 30px';
+    const profileTitleFontSize = isMobile ? '20px' : (isCompactProfile ? '22px' : '24px');
+    const profileTitleLineHeight = isMobile ? '20px' : (isCompactProfile ? '22px' : '24px');
+    const profileTitleBottomMargin = shouldScrollProfile ? '14px' : (isCompactProfile ? '28px' : (isSmallDesktop ? '56px' : '96px'));
+    const profileContainerMaxWidth = isCompactProfile ? '420px' : (isSmallDesktop ? '500px' : '450px');
+    const profileSectionGap = shouldScrollProfile ? '14px' : (isCompactProfile ? '18px' : (isSmallDesktop ? '24px' : '28px'));
+    const cardGap = isCompactProfile ? '10px' : '20px';
+    const fieldPadding = isCompactProfile ? '8px 16px' : '10px 20px';
+    const fieldTallRowHeight = isCompactProfile ? '60px' : '73px';
+    const fieldTextGap = isCompactProfile ? '6px' : '10px';
+    const fieldLabelFontSize = isMobile ? '13px' : (isCompactProfile ? '14px' : '16px');
+    const fieldValueFontSize = isMobile ? '13px' : (isCompactProfile ? '14px' : '16px');
+    const avatarSectionWidth = isCompactProfile ? '146px' : '163px';
+    const avatarSectionHeight = isCompactProfile ? '150px' : '170px';
+    const avatarImageSize = isCompactProfile ? '136px' : '153px';
+    const avatarButtonTop = isCompactProfile ? '122px' : '140px';
+    const avatarButtonLeft = isCompactProfile ? '73px' : '90px';
+    const avatarButtonWidth = isCompactProfile ? '62px' : '73px';
+    const avatarButtonHeight = isCompactProfile ? '28px' : '30px';
+    const avatarButtonTextSize = isCompactProfile ? '13px' : '15px';
+    const actionRowHeight = isMobile ? '40px' : (isCompactProfile ? '44px' : '50px');
+    const actionPadding = isMobile ? '10px 12px' : (isCompactProfile ? '12px 16px' : '20px');
+    const actionTextFontSize = isMobile ? '16px' : (isCompactProfile ? '18px' : '20px');
+    const actionGap = isCompactProfile ? '12px' : '15px';
 
     // Handle avatar loading errors
     // Cascading fallback: uploaded avatar → Google avatar → default icon
@@ -366,10 +399,12 @@ const UserProfile = ({userInfo, csrfToken}) => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
-                    padding: '36px 30px 40px 30px',
+                    // Match sidebar nav top padding so page title aligns with sidebar logo row.
+                    padding: mainContentPadding,
                     backgroundColor: '#ffffff',
-                    // overflowY: 'auto',
-                    minHeight: '100vh',
+                    overflowX: 'hidden',
+                    overflowY: shouldScrollProfile ? 'auto' : 'hidden',
+                    minHeight: 0,
                     width: `calc(100vw - ${sidebarCollapsed ? '65px' : '256px'})`,
                     transition: 'width 220ms ease'
                 }
@@ -380,19 +415,19 @@ const UserProfile = ({userInfo, csrfToken}) => {
                 React.createElement('div', {
                     id: 'profile-header',
                     style: {
-
-                        fontSize: '24px',
-                        fontWeight: '500',
+                        fontSize: profileTitleFontSize,
+                        fontWeight: '700',
                         fontFamily: 'SF Pro-Bold, Helvetica',
                         color: '#000000',
-                        marginBottom: isSmallDesktop ? '80px' : '131px',
-                        width: '147px',
-                        height: '10px',
+                        marginBottom: profileTitleBottomMargin,
+                        width: 'auto',
+                        minHeight: profileTitleLineHeight,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        justifyContent: 'flex-start',
                         letterSpacing: '0',
-                        lineHeight: '20px'
+                        lineHeight: profileTitleLineHeight,
+                        marginTop: isCompactProfile ? '5px' : '2px'
                     }
                 }, 'User Profile'),
 
@@ -401,12 +436,12 @@ const UserProfile = ({userInfo, csrfToken}) => {
                         id: 'profile-container',
 
                         style: {
-                        width: isSmallDesktop ? '400px' : '450px',
-                        maxWidth: isSmallDesktop ? '500px' : '100%',
+                        width: '100%',
+                        maxWidth: profileContainerMaxWidth,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: isSmallDesktop ? '25px' : '31px',
+                        gap: profileSectionGap,
                         // marginLeft: isSmallDesktop ? '76px' : '30px'
                     }
                 },
@@ -415,8 +450,8 @@ const UserProfile = ({userInfo, csrfToken}) => {
                         id: 'profile-avatar-section',
                         style: {
                             position: 'relative',
-                            width: '163px',
-                            height: '170px'
+                            width: avatarSectionWidth,
+                            height: avatarSectionHeight
                         }
                     },
                         React.createElement('div', {
@@ -426,8 +461,8 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 position: 'absolute',
                                 top: '1px',
                                 left: '0',
-                                width: '153px',
-                                height: '153px',
+                                width: avatarImageSize,
+                                height: avatarImageSize,
                                 borderRadius: '76.5px',
                                 backgroundColor: '#d9d9d9',
                                 overflow: 'hidden',
@@ -461,15 +496,15 @@ const UserProfile = ({userInfo, csrfToken}) => {
                             id: 'btn-edit-avatar',
                             style: {
                                 position: 'absolute',
-                                top: '140px',
-                                left: '90px',
-                                width: '73px',
-                                height: '30px',
+                                top: avatarButtonTop,
+                                left: avatarButtonLeft,
+                                width: avatarButtonWidth,
+                                height: avatarButtonHeight,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'flex-end',
-                                gap: '10px',
-                                padding: '10px',
+                                gap: isCompactProfile ? '8px' : '10px',
+                                padding: isCompactProfile ? '8px' : '10px',
                                 backgroundColor: uploadingAvatar ? '#666666' : '#1c1d21',
                                 borderRadius: '10px',
                                 cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
@@ -511,7 +546,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     fontFamily: 'SF Pro-Semibold, Helvetica',
                                     fontWeight: '400',
                                     color: '#ffffff',
-                                    fontSize: '15px',
+                                    fontSize: avatarButtonTextSize,
                                     letterSpacing: '0',
                                     lineHeight: 'normal',
                                     whiteSpace: 'nowrap'
@@ -526,12 +561,12 @@ const UserProfile = ({userInfo, csrfToken}) => {
                         style: {
                             display: 'flex',
                             flexDirection: 'column',
-                            width: isSmallDesktop ? '100%' : '433px',
-                            maxWidth: isSmallDesktop ? '500px' : '100%',
+                            width: '100%',
+                            maxWidth: isCompactProfile ? '420px' : '433px',
                             alignItems: 'flex-start',
-                            gap: '20px',
-                            marginLeft: isSmallDesktop ? '-20px' : '-55px',
-                            marginRight: isSmallDesktop ? '-20px' : '-55px'
+                            gap: cardGap,
+                            marginLeft: isCompactProfile ? '0' : (isSmallDesktop ? '-20px' : '-55px'),
+                            marginRight: isCompactProfile ? '0' : (isSmallDesktop ? '-20px' : '-55px')
                         }
                     },
                         // Info Card
@@ -552,10 +587,10 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 id: 'profile-username-field',
                                 style: {
                                     display: 'flex',
-                                    height: '73px',
+                                    height: fieldTallRowHeight,
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: '10px 20px',
+                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
@@ -565,7 +600,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: '10px',
+                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
@@ -575,7 +610,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -586,7 +621,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -644,7 +679,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: '10px 20px',
+                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
@@ -654,7 +689,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: '10px',
+                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
@@ -664,7 +699,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -675,7 +710,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -733,7 +768,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: '10px 20px',
+                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
@@ -743,7 +778,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: '10px',
+                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
@@ -753,7 +788,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: '600',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -764,7 +799,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -821,7 +856,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: '10px 20px',
+                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
@@ -831,7 +866,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: '10px',
+                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
@@ -841,7 +876,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -852,7 +887,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: '16px',
+                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -879,10 +914,10 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handleChangePassword,
                                 style: {
                                     display: 'flex',
-                                    height: '50px',
+                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
+                                    gap: actionGap,
+                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
@@ -894,7 +929,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: '20px',
+                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -927,10 +962,10 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handlePasskeyManagement,
                                 style: {
                                     display: 'flex',
-                                    height: '50px',
+                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
+                                    gap: actionGap,
+                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
@@ -941,7 +976,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: '20px',
+                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -975,10 +1010,10 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handleSessionManagement,
                                 style: {
                                     display: 'flex',
-                                    height: '50px',
+                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
+                                    gap: actionGap,
+                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
@@ -989,7 +1024,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: '20px',
+                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -1022,10 +1057,10 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     onClick: handleSupport,
                                     style: {
                                         display: 'flex',
-                                        height: '50px',
+                                        height: actionRowHeight,
                                         alignItems: 'center',
-                                        gap: '15px',
-                                        padding: '20px',
+                                        gap: actionGap,
+                                        padding: actionPadding,
                                         borderRadius: '10px',
                                         cursor: 'pointer'
                                     }
@@ -1037,7 +1072,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: '20px',
+                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -1070,10 +1105,10 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handleDeleteAccount,
                                 style: {
                                     display: 'flex',
-                                    height: '50px',
+                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
+                                    gap: actionGap,
+                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
@@ -1085,7 +1120,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#b62e2e',
-                                        fontSize: '20px',
+                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }

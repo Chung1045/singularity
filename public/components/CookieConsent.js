@@ -246,6 +246,11 @@
             )
             : null;
 
+        const handleDismiss = () => {
+            setBannerSlideIn(false);
+            setTimeout(() => setVisible(false), 320);
+        };
+
         // ── Banner ────────────────────────────────────────────────────────
         const banner = React.createElement('div', {
             id: 'cookie-consent-root',
@@ -269,6 +274,32 @@
                 transition: 'bottom 0.38s cubic-bezier(0.34, 1.4, 0.64, 1)'
             }
         },
+            // Close button
+            React.createElement('button', {
+                onClick: handleDismiss,
+                'aria-label': 'Dismiss',
+                style: {
+                    position: 'absolute',
+                     top: '2px',
+                    //top: '5px',
+                     right: '2px',
+                    //left: '5px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#aaaaaa',
+                    fontSize: '14px',
+                    lineHeight: 1,
+                    padding: '4px 6px',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.15s'
+                },
+                onMouseEnter: (e) => { e.currentTarget.style.color = '#555555'; },
+                onMouseLeave: (e) => { e.currentTarget.style.color = '#aaaaaa'; }
+            }, '✕'),
             // Left: icon + text
             React.createElement('div', {
                 id: 'cookie-consent-content-group',
@@ -281,9 +312,9 @@
                     minWidth: 0
                 }
             },
-                React.createElement('div', {
-                    style: { fontSize: '24px', lineHeight: 1, marginTop: '3px', flexShrink: 0 }
-                }, '🍪'),
+                // React.createElement('div', {
+                //     style: { fontSize: '24px', lineHeight: 1, marginTop: '3px', flexShrink: 0 }
+                // }, '🍪'),
                 React.createElement('div', { style: { flex: 1, minWidth: 0 } },
                     React.createElement('div', {
                         id: 'cookie-consent-title',
