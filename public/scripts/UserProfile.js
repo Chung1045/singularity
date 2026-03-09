@@ -26,47 +26,25 @@ const UserProfile = ({userInfo, csrfToken}) => {
     const [windowHeight, setWindowHeight] = useState(window.innerHeight);
 
     React.useEffect(() => {
+        let rafId;
         const handleResize = () => {
-            setWindowWidth(window.innerWidth);
-            setWindowHeight(window.innerHeight);
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                setWindowWidth(window.innerWidth);
+                setWindowHeight(window.innerHeight);
+            });
         };
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(rafId);
+        };
     }, []);
 
     const isMobile = windowWidth <= 480;
-
-    // Define responsive breakpoints for MacBook compatibility
-    const isSmallDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerWidth < 1440;
-    const isCompactHeight = windowHeight <= 920;
-    const isCompactWidth = windowWidth <= 1280;
-    const isCompactProfile = isCompactWidth || isCompactHeight;
-    const shouldScrollProfile = isMobile || windowHeight <= 820 || (isCompactWidth && windowHeight <= 900);
-
-    const mainContentPadding = shouldScrollProfile ? '20px 20px 16px 20px' : '26px 30px 40px 30px';
-    const profileTitleFontSize = isMobile ? '20px' : (isCompactProfile ? '22px' : '24px');
-    const profileTitleLineHeight = isMobile ? '20px' : (isCompactProfile ? '22px' : '24px');
-    const profileTitleBottomMargin = shouldScrollProfile ? '14px' : (isCompactProfile ? '28px' : (isSmallDesktop ? '56px' : '96px'));
-    const profileContainerMaxWidth = isCompactProfile ? '420px' : (isSmallDesktop ? '500px' : '450px');
-    const profileSectionGap = shouldScrollProfile ? '14px' : (isCompactProfile ? '18px' : (isSmallDesktop ? '24px' : '28px'));
-    const cardGap = isCompactProfile ? '10px' : '20px';
-    const fieldPadding = isCompactProfile ? '8px 16px' : '10px 20px';
-    const fieldTallRowHeight = isCompactProfile ? '60px' : '73px';
-    const fieldTextGap = isCompactProfile ? '6px' : '10px';
-    const fieldLabelFontSize = isMobile ? '13px' : (isCompactProfile ? '14px' : '16px');
-    const fieldValueFontSize = isMobile ? '13px' : (isCompactProfile ? '14px' : '16px');
-    const avatarSectionWidth = isCompactProfile ? '146px' : '163px';
-    const avatarSectionHeight = isCompactProfile ? '150px' : '170px';
-    const avatarImageSize = isCompactProfile ? '136px' : '153px';
-    const avatarButtonTop = isCompactProfile ? '122px' : '140px';
-    const avatarButtonLeft = isCompactProfile ? '73px' : '90px';
-    const avatarButtonWidth = isCompactProfile ? '62px' : '73px';
-    const avatarButtonHeight = isCompactProfile ? '28px' : '30px';
-    const avatarButtonTextSize = isCompactProfile ? '13px' : '15px';
-    const actionRowHeight = isMobile ? '40px' : (isCompactProfile ? '44px' : '50px');
-    const actionPadding = isMobile ? '10px 12px' : (isCompactProfile ? '12px 16px' : '20px');
-    const actionTextFontSize = isMobile ? '16px' : (isCompactProfile ? '18px' : '20px');
-    const actionGap = isCompactProfile ? '12px' : '15px';
+    const shouldScrollProfile = isMobile
+        || windowHeight <= 820
+        || (windowWidth <= 1280 && windowHeight <= 900);
 
     // Handle avatar loading errors
     // Cascading fallback: uploaded avatar → Google avatar → default icon
@@ -399,8 +377,6 @@ const UserProfile = ({userInfo, csrfToken}) => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
-                    // Match sidebar nav top padding so page title aligns with sidebar logo row.
-                    padding: mainContentPadding,
                     backgroundColor: '#ffffff',
                     overflowX: 'hidden',
                     overflowY: shouldScrollProfile ? 'auto' : 'hidden',
@@ -415,19 +391,14 @@ const UserProfile = ({userInfo, csrfToken}) => {
                 React.createElement('div', {
                     id: 'profile-header',
                     style: {
-                        fontSize: profileTitleFontSize,
                         fontWeight: '700',
                         fontFamily: 'SF Pro-Bold, Helvetica',
                         color: '#000000',
-                        marginBottom: profileTitleBottomMargin,
                         width: 'auto',
-                        minHeight: profileTitleLineHeight,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'flex-start',
                         letterSpacing: '0',
-                        lineHeight: profileTitleLineHeight,
-                        marginTop: isCompactProfile ? '5px' : '2px'
                     }
                 }, 'User Profile'),
 
@@ -437,12 +408,9 @@ const UserProfile = ({userInfo, csrfToken}) => {
 
                         style: {
                         width: '100%',
-                        maxWidth: profileContainerMaxWidth,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: profileSectionGap,
-                        // marginLeft: isSmallDesktop ? '76px' : '30px'
                     }
                 },
                     // Avatar Section
@@ -450,19 +418,14 @@ const UserProfile = ({userInfo, csrfToken}) => {
                         id: 'profile-avatar-section',
                         style: {
                             position: 'relative',
-                            width: avatarSectionWidth,
-                            height: avatarSectionHeight
                         }
                     },
                         React.createElement('div', {
                                 id: 'profile-avatar-wrapper',
                             style: {
-
                                 position: 'absolute',
                                 top: '1px',
                                 left: '0',
-                                width: avatarImageSize,
-                                height: avatarImageSize,
                                 borderRadius: '76.5px',
                                 backgroundColor: '#d9d9d9',
                                 overflow: 'hidden',
@@ -496,15 +459,9 @@ const UserProfile = ({userInfo, csrfToken}) => {
                             id: 'btn-edit-avatar',
                             style: {
                                 position: 'absolute',
-                                top: avatarButtonTop,
-                                left: avatarButtonLeft,
-                                width: avatarButtonWidth,
-                                height: avatarButtonHeight,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'flex-end',
-                                gap: isCompactProfile ? '8px' : '10px',
-                                padding: isCompactProfile ? '8px' : '10px',
                                 backgroundColor: uploadingAvatar ? '#666666' : '#1c1d21',
                                 borderRadius: '10px',
                                 cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
@@ -546,7 +503,6 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     fontFamily: 'SF Pro-Semibold, Helvetica',
                                     fontWeight: '400',
                                     color: '#ffffff',
-                                    fontSize: avatarButtonTextSize,
                                     letterSpacing: '0',
                                     lineHeight: 'normal',
                                     whiteSpace: 'nowrap'
@@ -562,11 +518,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                             display: 'flex',
                             flexDirection: 'column',
                             width: '100%',
-                            maxWidth: isCompactProfile ? '420px' : '433px',
                             alignItems: 'flex-start',
-                            gap: cardGap,
-                            marginLeft: isCompactProfile ? '0' : (isSmallDesktop ? '-20px' : '-55px'),
-                            marginRight: isCompactProfile ? '0' : (isSmallDesktop ? '-20px' : '-55px')
                         }
                     },
                         // Info Card
@@ -587,45 +539,42 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 id: 'profile-username-field',
                                 style: {
                                     display: 'flex',
-                                    height: fieldTallRowHeight,
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
                                 React.createElement('div', {
                                     id: 'username-text-container',
+                                    className: 'profile-field-text',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
                                     React.createElement('div', {
                                        id: 'username-label',
+                                       className: 'profile-field-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
                                             color: '#000000',
-                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
                                     }, 'Username'),
                                     React.createElement('div', {
                                         id: 'username-value',
+                                        className: 'profile-field-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
-                                    // }, `@${username}`)
                                     }, `${username}`)
                                 ),
                                 React.createElement('div', {
@@ -679,38 +628,37 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
                                 React.createElement('div', {
                                     id: 'displayname-text-container',
+                                    className: 'profile-field-text',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
                                     React.createElement('div', {
                                         id: 'displayname-label',
+                                        className: 'profile-field-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
                                             color: '#000000',
-                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
                                     }, 'Display Name'),
                                     React.createElement('div', {
                                         id: 'displayname-value',
+                                        className: 'profile-field-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -768,38 +716,37 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
                                 React.createElement('div', {
                                     id: 'email-text-container',
+                                    className: 'profile-field-text',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
                                     React.createElement('div', {
                                         id: 'email-label',
+                                        className: 'profile-field-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: '600',
                                             color: '#000000',
-                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
                                     }, 'Email address'),
                                     React.createElement('div', {
                                         id: 'email-value',
+                                        className: 'profile-field-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -856,38 +803,37 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '15px',
-                                    padding: fieldPadding,
                                     borderRadius: '10px'
                                 }
                             },
                                 React.createElement('div', {
                                     id: 'accounttype-text-container',
+                                    className: 'profile-field-text',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'center',
-                                        gap: fieldTextGap,
                                         flex: '1'
                                     }
                                 },
                                     React.createElement('div', {
                                         id: 'accounttype-label',
+                                        className: 'profile-field-label',
                                         style: {
                                             fontFamily: 'SF Pro-Semibold, Helvetica',
                                             fontWeight: 'bold',
                                             color: '#000000',
-                                            fontSize: fieldLabelFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
                                     }, 'Account Type'),
                                     React.createElement('div', {
                                         id: 'accounttype-value',
+                                        className: 'profile-field-value',
                                         style: {
                                             fontFamily: 'SF Pro-Regular, Helvetica',
                                             fontWeight: '400',
                                             color: '#000000',
-                                            fontSize: fieldValueFontSize,
                                             letterSpacing: '0',
                                             lineHeight: 'normal'
                                         }
@@ -914,22 +860,19 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handleChangePassword,
                                 style: {
                                     display: 'flex',
-                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: actionGap,
-                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
                             },
                                 React.createElement('div', {
                                     id: 'change-password-text',
+                                    className: 'profile-action-text',
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -962,21 +905,18 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handlePasskeyManagement,
                                 style: {
                                     display: 'flex',
-                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: actionGap,
-                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
                             },
                                 React.createElement('div', {
+                                    className: 'profile-action-text',
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -1010,21 +950,18 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handleSessionManagement,
                                 style: {
                                     display: 'flex',
-                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: actionGap,
-                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
                             },
                                 React.createElement('div', {
+                                    className: 'profile-action-text',
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -1057,22 +994,19 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                     onClick: handleSupport,
                                     style: {
                                         display: 'flex',
-                                        height: actionRowHeight,
                                         alignItems: 'center',
-                                        gap: actionGap,
-                                        padding: actionPadding,
                                         borderRadius: '10px',
                                         cursor: 'pointer'
                                     }
                                 },
                                 React.createElement('div', {
                                     id: 'support-text',
+                                    className: 'profile-action-text',
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#000000',
-                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
@@ -1105,22 +1039,19 @@ const UserProfile = ({userInfo, csrfToken}) => {
                                 onClick: handleDeleteAccount,
                                 style: {
                                     display: 'flex',
-                                    height: actionRowHeight,
                                     alignItems: 'center',
-                                    gap: actionGap,
-                                    padding: actionPadding,
                                     borderRadius: '10px',
                                     cursor: 'pointer'
                                 }
                             },
                                 React.createElement('div', {
                                     id: 'delete-account-text',
+                                    className: 'profile-action-text',
                                     style: {
                                         flex: '1',
                                         fontFamily: 'SF Pro-Semibold, Helvetica',
                                         fontWeight: 'bold',
                                         color: '#b62e2e',
-                                        fontSize: actionTextFontSize,
                                         letterSpacing: '0',
                                         lineHeight: 'normal'
                                     }
