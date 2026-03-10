@@ -148,7 +148,7 @@
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
-                    flexShrink: 0,
+                    flexShrink: 0
                     // borderLeft: '1px solid rgba(15, 23, 42, 0.08)',
                     // transition: 'width 220ms ease'
                 }
