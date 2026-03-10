@@ -1,6 +1,6 @@
 (function () {
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
-const h = React.createElement;
+const reactCreateElm = React.createElement;
 
 const DEFAULT_AVATAR = './img/size-48.svg';
 const CHEVRON_ICON = './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg';
@@ -25,35 +25,35 @@ function getProfileUser(userInfo) {
 }
 
 function DetailRow({ label, value }) {
-    return h(
+    return reactCreateElm(
         'div',
         { className: 'profile-detail-row' },
-        h('div', { className: 'profile-detail-label' }, label),
-        h('div', { className: 'profile-detail-value' }, value)
-    );
+        reactCreateElm('div', { className: 'profile-detail-label' }, label),
+        reactCreateElm('div', { className: 'profile-detail-value' }, value)
+        );
 }
 
 function ActionRow({ title, description, onClick }) {
-    return h(
+    return reactCreateElm(
         'button',
         {
             type: 'button',
             className: 'profile-action-row',
             onClick
         },
-        h(
+        reactCreateElm(
             'div',
             { className: 'profile-action-copy' },
-            h('div', { className: 'profile-action-title' }, title),
-            h('div', { className: 'profile-action-description' }, description)
+            reactCreateElm('div', { className: 'profile-action-title' }, title),
+            reactCreateElm('div', { className: 'profile-action-description' }, description)
         ),
-        h(
+        reactCreateElm(
             'div',
             {
                 className: 'profile-action-icon',
                 'aria-hidden': true
             },
-            h('img', {
+            reactCreateElm('img', {
                 className: 'profile-action-icon-image',
                 src: CHEVRON_ICON,
                 alt: ''
@@ -67,7 +67,7 @@ function ProfileModal({ modal, onClose, onConfirm, onCancel }) {
         return null;
     }
 
-    return h(
+    return reactCreateElm(
         'div',
         {
             className: 'profile-modal-overlay',
@@ -77,18 +77,18 @@ function ProfileModal({ modal, onClose, onConfirm, onCancel }) {
                 }
             }
         },
-        h(
+        reactCreateElm(
             'div',
             {
                 className: 'profile-modal-card',
                 onClick: (event) => event.stopPropagation()
             },
-            h('h2', { className: 'profile-modal-title' }, modal.title),
-            h('p', { className: 'profile-modal-message' }, modal.message),
-            h(
+            reactCreateElm('h2', { className: 'profile-modal-title' }, modal.title),
+            reactCreateElm('p', { className: 'profile-modal-message' }, modal.message),
+            reactCreateElm(
                 'div',
                 { className: 'profile-modal-actions' },
-                modal.type === 'confirm' && h(
+                modal.type === 'confirm' && reactCreateElm(
                     'button',
                     {
                         type: 'button',
@@ -97,7 +97,7 @@ function ProfileModal({ modal, onClose, onConfirm, onCancel }) {
                     },
                     'Cancel'
                 ),
-                h(
+                reactCreateElm(
                     'button',
                     {
                         type: 'button',
@@ -146,7 +146,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
         const handleResize = () => {
             cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(() => {
-                setWindowWidth(window.innerWidth);
+                setWindowWidtreactCreateElm(window.innerWidth);
             });
         };
 
@@ -209,7 +209,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
         setAvatarLoading(true);
 
         try {
-            const response = await fetch('/api/profile-pic/fetch', {
+            const response = await fetcreactCreateElm('/api/profile-pic/fetch', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -360,7 +360,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
         formData.append('file', file);
 
         try {
-            const response = await fetch('/api/profile-pic/replace', {
+            const response = await fetcreactCreateElm('/api/profile-pic/replace', {
                 method: 'POST',
                 headers: {
                     'CSRF-Token': csrfToken
@@ -449,7 +449,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
             'Are you sure you want to delete your account? This action cannot be undone.',
             async () => {
                 try {
-                    const response = await fetch('/api/account/delete', {
+                    const response = await fetcreactCreateElm('/api/account/delete', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -516,20 +516,20 @@ const UserProfile = ({ userInfo, csrfToken }) => {
         }
     ];
 
-    return h(
+    return reactCreateElm(
         'div',
         {
             className: 'sidebar-expand profile-shell' + (sidebarCollapsed ? ' collapsed' : ''),
             onClick: () => setUserMenuOpen(false)
         },
-        h(
+        reactCreateElm(
             'div',
             { className: 'group profile-layout' },
-            isOverlay && !sidebarCollapsed && h('div', {
+            isOverlay && !sidebarCollapsed && reactCreateElm('div', {
                 className: 'profile-sidebar-backdrop',
                 onClick: () => setSidebarCollapsed(true)
             }),
-            h(window.Sidebar, {
+            reactCreateElm(window.Sidebar, {
                 sidebarCollapsed: sidebarCollapsed,
                 setSidebarCollapsed: setSidebarCollapsed,
                 isOverlay: isOverlay,
@@ -540,30 +540,30 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                 setUserMenuOpen: setUserMenuOpen,
                 userInfo: profileUser
             }),
-            h(
+            reactCreateElm(
                 'main',
                 { className: 'right-container profile-right-container' },
-                h(
+                reactCreateElm(
                     'section',
                     { className: 'main-screen profile-main-screen' },
-                    h(
+                    reactCreateElm(
                         'div',
                         { className: 'profile-scroll-region' },
-                        h(
+                        reactCreateElm(
                             'header',
                             { className: 'profile-page-header' },
-                            h('div', { className: 'profile-page-eyebrow' }, 'Account'),
-                            h('h1', { className: 'profile-page-title' }, 'User Profile'),
-                            h(
+                            reactCreateElm('div', { className: 'profile-page-eyebrow' }, 'Account'),
+                            reactCreateElm('h1', { className: 'profile-page-title' }, 'User Profile'),
+                            reactCreateElm(
                                 'p',
                                 { className: 'profile-page-copy' },
                                 'Manage your account details, sign-in methods, active sessions, and support from one page.'
                             )
                         ),
-                        h(
+                        reactCreateElm(
                             'div',
                             { className: 'profile-content-grid' },
-                            h(
+                            reactCreateElm(
                                 'div',
                                 {
                                     className: 'profile-overview-slot',
@@ -572,7 +572,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                         ? { minHeight: `${overviewLayout.height}px` }
                                         : undefined
                                 },
-                                h(
+                                reactCreateElm(
                                     'section',
                                     {
                                         className: 'profile-card profile-overview-card' + (shouldFixOverviewCard && overviewLayout ? ' profile-overview-card--fixed' : ''),
@@ -582,17 +582,17 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                             width: `${overviewLayout.width}px`
                                         } : undefined
                                     },
-                                    h(
+                                    reactCreateElm(
                                         'div',
                                         { className: 'profile-overview-top' },
-                                        h(
+                                        reactCreateElm(
                                             'div',
                                             { className: 'profile-avatar-block' },
-                                            h(
+                                            reactCreateElm(
                                                 'div',
                                                 { className: 'profile-avatar-frame' },
                                                 avatarLoading
-                                                    ? h('div', {
+                                                    ? reactCreateElm('div', {
                                                         className: 'sk-box',
                                                         style: {
                                                             width: '100%',
@@ -600,21 +600,21 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                                             borderRadius: '50%'
                                                         }
                                                     })
-                                                    : h('img', {
+                                                    : reactCreateElm('img', {
                                                         className: 'profile-avatar-image',
                                                         src: avatarUrl || DEFAULT_AVATAR,
                                                         alt: 'User avatar',
                                                         onError: handleAvatarError
                                                     })
                                             ),
-                                            h('input', {
+                                            reactCreateElm('input', {
                                                 id: 'avatar-upload-input',
                                                 type: 'file',
                                                 accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
                                                 style: { display: 'none' },
                                                 onChange: handleAvatarUpload
                                             }),
-                                            h(
+                                            reactCreateElm(
                                                 'button',
                                                 {
                                                     type: 'button',
@@ -622,46 +622,46 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                                     onClick: uploadingAvatar ? null : triggerAvatarUpload,
                                                     disabled: uploadingAvatar
                                                 },
-                                                h('img', {
+                                                reactCreateElm('img', {
                                                     className: 'profile-avatar-button-icon',
                                                     src: EDIT_ICON,
                                                     alt: ''
                                                 }),
-                                                h('span', null, uploadingAvatar ? 'Uploading...' : 'Edit photo')
+                                                reactCreateElm('span', null, uploadingAvatar ? 'Uploading...' : 'Edit photo')
                                             )
                                         ),
-                                        h(
+                                        reactCreateElm(
                                             'div',
                                             { className: 'profile-overview-copy' },
-                                            h('div', { className: 'profile-overview-label' }, 'Overview'),
-                                            h('h2', { className: 'profile-overview-name' }, displayName),
-                                            h('p', { className: 'profile-overview-handle' }, profileHandle),
-                                            h('p', { className: 'profile-overview-email' }, email)
+                                            reactCreateElm('div', { className: 'profile-overview-label' }, 'Overview'),
+                                            reactCreateElm('h2', { className: 'profile-overview-name' }, displayName),
+                                            reactCreateElm('p', { className: 'profile-overview-handle' }, profileHandle),
+                                            reactCreateElm('p', { className: 'profile-overview-email' }, email)
                                         )
                                     )
                                 )
                             ),
-                            h(
+                            reactCreateElm(
                                 'div',
                                 { className: 'profile-stack' },
-                                h(
+                                reactCreateElm(
                                     'section',
                                     { className: 'profile-card profile-details-card' },
-                                    h(
+                                    reactCreateElm(
                                         'div',
                                         { className: 'profile-section-heading' },
-                                        h('h2', { className: 'profile-section-title' }, 'Profile details'),
-                                        h(
+                                        reactCreateElm('h2', { className: 'profile-section-title' }, 'Profile details'),
+                                        reactCreateElm(
                                             'p',
                                             { className: 'profile-section-copy' },
                                             'Basic account information currently attached to this user.'
                                         )
                                     ),
-                                    h(
+                                    reactCreateElm(
                                         'div',
                                         { className: 'profile-detail-list' },
                                         detailItems.map((item) =>
-                                            h(DetailRow, {
+                                            reactCreateElm(DetailRow, {
                                                 key: item.label,
                                                 label: item.label,
                                                 value: item.value
@@ -669,24 +669,24 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                         )
                                     )
                                 ),
-                                h(
+                                reactCreateElm(
                                     'section',
                                     { className: 'profile-card profile-security-card' },
-                                    h(
+                                    reactCreateElm(
                                         'div',
                                         { className: 'profile-section-heading' },
-                                        h('h2', { className: 'profile-section-title' }, 'Security and access'),
-                                        h(
+                                        reactCreateElm('h2', { className: 'profile-section-title' }, 'Security and access'),
+                                        reactCreateElm(
                                             'p',
                                             { className: 'profile-section-copy' },
                                             'Shortcuts for everything related to sign-in and account control.'
                                         )
                                     ),
-                                    h(
+                                    reactCreateElm(
                                         'div',
                                         { className: 'profile-action-list' },
                                         actionItems.map((item) =>
-                                            h(ActionRow, {
+                                            reactCreateElm(ActionRow, {
                                                 key: item.title,
                                                 title: item.title,
                                                 description: item.description,
@@ -695,28 +695,28 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                         )
                                     )
                                 ),
-                                h(
+                                reactCreateElm(
                                     'section',
                                     { className: 'profile-card profile-danger-card' },
-                                    h(
+                                    reactCreateElm(
                                         'div',
                                         { className: 'profile-section-heading' },
-                                        h('h2', { className: 'profile-section-title' }, 'Danger zone'),
-                                        h(
+                                        reactCreateElm('h2', { className: 'profile-section-title' }, 'Danger zone'),
+                                        reactCreateElm(
                                             'p',
                                             { className: 'profile-section-copy' },
                                             'Deleting the account is permanent and cannot be undone.'
                                         )
                                     ),
-                                    h(
+                                    reactCreateElm(
                                         'div',
                                         { className: 'profile-danger-panel' },
-                                        h(
+                                        reactCreateElm(
                                             'p',
                                             { className: 'profile-danger-copy' },
                                             'Delete your account only if you are certain you no longer need this workspace access.'
                                         ),
-                                        h(
+                                        reactCreateElm(
                                             'button',
                                             {
                                                 type: 'button',
@@ -732,7 +732,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                     )
                 )
             ),
-            h(ProfileModal, {
+            reactCreateElm(ProfileModal, {
                 modal: modal,
                 onClose: closeModal,
                 onConfirm: handleModalConfirm,
