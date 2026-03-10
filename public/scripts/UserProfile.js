@@ -1,5 +1,5 @@
 (function () {
-const { useCallback, useEffect, useMemo, useState } = React;
+const { useCallback, useEffect, useMemo, useRef, useState } = React;
 const h = React.createElement;
 
 const DEFAULT_AVATAR = './img/size-48.svg';
@@ -22,15 +22,6 @@ function getProfileUser(userInfo) {
     }
 
     return userInfo || {};
-}
-
-function MetricCard({ label, value }) {
-    return h(
-        'div',
-        { className: 'profile-metric-card' },
-        h('div', { className: 'profile-metric-label' }, label),
-        h('div', { className: 'profile-metric-value' }, value)
-    );
 }
 
 function DetailRow({ label, value }) {
@@ -142,8 +133,12 @@ const UserProfile = ({ userInfo, csrfToken }) => {
     const [avatarUrl, setAvatarUrl] = useState(
         profileUser.userAvatarPath || profileUser.googleAvatarUrl || DEFAULT_AVATAR
     );
+    const [overviewLayout, setOverviewLayout] = useState(null);
+    const overviewSlotRef = useRef(null);
+    const overviewCardRef = useRef(null);
 
     const isOverlay = windowWidth <= 1040;
+    const shouldFixOverviewCard = windowWidth > 900 && !isOverlay;
 
     useEffect(() => {
         let rafId = 0;
@@ -240,6 +235,40 @@ const UserProfile = ({ userInfo, csrfToken }) => {
     useEffect(() => {
         fetchProfilePics();
     }, [fetchProfilePics]);
+
+    useEffect(() => {
+        if (!shouldFixOverviewCard) {
+            setOverviewLayout(null);
+            return;
+        }
+
+        let rafId = 0;
+
+        const updateOverviewLayout = () => {
+            if (!overviewSlotRef.current || !overviewCardRef.current) {
+                return;
+            }
+
+            const slotRect = overviewSlotRef.current.getBoundingClientRect();
+            const cardRect = overviewCardRef.current.getBoundingClientRect();
+
+            setOverviewLayout(() => ({
+                left: slotRect.left,
+                width: slotRect.width,
+                height: cardRect.height
+            }));
+        };
+
+        rafId = requestAnimationFrame(updateOverviewLayout);
+        window.addEventListener('resize', updateOverviewLayout);
+        window.addEventListener('sidebarResized', updateOverviewLayout);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            window.removeEventListener('resize', updateOverviewLayout);
+            window.removeEventListener('sidebarResized', updateOverviewLayout);
+        };
+    }, [shouldFixOverviewCard, sidebarCollapsed]);
 
     const showAlert = (title, message) => {
         setModal({
@@ -535,72 +564,81 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                             'div',
                             { className: 'profile-content-grid' },
                             h(
-                                'section',
-                                { className: 'profile-card profile-overview-card' },
+                                'div',
+                                {
+                                    className: 'profile-overview-slot',
+                                    ref: overviewSlotRef,
+                                    style: shouldFixOverviewCard && overviewLayout
+                                        ? { minHeight: `${overviewLayout.height}px` }
+                                        : undefined
+                                },
                                 h(
-                                    'div',
-                                    { className: 'profile-overview-top' },
+                                    'section',
+                                    {
+                                        className: 'profile-card profile-overview-card' + (shouldFixOverviewCard && overviewLayout ? ' profile-overview-card--fixed' : ''),
+                                        ref: overviewCardRef,
+                                        style: shouldFixOverviewCard && overviewLayout ? {
+                                            left: `${overviewLayout.left}px`,
+                                            width: `${overviewLayout.width}px`
+                                        } : undefined
+                                    },
                                     h(
                                         'div',
-                                        { className: 'profile-avatar-block' },
+                                        { className: 'profile-overview-top' },
                                         h(
                                             'div',
-                                            { className: 'profile-avatar-frame' },
-                                            avatarLoading
-                                                ? h('div', {
-                                                    className: 'sk-box',
-                                                    style: {
-                                                        width: '100%',
-                                                        height: '100%',
-                                                        borderRadius: '50%'
-                                                    }
-                                                })
-                                                : h('img', {
-                                                    className: 'profile-avatar-image',
-                                                    src: avatarUrl || DEFAULT_AVATAR,
-                                                    alt: 'User avatar',
-                                                    onError: handleAvatarError
-                                                })
-                                        ),
-                                        h('input', {
-                                            id: 'avatar-upload-input',
-                                            type: 'file',
-                                            accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
-                                            style: { display: 'none' },
-                                            onChange: handleAvatarUpload
-                                        }),
-                                        h(
-                                            'button',
-                                            {
-                                                type: 'button',
-                                                className: 'profile-avatar-button' + (uploadingAvatar ? ' is-busy' : ''),
-                                                onClick: uploadingAvatar ? null : triggerAvatarUpload,
-                                                disabled: uploadingAvatar
-                                            },
-                                            h('img', {
-                                                className: 'profile-avatar-button-icon',
-                                                src: EDIT_ICON,
-                                                alt: ''
+                                            { className: 'profile-avatar-block' },
+                                            h(
+                                                'div',
+                                                { className: 'profile-avatar-frame' },
+                                                avatarLoading
+                                                    ? h('div', {
+                                                        className: 'sk-box',
+                                                        style: {
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            borderRadius: '50%'
+                                                        }
+                                                    })
+                                                    : h('img', {
+                                                        className: 'profile-avatar-image',
+                                                        src: avatarUrl || DEFAULT_AVATAR,
+                                                        alt: 'User avatar',
+                                                        onError: handleAvatarError
+                                                    })
+                                            ),
+                                            h('input', {
+                                                id: 'avatar-upload-input',
+                                                type: 'file',
+                                                accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
+                                                style: { display: 'none' },
+                                                onChange: handleAvatarUpload
                                             }),
-                                            h('span', null, uploadingAvatar ? 'Uploading...' : 'Edit photo')
+                                            h(
+                                                'button',
+                                                {
+                                                    type: 'button',
+                                                    className: 'profile-avatar-button' + (uploadingAvatar ? ' is-busy' : ''),
+                                                    onClick: uploadingAvatar ? null : triggerAvatarUpload,
+                                                    disabled: uploadingAvatar
+                                                },
+                                                h('img', {
+                                                    className: 'profile-avatar-button-icon',
+                                                    src: EDIT_ICON,
+                                                    alt: ''
+                                                }),
+                                                h('span', null, uploadingAvatar ? 'Uploading...' : 'Edit photo')
+                                            )
+                                        ),
+                                        h(
+                                            'div',
+                                            { className: 'profile-overview-copy' },
+                                            h('div', { className: 'profile-overview-label' }, 'Overview'),
+                                            h('h2', { className: 'profile-overview-name' }, displayName),
+                                            h('p', { className: 'profile-overview-handle' }, profileHandle),
+                                            h('p', { className: 'profile-overview-email' }, email)
                                         )
-                                    ),
-                                    h(
-                                        'div',
-                                        { className: 'profile-overview-copy' },
-                                        h('div', { className: 'profile-overview-label' }, 'Overview'),
-                                        h('h2', { className: 'profile-overview-name' }, displayName),
-                                        h('p', { className: 'profile-overview-handle' }, profileHandle),
-                                        h('p', { className: 'profile-overview-email' }, email)
                                     )
-                                ),
-                                h(
-                                    'div',
-                                    { className: 'profile-metric-grid' },
-                                    h(MetricCard, { label: 'Account type', value: accountType }),
-                                    h(MetricCard, { label: 'Access', value: accessMethod }),
-                                    h(MetricCard, { label: 'Username', value: username }),
-                                    h(MetricCard, { label: 'Status', value: 'Ready to manage' })
                                 )
                             ),
                             h(
@@ -608,7 +646,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                 { className: 'profile-stack' },
                                 h(
                                     'section',
-                                    { className: 'profile-card' },
+                                    { className: 'profile-card profile-details-card' },
                                     h(
                                         'div',
                                         { className: 'profile-section-heading' },
@@ -633,7 +671,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                 ),
                                 h(
                                     'section',
-                                    { className: 'profile-card' },
+                                    { className: 'profile-card profile-security-card' },
                                     h(
                                         'div',
                                         { className: 'profile-section-heading' },
