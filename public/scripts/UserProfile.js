@@ -26,6 +26,8 @@ const UserProfile = ({userInfo, csrfToken}) => {
     const [windowHeight, setWindowHeight] = useState(window.innerHeight);
 
     React.useEffect(() => {
+        // rafid is the id for request animation frame, what it does is to adjust content in diff screen size
+        // it used as a checker.
         let rafId;
         const handleResize = () => {
             cancelAnimationFrame(rafId);
