@@ -26,22 +26,29 @@ const UserProfile = ({userInfo, csrfToken}) => {
     const [windowHeight, setWindowHeight] = useState(window.innerHeight);
 
     React.useEffect(() => {
-        // rafid is the id for request animation frame, what it does is to adjust content in diff screen size
-        // it used as a checker.
-        let rafId;
-        const handleResize = () => {
-            cancelAnimationFrame(rafId);
-            rafId = requestAnimationFrame(() => {
-                setWindowWidth(window.innerWidth);
-                setWindowHeight(window.innerHeight);
-            });
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            cancelAnimationFrame(rafId);
-        };
-    }, []);
+    // rafId = requestAnimationFrame ID
+    // Used to track and cancel the animation frame task to avoid duplicate runs and memory leaks
+    let rafId;
+
+    const handleResize = () => {
+        // Cancel the previous animation frame task before creating a new one
+        cancelAnimationFrame(rafId);
+
+        // Schedule state update to run on the next browser repaint frame
+        rafId = requestAnimationFrame(() => {
+            setWindowWidth(window.innerWidth);
+            setWindowHeight(window.innerHeight);
+        });
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+        window.removeEventListener('resize', handleResize);
+        // Cleanup: cancel the pending animation frame when component unmounts
+        cancelAnimationFrame(rafId);
+    };
+}, []);
 
     const isMobile = windowWidth <= 480;
     const shouldScrollProfile = isMobile
