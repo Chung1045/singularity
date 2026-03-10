@@ -150,7 +150,7 @@
                     overflow: 'hidden',
                     flexShrink: 0,
                     // borderLeft: '1px solid rgba(15, 23, 42, 0.08)',
-                    transition: 'width 220ms ease'
+                    // transition: 'width 220ms ease'
                 }
             },
             !isCollapsed && React.createElement('div', {
