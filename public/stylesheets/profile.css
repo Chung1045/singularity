@@ -208,10 +208,10 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 35px;
   padding: 0 14px;
   border: none;
-  border-radius: 999px;
+  border-radius: 10px;
   background: #111827;
   color: #ffffff;
   font-size: 14px;
@@ -422,7 +422,7 @@ a {
   min-height: 44px;
   padding: 0 18px;
   border: none;
-  border-radius: 999px;
+  border-radius: 10px;
   background: #b62e2e;
   color: #ffffff;
   font-size: 14px;
@@ -479,7 +479,7 @@ a {
 .profile-modal-button {
   min-height: 44px;
   padding: 0 18px;
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
