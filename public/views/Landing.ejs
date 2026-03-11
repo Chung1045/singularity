@@ -54,6 +54,8 @@
 
     </main>
 
+   
+
     <script>
         // Slideshow
         (function () {
@@ -85,6 +87,17 @@
                 setTimeout(function () { msg.classList.add('hidden'); }, 4000);
             }
         })();
+    </script>
+
+
+    <div id="cookie-consent-mount"></div>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="/components/CookieConsent.js"></script>
+    <script>
+        ReactDOM.createRoot(document.getElementById('cookie-consent-mount')).render(
+            React.createElement(window.CookieConsent, null)
+        );
     </script>
 
 </body>

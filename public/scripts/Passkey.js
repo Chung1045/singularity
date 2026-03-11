@@ -166,12 +166,11 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
             if (response.ok) {
                 const data = await response.json();
                 // Old: alert("Logout response: " + JSON.stringify(data));
-                // Old: window.location = "/login";
                 showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.', () => {
-                    window.location = "/login";
+                    window.location = "/?loggedout=1";
                 });
                 setTimeout(() => {
-                    window.location = "/login";
+                    window.location = "/?loggedout=1";
                 }, 3000);
             } else {
                 const errorData = await response.json().catch(() => ({}));

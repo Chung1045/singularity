@@ -1,104 +1,389 @@
-(function() {
-const { useState } = React;
-const UserProfile = ({userInfo, csrfToken}) => {
-    window.csrfToken = csrfToken;
-    // const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+(function () {
+const { useCallback, useEffect, useMemo, useRef, useState } = React;
+const reactCreateElm = React.createElement;
 
-    // Persist sidebar state in localStorage
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved !== null ? JSON.parse(saved) : true;
-    });
+const DEFAULT_AVATAR = './img/size-48.svg';
+const CHEVRON_ICON = './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg';
+const EDIT_ICON = './img/Edit.svg';
+const AVATAR_EDITOR_VIEWPORT_SIZE = 260;
+const AVATAR_OUTPUT_SIZE = 800;
+const MAX_AVATAR_ZOOM = 3;
 
-    const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [isEditingProfile, setIsEditingProfile] = useState(false);
-    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
-    const [avatarLoading, setAvatarLoading] = useState(true);
-    const [avatarUrl, setAvatarUrl] = useState(() => {
-        // Prioritize uploaded avatar, then Google avatar, then default
-        return userInfo?.userAvatarPath || userInfo?.googleAvatarUrl || './img/size-48.svg';
-    });
-    const [avatarError, setAvatarError] = useState(false);
-    const [googleAvatarError, setGoogleAvatarError] = useState(false);
+function readStoredBoolean(key, fallbackValue) {
+    try {
+        const saved = localStorage.getItem(key);
+        return saved !== null ? JSON.parse(saved) : fallbackValue;
+    } catch (error) {
+        console.error('Failed to parse localStorage value for', key, error);
+        return fallbackValue;
+    }
+}
 
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-    React.useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    const isMobile = windowWidth <= 480;
-
-    // Define responsive breakpoints for MacBook compatibility
-    const isSmallDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerWidth < 1440;
-
-    // Handle avatar loading errors
-    // Cascading fallback: uploaded avatar → Google avatar → default icon
-    // If Google avatar also fails to fetch, fall back to default
-    const handleAvatarError = () => {
-        console.log(' Avatar image failed to load, checking for fallback options');
-        const currentUrl = avatarUrl;
-
-        // If currently showing uploaded avatar, try Google avatar next
-        if (currentUrl === userInfo?.userAvatarPath) {
-            setAvatarError(true);
-            const fallbackUrl = userInfo?.googleAvatarUrl || './img/size-48.svg';
-            console.log(' Falling back from uploaded avatar to:', fallbackUrl);
-            setAvatarUrl(fallbackUrl);
-        }
-        // If currently showing Google avatar (or it failed), use default
-        else if (currentUrl === userInfo?.googleAvatarUrl) {
-            console.log(' Google avatar also failed, falling back to default icon');
-            setGoogleAvatarError(true);
-            setAvatarUrl('./img/size-48.svg');
-        }
-    };
-
-    // Reset avatar error when userInfo changes
-    React.useEffect(() => {
-        setAvatarError(false);
-        setGoogleAvatarError(false);
-        setAvatarUrl(userInfo?.userAvatarPath || userInfo?.googleAvatarUrl || './img/size-48.svg');
-    }, [userInfo]);
-
-    console.log("Inside TempUserProfile component – userInfo:", userInfo);
-
-    window.onload = async function () {
-        await fetchProfilePics()
+function getProfileUser(userInfo) {
+    if (Array.isArray(userInfo)) {
+        return userInfo[0] || {};
     }
 
-    const showAlert = (title, message) => {
-        setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null });
-    };
+    return userInfo || {};
+}
 
-    const showModal = (title, message, onConfirm, onCancel = null) => {
-        setModal({ isOpen: true, title, message, type: 'confirm', onConfirm, onCancel });
-    };
+function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
 
-    const closeModal = () => {
-        setModal({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+function createEmptyAvatarEditorState() {
+    return {
+        isOpen: false,
+        objectUrl: '',
+        fileName: '',
+        naturalWidth: 0,
+        naturalHeight: 0,
+        baseScale: 1,
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0
     };
+}
 
-    const handleModalConfirm = async () => {
-        closeModal();
-        if (modal.onConfirm) {
-            await modal.onConfirm();
+function loadImageSource(src) {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('Unable to load the selected image.'));
+        image.src = src;
+    });
+}
+
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Unable to read the selected image.'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function DetailRow({ label, value }) {
+    return reactCreateElm(
+        'div',
+        { className: 'profile-detail-row' },
+        reactCreateElm('div', { className: 'profile-detail-label' }, label),
+        reactCreateElm('div', { className: 'profile-detail-value' }, value)
+    );
+}
+
+function ActionRow({ title, description, onClick }) {
+    return reactCreateElm(
+        'button',
+        {
+            type: 'button',
+            className: 'profile-action-row',
+            onClick
+        },
+        reactCreateElm(
+            'div',
+            { className: 'profile-action-copy' },
+            reactCreateElm('div', { className: 'profile-action-title' }, title),
+            reactCreateElm('div', { className: 'profile-action-description' }, description)
+        ),
+        reactCreateElm(
+            'div',
+            {
+                className: 'profile-action-icon',
+                'aria-hidden': true
+            },
+            reactCreateElm('img', {
+                className: 'profile-action-icon-image',
+                src: CHEVRON_ICON,
+                alt: ''
+            })
+        )
+    );
+}
+
+function ProfileModal({ modal, onClose, onConfirm, onCancel }) {
+    if (!modal.isOpen) {
+        return null;
+    }
+
+    return reactCreateElm(
+        'div',
+        {
+            className: 'profile-modal-overlay',
+            onClick: (event) => {
+                if (event.target === event.currentTarget && modal.type === 'alert') {
+                    onClose();
+                }
+            }
+        },
+        reactCreateElm(
+            'div',
+            {
+                className: 'profile-modal-card',
+                onClick: (event) => event.stopPropagation()
+            },
+            reactCreateElm('h2', { className: 'profile-modal-title' }, modal.title),
+            reactCreateElm('p', { className: 'profile-modal-message' }, modal.message),
+            reactCreateElm(
+                'div',
+                { className: 'profile-modal-actions' },
+                modal.type === 'confirm' && reactCreateElm(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'profile-modal-button profile-modal-button--secondary',
+                        onClick: onCancel
+                    },
+                    'Cancel'
+                ),
+                reactCreateElm(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'profile-modal-button profile-modal-button--primary',
+                        onClick: modal.type === 'confirm' ? onConfirm : onClose
+                    },
+                    modal.type === 'confirm' ? 'Confirm' : 'OK'
+                )
+            )
+        )
+    );
+}
+
+function AvatarEditorModal({ editor, uploading, isDragging, onClose, onConfirm, onZoomChange, onPointerDown }) {
+    if (!editor.isOpen) {
+        return null;
+    }
+
+    const displayWidth = editor.naturalWidth * editor.baseScale * editor.zoom;
+    const displayHeight = editor.naturalHeight * editor.baseScale * editor.zoom;
+
+    return reactCreateElm(
+        'div',
+        {
+            className: 'profile-modal-overlay profile-avatar-editor-overlay',
+            onClick: (event) => {
+                if (!uploading && event.target === event.currentTarget) {
+                    onClose();
+                }
+            }
+        },
+        reactCreateElm(
+            'div',
+            {
+                className: 'profile-modal-card profile-avatar-editor-card',
+                onClick: (event) => event.stopPropagation()
+            },
+            reactCreateElm('h2', { className: 'profile-modal-title' }, 'Adjust profile picture'),
+            reactCreateElm(
+                'p',
+                { className: 'profile-modal-message profile-avatar-editor-message' },
+                'Drag to reposition and use the slider to zoom before saving. The circle shows what will be visible on your profile.'
+            ),
+            reactCreateElm(
+                'div',
+                { className: 'profile-avatar-editor-preview-shell' },
+                reactCreateElm(
+                    'div',
+                    {
+                        className: 'profile-avatar-editor-preview' + (isDragging ? ' is-dragging' : ''),
+                        style: {
+                            width: `${AVATAR_EDITOR_VIEWPORT_SIZE}px`,
+                            height: `${AVATAR_EDITOR_VIEWPORT_SIZE}px`
+                        },
+                        onPointerDown: uploading ? null : onPointerDown
+                    },
+                    reactCreateElm('img', {
+                        className: 'profile-avatar-editor-image',
+                        src: editor.objectUrl,
+                        alt: 'Avatar preview',
+                        draggable: false,
+                        style: {
+                            width: `${displayWidth}px`,
+                            height: `${displayHeight}px`,
+                            left: `calc(50% + ${editor.offsetX}px)`,
+                            top: `calc(50% + ${editor.offsetY}px)`,
+                            transform: 'translate(-50%, -50%)'
+                        }
+                    }),
+                    reactCreateElm('div', {
+                        className: 'profile-avatar-editor-mask',
+                        'aria-hidden': true
+                    })
+                )
+            ),
+            reactCreateElm(
+                'div',
+                { className: 'profile-avatar-editor-controls' },
+                reactCreateElm(
+                    'div',
+                    { className: 'profile-avatar-editor-zoom-row' },
+                    reactCreateElm('span', null, 'Zoom'),
+                    reactCreateElm('span', null, `${Math.round(editor.zoom * 100)}%`)
+                ),
+                reactCreateElm('input', {
+                    type: 'range',
+                    min: '1',
+                    max: String(MAX_AVATAR_ZOOM),
+                    step: '0.01',
+                    value: editor.zoom,
+                    className: 'profile-avatar-editor-slider',
+                    onChange: onZoomChange,
+                    disabled: uploading
+                })
+            ),
+            reactCreateElm(
+                'div',
+                { className: 'profile-modal-actions profile-avatar-editor-actions' },
+                reactCreateElm(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'profile-modal-button profile-modal-button--secondary',
+                        onClick: onClose,
+                        disabled: uploading
+                    },
+                    'Cancel'
+                ),
+                reactCreateElm(
+                    'button',
+                    {
+                        type: 'button',
+                        className: 'profile-modal-button profile-modal-button--primary',
+                        onClick: onConfirm,
+                        disabled: uploading
+                    },
+                    uploading ? 'Saving...' : 'Save photo'
+                )
+            )
+        )
+    );
+}
+
+const UserProfile = ({ userInfo, csrfToken }) => {
+    window.csrfToken = csrfToken;
+
+    const profileUser = getProfileUser(userInfo);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+        readStoredBoolean('sidebarCollapsed', window.innerWidth <= 1040)
+    );
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'confirm',
+        onConfirm: null,
+        onCancel: null
+    });
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarLoading, setAvatarLoading] = useState(true);
+    const [avatarUrl, setAvatarUrl] = useState(
+        profileUser.userAvatarPath || profileUser.googleAvatarUrl || DEFAULT_AVATAR
+    );
+    const [avatarEditor, setAvatarEditor] = useState(createEmptyAvatarEditorState);
+    const [avatarEditorDragging, setAvatarEditorDragging] = useState(false);
+    const [overviewLayout, setOverviewLayout] = useState(null);
+    const overviewSlotRef = useRef(null);
+    const overviewCardRef = useRef(null);
+    const avatarEditorUrlRef = useRef('');
+    const avatarEditorDragRef = useRef({
+        startX: 0,
+        startY: 0,
+        originX: 0,
+        originY: 0
+    });
+
+    const isOverlay = windowWidth <= 1040;
+    const shouldFixOverviewCard = windowWidth > 900 && !isOverlay;
+
+    useEffect(() => {
+        let rafId = 0;
+
+        const handleResize = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                setWindowWidth(window.innerWidth);
+            });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(rafId);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (isOverlay) {
+            setSidebarCollapsed(true);
+        } else {
+            setSidebarCollapsed(readStoredBoolean('sidebarCollapsed', false));
         }
-    };
+    }, [isOverlay]);
 
-    const handleModalCancel = () => {
-        closeModal();
-        if (modal.onCancel) {
-            modal.onCancel();
+    useEffect(() => {
+        setAvatarUrl(profileUser.userAvatarPath || profileUser.googleAvatarUrl || DEFAULT_AVATAR);
+    }, [profileUser.googleAvatarUrl, profileUser.userAvatarPath]);
+
+    const clearAvatarEditorUrl = useCallback(() => {
+        if (avatarEditorUrlRef.current) {
+            avatarEditorUrlRef.current = '';
         }
-    };
+    }, []);
 
-    async function fetchProfilePics(){
+    const closeAvatarEditor = useCallback(() => {
+        clearAvatarEditorUrl();
+        setAvatarEditor(createEmptyAvatarEditorState());
+        setAvatarEditorDragging(false);
+    }, [clearAvatarEditorUrl]);
+
+    useEffect(() => () => {
+        clearAvatarEditorUrl();
+    }, [clearAvatarEditorUrl]);
+
+    const username = profileUser.userName || profileUser.email || 'User';
+    const displayName = profileUser.firstName && profileUser.lastName
+        ? `${profileUser.firstName} ${profileUser.lastName}`
+        : profileUser.displayName || profileUser.userName || profileUser.email || 'User';
+    const email = profileUser.userEmail || profileUser.email || 'No email available';
+    const profileHandle = profileUser.userName ? `@${profileUser.userName}` : email;
+
+    const accountType = useMemo(() => {
+        if (profileUser.hasPasskey) {
+            return 'Passkey';
+        }
+
+        if (profileUser.userType === 'google') {
+            return 'Google Sign-In';
+        }
+
+        return 'Email login';
+    }, [profileUser.hasPasskey, profileUser.userType]);
+
+    const accessMethod = useMemo(() => {
+        if (profileUser.hasPasskey) {
+            return 'Passkey enabled';
+        }
+
+        if (profileUser.userType === 'google') {
+            return 'OAuth access';
+        }
+
+        return 'Password access';
+    }, [profileUser.hasPasskey, profileUser.userType]);
+
+    const fetchProfilePics = useCallback(async () => {
+        if (!csrfToken) {
+            setAvatarLoading(false);
+            return;
+        }
+
+        setAvatarLoading(true);
+
         try {
-            let response = await fetch('/api/profile-pic/fetch', {
+            const response = await fetch('/api/profile-pic/fetch', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -107,50 +392,199 @@ const UserProfile = ({userInfo, csrfToken}) => {
                 body: JSON.stringify({})
             });
 
-            let profileImgData = await response.json();
+            const profileImgData = await response.json();
+            const imageData = profileImgData?.data?.[0]?.image;
 
-            console.log('Full response:', profileImgData);
-
-            if (profileImgData.success) {
-                console.log('Data:', profileImgData.data);
-
-                const imageData = profileImgData.data[0]?.image;
-                if (imageData) {
-                    setAvatarUrl(imageData);
-                }
+            if (profileImgData?.success && imageData) {
+                setAvatarUrl(imageData);
+                window.userAvatarUrl = imageData;
             }
+        } catch (error) {
+            console.error('Error fetching profile picture:', error);
         } finally {
             setAvatarLoading(false);
         }
-    }
+    }, [csrfToken]);
 
-    const handleAvatarUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+    const clampAvatarEditorOffsets = useCallback((nextOffsetX, nextOffsetY, editorState) => {
+        if (!editorState.naturalWidth || !editorState.naturalHeight) {
+            return { offsetX: 0, offsetY: 0 };
+        }
 
-        // Validate file type
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!validTypes.includes(file.type)) {
-            showAlert('Invalid File Type', 'Please upload an image file (JPEG, PNG, GIF, or WebP)');
+        const displayWidth = editorState.naturalWidth * editorState.baseScale * editorState.zoom;
+        const displayHeight = editorState.naturalHeight * editorState.baseScale * editorState.zoom;
+        const maxOffsetX = Math.max(0, (displayWidth - AVATAR_EDITOR_VIEWPORT_SIZE) / 2);
+        const maxOffsetY = Math.max(0, (displayHeight - AVATAR_EDITOR_VIEWPORT_SIZE) / 2);
+
+        return {
+            offsetX: clamp(nextOffsetX, -maxOffsetX, maxOffsetX),
+            offsetY: clamp(nextOffsetY, -maxOffsetY, maxOffsetY)
+        };
+    }, []);
+
+    useEffect(() => {
+        fetchProfilePics();
+    }, [fetchProfilePics]);
+
+    useEffect(() => {
+        if (!shouldFixOverviewCard) {
+            setOverviewLayout(null);
             return;
         }
 
-        // Validate file size (5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            showAlert('File Too Large', 'Please upload an image smaller than 5MB');
+        let rafId = 0;
+
+        const updateOverviewLayout = () => {
+            if (!overviewSlotRef.current || !overviewCardRef.current) {
+                return;
+            }
+
+            const slotRect = overviewSlotRef.current.getBoundingClientRect();
+            const cardRect = overviewCardRef.current.getBoundingClientRect();
+
+            setOverviewLayout(() => ({
+                left: slotRect.left,
+                width: slotRect.width,
+                height: cardRect.height
+            }));
+        };
+
+        rafId = requestAnimationFrame(updateOverviewLayout);
+        window.addEventListener('resize', updateOverviewLayout);
+        window.addEventListener('sidebarResized', updateOverviewLayout);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            window.removeEventListener('resize', updateOverviewLayout);
+            window.removeEventListener('sidebarResized', updateOverviewLayout);
+        };
+    }, [shouldFixOverviewCard, sidebarCollapsed]);
+
+    const showAlert = (title, message) => {
+        setModal({
+            isOpen: true,
+            title,
+            message,
+            type: 'alert',
+            onConfirm: null,
+            onCancel: null
+        });
+    };
+
+    const showModal = (title, message, onConfirm, onCancel) => {
+        setModal({
+            isOpen: true,
+            title,
+            message,
+            type: 'confirm',
+            onConfirm,
+            onCancel: onCancel || null
+        });
+    };
+
+    const closeModal = () => {
+        setModal({
+            isOpen: false,
+            title: '',
+            message: '',
+            type: 'confirm',
+            onConfirm: null,
+            onCancel: null
+        });
+    };
+
+    const handleModalConfirm = async () => {
+        const confirmAction = modal.onConfirm;
+        closeModal();
+
+        if (confirmAction) {
+            await confirmAction();
+        }
+    };
+
+    const handleModalCancel = () => {
+        const cancelAction = modal.onCancel;
+        closeModal();
+
+        if (cancelAction) {
+            cancelAction();
+        }
+    };
+
+    const handleAvatarError = () => {
+        if (avatarUrl === profileUser.userAvatarPath && profileUser.googleAvatarUrl) {
+            setAvatarUrl(profileUser.googleAvatarUrl);
             return;
         }
 
+        if (avatarUrl !== DEFAULT_AVATAR) {
+            setAvatarUrl(DEFAULT_AVATAR);
+            return;
+        }
+
+        setAvatarLoading(false);
+    };
+
+    useEffect(() => {
+        if (!avatarEditorDragging) {
+            return undefined;
+        }
+
+        const handlePointerMove = (event) => {
+            setAvatarEditor((currentEditor) => {
+                if (!currentEditor.isOpen) {
+                    return currentEditor;
+                }
+
+                const nextOffsetX = avatarEditorDragRef.current.originX + (event.clientX - avatarEditorDragRef.current.startX);
+                const nextOffsetY = avatarEditorDragRef.current.originY + (event.clientY - avatarEditorDragRef.current.startY);
+                const clampedOffsets = clampAvatarEditorOffsets(nextOffsetX, nextOffsetY, currentEditor);
+
+                return {
+                    ...currentEditor,
+                    offsetX: clampedOffsets.offsetX,
+                    offsetY: clampedOffsets.offsetY
+                };
+            });
+        };
+
+        const stopDragging = () => {
+            setAvatarEditorDragging(false);
+        };
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', stopDragging);
+        window.addEventListener('pointercancel', stopDragging);
+
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', stopDragging);
+            window.removeEventListener('pointercancel', stopDragging);
+        };
+    }, [avatarEditorDragging, clampAvatarEditorOffsets]);
+
+    useEffect(() => {
+        if (!avatarEditor.isOpen) {
+            return undefined;
+        }
+
+        const handleEscape = (event) => {
+            if (event.key === 'Escape' && !uploadingAvatar) {
+                closeAvatarEditor();
+            }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => {
+            window.removeEventListener('keydown', handleEscape);
+        };
+    }, [avatarEditor.isOpen, closeAvatarEditor, uploadingAvatar]);
+
+    const uploadAvatarFile = useCallback(async (file) => {
         setUploadingAvatar(true);
 
         const formData = new FormData();
-        formData.append('file', file);
-
-        console.log(' Starting avatar upload...', {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type
-        });
+        formData.append('file', file, file.name || 'avatar.jpg');
 
         try {
             const response = await fetch('/api/profile-pic/replace', {
@@ -161,101 +595,223 @@ const UserProfile = ({userInfo, csrfToken}) => {
                 body: formData
             });
 
-            console.log(' Response status:', response.status);
-
             let data;
             try {
                 data = await response.json();
-            } catch (jsonError) {
-                console.error(' Failed to parse response:', jsonError);
-                throw new Error('Server returned invalid response');
+            } catch (error) {
+                throw new Error('Server returned an invalid response.');
             }
 
-            console.log(' Response data:', data);
-
-            if (data.success) {
+            if (response.ok && data.success) {
                 await fetchProfilePics();
-                showAlert('Success', 'Profile picture updated successfully!');
-
-                // Reload the page to show updated avatar
+                closeAvatarEditor();
+                showAlert('Success', 'Profile picture updated successfully.');
                 setTimeout(() => {
                     window.location.reload();
-                }, 1500);
+                }, 1200);
             } else {
-                console.error(' Upload failed:', data.message);
-                showAlert('Upload Failed', data.message || 'Failed to upload profile picture');
+                showAlert('Upload Failed', data.message || 'Failed to upload profile picture.');
             }
         } catch (error) {
-            console.error(' Error uploading avatar:', error);
-            console.error('Error details:', error.message);
-            showAlert('Upload Error', `An error occurred: ${error.message || 'Please try again'}`);
+            console.error('Error uploading avatar:', error);
+            showAlert('Upload Error', error.message || 'An error occurred while uploading your image.');
         } finally {
             setUploadingAvatar(false);
-            // Clear the file input
+        }
+    }, [closeAvatarEditor, csrfToken, fetchProfilePics]);
+
+    const handleAvatarUpload = async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            showAlert('Invalid File Type', 'Please upload an image file in JPEG, PNG, GIF, or WebP format.');
+            event.target.value = '';
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            showAlert('File Too Large', 'Please upload an image smaller than 5MB.');
+            event.target.value = '';
+            return;
+        }
+
+        try {
+            clearAvatarEditorUrl();
+            const dataUrl = await readFileAsDataUrl(file);
+            avatarEditorUrlRef.current = dataUrl;
+
+            const image = await loadImageSource(dataUrl);
+            const baseScale = Math.max(
+                AVATAR_EDITOR_VIEWPORT_SIZE / image.naturalWidth,
+                AVATAR_EDITOR_VIEWPORT_SIZE / image.naturalHeight
+            );
+
+            setAvatarEditor({
+                isOpen: true,
+                objectUrl: dataUrl,
+                fileName: file.name,
+                naturalWidth: image.naturalWidth,
+                naturalHeight: image.naturalHeight,
+                baseScale,
+                zoom: 1,
+                offsetX: 0,
+                offsetY: 0
+            });
+        } catch (error) {
+            console.error('Error preparing avatar editor:', error);
+            clearAvatarEditorUrl();
+            showAlert('Preview Error', error.message || 'Unable to prepare your image for editing.');
+        } finally {
             event.target.value = '';
         }
     };
 
-    const triggerAvatarUpload = () => {
-        document.getElementById('avatar-upload-input').click();
+    const handleAvatarEditorPointerDown = (event) => {
+        if (uploadingAvatar) {
+            return;
+        }
+
+        event.preventDefault();
+        avatarEditorDragRef.current = {
+            startX: event.clientX,
+            startY: event.clientY,
+            originX: avatarEditor.offsetX,
+            originY: avatarEditor.offsetY
+        };
+        setAvatarEditorDragging(true);
     };
 
-    function handleSessionManagement() {
-        window.location.href = "/session"
-    }
+    const handleAvatarZoomChange = (event) => {
+        const nextZoom = Number(event.target.value);
+        setAvatarEditor((currentEditor) => {
+            if (!currentEditor.isOpen) {
+                return currentEditor;
+            }
 
-    function handlePasskeyManagement() {
-        window.location.href = "/passkeys"
-    }
+            const nextEditor = {
+                ...currentEditor,
+                zoom: nextZoom
+            };
+            const clampedOffsets = clampAvatarEditorOffsets(currentEditor.offsetX, currentEditor.offsetY, nextEditor);
 
-    function handleChangePassword() {
-        window.location.href = "/change-password"
-    }
+            return {
+                ...nextEditor,
+                offsetX: clampedOffsets.offsetX,
+                offsetY: clampedOffsets.offsetY
+            };
+        });
+    };
 
-    function handleSupport() {
-        window.location.href = "/support"
-    }
+    const handleAvatarEditorConfirm = async () => {
+        if (!avatarEditor.isOpen || uploadingAvatar) {
+            return;
+        }
 
-    const getAccountType = () => {
-    // Priority 1: Check if user has passkeys (this takes highest priority)
-    if (userInfo?.hasPasskey) {
-        return 'Passkey';
-    }
+        try {
+            const image = await loadImageSource(avatarEditor.objectUrl);
+            const canvas = document.createElement('canvas');
+            canvas.width = AVATAR_OUTPUT_SIZE;
+            canvas.height = AVATAR_OUTPUT_SIZE;
 
-    // Priority 2: Check if user type is Google OAuth
-    if (userInfo?.userType === 'google') {
-        return 'Google Sign-In';
-    }
+            const context = canvas.getContext('2d');
+            if (!context) {
+                throw new Error('Unable to prepare the image for upload.');
+            }
 
-    // Priority 3: Default to Email login
-    return 'Email login';
-};
+            const displayWidth = avatarEditor.naturalWidth * avatarEditor.baseScale * avatarEditor.zoom;
+            const displayHeight = avatarEditor.naturalHeight * avatarEditor.baseScale * avatarEditor.zoom;
+            const imageX = ((AVATAR_EDITOR_VIEWPORT_SIZE - displayWidth) / 2) + avatarEditor.offsetX;
+            const imageY = ((AVATAR_EDITOR_VIEWPORT_SIZE - displayHeight) / 2) + avatarEditor.offsetY;
+            const exportScale = AVATAR_OUTPUT_SIZE / AVATAR_EDITOR_VIEWPORT_SIZE;
+
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, AVATAR_OUTPUT_SIZE, AVATAR_OUTPUT_SIZE);
+            context.drawImage(
+                image,
+                imageX * exportScale,
+                imageY * exportScale,
+                displayWidth * exportScale,
+                displayHeight * exportScale
+            );
+
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob((createdBlob) => {
+                    if (createdBlob) {
+                        resolve(createdBlob);
+                        return;
+                    }
+
+                    reject(new Error('Unable to prepare the image for upload.'));
+                }, 'image/jpeg', 0.92);
+            });
+
+            const baseName = avatarEditor.fileName
+                ? avatarEditor.fileName.replace(/\.[^.]+$/, '')
+                : 'avatar';
+            const processedFile = new File([blob], `${baseName || 'avatar'}.jpg`, { type: 'image/jpeg' });
+
+            await uploadAvatarFile(processedFile);
+        } catch (error) {
+            console.error('Error confirming avatar crop:', error);
+            showAlert('Image Processing Error', error.message || 'Unable to prepare your image for upload.');
+        }
+    };
+
+    const triggerAvatarUpload = () => {
+        const input = document.getElementById('avatar-upload-input');
+        if (input) {
+            input.click();
+        }
+    };
+
+    const handleSessionManagement = () => {
+        window.location.href = '/session';
+    };
+
+    const handlePasskeyManagement = () => {
+        window.location.href = '/passkeys';
+    };
+
+    const handleChangePassword = () => {
+        window.location.href = '/change-password';
+    };
+
+    const handleSupport = () => {
+        window.location.href = '/support';
+    };
 
     const logout = async () => {
         $.ajax({
             url: '/api/logout',
             method: 'POST',
-            headers: { 'X-CSRF-Token': csrfToken },
+            headers: {
+                'CSRF-Token': csrfToken,
+                'X-CSRF-Token': csrfToken
+            },
             data: JSON.stringify({}),
             contentType: 'application/json',
-            success: function(response) {
+            success: function () {
                 showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
                 setTimeout(() => {
-                    window.location = "/login";
+                    window.location = '/?loggedout=1';
                 }, 3000);
             },
-            error: function(xhr) {
-                const errorMessage = xhr.responseJSON?.message || "An error occurred. Please try again.";
+            error: function (xhr) {
+                const errorMessage = xhr.responseJSON?.message || 'An error occurred. Please try again.';
                 showAlert('Error', errorMessage);
             }
         });
     };
 
-    function handleProfileRoute() {
-        window.location.href = "/profile";
-    }
+    const handleProfileRoute = () => {
+        window.location.href = '/profile';
+    };
 
-    function handleDeleteAccount() {
+    const handleDeleteAccount = () => {
         showModal(
             'Delete Account',
             'Are you sure you want to delete your account? This action cannot be undone.',
@@ -265,7 +821,7 @@ const UserProfile = ({userInfo, csrfToken}) => {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'CSRF-Token': window.csrfToken
+                            'CSRF-Token': csrfToken
                         },
                         body: JSON.stringify({})
                     });
@@ -274,938 +830,294 @@ const UserProfile = ({userInfo, csrfToken}) => {
 
                     if (result.success) {
                         showAlert(
-                            "Account Deleted Successfully",
-                            "You will be redirect to login page shortly"
-                            )
+                            'Account Deleted Successfully',
+                            'You will be redirected to the login page shortly.'
+                        );
 
                         setTimeout(() => {
-                            window.location.href = "/login";
-                        }, 10000)
-
+                            window.location.href = '/login';
+                        }, 10000);
                     } else {
                         showAlert(
-                            "Error",
-                            "There are some problem trying to delete your account, please try again later, or contact support for assistance",
+                            'Error',
+                            'There was a problem deleting your account. Please try again later or contact support.'
                         );
                     }
-
                 } catch (error) {
                     console.error('Delete account error:', error);
                     showAlert(
-                        "Error",
-                        "Something went wrong while trying to delete your account, please try again later, or contact support for assistance",
+                        'Error',
+                        'Something went wrong while trying to delete your account. Please try again later or contact support.'
                     );
                 }
             }
         );
-    }
-
-    const toggleUserMenu = (e) => {
-        e.stopPropagation();
-        setUserMenuOpen(!userMenuOpen);
     };
 
-    const username = userInfo?.userName || userInfo?.email || 'User';
-    const displayName = userInfo?.firstName && userInfo?.lastName
-        ? `${userInfo.firstName} ${userInfo.lastName}`
-        : userInfo?.userName || 'User';
+    const detailItems = [
+        { label: 'Username', value: username },
+        { label: 'Display Name', value: displayName },
+        { label: 'Email Address', value: email },
+        { label: 'Account Type', value: accountType }
+    ];
 
-    return React.createElement('div', {
-        className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
-        onClick: () => setUserMenuOpen(false),
-        id: 'profile-page-wrapper',
-        style: {
-            display: 'flex',
-            width: '100%',
-            height: '100vh',
-            overflow: 'hidden'
-        }
-    },
-        React.createElement('div', {
-            id: 'profile-page-container',
-            className: 'group',
-            style: {
-                display: 'flex',
-                width: '100%',
-                height: '100%'
-            }
+    const actionItems = [
+        {
+            title: 'Change Password',
+            description: 'Update your password or continue account setup for password-based sign-in.',
+            onClick: handleChangePassword
         },
+        {
+            title: 'Manage Passkeys',
+            description: 'Review and update the passkeys linked to this account.',
+            onClick: handlePasskeyManagement
+        },
+        {
+            title: 'Manage Login Sessions',
+            description: 'See where you are logged in and remove sessions you no longer trust.',
+            onClick: handleSessionManagement
+        },
+        {
+            title: 'Support',
+            description: 'Open help and support resources for account-related issues.',
+            onClick: handleSupport
+        }
+    ];
 
-
-            // Sidebar Component
-            React.createElement(window.Sidebar, {
+    return reactCreateElm(
+        'div',
+        {
+            className: 'sidebar-expand profile-shell' + (sidebarCollapsed ? ' collapsed' : ''),
+            onClick: () => setUserMenuOpen(false)
+        },
+        reactCreateElm(
+            'div',
+            { className: 'group profile-layout' },
+            isOverlay && !sidebarCollapsed && reactCreateElm('div', {
+                className: 'profile-sidebar-backdrop',
+                onClick: () => setSidebarCollapsed(true)
+            }),
+            reactCreateElm(window.Sidebar, {
                 sidebarCollapsed: sidebarCollapsed,
                 setSidebarCollapsed: setSidebarCollapsed,
+                isOverlay: isOverlay,
                 username: username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
                 userMenuOpen: userMenuOpen,
                 setUserMenuOpen: setUserMenuOpen,
-                userInfo: userInfo
+                userInfo: profileUser
             }),
-
-              React.createElement("div", {
-                  id: 'divider',
-                style: {
-
-                width: '5px',
-                height: 'auto',
-                backgroundColor: '#F7F7F7',
-                borderRadius: '10px',
-                flexShrink: 0,
-                margin : '-5px'
-                }
-                }),
-
-            // MAIN CONTENT AREA
-            React.createElement('div', {                    id: 'main-content-area',
-                    id: 'main-content-area',
-
-                    style: {
-                    flex: '1',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    padding: '36px 30px 40px 30px',
-                    backgroundColor: '#ffffff',
-                    overflowY: 'auto',
-                    minHeight: '100vh',
-                    width: `calc(100vw - ${sidebarCollapsed ? '65px' : '256px'})`,
-                    transition: 'width 220ms ease'
-                }
-            },
-
-
-                // Header
-                React.createElement('div', {
-                    id: 'profile-header',
-                    style: {
-
-                        fontSize: '24px',
-                        fontWeight: '500',
-                        fontFamily: 'SF Pro-Bold, Helvetica',
-                        color: '#000000',
-                        marginBottom: isSmallDesktop ? '80px' : '131px',
-                        width: '147px',
-                        height: '10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        letterSpacing: '0',
-                        lineHeight: '20px'
-                    }
-                }, 'User Profile'),
-
-                // Profile Container
-                React.createElement('div', {
-                        id: 'profile-container',
-
-                        style: {
-                        width: isSmallDesktop ? '400px' : '450px',
-                        maxWidth: isSmallDesktop ? '500px' : '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: isSmallDesktop ? '25px' : '31px',
-                        // marginLeft: isSmallDesktop ? '76px' : '30px'
-                    }
-                },
-                    // Avatar Section
-                    React.createElement('div', {
-                        id: 'profile-avatar-section',
-                        style: {
-                            position: 'relative',
-                            width: '163px',
-                            height: '170px'
-                        }
-                    },
-                        React.createElement('div', {
-                                id: 'profile-avatar-wrapper',
-                            style: {
-
-                                position: 'absolute',
-                                top: '1px',
-                                left: '0',
-                                width: '153px',
-                                height: '153px',
-                                borderRadius: '76.5px',
-                                backgroundColor: '#d9d9d9',
-                                overflow: 'hidden',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }
-                        },
-                            avatarLoading
-                                ? React.createElement('div', {
-                                    className: 'sk-box',
-                                    style: { width: '100%', height: '100%', borderRadius: '50%', position: 'absolute', inset: 0 }
-                                  })
-                                : React.createElement('img', {
-                                    id: 'profile-avatar-image',
-                                    src: avatarUrl || './img/user.svg',
-                                    alt: 'User',
-                                    onError: handleAvatarError,
-                                    style: { objectFit: 'cover', width: '100%' }
-                                  })
-                        ),
-                        // Hidden file input
-                        React.createElement('input', {
-                            type: 'file',
-                            id: 'avatar-upload-input',
-                            accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
-                            style: { display: 'none' },
-                            onChange: handleAvatarUpload
-                        }),
-                        React.createElement('div', {
-                            id: 'btn-edit-avatar',
-                            style: {
-                                position: 'absolute',
-                                top: '140px',
-                                left: '90px',
-                                width: '73px',
-                                height: '30px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'flex-end',
-                                gap: '10px',
-                                padding: '10px',
-                                backgroundColor: uploadingAvatar ? '#666666' : '#1c1d21',
-                                borderRadius: '10px',
-                                cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
-                                opacity: uploadingAvatar ? 0.6 : 1
-                            },
-                            onClick: uploadingAvatar ? null : triggerAvatarUpload
-                        },
-                            React.createElement('div', {
-                                id: 'edit-icon-container',
-                                style: {
-                                    position: 'relative',
-                                    width: '18px',
-                                    height: '19px',
-                                    marginTop: '-4.67px',
-                                    marginBottom: '-4.67px',
-                                    marginLeft: '-4px'
-                                }
-                            },
-                                React.createElement('img', {
-                                    id: 'edit-icon-image',
-                                    src: './img/Edit.svg',
-                                    alt: '',
-                                    style: {
-                                        position: 'absolute',
-                                        width: '83.84%',
-                                        height: '83.84%',
-                                        top: '5.20%',
-                                        left: '5.56%'
-                                    }
-                                })
-                            ),
-                            React.createElement('span', {
-                                id: 'edit-avatar-text',
-                                style: {
-                                    position: 'relative',
-                                    width: 'fit-content',
-                                    marginTop: '-6.17px',
-                                    marginBottom: '-2.17px',
-                                    fontFamily: 'SF Pro-Semibold, Helvetica',
-                                    fontWeight: '400',
-                                    color: '#ffffff',
-                                    fontSize: '15px',
-                                    letterSpacing: '0',
-                                    lineHeight: 'normal',
-                                    whiteSpace: 'nowrap'
-                                }
-                            }, uploadingAvatar ? 'Wait...' : 'Edit')
-                        )
-                    ),
-
-                    // Profile Info Cards Container
-                    React.createElement('div', {
-                        id: 'profile-info-container',
-                        style: {
-                            display: 'flex',
-                            flexDirection: 'column',
-                            width: isSmallDesktop ? '100%' : '433px',
-                            maxWidth: isSmallDesktop ? '500px' : '100%',
-                            alignItems: 'flex-start',
-                            gap: '20px',
-                            marginLeft: isSmallDesktop ? '-20px' : '-55px',
-                            marginRight: isSmallDesktop ? '-20px' : '-55px'
-                        }
-                    },
-                        // Info Card
-                        React.createElement('div', {
-                            id: 'profile-info-card',
-                            style: {
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignSelf: 'stretch',
-                                width: '100%',
-                                position: 'relative',
-                                backgroundColor: '#ffffff',
-                                borderRadius: '10px'
-                            }
-                        },
-                            // Username
-                            React.createElement('div', {
-                                id: 'profile-username-field',
-                                style: {
-                                    display: 'flex',
-                                    height: '73px',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '10px 20px',
-                                    borderRadius: '10px'
-                                }
-                            },
-                                React.createElement('div', {
-                                    id: 'username-text-container',
-                                    style: {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        gap: '10px',
-                                        flex: '1'
-                                    }
-                                },
-                                    React.createElement('div', {
-                                       id: 'username-label',
-                                        style: {
-                                            fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: 'bold',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    }, 'Username'),
-                                    React.createElement('div', {
-                                        id: 'username-value',
-                                        style: {
-                                            fontFamily: 'SF Pro-Regular, Helvetica',
-                                            fontWeight: '400',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    // }, `@${username}`)
-                                    }, `${username}`)
-                                ),
-                                React.createElement('div', {
-                                    id: 'username-icon-container',
-                                    style: {
-                                        width: '24px',
-                                        height: '24px',
-                                        position: 'relative'
-                                    }
-                                },
-                                    // React.createElement('img', {
-                                    //     src: './img/vector.svg',
-                                    //     alt: '',
-                                    //     style: {
-                                    //         position: 'absolute',
-                                    //         width: '75%',
-                                    //         height: '75%',
-                                    //         top: '12.50%',
-                                    //         left: '12.50%'
-                                    //     }
-                                    // })
-                                )
-                            ),
-                            // React.createElement('img', {
-                            //     src: './img/vector-4.svg',
-                            //     alt: '',
-                            //     style: {
-                            //         position: 'absolute',
-                            //         top: '72px',
-                            //         left: '0',
-                            //         width: '412px',
-                            //         height: '1px',
-                            //         objectFit: 'cover'
-                            //     }
-                            // }),
-
-                            React.createElement('hr', {
-                                id: 'divider-username-displayname',
-                                style: {
-                                    margin: '0',
-                                    border: 'none',
-                                    borderTop: '1px solid #000000ff',
-                                    width: '100%'
-                                }
-                            }),
-
-                            // Display Name
-                            React.createElement('div', {
-                                id: 'profile-displayname-field',
-                                style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '10px 20px',
-                                    borderRadius: '10px'
-                                }
-                            },
-                                React.createElement('div', {
-                                    id: 'displayname-text-container',
-                                    style: {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        gap: '10px',
-                                        flex: '1'
-                                    }
-                                },
-                                    React.createElement('div', {
-                                        id: 'displayname-label',
-                                        style: {
-                                            fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: 'bold',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    }, 'Display Name'),
-                                    React.createElement('div', {
-                                        id: 'displayname-value',
-                                        style: {
-                                            fontFamily: 'SF Pro-Regular, Helvetica',
-                                            fontWeight: '400',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    }, displayName)
-                                ),
-                                React.createElement('div', {
-                                    id: 'displayname-icon-container',
-                                    style: {
-                                        width: '24px',
-                                        height: '24px',
-                                        position: 'relative'
-                                    }
-                                },
-                                    // React.createElement('img', {
-                                    //     src: './img/image.svg',
-                                    //     alt: '',
-                                    //     style: {
-                                    //         position: 'absolute',
-                                    //         width: '75%',
-                                    //         height: '75%',
-                                    //         top: '12.50%',
-                                    //         left: '12.50%'
-                                    //     }
-                                    // })
-                                )
-                            ),
-
-                            // React.createElement('img', {
-                            //     src: './img/vector-3.svg',
-                            //     alt: '',
-                            //     style: {
-                            //         position: 'absolute',
-                            //         top: '140px',
-                            //         left: '0',
-                            //         width: '412px',
-                            //         height: '1px',
-                            //         objectFit: 'cover'
-                            //     }
-                            // }),
-
-                            React.createElement('hr', {
-                                id: 'divider-displayname-email',
-                                style: {
-                                    margin: '0',
-                                    border: 'none',
-                                    borderTop: '1px solid #000000ff',
-                                    width: '100%'
-                                }
-                            }),
-
-                            // Email
-                            React.createElement('div', {
-                                id: 'profile-email-field',
-                                style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '10px 20px',
-                                    borderRadius: '10px'
-                                }
-                            },
-                                React.createElement('div', {
-                                    id: 'email-text-container',
-                                    style: {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        gap: '10px',
-                                        flex: '1'
-                                    }
-                                },
-                                    React.createElement('div', {
-                                        id: 'email-label',
-                                        style: {
-                                            fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: '600',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    }, 'Email address'),
-                                    React.createElement('div', {
-                                        id: 'email-value',
-                                        style: {
-                                            fontFamily: 'SF Pro-Regular, Helvetica',
-                                            fontWeight: '400',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    }, userInfo?.userEmail || userInfo?.email || 'email@example.com')
-                                ),
-                                React.createElement('div', {
-                                    id: 'email-icon-container',
-                                    style: {
-                                        width: '24px',
-                                        height: '24px',
-                                        position: 'relative'
-                                    }
-                                },
-                                    // React.createElement('img', {
-                                    //     src: './img/edit_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                                    //     alt: '',
-                                    //     style: {
-                                    //         position: 'absolute',
-                                    //         width: '75%',
-                                    //         height: '75%',
-                                    //         top: '12.50%',
-                                    //         left: '12.50%'
-                                    //     }
-                                    // })
-                                )
-                            ),
-                            // React.createElement('img', {
-                            //     src: './img/vector-2-2.svg',
-                            //     alt: '',
-                            //     style: {
-                            //         position: 'absolute',
-                            //         top: '208px',
-                            //         left: '0',
-                            //         width: '412px',
-                            //         height: '1px',
-                            //         objectFit: 'cover'
-                            //     }
-                            // }),
-
-                            React.createElement('hr', {
-                                id: 'divider-email-accounttype',
-                                style: {
-                                    margin: '0',
-                                    border: 'none',
-                                    borderTop: '1px solid #000000ff',
-                                    width: '100%'
-                                }
-                            }),
-
-                            // Account Type
-                            React.createElement('div', {
-                                id: 'profile-accounttype-field',
-                                style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '10px 20px',
-                                    borderRadius: '10px'
-                                }
-                            },
-                                React.createElement('div', {
-                                    id: 'accounttype-text-container',
-                                    style: {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        gap: '10px',
-                                        flex: '1'
-                                    }
-                                },
-                                    React.createElement('div', {
-                                        id: 'accounttype-label',
-                                        style: {
-                                            fontFamily: 'SF Pro-Semibold, Helvetica',
-                                            fontWeight: 'bold',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    }, 'Account Type'),
-                                    React.createElement('div', {
-                                        id: 'accounttype-value',
-                                        style: {
-                                            fontFamily: 'SF Pro-Regular, Helvetica',
-                                            fontWeight: '400',
-                                            color: '#000000',
-                                            fontSize: '16px',
-                                            letterSpacing: '0',
-                                            lineHeight: 'normal'
-                                        }
-                                    }, getAccountType())
-                                )
+            reactCreateElm(
+                'main',
+                { className: 'right-container profile-right-container' },
+                reactCreateElm(
+                    'section',
+                    { className: 'main-screen profile-main-screen' },
+                    reactCreateElm(
+                        'div',
+                        { className: 'profile-scroll-region' },
+                        reactCreateElm(
+                            'header',
+                            { className: 'profile-page-header' },
+                            reactCreateElm('div', { className: 'profile-page-eyebrow' }, 'Account'),
+                            reactCreateElm('h1', { className: 'profile-page-title' }, 'User Profile'),
+                            reactCreateElm(
+                                'p',
+                                { className: 'profile-page-copy' },
+                                'Manage your account details, sign-in methods, active sessions, and support from one page.'
                             )
                         ),
-
-                        // Actions Card
-                        React.createElement('div', {
-                            id: 'profile-actions-container',
-                            style: {
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignSelf: 'stretch',
-                                width: '100%',
-                                backgroundColor: '#ffffff',
-                                borderRadius: '10px'
-                            }
-                        },
-                            // Change Password
-                            React.createElement('div', {
-                                id: 'btn-change-password',
-                                onClick: handleChangePassword,
-                                style: {
-                                    display: 'flex',
-                                    height: '50px',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
-                                    borderRadius: '10px',
-                                    cursor: 'pointer'
-                                }
-                            },
-                                React.createElement('div', {
-                                    id: 'change-password-text',
-                                    style: {
-                                        flex: '1',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: 'bold',
-                                        color: '#000000',
-                                        fontSize: '20px',
-                                        letterSpacing: '0',
-                                        lineHeight: 'normal'
-                                    }
-                                }, 'Change Password'),
-                                React.createElement('div', {
-                                    id: 'change-password-icon-container',
-                                    style: {
-                                        width: '24px',
-                                        height: '24px',
-                                        position: 'relative'
-                                    }
+                        reactCreateElm(
+                            'div',
+                            { className: 'profile-content-grid' },
+                            reactCreateElm(
+                                'div',
+                                {
+                                    className: 'profile-overview-slot',
+                                    ref: overviewSlotRef,
+                                    style: shouldFixOverviewCard && overviewLayout
+                                        ? { minHeight: `${overviewLayout.height}px` }
+                                        : undefined
                                 },
-                                    React.createElement('img', {
-                                        id: 'change-password-icon-image',
-                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                                        alt: '',
-                                        style: {
-                                            position: 'absolute',
-                                            width: '24px',
-                                            height: '24px',
-                                            top: '8.33%',
-                                            left: '26.04%'
-                                        }
-                                    })
-                                )
-                            ),
-                            // Manage Passkeys
-                            React.createElement('div', {
-                                id: 'btn-manage-passkeys',
-                                onClick: handlePasskeyManagement,
-                                style: {
-                                    display: 'flex',
-                                    height: '50px',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
-                                    borderRadius: '10px',
-                                    cursor: 'pointer'
-                                }
-                            },
-                                React.createElement('div', {
-                                    style: {
-                                        flex: '1',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: 'bold',
-                                        color: '#000000',
-                                        fontSize: '20px',
-                                        letterSpacing: '0',
-                                        lineHeight: 'normal'
-                                    }
-                                }, 'Manage Passkeys'),
-                                React.createElement('div', {
-                                    id: 'manage-passkeys-icon-container',
-                                    style: {
-
-                                        width: '24px',
-                                        height: '24px',
-                                        position: 'relative'
-                                    }
-                                },
-                                    React.createElement('img', {
-                                        id: 'manage-passkeys-icon-image',
-                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                                        alt: '',
-                                        style: {
-                                            position: 'absolute',
-                                            width: '24px',
-                                            height: '24px',
-                                            top: '8.33%',
-                                            left: '26.04%'
-                                        }
-                                    })
-                                )
-                            ),
-                            // Manage Sessions
-                            React.createElement('div', {
-                                id: 'btn-manage-sessions',
-                                onClick: handleSessionManagement,
-                                style: {
-                                    display: 'flex',
-                                    height: '50px',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
-                                    borderRadius: '10px',
-                                    cursor: 'pointer'
-                                }
-                            },
-                                React.createElement('div', {
-                                    style: {
-                                        flex: '1',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: 'bold',
-                                        color: '#000000',
-                                        fontSize: '20px',
-                                        letterSpacing: '0',
-                                        lineHeight: 'normal'
-                                    }
-                                }, 'Manage Login Sessions'),
-                                React.createElement('div', {
-                                    id: 'manage-sessions-icon-container',
-                                    style: {
-                                        width: '24px',
-                                        height: '24px',
-                                        position: 'relative'
-                                    }
-                                },
-                                    React.createElement('img', {
-                                        id: 'manage-sessions-icon-image',
-                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                                        alt: '',
-                                        style: {
-                                            position: 'absolute',
-                                            width: '24px',
-                                            height: '24px',
-                                            top: '8.33%',
-                                            left: '26.04%'
-                                        }
-                                    })
-                                )
-                            ),
-                            // Support Option
-                            React.createElement('div', {
-                                    id: 'btn-support',
-                                    onClick: handleSupport,
-                                    style: {
-                                        display: 'flex',
-                                        height: '50px',
-                                        alignItems: 'center',
-                                        gap: '15px',
-                                        padding: '20px',
-                                        borderRadius: '10px',
-                                        cursor: 'pointer'
-                                    }
-                                },
-                                React.createElement('div', {
-                                    id: 'support-text',
-                                    style: {
-                                        flex: '1',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: 'bold',
-                                        color: '#000000',
-                                        fontSize: '20px',
-                                        letterSpacing: '0',
-                                        lineHeight: 'normal'
-                                    }
-                                }, 'Support'),
-                                React.createElement('div', {
-                                        id: 'change-password-icon-container',
-                                        style: {
-                                            width: '24px',
-                                            height: '24px',
-                                            position: 'relative'
-                                        }
+                                reactCreateElm(
+                                    'section',
+                                    {
+                                        className: 'profile-card profile-overview-card' + (shouldFixOverviewCard && overviewLayout ? ' profile-overview-card--fixed' : ''),
+                                        ref: overviewCardRef,
+                                        style: shouldFixOverviewCard && overviewLayout ? {
+                                            left: `${overviewLayout.left}px`,
+                                            width: `${overviewLayout.width}px`
+                                        } : undefined
                                     },
-                                    React.createElement('img', {
-                                        id: 'change-password-icon-image',
-                                        src: './img/arrow_forward_ios_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                                        alt: '',
-                                        style: {
-                                            position: 'absolute',
-                                            width: '24px',
-                                            height: '24px',
-                                            top: '8.33%',
-                                            left: '26.04%'
-                                        }
-                                    })
+                                    reactCreateElm(
+                                        'div',
+                                        { className: 'profile-overview-top' },
+                                        reactCreateElm(
+                                            'div',
+                                            { className: 'profile-avatar-block' },
+                                            reactCreateElm(
+                                                'div',
+                                                { className: 'profile-avatar-frame' },
+                                                avatarLoading
+                                                    ? reactCreateElm('div', {
+                                                        className: 'sk-box',
+                                                        style: {
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            borderRadius: '50%'
+                                                        }
+                                                    })
+                                                    : reactCreateElm('img', {
+                                                        className: 'profile-avatar-image',
+                                                        src: avatarUrl || DEFAULT_AVATAR,
+                                                        alt: 'User avatar',
+                                                        onError: handleAvatarError
+                                                    })
+                                            ),
+                                            reactCreateElm('input', {
+                                                id: 'avatar-upload-input',
+                                                type: 'file',
+                                                accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
+                                                style: { display: 'none' },
+                                                onChange: handleAvatarUpload
+                                            }),
+                                            reactCreateElm(
+                                                'button',
+                                                {
+                                                    type: 'button',
+                                                    className: 'profile-avatar-button' + (uploadingAvatar ? ' is-busy' : ''),
+                                                    onClick: uploadingAvatar ? null : triggerAvatarUpload,
+                                                    disabled: uploadingAvatar
+                                                },
+                                                reactCreateElm('img', {
+                                                    className: 'profile-avatar-button-icon',
+                                                    src: EDIT_ICON,
+                                                    alt: ''
+                                                }),
+                                                reactCreateElm('span', null, uploadingAvatar ? 'Uploading...' : 'Edit')
+                                            )
+                                        ),
+                                        reactCreateElm(
+                                            'div',
+                                            { className: 'profile-overview-copy' },
+                                            reactCreateElm('div', { className: 'profile-overview-label' }, 'Overview'),
+                                            reactCreateElm('h2', { className: 'profile-overview-name' }, displayName),
+                                            reactCreateElm('p', { className: 'profile-overview-handle' }, profileHandle),
+                                            reactCreateElm('p', { className: 'profile-overview-email' }, email)
+                                        )
+                                    )
                                 )
                             ),
-                            // Delete Account
-                            React.createElement('div', {
-                                id: 'btn-delete-account',
-                                onClick: handleDeleteAccount,
-                                style: {
-                                    display: 'flex',
-                                    height: '50px',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    padding: '20px',
-                                    borderRadius: '10px',
-                                    cursor: 'pointer'
-                                }
-                            },
-                                React.createElement('div', {
-                                    id: 'delete-account-text',
-                                    style: {
-                                        flex: '1',
-                                        fontFamily: 'SF Pro-Semibold, Helvetica',
-                                        fontWeight: 'bold',
-                                        color: '#b62e2e',
-                                        fontSize: '20px',
-                                        letterSpacing: '0',
-                                        lineHeight: 'normal'
-                                    }
-                                }, 'Delete Account')
+                            reactCreateElm(
+                                'div',
+                                { className: 'profile-stack' },
+                                reactCreateElm(
+                                    'section',
+                                    { className: 'profile-card profile-details-card' },
+                                    reactCreateElm(
+                                        'div',
+                                        { className: 'profile-section-heading' },
+                                        reactCreateElm('h2', { className: 'profile-section-title' }, 'Profile details'),
+                                        reactCreateElm(
+                                            'p',
+                                            { className: 'profile-section-copy' },
+                                            'Basic account information currently attached to this user.'
+                                        )
+                                    ),
+                                    reactCreateElm(
+                                        'div',
+                                        { className: 'profile-detail-list' },
+                                        detailItems.map((item) =>
+                                            reactCreateElm(DetailRow, {
+                                                key: item.label,
+                                                label: item.label,
+                                                value: item.value
+                                            })
+                                        )
+                                    )
+                                ),
+                                reactCreateElm(
+                                    'section',
+                                    { className: 'profile-card profile-security-card' },
+                                    reactCreateElm(
+                                        'div',
+                                        { className: 'profile-section-heading' },
+                                        reactCreateElm('h2', { className: 'profile-section-title' }, 'Security and access'),
+                                        reactCreateElm(
+                                            'p',
+                                            { className: 'profile-section-copy' },
+                                            'Shortcuts for everything related to sign-in and account control.'
+                                        )
+                                    ),
+                                    reactCreateElm(
+                                        'div',
+                                        { className: 'profile-action-list' },
+                                        actionItems.map((item) =>
+                                            reactCreateElm(ActionRow, {
+                                                key: item.title,
+                                                title: item.title,
+                                                description: item.description,
+                                                onClick: item.onClick
+                                            })
+                                        )
+                                    )
+                                ),
+                                reactCreateElm(
+                                    'section',
+                                    { className: 'profile-card profile-danger-card' },
+                                    reactCreateElm(
+                                        'div',
+                                        { className: 'profile-section-heading' },
+                                        reactCreateElm('h2', { className: 'profile-section-title' }, 'Danger zone'),
+                                        reactCreateElm(
+                                            'p',
+                                            { className: 'profile-section-copy' },
+                                            'Deleting the account is permanent and cannot be undone.'
+                                        )
+                                    ),
+                                    reactCreateElm(
+                                        'div',
+                                        { className: 'profile-danger-panel' },
+                                        reactCreateElm(
+                                            'p',
+                                            { className: 'profile-danger-copy' },
+                                            'Delete your account only if you are certain you no longer need this workspace access.'
+                                        ),
+                                        reactCreateElm(
+                                            'button',
+                                            {
+                                                type: 'button',
+                                                className: 'profile-danger-button',
+                                                onClick: handleDeleteAccount
+                                            },
+                                            'Delete account'
+                                        )
+                                    )
+                                )
                             )
                         )
                     )
                 )
             ),
-
-            // Custom Modal
-            modal.isOpen && React.createElement('div', {
-                id: 'custom-modal-overlay',
-                style: {
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: window.ZIndex?.MODAL_BACKDROP || 30,
-                    padding: '20px'
-                },
-                onClick: (e) => {
-                    if (e.target === e.currentTarget && modal.type === 'alert') {
-                        closeModal();
-                    }
-                }
-            },
-                React.createElement('div', {
-                    id: 'custom-modal-content',
-                    style: {
-                        backgroundColor: '#ffffff',
-                        borderRadius: '15px',
-                        padding: isMobile ? '25px' : '30px',
-                        maxWidth: isMobile ? '90%' : '500px',
-                        width: '100%',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '20px'
-                    },
-                    onClick: (e) => e.stopPropagation()
-                },
-                    React.createElement('div', {
-                        id: 'custom-modal-title',
-                        style: {
-                            fontFamily: 'Urbanist, Helvetica',
-                            fontWeight: 700,
-                            fontSize: isMobile ? '20px' : '24px',
-                            color: '#000000',
-                            lineHeight: 'normal'
-                        }
-                    }, modal.title),
-                    React.createElement('div', {
-                        id: 'custom-modal-message',
-                        style: {
-                            fontFamily: 'Inter, Helvetica',
-                            fontWeight: 400,
-                            fontSize: isMobile ? '14px' : '16px',
-                            color: '#000000',
-                            lineHeight: '1.5'
-                        }
-                    }, modal.message),
-                    React.createElement('div', {
-                        id: 'custom-modal-buttons',
-                        style: {
-                            display: 'flex',
-                            gap: '10px',
-                            justifyContent: 'flex-end',
-                            marginTop: '10px'
-                        }
-                    },
-                        modal.type === 'confirm' && React.createElement('button', {
-                            id: 'custom-modal-cancel-button',
-                            style: {
-                                padding: isMobile ? '10px 20px' : '12px 24px',
-                                borderRadius: '10px',
-                                border: '1px solid #e0e0e0',
-                                backgroundColor: '#ffffff',
-                                color: '#000000',
-                                fontFamily: 'Urbanist, Helvetica',
-                                fontWeight: 600,
-                                fontSize: isMobile ? '14px' : '16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
-                            onMouseLeave: (e) => e.target.style.backgroundColor = '#ffffff',
-                            onClick: handleModalCancel
-                        }, 'Cancel'),
-                        React.createElement('button', {
-                            id: 'custom-modal-confirm-button',
-                            style: {
-                                padding: isMobile ? '10px 20px' : '12px 24px',
-                                borderRadius: '10px',
-                                border: 'none',
-                                backgroundColor: '#000000',
-                                color: '#ffffff',
-                                fontFamily: 'Urbanist, Helvetica',
-                                fontWeight: 600,
-                                fontSize: isMobile ? '14px' : '16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#333333',
-                            onMouseLeave: (e) => e.target.style.backgroundColor = '#000000',
-                            onClick: modal.type === 'confirm' ? handleModalConfirm : closeModal
-                        }, modal.type === 'confirm' ? 'Confirm' : 'OK')
-                    )
-                )
-            )
+            reactCreateElm(ProfileModal, {
+                modal: modal,
+                onClose: closeModal,
+                onConfirm: handleModalConfirm,
+                onCancel: handleModalCancel
+            }),
+            reactCreateElm(AvatarEditorModal, {
+                editor: avatarEditor,
+                uploading: uploadingAvatar,
+                isDragging: avatarEditorDragging,
+                onClose: closeAvatarEditor,
+                onConfirm: handleAvatarEditorConfirm,
+                onZoomChange: handleAvatarZoomChange,
+                onPointerDown: handleAvatarEditorPointerDown
+            })
         )
     );
 };
 
-// Make available globally
 window.UserProfile = UserProfile;
-
 })();

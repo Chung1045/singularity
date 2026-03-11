@@ -36,8 +36,8 @@
     <!-- Load Search Panel component -->
     <script src="/components/SearchPanel.js"></script>
     <!-- Load Right Sidebar component -->
-    <script src="/components/RightSidebar.js"></script>
-    <link rel="stylesheet" href="/components/rightSidebar.css">
+    <script src="/components/RightSidebar.js?v=<%= Date.now() %>"></script>
+    <link rel="stylesheet" href="/components/rightSidebar.css?v=<%= Date.now() %>">
     <!-- Load Requirements Panel component -->
     <script src="/components/requirementsPanel.js"></script>
     <link rel="stylesheet" href="/stylesheets/requirementsPanel.css">
@@ -75,11 +75,13 @@
         <div class="sk-sidebar">
             <div class="sk-box sk-sidebar-logo"></div>
             <div class="sk-box sk-sidebar-row"></div>
-            <div class="sk-box sk-sidebar-row medium"></div>
-            <div class="sk-box sk-sidebar-row short"></div>
             <div class="sk-box sk-sidebar-row"></div>
-            <div class="sk-box sk-sidebar-row medium"></div>
-            <div class="sk-box sk-sidebar-row short"></div>
+            <div class="sk-sidebar-divider"></div>
+            <div class="sk-box sk-sidebar-row"></div>
+            <div class="sk-box sk-sidebar-row"></div>
+            <div class="sk-box sk-sidebar-row"></div>
+            <div class="sk-sidebar-spacer"></div>
+            <div class="sk-box sk-sidebar-row"></div>
         </div>
         <div class="sk-main" style="align-items:center;justify-content:center;">
             <div class="sk-chat-wrap">
@@ -98,7 +100,7 @@
     // Make userInfo globally available for socket initialization
     window.userInfo = userInfo;
 
-    console.log("tempHome.ejs → userInfo received:", userInfo);
+    console.log("tempHome.ejs ??userInfo received:", userInfo);
     console.log("window.Sidebar available?", typeof window.Sidebar);
     console.log("window.RightSidebar available?", typeof window.RightSidebar);
     console.log("window.Home available?", typeof window.Home);
@@ -118,6 +120,14 @@
 
 <!-- Socket.io initialization for real-time notifications - load AFTER userInfo is set -->
 <script src="/scripts/socketInit.js"></script>
+
+<div id="faq-pip-root"></div>
+<script src="/components/faqPipComponent.js"></script>
+<script>
+    ReactDOM.createRoot(document.getElementById('faq-pip-root')).render(
+        React.createElement(FaqPipComponent, null)
+    );
+</script>
 
 </body>
 </html>

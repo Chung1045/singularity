@@ -88,9 +88,9 @@ a {
   justify-content: left;
   width: 172px;
   height: 25px;
-  font-family: "SF Pro-SemiboldItalic", Helvetica;
+  font-family: "Playfair Display", serif, "SF Pro-SemiboldItalic", Helvetica;
   font-weight: 600;
-  font-style: italic;
+  /* font-style: italic; */
   color: #1c1d21;
   font-size: 20px;
   letter-spacing: 1.00px;

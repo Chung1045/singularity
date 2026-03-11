@@ -1,20 +1,76 @@
-/* RIGHT SIDEBAR STYLES - Matches left sidebar exactly */
+/* RIGHT SIDEBAR STYLES */
 
 .right-sidebar {
-    /* Base styles are in inline styles for dynamic width */
-    /* Matches left sidebar design */
+    /* Base styles are inline for dynamic width */
 }
 
-.right-sidebar-resizer {
-    /* Resize handle - matches left sidebar behavior */
-    /* Shows border on hover, blue background when dragging */
+.right-sidebar-footer {
+    flex: 0 0 auto;
+    padding-bottom: 20px;
 }
 
-.right-sidebar-content {
-    /* Base styles are in inline styles */
+.right-sidebar-toggle {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    margin-right: 15px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 220ms ease;
 }
 
-/* Scrollbar styling for right sidebar - matches left sidebar */
+.right-sidebar-toggle:hover {
+    opacity: 0.7;
+}
+
+.right-sidebar-toggle:focus {
+    outline: 2px solid #4a90e2;
+    outline-offset: 2px;
+}
+
+.right-sidebar-toggle-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    transition: transform 220ms ease;
+    transform: rotate(0deg);
+}
+
+.right-sidebar-toggle--collapsed .right-sidebar-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.right-sidebar-collapsed-shell {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    flex: 1 1 auto;
+    padding-top: 26px;
+}
+
+.right-sidebar-collapsed-label {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: "Inter", Helvetica;
+    font-weight: 700;
+    color: #64748b;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* Scrollbar styling for right sidebar */
 .right-sidebar-content::-webkit-scrollbar {
     width: 6px;
 }
