@@ -222,7 +222,6 @@ a {
 }
 
 .profile-avatar-button:hover {
-  transform: translateY(-1px);
   background: #1f2937;
 }
 
