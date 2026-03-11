@@ -627,7 +627,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                                     src: EDIT_ICON,
                                                     alt: ''
                                                 }),
-                                                reactCreateElm('span', null, uploadingAvatar ? 'Uploading...' : 'Upload')
+                                                reactCreateElm('span', null, uploadingAvatar ? 'Uploading...' : 'Edit photo')
                                             )
                                         ),
                                         reactCreateElm(
