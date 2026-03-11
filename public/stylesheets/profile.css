@@ -505,6 +505,96 @@ a {
   background: #1f2937;
 }
 
+.profile-modal-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.profile-avatar-editor-card {
+  width: min(100%, 560px);
+}
+
+.profile-avatar-editor-message {
+  max-width: 460px;
+}
+
+.profile-avatar-editor-preview-shell {
+  margin-top: 22px;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-avatar-editor-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 75%, #f3f4f6 75%, #f3f4f6),
+    linear-gradient(45deg, #f3f4f6 25%, #ffffff 25%, #ffffff 75%, #f3f4f6 75%, #f3f4f6);
+  background-position: 0 0, 14px 14px;
+  background-size: 28px 28px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.profile-avatar-editor-preview.is-dragging {
+  cursor: grabbing;
+}
+
+.profile-avatar-editor-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  max-height: none;
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.profile-avatar-editor-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 999px rgba(17, 24, 39, 0.34);
+}
+
+.profile-avatar-editor-mask::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 999px rgba(17, 24, 39, 0.38),
+    0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 14px 32px rgba(0, 0, 0, 0.16);
+}
+
+.profile-avatar-editor-controls {
+  margin-top: 22px;
+}
+
+.profile-avatar-editor-zoom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.profile-avatar-editor-slider {
+  width: 100%;
+  margin-top: 12px;
+  accent-color: #111827;
+}
+
+.profile-avatar-editor-actions {
+  margin-top: 28px;
+}
+
 @media (max-width: 900px) {
   .profile-scroll-region {
     padding: 28px 24px 36px;
@@ -647,6 +737,11 @@ a {
   .profile-modal-card {
     padding: 22px 18px;
     border-radius: 18px;
+  }
+
+  .profile-avatar-editor-preview {
+    width: min(calc(100vw - 92px), 260px) !important;
+    height: min(calc(100vw - 92px), 260px) !important;
   }
 
   .profile-modal-title {
