@@ -1,155 +1,214 @@
 (function() {
-const { useState } = React;
+const { useEffect, useMemo, useState } = React;
+const e = React.createElement;
+const TOAST_DURATION_MS = 3200;
+
+function formatDateTime(value) {
+    if (!value) return 'Unknown';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+
+    return new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    }).format(date);
+}
+
+function pluralize(value, unit) {
+    return `${value} ${unit}${value === 1 ? '' : 's'} ago`;
+}
+
+function formatRelativeDate(value) {
+    if (!value) return 'Never';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+
+    const diffMs = Date.now() - date.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const week = 7 * day;
+    const month = 30 * day;
+    const year = 365 * day;
+
+    if (diffMs < minute) return 'Just now';
+    if (diffMs < hour) return pluralize(Math.max(1, Math.round(diffMs / minute)), 'minute');
+    if (diffMs < day) return pluralize(Math.max(1, Math.round(diffMs / hour)), 'hour');
+    if (diffMs < week) return pluralize(Math.max(1, Math.round(diffMs / day)), 'day');
+    if (diffMs < month) return pluralize(Math.max(1, Math.round(diffMs / week)), 'week');
+    if (diffMs < year) return pluralize(Math.max(1, Math.round(diffMs / month)), 'month');
+    return pluralize(Math.max(1, Math.round(diffMs / year)), 'year');
+}
+
+function getInitials(label) {
+    const words = String(label || 'Passkey').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return 'PK';
+    return words.slice(0, 2).map((word) => word[0].toUpperCase()).join('');
+}
+
+function getPasskeyTheme(label) {
+    const value = String(label || '').toLowerCase();
+
+    if (value.includes('icloud') || value.includes('apple') || value.includes('mac') || value.includes('iphone') || value.includes('ipad')) {
+        return { iconClass: 'security-row-icon--apple', provider: 'Apple ecosystem' };
+    }
+
+    if (value.includes('windows')) {
+        return { iconClass: 'security-row-icon--windows', provider: 'Windows Hello' };
+    }
+
+    if (value.includes('google') || value.includes('android') || value.includes('chrome')) {
+        return { iconClass: 'security-row-icon--google', provider: 'Google Password Manager' };
+    }
+
+    if (value.includes('samsung')) {
+        return { iconClass: 'security-row-icon--samsung', provider: 'Samsung Pass' };
+    }
+
+    return { iconClass: 'security-row-icon--generic', provider: 'Saved passkey' };
+}
+
+function getSetupStatus(total) {
+    if (total === 0) {
+        return {
+            label: 'Not set up',
+            note: 'Create your first passkey to start using passwordless sign-in.',
+            chipClass: 'security-chip security-chip--warning'
+        };
+    }
+
+    if (total === 1) {
+        return {
+            label: 'Needs backup',
+            note: 'Add one more passkey on a different device for account recovery.',
+            chipClass: 'security-chip security-chip--warning'
+        };
+    }
+
+    return {
+        label: 'Backup ready',
+        note: 'You already have more than one passkey available.',
+        chipClass: 'security-chip security-chip--success'
+    };
+}
+
+function renderToast(toast) {
+    if (!toast) return null;
+
+    return e('div', { className: 'security-toast-stack' },
+        e('div', { className: `security-toast security-toast--${toast.type || 'info'}` },
+            e('div', { className: 'security-toast-title' }, toast.title),
+            toast.message ? e('div', { className: 'security-toast-copy' }, toast.message) : null
+        )
+    );
+}
+
+function renderModal(modal, closeModal, handleConfirm) {
+    if (!modal.isOpen) return null;
+
+    return e('div', {
+        className: 'security-modal-backdrop',
+        onClick: (event) => {
+            if (event.target === event.currentTarget) {
+                closeModal();
+            }
+        }
+    },
+        e('div', {
+            className: 'security-modal',
+            onClick: (event) => event.stopPropagation()
+        },
+            e('h2', { className: 'security-modal-title' }, modal.title),
+            e('p', { className: 'security-modal-copy' }, modal.message),
+            e('div', { className: 'security-modal-actions' },
+                modal.type === 'confirm'
+                    ? e('button', {
+                        className: 'security-button security-button--secondary',
+                        onClick: closeModal
+                    }, 'Cancel')
+                    : null,
+                e('button', {
+                    className: `security-button ${modal.type === 'confirm' ? 'security-button--primary' : 'security-button--secondary'}`,
+                    onClick: modal.type === 'confirm' ? handleConfirm : closeModal
+                }, modal.type === 'confirm' ? 'Confirm' : 'OK')
+            )
+        )
+    );
+}
 
 const Passkey = ({ csrfToken, passkeys, userInfo }) => {
     window.csrfToken = csrfToken;
+
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
         return saved !== null ? JSON.parse(saved) : true;
     });
-
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+    const [items, setItems] = useState(() => Array.isArray(passkeys) ? passkeys : []);
+    const [modal, setModal] = useState({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: null });
+    const [toast, setToast] = useState(null);
     const [isRegistering, setIsRegistering] = useState(false);
     const [deletingPasskeyID, setDeletingPasskeyID] = useState(null);
 
-    const showAlert = (title, message, onConfirm = null) => {
-        setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
+    useEffect(() => {
+        localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+    }, [sidebarCollapsed]);
+
+    useEffect(() => {
+        if (!toast) return undefined;
+        const timer = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
+        return () => window.clearTimeout(timer);
+    }, [toast]);
+
+    const username = userInfo?.userName || userInfo?.email || 'User';
+
+    const sortedItems = useMemo(() => {
+        return [...items].sort((left, right) => {
+            const leftDate = new Date(left.lastUsed || left.dateCreate || 0).getTime();
+            const rightDate = new Date(right.lastUsed || right.dateCreate || 0).getTime();
+            return rightDate - leftDate;
+        });
+    }, [items]);
+
+    const lastUsedPasskey = useMemo(
+        () => sortedItems.find((item) => item.lastUsed),
+        [sortedItems]
+    );
+
+    const setupStatus = getSetupStatus(items.length);
+
+    const showToast = (type, title, message = '') => {
+        setToast({ id: Date.now(), type, title, message });
     };
 
-    const showModal = (title, message, onConfirm) => {
-        setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
+    const showAlert = (title, message, onConfirm = null) => {
+        setModal({ isOpen: true, type: 'alert', title, message, onConfirm });
+    };
+
+    const showConfirm = (title, message, onConfirm) => {
+        setModal({ isOpen: true, type: 'confirm', title, message, onConfirm });
     };
 
     const closeModal = () => {
-        setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+        setModal({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: null });
     };
 
-    const handleModalOk = () => {
-        if (modal.onConfirm) {
-            modal.onConfirm();
-        }
+    const handleModalConfirm = async () => {
+        const onConfirm = modal.onConfirm;
         closeModal();
-    };
-
-    const handleModalCancel = () => {
-        closeModal();
-    };
-
-    // Passkey registration function moved inside component
-    const registerPasskey = async () => {
-        console.log("Running");
-        setIsRegistering(true);
-        if (!csrfToken) {
-            // Old: alert("CSRF token missing!");
-            showAlert('Error', 'CSRF token missing!');
-            return;
-        }
-
-        const { startRegistration, browserSupportsWebAuthn } = window.SimpleWebAuthnBrowser;
-
-        if (!browserSupportsWebAuthn) {
-            // Old: alert("This browser does not support passkey");
-            showAlert('Error', 'This browser does not support passkey');
-            return;
-        }
-        try {
-            const resp = await fetch('/api/passkey/gen-option', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'CSRF-Token': csrfToken
-                },
-                body: JSON.stringify({})
-            });
-
-            if (!resp.ok) throw new Error("Failed to get registration options");
-
-            const options = await resp.json();
-
-            const attResp = await startRegistration(options);
-            console.log("Attestation response:", attResp);
-
-            const verificationResp = await fetch('/api/passkey/verify-register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'CSRF-Token': csrfToken
-                },
-                body: JSON.stringify({ attResp })
-            });
-
-            if (verificationResp.ok) {
-                showAlert('Success', 'Passkey registered successfully!', () => {
-                    location.reload();
-                });
-            } else {
-                showAlert('Error', 'Passkey registration failed. Please try again or contact support if the issue persists.');
-            }
-        } catch (error) {
-            console.error(error);
-            showAlert('Error', 'Passkey registration failed. Please try again or contact support if the issue persists.');
-        } finally {
-            setIsRegistering(false);
+        if (typeof onConfirm === 'function') {
+            await onConfirm();
         }
     };
-
-    // Passkey deletion function moved inside a component
-    const deletePasskey = async (passkeyID, passkeyName) => {
-        showModal(
-            'Delete Passkey',
-            `Are you sure you want to delete this passkey? (${passkeyName})`,
-            async () => {
-                setDeletingPasskeyID(passkeyID);
-                try {
-                    console.log("PasskeyID: " + passkeyID);
-
-                    const resp = await fetch("/api/passkey/delete", {
-                        method: 'POST',
-                        headers: {
-                            'CSRF-Token': csrfToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ passkeyID })
-                    });
-
-                    if (resp.ok) {
-                        showAlert('Success', 'Passkey deleted', () => {
-                            location.reload();
-                        });
-                    } else {
-                        showAlert('Error', 'Failed to delete passkey. Please try again or contact support if the issue persists.');
-                    }
-                } catch (e) {
-                    showAlert('Error', 'Failed to delete passkey. Please try again or contact support if the issue persists.');
-                } finally {
-                    setDeletingPasskeyID(null);
-                }
-            }
-        );
-    };
-
-    // Responsive breakpoints
-    const isMobile = windowWidth <= 480;
-    const isTablet = windowWidth > 480 && windowWidth <= 768;
-    const isSmallLaptop = windowWidth > 768 && windowWidth <= 1024;
-    const isLargeLaptop = windowWidth > 1024 && windowWidth <= 1440;
-    const isDesktop = windowWidth > 1440;
-
-    React.useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    console.log("Rendering TempPasskey with passkeys:", passkeys); // Debug
 
     const logout = async () => {
         if (!csrfToken) {
-            console.error('CSRF token not available');
-            // Old: alert('Security token missing. Please refresh the page.');
-            showAlert('Error', 'Security token missing. Please refresh the page.');
+            showAlert('Security token missing', 'Please refresh the page and try again.');
             return;
         }
 
@@ -163,504 +222,308 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                 body: JSON.stringify({})
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                // Old: alert("Logout response: " + JSON.stringify(data));
-                showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.', () => {
-                    window.location = "/?loggedout=1";
-                });
-                setTimeout(() => {
-                    window.location = "/?loggedout=1";
-                }, 3000);
-            } else {
+            if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.message || "An error occurred. Please try again.";
-                // Old: alert(errorMessage);
-                showAlert('Error', errorMessage);
+                showAlert('Unable to sign out', errorData.message || 'An error occurred. Please try again.');
+                return;
             }
+
+            showToast('success', 'Signed out', 'Redirecting to the home page.');
+            window.setTimeout(() => {
+                window.location = '/?loggedout=1';
+            }, 900);
         } catch (error) {
-            console.error('Logout error:', error);
-            // Old: alert("An error occurred during logout. Please try again.");
-            showAlert('Error', 'An error occurred during logout. Please try again.');
+            showAlert('Unable to sign out', 'An error occurred during logout. Please try again.');
         }
+    };
+
+    const registerPasskey = async () => {
+        if (isRegistering) return;
+
+        setIsRegistering(true);
+
+        if (!csrfToken) {
+            setIsRegistering(false);
+            showAlert('Security token missing', 'Please refresh the page and try again.');
+            return;
+        }
+
+        const webAuthn = window.SimpleWebAuthnBrowser || {};
+        if (typeof webAuthn.browserSupportsWebAuthn !== 'function' || !webAuthn.browserSupportsWebAuthn()) {
+            setIsRegistering(false);
+            showAlert('Passkeys are not supported', 'This browser or device does not support passkeys.');
+            return;
+        }
+
+        try {
+            const optionsResponse = await fetch('/api/passkey/gen-option', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({})
+            });
+
+            if (!optionsResponse.ok) {
+                throw new Error('Failed to prepare passkey registration.');
+            }
+
+            const options = await optionsResponse.json();
+            const attResp = await webAuthn.startRegistration(options);
+
+            const verificationResponse = await fetch('/api/passkey/verify-register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ attResp })
+            });
+
+            if (!verificationResponse.ok) {
+                const errorData = await verificationResponse.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Passkey registration failed.');
+            }
+
+            showToast('success', 'Passkey added', 'Refreshing your passkey list...');
+            window.setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            let message = error?.message || 'Passkey registration failed. Please try again.';
+
+            if (error?.name === 'AbortError') {
+                message = 'Passkey setup was cancelled before it finished.';
+            } else if (error?.name === 'InvalidStateError') {
+                message = 'This passkey already appears to be registered to your account.';
+            }
+
+            showAlert('Unable to add passkey', message);
+        } finally {
+            setIsRegistering(false);
+        }
+    };
+
+    const requestRemovePasskey = (passkey) => {
+        showConfirm(
+            'Remove passkey',
+            `Remove ${passkey.keyName || 'this passkey'} from your account? You can add another passkey later.`,
+            async () => {
+                setDeletingPasskeyID(passkey.keyID);
+
+                try {
+                    const response = await fetch('/api/passkey/delete', {
+                        method: 'POST',
+                        headers: {
+                            'CSRF-Token': csrfToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ passkeyID: passkey.keyID })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Failed to remove the passkey.');
+                    }
+
+                    setItems((previous) => previous.filter((item) => item.keyID !== passkey.keyID));
+                    showToast('success', 'Passkey removed', `${passkey.keyName || 'The passkey'} can no longer sign in.`);
+                } catch (error) {
+                    showAlert('Unable to remove passkey', error?.message || 'Failed to remove the passkey. Please try again.');
+                } finally {
+                    setDeletingPasskeyID(null);
+                }
+            }
+        );
     };
 
     function handleProfileRoute() {
-        window.location.href = "/profile";
+        window.location.href = '/profile';
     }
 
-    const toggleUserMenu = (e) => {
-        e.stopPropagation();
-        setUserMenuOpen(!userMenuOpen);
-    };
-
-    const username = userInfo?.userName || userInfo?.email || 'User';
-
-    // ADDED: Function to format ISO date to readable format (MM/DD/YYYY HH:MM am/pm)
-    const formatDate = (isoDateString) => {
-        if (!isoDateString) return 'Unknown date';
-
-        try {
-            const date = new Date(isoDateString);
-
-            // Check if date is valid
-            if (isNaN(date.getTime())) return 'Unknown date';
-
-            const month = date.getMonth() + 1; // 0-indexed, so add 1
-            const day = date.getDate();
-            const year = date.getFullYear();
-
-            let hours = date.getHours();
-            const minutes = date.getMinutes();
-            const ampm = hours >= 12 ? 'pm' : 'am';
-
-            // Convert to 12-hour format
-            hours = hours % 12;
-            hours = hours ? hours : 12; // 0 should be 12
-
-            // Pad minutes with zero if needed
-            const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-
-            return `${month}/${day}/${year} ${hours}:${minutesStr} ${ampm}`;
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return 'Unknown date';
-        }
-    };
-
-    // MODIFIED: Passkey card design matching mockup exactly
-    const passkeyElements = passkeys.map((passkey) => {
-        const keyID = passkey.keyID;
-        // ADDED: Format the date using the new function
-        const formattedDate = formatDate(passkey.dateCreate);
-
-        return React.createElement('div', {
-            key: keyID,
-                id: 'DIV_PASSKEY_' + keyID,
-            style: {
-                display: 'flex',
-                alignItems: 'center',
-                gap: isMobile ? '10px' : (isTablet ? '12px' : '15px'),
-                padding: isMobile ? '15px' : (isTablet ? '18px' : '20px'),
-                width: '100%',
-                borderRadius: isMobile ? '8px' : '10px',
-                backgroundColor: '#ffffff',
-                boxSizing: 'border-box'
-            }
+    const summaryItems = [
+        {
+            label: 'Saved passkeys',
+            value: String(items.length),
+            note: items.length === 1 ? '1 passkey is ready for sign-in.' : `${items.length} passkeys are available for sign-in.`
         },
-            // Icon rectangle
-            React.createElement('div', {
-                id: 'DIV_PASSKEY_ICON_' + keyID,
-                style: {
-                    width: isMobile ? '40px' : '48px',
-                    height: isMobile ? '40px' : '48px',
-                    backgroundColor: '#e0e0e0',
-                    borderRadius: isMobile ? '8px' : '10px',
-                    flexShrink: 0
-                }
-            }),
-            // Content wrapper
-            React.createElement('div', {
-                id: 'DIV_PASSKEY_CONTENT_' + keyID,
-                style: {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: isMobile ? '6px' : '8px',
-                    flex: 1
-                }
-            },
-                // Passkey name
-                React.createElement('div', {
-                    id: 'DIV_PASSKEY_NAME_' + keyID,
-                    style: {
-                        fontFamily: 'SF Pro-Regular, Helvetica',
-                        fontWeight: '600',
-                        color: '#000000',
-                        fontSize: isMobile ? '16px' : (isTablet ? '17px' : '18px'),
-                        lineHeight: '1.2'
-                    }
-                }, passkey.keyName || 'Unnamed Passkey'),
-                // Date Created row
-                React.createElement('div', {
-                    ID: 'DIV_PASSKEY_DATECREATED_' + keyID,
-                    style: {
-                        display: 'flex',
-                        gap: isMobile ? '6px' : '8px',
-                        fontSize: isMobile ? '12px' : '14px'
-                    }
+        {
+            label: 'Last used',
+            value: lastUsedPasskey ? formatRelativeDate(lastUsedPasskey.lastUsed) : 'Never',
+            note: lastUsedPasskey
+                ? `${lastUsedPasskey.keyName || 'Unnamed passkey'} was used on ${formatDateTime(lastUsedPasskey.lastUsed)}.`
+                : 'No passkey has been used yet.'
+        },
+        {
+            label: 'Recommended',
+            value: setupStatus.label,
+            note: setupStatus.note
+        }
+    ];
+
+    const guidanceItems = items.length > 1
+        ? [
+            'Keep at least one backup passkey on another device or in a password manager you trust.',
+            'Remove passkeys for devices you sold, reset, or no longer control.'
+        ]
+        : [
+            'Add a second passkey on another device so you still have access if this one is unavailable.',
+            'Use names that help you recognize where the passkey lives, such as your phone or laptop.'
+        ];
+
+    const passkeyList = sortedItems.length > 0
+        ? e('div', { className: 'security-row-list' },
+            sortedItems.map((passkey) => {
+                const theme = getPasskeyTheme(passkey.keyName);
+
+                return e('div', {
+                    key: passkey.keyID,
+                    className: 'security-row'
                 },
-                    React.createElement('span', {
-                        id: 'SPAN_PASSKEY_DATECREATED_LABEL_' + keyID,
-                        style: {
-                            fontFamily: 'SF Pro-Regular, Helvetica',
-                            fontWeight: '400',
-                            color: '#999999'
-                        }
-                    }, 'Date Created:'),
-                    React.createElement('span', {
-                        id: 'SPAN_PASSKEY_DATECREATED_VALUE_' + keyID,
-                        style: {
-                            fontFamily: 'SF Pro-Regular, Helvetica',
-                            fontWeight: '400',
-                            color: '#999999'
-                        }
-                    }, formattedDate) // MODIFIED: Use formatted date instead of raw passkey.dateCreate
-                ),
-                // MODIFIED: Last Used row with date and device info
-                React.createElement('div', {
-                        id: 'DIV_PASSKEY_LASTUSED_' + keyID,
-                    style: {
-                        display: 'flex',
-                        gap: isMobile ? '6px' : '8px',
-                        fontSize: isMobile ? '12px' : '14px'
-                    }
-                },
-                    React.createElement('span', {
-                        id: 'SPAN_PASSKEY_LASTUSED_LABEL_' + keyID,
-                        style: {
-                            fontFamily: 'SF Pro-Regular, Helvetica',
-                            fontWeight: '400',
-                            color: '#999999'
-                        }
-                    }, 'Last Used:'),
-                    React.createElement('span', {
-                        id: 'SPAN_PASSKEY_LASTUSED_VALUE_' + keyID,
-                        style: {
-                            fontFamily: 'SF Pro-Regular, Helvetica',
-                            fontWeight: '400',
-                            color: '#999999'
-                        }
-                    }, passkey.lastUsed ? `${formatDate(passkey.lastUsed)}` : 'Never')
-                )
+                    e('div', { className: 'security-row-main' },
+                        e('div', {
+                            className: `security-row-icon ${theme.iconClass}`
+                        }, getInitials(passkey.keyName)),
+                        e('div', { className: 'security-row-content' },
+                            e('div', { className: 'security-row-title-line' },
+                                e('h3', { className: 'security-row-title' }, passkey.keyName || 'Unnamed passkey'),
+                                !passkey.lastUsed
+                                    ? e('span', { className: 'security-chip security-chip--warning' }, 'Unused')
+                                    : null
+                            ),
+                            e('p', { className: 'security-row-description' }, theme.provider),
+                            e('div', { className: 'security-row-meta' },
+                                e('span', { className: 'security-row-meta-item' }, `Created ${formatDateTime(passkey.dateCreate)}`),
+                                e('span', { className: 'security-row-meta-item' },
+                                    passkey.lastUsed
+                                        ? `Last used ${formatRelativeDate(passkey.lastUsed)}`
+                                        : 'Never used'
+                                )
+                            )
+                        )
+                    ),
+                    e('div', { className: 'security-row-actions' },
+                        e('button', {
+                            className: 'security-button security-button--danger',
+                            onClick: () => requestRemovePasskey(passkey),
+                            disabled: deletingPasskeyID === passkey.keyID
+                        }, deletingPasskeyID === passkey.keyID ? 'Removing...' : 'Remove')
+                    )
+                );
+            })
+        )
+        : e('div', { className: 'security-empty' },
+            e('h3', { className: 'security-empty-title' }, 'No passkeys yet'),
+            e('p', { className: 'security-empty-copy' },
+                'Add your first passkey to sign in with Face ID, Touch ID, Windows Hello, or your device PIN instead of typing a password.'
             ),
-            // Delete button
-            React.createElement('button', {
-                    id: 'BTN_DELETE_PASSKEY_' + keyID,
-                onClick: () => !deletingPasskeyID && deletePasskey(keyID, passkey.keyName),
-                disabled: deletingPasskeyID === keyID,
-                style: {
-                    width: isMobile ? '20px' : '24px',
-                    height: isMobile ? '20px' : '24px',
-                    background: 'none',
-                    border: 'none',
-                    cursor: deletingPasskeyID === keyID ? 'not-allowed' : 'pointer',
-                    opacity: deletingPasskeyID === keyID ? 0.4 : 1,
-                    padding: '0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'opacity 0.2s ease'
-                }
-            },
-                React.createElement('img', {
-                    id: 'IMG_DELETE_PASSKEY_' + keyID,
-                    src: './img/delete_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                    alt: 'Delete',
-                    style: {
-                        width: isMobile ? '20px' : '24px',
-                        height: isMobile ? '20px' : '24px'
-                    }
-                })
+            e('div', { className: 'security-inline-row' },
+                e('button', {
+                    className: 'security-button security-button--primary',
+                    onClick: registerPasskey,
+                    disabled: isRegistering
+                }, isRegistering ? 'Creating passkey...' : 'Create passkey')
             )
         );
-    });
 
-    return React.createElement('div', {
+    return e('div', {
         id: 'DIV_SIDEBAR_EXPANDER',
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
-        React.createElement('div', {  className: 'group' },
-            // Sidebar Component
-
-    React.createElement(window.Sidebar, {
-                sidebarCollapsed: sidebarCollapsed,
-                setSidebarCollapsed: setSidebarCollapsed,
-                username: username,
+        e('div', { className: 'group' },
+            e(window.Sidebar, {
+                sidebarCollapsed,
+                setSidebarCollapsed,
+                username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
-                userMenuOpen: userMenuOpen,
-                setUserMenuOpen: setUserMenuOpen,
-                userInfo: userInfo
+                userMenuOpen,
+                setUserMenuOpen,
+                userInfo
             }),
-
-            // MODIFIED: Main content area with new design
-            React.createElement('main', { className: 'right-container' },
-                React.createElement('section', { className: 'main-screen' },
-                    // Hidden CSRF
-                    React.createElement("input", {
-                        id: "INPUT_HIDDEN_CSRF",
-                        type: "hidden",
-                        name: "_csrf",
-                        id: "hidden-csrf",
-                        value: csrfToken,
+            e('main', { className: 'right-container' },
+                e('section', { className: 'main-screen security-shell' },
+                    e('input', {
+                        type: 'hidden',
+                        name: '_csrf',
+                        id: 'hidden-csrf',
+                        value: csrfToken
                     }),
-
-                    // MODIFIED: Container for entire page content
-                    React.createElement('div', {
-                        id: 'DIV_PAGE_CONTAINER',
-                        style: {
-                            // padding: isMobile ? '15px 12px' : (isTablet ? '20px 20px' : (isSmallLaptop ? '25px 30px' : (isLargeLaptop ? '30px 50px' : '40px 87px'))),
-                            width: '100%',
-                            boxSizing: 'border-box'
-                        }
-                    },
-                        // Header with back button and title
-                        React.createElement('div', {
-                            id: 'DIV_PAGE_HEADER',
-                            style: {
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: isMobile ? '10px' : (isTablet ? '12px' : '15px'),
-                                marginBottom: isMobile ? '25px' : (isTablet ? '30px' : '40px')
-                            }
-                        },
-                            // Back button with square icon
-                            React.createElement('button', {
-                                id: 'BTN_BACK_PROFILE',
-                                onClick: () => window.location.href = '/profile',
-                                style: {
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: isMobile ? '36px' : (isTablet ? '40px' : '44px'),
-                                    height: isMobile ? '36px' : (isTablet ? '40px' : '44px'),
-                                    padding: isMobile ? '8px' : '10px',
-                                    borderRadius: isMobile ? '8px' : '10px',
-                                    border: '1px solid #e0e0e0',
-                                    background: '#fff',
-                                    cursor: 'pointer'
-                                }
-                            },
-                                React.createElement('img', {
-                                    id: 'IMG_BACK_PROFILE',
-                                    src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                                    alt: 'Back',
-                                    style: {
-                                        width: isMobile ? '20px' : '24px',
-                                        height: isMobile ? '20px' : '24px'
-                                    }
-                                })
-                            ),
-                            // Title
-                            React.createElement('div', {
-                                id: 'DIV_PAGE_TITLE',
-                                style: {
-                                    fontFamily: 'SF Pro-Bold, Helvetica',
-                                    fontWeight: '400',
-                                    color: '#000000',
-                                    fontSize: isMobile ? '20px' : (isTablet ? '22px' : '24px'),
-                                    letterSpacing: '0',
-                                    lineHeight: 'normal'
-                                }
-                            }, 'Manage Passkeys')
-                        ),
-
-                        // Content container with Create button and passkey list
-                        React.createElement('div', {
-                                id: 'DIV_CONTENT_CONTAINER',
-                            style: {
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: isMobile ? '12px' : '15px',
-                                minWidth: isMobile ? '0' : (isTablet ? '300px' : '400px')
-                            }
-                        },
-                            // Create Passkey button aligned to right
-                            React.createElement('div', {
-                                    id: 'DIV_CREATE_PASSKEY_BUTTON_CONTAINER',
-                                style: {
-                                    display: 'flex',
-                                    justifyContent: isMobile ? 'flex-start' : 'flex-end'
-                                }
-                            },
-                                React.createElement('button', {
-                                        id: 'BTN_CREATE_PASSKEY',
-                                    onClick: () => !isRegistering && registerPasskey(),
-                                    disabled: isRegistering,
-                                    style: {
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: isMobile ? '6px' : '10px',
-                                        padding: isMobile ? '8px 12px' : '8px 12px',
-                                        borderRadius: isMobile ? '8px' : '10px',
-                                        border: '1px solid #000000',
-                                        background: isRegistering ? '#f5f5f5' : '#fff',
-                                        cursor: isRegistering ? 'not-allowed' : 'pointer',
-                                        opacity: isRegistering ? 0.6 : 1,
-                                        fontFamily: 'Urbanist-SemiBold, Helvetica',
-                                        fontWeight: '600',
-                                        color: '#000000',
-                                        fontSize: isMobile ? '14px' : '16px',
-                                        transition: 'opacity 0.2s ease'
-                                    }
-                                },
-                                    isRegistering
-                                        ? React.createElement('span', {
-                                            className: 'sk-box',
-                                            style: { width: '16px', height: '16px', borderRadius: '50%', display: 'inline-block', marginRight: '6px', flexShrink: 0 }
-                                          })
-                                        : React.createElement('img', {
-                                            id: 'IMG_CREATE_PASSKEY_ICON',
-                                            src: './img/add_2_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                                            alt: 'Add',
-                                            style: { width: isMobile ? '20px' : '24px', height: isMobile ? '20px' : '24px', marginRight: isMobile ? '2px' : '5px' }
-                                          }),
-                                    React.createElement('span', null, isRegistering ? 'Registering...' : 'Create Passkey')
+                    e('div', { className: 'security-page' },
+                        e('header', { className: 'security-header' },
+                            e('div', { className: 'security-header-copy' },
+                                e('p', { className: 'security-header-kicker' }, 'Security settings'),
+                                e('div', { className: 'security-header-title-row' },
+                                    e('h1', { className: 'security-header-title' }, 'Passkeys'),
+                                    e('span', { className: setupStatus.chipClass }, setupStatus.label)
+                                ),
+                                e('p', { className: 'security-header-description' },
+                                    'Manage the devices and password managers that can sign you in with a passkey.'
                                 )
                             ),
-
-                            // Passkey list or empty state message
-                            passkeys.length === 0
-                                ? React.createElement('div', {
-                                        id: 'DIV_NO_PASSKEYS_MESSAGE',
-                                    style: {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        minHeight: isMobile ? '300px' : (isTablet ? '400px' : '550px'),
-                                        textAlign: 'center',
-                                        color: '#999999',
-                                        fontFamily: 'SF Pro-Regular, Helvetica',
-                                        fontSize: isMobile ? '16px' : '18px',
-                                        lineHeight: '1.6'
-                                    }
-                                },
-                                    React.createElement('div', {
-                                        id: 'DIV_NO_PASSKEYS_TITLE',
-                                        style: {
-                                            fontWeight: '600',
-                                            fontSize: isMobile ? '18px' : '20px',
-                                            color: '#666666',
-                                            marginBottom: '10px'
-                                        }
-                                    }, 'No Passkey'),
-                                    React.createElement('div', null,
-
-                                        'Create new passkey by clicking ',
-                                        React.createElement('span', {
-                                            onClick: () => registerPasskey(),
-                                            id: 'SPAN_CREATE_PASSKEY_LINK',
-                                            style: {
-                                                color: '#666666',
-                                                cursor: 'pointer',
-                                                fontWeight: '400'
-                                            }
-                                        }, 'Create Passkey')
+                            e('div', { className: 'security-header-actions' },
+                                e('button', {
+                                    className: 'security-button security-button--secondary',
+                                    onClick: handleProfileRoute
+                                }, 'Back to profile'),
+                                e('button', {
+                                    className: 'security-button security-button--primary',
+                                    onClick: registerPasskey,
+                                    disabled: isRegistering
+                                }, isRegistering ? 'Creating passkey...' : 'Create passkey')
+                            )
+                        ),
+                        e('section', { className: 'security-summary' },
+                            summaryItems.map((item) => e('div', {
+                                key: item.label,
+                                className: 'security-summary-item'
+                            },
+                                e('div', { className: 'security-summary-label' }, item.label),
+                                e('div', { className: 'security-summary-value' }, item.value),
+                                e('div', { className: 'security-summary-note' }, item.note)
+                            ))
+                        ),
+                        e('div', { className: 'security-stack' },
+                            e('section', { className: 'security-section' },
+                                e('div', { className: 'security-section-header' },
+                                    e('div', { className: 'security-section-copy' },
+                                        e('h2', { className: 'security-section-title' }, 'Your passkeys'),
+                                        e('p', { className: 'security-section-description' },
+                                            'Only keep passkeys for devices and apps you still trust and actively use.'
+                                        )
+                                    ),
+                                    e('div', { className: 'security-section-actions' },
+                                        e('span', { className: 'security-chip security-chip--neutral' }, `${items.length} saved`)
+                                    )
+                                ),
+                                e('div', { className: 'security-section-body' }, passkeyList)
+                            ),
+                            e('section', { className: 'security-section' },
+                                e('div', { className: 'security-section-header' },
+                                    e('div', { className: 'security-section-copy' },
+                                        e('h2', { className: 'security-section-title' }, 'Before you leave'),
+                                        e('p', { className: 'security-section-description' },
+                                            'A couple of small habits make passkeys much easier to live with over time.'
+                                        )
+                                    )
+                                ),
+                                e('div', { className: 'security-section-body' },
+                                    e('div', { className: 'security-callout' },
+                                        e('div', { className: 'security-callout-list' },
+                                            guidanceItems.map((item, index) => e('p', {
+                                                key: `guidance-${index}`,
+                                                className: 'security-callout-item'
+                                            }, item))
+                                        )
                                     )
                                 )
-                                : passkeyElements
+                            )
                         )
                     )
                 )
             ),
-
-            // Custom Modal
-            modal.isOpen && React.createElement('div', {
-                    id: 'DIV_CUSTOM_MODAL',
-                style: {
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: window.ZIndex?.MODAL_BACKDROP || 30
-                },
-                onClick: (e) => {
-                    if (e.target === e.currentTarget) {
-                        closeModal();
-                    }
-                }
-            },
-                React.createElement('div', {
-                        id: 'DIV_CUSTOM_MODAL_CONTENT',
-                    style: {
-                        backgroundColor: '#ffffff',
-                        borderRadius: '15px',
-                        padding: '30px',
-                        maxWidth: '450px',
-                        width: '100%',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '20px'
-                    },
-                    onClick: (e) => e.stopPropagation()
-                },
-                    React.createElement('div', {
-                        id: 'DIV_CUSTOM_MODAL_TITLE',
-                        style: {
-                            fontFamily: 'Urbanist, Helvetica',
-                            fontWeight: 700,
-                            fontSize: '24px',
-                            color: '#000000',
-                            lineHeight: 'normal'
-                        }
-                    }, modal.title),
-                    React.createElement('div', {
-                        id: 'DIV_CUSTOM_MODAL_MESSAGE',
-                        style: {
-                            fontFamily: 'Inter, Helvetica',
-                            fontWeight: 400,
-                            fontSize: '16px',
-                            color: '#000000',
-                            lineHeight: '1.5'
-                        }
-                    }, modal.message),
-                    React.createElement('div', {
-                            id: 'DIV_CUSTOM_MODAL_BUTTONS',
-                        style: {
-                            display: 'flex',
-                            gap: '10px',
-                            justifyContent: 'flex-end',
-                            marginTop: '10px'
-                        }
-                    },
-                        modal.type === 'confirm' && React.createElement('button', {
-                            id: 'BTN_CUSTOM_MODAL_CANCEL',
-                            style: {
-                                padding: '12px 24px',
-                                borderRadius: '10px',
-                                border: '1px solid #000000',
-                                backgroundColor: '#ffffff',
-                                color: '#000000',
-                                fontFamily: 'Urbanist, Helvetica',
-                                fontWeight: 600,
-                                fontSize: '16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f0f0f0',
-                            onMouseLeave: (e) => e.target.style.backgroundColor = '#ffffff',
-                            onClick: handleModalCancel
-                        }, 'Cancel'),
-                        React.createElement('button', {
-                            id: 'BTN_CUSTOM_MODAL_OK',
-                            style: {
-                                padding: '12px 24px',
-                                borderRadius: '10px',
-                                border: 'none',
-                                backgroundColor: '#000000',
-                                color: '#ffffff',
-                                fontFamily: 'Urbanist, Helvetica',
-                                fontWeight: 600,
-                                fontSize: '16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#333333',
-                            onMouseLeave: (e) => e.target.style.backgroundColor = '#000000',
-                            onClick: handleModalOk
-                        }, 'OK')
-                    )
-                )
-            )
+            renderModal(modal, closeModal, handleModalConfirm),
+            renderToast(toast)
         )
     );
 };

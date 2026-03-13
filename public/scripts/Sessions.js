@@ -1,69 +1,213 @@
 (function() {
-const { useState } = React;
+const { useEffect, useMemo, useState } = React;
+const e = React.createElement;
+const TOAST_DURATION_MS = 3200;
 
-const Session = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
+function formatDateTime(value) {
+    if (!value) return 'Unknown';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+
+    return new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    }).format(date);
+}
+
+function pluralize(value, unit) {
+    return `${value} ${unit}${value === 1 ? '' : 's'} ago`;
+}
+
+function formatRelativeDate(value) {
+    if (!value) return 'Unknown';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+
+    const diffMs = Date.now() - date.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const week = 7 * day;
+    const month = 30 * day;
+    const year = 365 * day;
+
+    if (diffMs < minute) return 'Just now';
+    if (diffMs < hour) return pluralize(Math.max(1, Math.round(diffMs / minute)), 'minute');
+    if (diffMs < day) return pluralize(Math.max(1, Math.round(diffMs / hour)), 'hour');
+    if (diffMs < week) return pluralize(Math.max(1, Math.round(diffMs / day)), 'day');
+    if (diffMs < month) return pluralize(Math.max(1, Math.round(diffMs / week)), 'week');
+    if (diffMs < year) return pluralize(Math.max(1, Math.round(diffMs / month)), 'month');
+    return pluralize(Math.max(1, Math.round(diffMs / year)), 'year');
+}
+
+function getInitials(label) {
+    const words = String(label || 'Session').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return 'SE';
+    return words.slice(0, 2).map((word) => word[0].toUpperCase()).join('');
+}
+
+function normalizeIP(value) {
+    if (!value) return 'Unknown';
+    if (value === '::1') return '127.0.0.1 (localhost)';
+    return value;
+}
+
+function getDeviceTheme(osValue, browserValue) {
+    const label = `${osValue || ''} ${browserValue || ''}`.toLowerCase();
+
+    if (label.includes('iphone') || label.includes('ipad') || label.includes('mac') || label.includes('safari')) {
+        return 'security-row-icon--apple';
+    }
+
+    if (label.includes('windows') || label.includes('edge')) {
+        return 'security-row-icon--windows';
+    }
+
+    if (label.includes('android') || label.includes('chrome') || label.includes('google')) {
+        return 'security-row-icon--google';
+    }
+
+    if (label.includes('samsung')) {
+        return 'security-row-icon--samsung';
+    }
+
+    return 'security-row-icon--generic';
+}
+
+function isRecent(value, hours = 24) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return false;
+    return Date.now() - date.getTime() <= hours * 60 * 60 * 1000;
+}
+
+function renderToast(toast) {
+    if (!toast) return null;
+
+    return e('div', { className: 'security-toast-stack' },
+        e('div', { className: `security-toast security-toast--${toast.type || 'info'}` },
+            e('div', { className: 'security-toast-title' }, toast.title),
+            toast.message ? e('div', { className: 'security-toast-copy' }, toast.message) : null
+        )
+    );
+}
+
+function renderModal(modal, closeModal, handleConfirm) {
+    if (!modal.isOpen) return null;
+
+    return e('div', {
+        className: 'security-modal-backdrop',
+        onClick: (event) => {
+            if (event.target === event.currentTarget) {
+                closeModal();
+            }
+        }
+    },
+        e('div', {
+            className: 'security-modal',
+            onClick: (event) => event.stopPropagation()
+        },
+            e('h2', { className: 'security-modal-title' }, modal.title),
+            e('p', { className: 'security-modal-copy' }, modal.message),
+            e('div', { className: 'security-modal-actions' },
+                modal.type === 'confirm'
+                    ? e('button', {
+                        className: 'security-button security-button--secondary',
+                        onClick: closeModal
+                    }, 'Cancel')
+                    : null,
+                e('button', {
+                    className: `security-button ${modal.type === 'confirm' ? 'security-button--primary' : 'security-button--secondary'}`,
+                    onClick: modal.type === 'confirm' ? handleConfirm : closeModal
+                }, modal.type === 'confirm' ? 'Confirm' : 'OK')
+            )
+        )
+    );
+}
+
+const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInfo }) => {
     window.csrfToken = csrfToken;
+
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
         return saved !== null ? JSON.parse(saved) : true;
     });
-
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [sessionItems, setSessionItems] = useState(() => Array.isArray(sessions) ? sessions : []);
+    const [attemptItems, setAttemptItems] = useState(() => Array.isArray(loginAttempts) ? loginAttempts : []);
+    const [modal, setModal] = useState({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: null });
+    const [toast, setToast] = useState(null);
+    const [pendingSessionID, setPendingSessionID] = useState(null);
+    const [isSigningOutOthers, setIsSigningOutOthers] = useState(false);
+    const [isClearingHistory, setIsClearingHistory] = useState(false);
 
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+    }, [sidebarCollapsed]);
 
-    const [currentLocation, setCurrentLocation] = useState('Detecting location...');
+    useEffect(() => {
+        if (!toast) return undefined;
+        const timer = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
+        return () => window.clearTimeout(timer);
+    }, [toast]);
 
-    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
+    const username = userInfo?.userName || userInfo?.email || 'User';
 
-    React.useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const activeSession = useMemo(() => {
+        if (!sessionItems.length) return null;
+        return sessionItems.find((session) => session.sessionID === currentSessionID) || sessionItems[0];
+    }, [sessionItems, currentSessionID]);
 
-    // Geolocation detection for current session
-    React.useEffect(() => {
-        // Try to get user's location using browser geolocation API
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    try {
-                        // Use reverse geocoding API (free service)
-                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                        const data = await response.json();
-                        const location = data.address?.city || data.address?.town || data.address?.state || data.address?.country || 'Unknown Location';
-                        setCurrentLocation(location);
-                    } catch (error) {
-                        console.error('Error fetching location:', error);
-                        setCurrentLocation('Unknown Location');
-                    }
-                },
-                (error) => {
-                    console.error('Geolocation error:', error);
-                    setCurrentLocation('Location unavailable');
-                }
-            );
-        } else {
-            setCurrentLocation('Geolocation not supported');
+    const activeSessionID = activeSession?.sessionID || '';
+
+    const otherSessions = useMemo(() => {
+        return sessionItems.filter((session) => session.sessionID !== activeSessionID);
+    }, [sessionItems, activeSessionID]);
+
+    const sortedAttempts = useMemo(() => {
+        return [...attemptItems].sort((left, right) => {
+            const leftDate = new Date(left.attemptDate || 0).getTime();
+            const rightDate = new Date(right.attemptDate || 0).getTime();
+            return rightDate - leftDate;
+        });
+    }, [attemptItems]);
+
+    const pageStatusClass = otherSessions.length > 0
+        ? 'security-chip security-chip--warning'
+        : 'security-chip security-chip--success';
+    const pageStatusLabel = otherSessions.length > 0 ? 'Review devices' : 'Only this device';
+
+    const showToast = (type, title, message = '') => {
+        setToast({ id: Date.now(), type, title, message });
+    };
+
+    const showAlert = (title, message, onConfirm = null) => {
+        setModal({ isOpen: true, type: 'alert', title, message, onConfirm });
+    };
+
+    const showConfirm = (title, message, onConfirm) => {
+        setModal({ isOpen: true, type: 'confirm', title, message, onConfirm });
+    };
+
+    const closeModal = () => {
+        setModal({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: null });
+    };
+
+    const handleModalConfirm = async () => {
+        const onConfirm = modal.onConfirm;
+        closeModal();
+        if (typeof onConfirm === 'function') {
+            await onConfirm();
         }
-    }, []);
-
-    // Responsive breakpoints
-    const isMobile = windowWidth <= 480;
-    const isTablet = windowWidth > 480 && windowWidth <= 768;
-    const isSmallLaptop = windowWidth > 768 && windowWidth <= 1024;
-    const isLargeLaptop = windowWidth > 1024 && windowWidth <= 1440;
-    const isDesktop = windowWidth > 1440;
-
-    console.log("Rendering TempSession with sessions:", sessions); // Debug
+    };
 
     const logout = async () => {
         if (!csrfToken) {
-            console.error('CSRF token not available');
-            // Old: alert('Security token missing. Please refresh the page.');
-            showAlert('Error', 'Security token missing. Please refresh the page.');
+            showAlert('Security token missing', 'Please refresh the page and try again.');
             return;
         }
 
@@ -77,751 +221,390 @@ const Session = ({ csrfToken, sessions, loginAttempts, userInfo }) => {
                 body: JSON.stringify({})
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                // Old: alert("Logout response: " + JSON.stringify(data));
-                showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
-                setTimeout(() => {
-                    window.location = "/?loggedout=1";
-                }, 3000);
-            } else {
+            if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.message || "An error occurred. Please try again.";
-                // Old: alert(errorMessage);
-                showAlert('Error', errorMessage);
+                showAlert('Unable to sign out', errorData.message || 'An error occurred. Please try again.');
+                return;
             }
+
+            showToast('success', 'Signed out', 'Redirecting to the home page.');
+            window.setTimeout(() => {
+                window.location = '/?loggedout=1';
+            }, 900);
         } catch (error) {
-            console.error('Logout error:', error);
-            // Old: alert("An error occurred during logout. Please try again.");
-            showAlert('Error', "An error occurred during logout. Please try again.");
+            showAlert('Unable to sign out', 'An error occurred during logout. Please try again.');
         }
+    };
+
+    const handleClearLoginAttempts = () => {
+        showConfirm(
+            'Clear sign-in activity',
+            'Remove your recent sign-in attempt history from this page?',
+            async () => {
+                setIsClearingHistory(true);
+
+                try {
+                    const response = await fetch('/api/loginAttempts/deleteAll', {
+                        method: 'POST',
+                        headers: {
+                            'CSRF-Token': csrfToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Failed to clear the sign-in activity.');
+                    }
+
+                    setAttemptItems([]);
+                    showToast('success', 'Activity cleared', 'Your recent sign-in activity has been removed from this page.');
+                } catch (error) {
+                    showAlert('Unable to clear activity', error?.message || 'Failed to clear the sign-in activity.');
+                } finally {
+                    setIsClearingHistory(false);
+                }
+            }
+        );
+    };
+
+    const handleSessionLogout = (session) => {
+        showConfirm(
+            'Sign out this device',
+            `Sign out ${session.sessionBrowser || 'this browser'} on ${session.sessionOS || 'this device'}?`,
+            async () => {
+                setPendingSessionID(session.sessionID);
+
+                try {
+                    const response = await fetch('/api/session/logout', {
+                        method: 'POST',
+                        headers: {
+                            'CSRF-Token': csrfToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ sessionID: session.sessionID })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Failed to sign out this session.');
+                    }
+
+                    setSessionItems((previous) => previous.filter((item) => item.sessionID !== session.sessionID));
+                    showToast('success', 'Device signed out', 'The selected session has been removed.');
+                } catch (error) {
+                    showAlert('Unable to sign out device', error?.message || 'Failed to sign out this session.');
+                } finally {
+                    setPendingSessionID(null);
+                }
+            }
+        );
+    };
+
+    const handleSignOutOtherSessions = () => {
+        if (!otherSessions.length) return;
+
+        showConfirm(
+            'Sign out other sessions',
+            'Keep only this browser signed in and remove every other active session?',
+            async () => {
+                setIsSigningOutOthers(true);
+
+                try {
+                    const targets = [...otherSessions];
+                    const results = await Promise.allSettled(
+                        targets.map(async (session) => {
+                            const response = await fetch('/api/session/logout', {
+                                method: 'POST',
+                                headers: {
+                                    'CSRF-Token': csrfToken,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ sessionID: session.sessionID })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(session.sessionID);
+                            }
+
+                            return session.sessionID;
+                        })
+                    );
+
+                    const removedIDs = results
+                        .filter((result) => result.status === 'fulfilled')
+                        .map((result) => result.value);
+
+                    if (removedIDs.length) {
+                        setSessionItems((previous) => previous.filter((item) => !removedIDs.includes(item.sessionID)));
+                    }
+
+                    if (removedIDs.length === targets.length) {
+                        showToast('success', 'Other sessions signed out', 'Only this device remains signed in.');
+                    } else if (removedIDs.length > 0) {
+                        showAlert('Partial sign-out', 'Some sessions were removed, but at least one device could not be signed out.');
+                    } else {
+                        showAlert('Unable to sign out other devices', 'No other sessions were removed. Please try again.');
+                    }
+                } catch (error) {
+                    showAlert('Unable to sign out other devices', 'No other sessions were removed. Please try again.');
+                } finally {
+                    setIsSigningOutOthers(false);
+                }
+            }
+        );
     };
 
     function handleProfileRoute() {
-        window.location.href = "/profile";
+        window.location.href = '/profile';
     }
 
-    const toggleUserMenu = (e) => {
-        e.stopPropagation();
-        setUserMenuOpen(!userMenuOpen);
-    };
-
-    const username = userInfo?.userName || userInfo?.email || 'User';
-
-    const showModal = (title, message, onConfirm, onCancel = null) => {
-        setModal({ isOpen: true, title, message, type: 'confirm', onConfirm, onCancel });
-    };
-
-    const showAlert = (title, message) => {
-        setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null, onCancel: null });
-    };
-
-    const closeModal = () => {
-        setModal({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null, onCancel: null });
-    };
-
-    const handleModalConfirm = async () => {
-        closeModal();
-        if (modal.onConfirm) {
-            await modal.onConfirm();
+    const summaryItems = [
+        {
+            label: 'Signed-in devices',
+            value: String(sessionItems.length),
+            note: sessionItems.length === 1
+                ? 'Only this browser session is active.'
+                : `${otherSessions.length} additional device${otherSessions.length === 1 ? '' : 's'} are still signed in.`
+        },
+        {
+            label: 'Current session',
+            value: activeSession ? formatRelativeDate(activeSession.lastSeenTime) : 'Unknown',
+            note: activeSession
+                ? `Last active on ${formatDateTime(activeSession.lastSeenTime)}.`
+                : 'No active session was found.'
+        },
+        {
+            label: 'Recent activity',
+            value: String(sortedAttempts.length),
+            note: sortedAttempts.length
+                ? `Latest attempt was ${formatRelativeDate(sortedAttempts[0].attemptDate)}.`
+                : 'No recent sign-in attempts recorded.'
         }
-    };
+    ];
 
-    const handleModalCancel = () => {
-        closeModal();
-        if (modal.onCancel) {
-            modal.onCancel();
-        }
-    };
-
-    const handleClearLoginAttempts = async () => {
-        // Old: if (confirm("Are you sure you want to clear all the login attempt history?")) { ... }
-        showModal(
-            'Clear Login Attempts',
-            'Are you sure you want to clear all the login attempt history?',
-            async () => {
-                const resp = await fetch("/api/loginAttempts/deleteAll", {
-                    method: 'POST',
-                    headers: {
-                        'CSRF-Token': csrfToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                });
-
-                if (resp.ok) {
-                    // Old: alert("Login Attempt History deleted");
-                    showAlert('Success', "Login Attempt History deleted");
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    // Old: alert("Failed to delete login attempt history");
-                    showAlert('Error', "Failed to delete login attempt history");
-                }
-            }
-        );
-    }
-
-    const handleSessionLogout = async (sessionID) => {
-        // Old: if (confirm("Are you sure you want logout this session?")) { ... }
-        showModal(
-            'Logout Session',
-            'Are you sure you want to logout this session?',
-            async () => {
-                const resp = await fetch("/api/session/logout", {
-                    method: 'POST',
-                    headers: {
-                        'CSRF-Token': csrfToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({sessionID: sessionID})
-                });
-
-                if (resp.ok) {
-                    // Old: alert("Session have been removed and logged out");
-                    showAlert('Success', "Session has been removed and logged out");
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    // Old: alert("Failed to logout the session");
-                    showAlert('Error', "Failed to logout the session");
-                }
-            }
-        );
-    }
-
-    const sessionElements = sessions.map((session, index) => {
-        const keyID = session.sessionID;
-        const isCurrent = index === 0;
-
-        return React.createElement(
-            "div",
-            {
-                key: keyID,
-                style: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '15px',
-                    padding: '10px 20px',
-                    position: 'relative',
-                    width: '100%',
-                    borderRadius: '10px',
-                    backgroundColor: '#fafafa',
-                    transition: 'background-color 0.2s ease'
-                }
-            },
-            React.createElement("div", {
-                style: {
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: '#d9d9d9',
-                    borderRadius: '10px',
-                    flexShrink: 0
-                }
-            }),
-            React.createElement(
-                "div",
-                { style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } },
-                React.createElement(
-                    "div",
-                    { style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } },
-                    React.createElement("div", {
-                        style: {
-                            fontFamily: 'Inter, Helvetica',
-                            fontWeight: 400,
-                            fontSize: '20px',
-                            color: '#000000'
-                        }
-                    }, session.sessionOS),
-                    React.createElement(
-                        "div",
-                        { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        // OLD: React.createElement("div", {
-                        // OLD:     style: {
-                        // OLD:         fontFamily: 'Inter, Helvetica',
-                        // OLD:         fontWeight: 400,
-                        // OLD:         fontSize: '14px',
-                        // OLD:         color: '#000000'
-                        // OLD:     }
-                        // OLD: }, session.sessionIP || "Unknown IP"),
-                        // NEW: Format IP address with label
-                        React.createElement("div", {
-                            style: {
-                                fontFamily: 'Inter, Helvetica',
-                                fontWeight: 400,
-                                fontSize: '14px',
-                                color: '#000000'
-                            }
-                        }, `IP: ${session.sessionIP === '::1' ? '127.0.0.1 (localhost)' : session.sessionIP || 'Unknown'}`),
-                        // OLD: React.createElement("div", {
-                        // OLD:     style: {
-                        // OLD:         fontFamily: 'Inter, Helvetica',
-                        // OLD:         fontWeight: 400,
-                        // OLD:         fontSize: '14px',
-                        // OLD:         color: '#000000'
-                        // OLD:     }
-                        // OLD: }, session.sessionLocation || "Unknown Location")
-                        // NEW: Show current location for current session
-                        React.createElement("div", {
-                            style: {
-                                fontFamily: 'Inter, Helvetica',
-                                fontWeight: 400,
-                                fontSize: '14px',
-                                color: '#000000'
-                            }
-                        }, isCurrent
-                            ? (currentLocation === 'Detecting location...'
-                                ? React.createElement('span', {
-                                    className: 'sk-box',
-                                    style: { display: 'inline-block', width: '120px', height: '14px', borderRadius: '4px' }
-                                  })
-                                : currentLocation)
-                            : (session.sessionLocation || "Unknown Location"))
-                    ),
-                    React.createElement(
-                        "div",
-                        { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        React.createElement("div", {
-                            style: {
-                                fontFamily: 'Inter, Helvetica',
-                                fontWeight: 400,
-                                fontSize: '14px',
-                                color: '#000000'
-                            }
-                        }, isCurrent ? "Current" : session.lastSeenTime)
+    const currentSessionPanel = activeSession
+        ? e('div', { className: 'security-row-list' },
+            e('div', { className: 'security-row' },
+                e('div', { className: 'security-row-main' },
+                    e('div', {
+                        className: 'security-row-icon security-row-icon--current'
+                    }, getInitials(activeSession.sessionBrowser || activeSession.sessionOS)),
+                    e('div', { className: 'security-row-content' },
+                        e('div', { className: 'security-row-title-line' },
+                            e('h3', { className: 'security-row-title' }, activeSession.sessionBrowser || 'Unknown browser'),
+                            e('span', { className: 'security-chip security-chip--neutral' }, 'Current session'),
+                            isRecent(activeSession.lastSeenTime)
+                                ? e('span', { className: 'security-chip security-chip--success' }, 'Active now')
+                                : null
+                        ),
+                        e('p', { className: 'security-row-description' }, activeSession.sessionOS || 'Unknown operating system'),
+                        e('div', { className: 'security-row-meta' },
+                            e('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(activeSession.sessionIP)}`),
+                            e('span', { className: 'security-row-meta-item' },
+                                `Last active ${formatRelativeDate(activeSession.lastSeenTime)}`
+                            )
+                        )
                     )
                 )
-            ),
-            !isCurrent && React.createElement(
-                "button",
-                {
-                    style: {
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '8px',
-                        flexShrink: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    },
-                    onClick: () => handleSessionLogout(keyID)
+            )
+        )
+        : e('div', { className: 'security-empty' },
+            e('h3', { className: 'security-empty-title' }, 'No active session found'),
+            e('p', { className: 'security-empty-copy' },
+                'We could not match the current browser session. Refresh the page or sign in again if this looks wrong.'
+            )
+        );
+
+    const otherSessionList = otherSessions.length > 0
+        ? e('div', { className: 'security-row-list' },
+            otherSessions.map((session) => {
+                const iconClass = getDeviceTheme(session.sessionOS, session.sessionBrowser);
+
+                return e('div', {
+                    key: session.sessionID,
+                    className: 'security-row'
                 },
-                React.createElement('img', {
-                    src: './img/logout_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg',
-                    alt: 'Logout',
-                    style: { width: '24px', height: '24px' }
-                })
-            )
-        );
-    });
-
-    const loginAttemptElement = loginAttempts.map((attempt) => {
-    const keyID = attempt.attemptID;
-
-        return React.createElement(
-            "div",
-            {
-                key: keyID,
-                style: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '15px',
-                    padding: '10px 20px',
-                    position: 'relative',
-                    width: '100%',
-                    borderRadius: '10px',
-                    backgroundColor: '#fafafa',
-                    transition: 'background-color 0.2s ease'
-                }
-            },
-            React.createElement("div", {
-                style: {
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: '#d9d9d9',
-                    borderRadius: '10px',
-                    flexShrink: 0
-                }
-            }),
-            React.createElement(
-                "div",
-                { style: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 } },
-                React.createElement(
-                    "div",
-                    { style: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' } },
-                    React.createElement("div", {
-                        style: {
-                            fontFamily: 'Inter, Helvetica',
-                            fontWeight: 400,
-                            fontSize: '20px',
-                            color: '#000000'
-                        }
-                    }, `${attempt.attemptOS} - ${attempt.attemptBrowser}`),
-                    React.createElement(
-                        "div",
-                        { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        // OLD: React.createElement("div", {
-                        // OLD:     style: {
-                        // OLD:         fontFamily: 'Inter, Helvetica',
-                        // OLD:         fontWeight: 400,
-                        // OLD:         fontSize: '14px',
-                        // OLD:         color: '#000000'
-                        // OLD:     }
-                        // OLD: }, attempt.attemptIP),
-                        // NEW: Format IP address with label
-                        React.createElement("div", {
-                            style: {
-                                fontFamily: 'Inter, Helvetica',
-                                fontWeight: 400,
-                                fontSize: '14px',
-                                color: '#000000'
-                            }
-                        }, `IP: ${attempt.attemptIP === '::1' ? '127.0.0.1 (localhost)' : attempt.attemptIP || 'Unknown'}`),
-                        // OLD: React.createElement("div", {
-                        // OLD:     style: {
-                        // OLD:         fontFamily: 'Inter, Helvetica',
-                        // OLD:         fontWeight: 400,
-                        // OLD:         fontSize: '14px',
-                        // OLD:         color: '#000000'
-                        // OLD:     }
-                        // OLD: }, attempt.attemptLocation || "Unknown Location")
-                        // NEW: Keep location display
-                        React.createElement("div", {
-                            style: {
-                                fontFamily: 'Inter, Helvetica',
-                                fontWeight: 400,
-                                fontSize: '14px',
-                                color: '#000000'
-                            }
-                        }, attempt.attemptLocation || "Unknown Location")
+                    e('div', { className: 'security-row-main' },
+                        e('div', {
+                            className: `security-row-icon ${iconClass}`
+                        }, getInitials(session.sessionBrowser || session.sessionOS)),
+                        e('div', { className: 'security-row-content' },
+                            e('div', { className: 'security-row-title-line' },
+                                e('h3', { className: 'security-row-title' }, session.sessionBrowser || 'Unknown browser')
+                            ),
+                            e('p', { className: 'security-row-description' }, session.sessionOS || 'Unknown operating system'),
+                            e('div', { className: 'security-row-meta' },
+                                e('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(session.sessionIP)}`),
+                                e('span', { className: 'security-row-meta-item' },
+                                    `Last active ${formatRelativeDate(session.lastSeenTime)}`
+                                )
+                            )
+                        )
                     ),
-                    React.createElement(
-                        "div",
-                        { style: { display: 'flex', gap: '10px', width: '100%' } },
-                        React.createElement("div", {
-                            style: {
-                                fontFamily: 'Inter, Helvetica',
-                                fontWeight: 400,
-                                fontSize: '14px',
-                                color: '#000000'
-                            }
-                        }, attempt.attemptDate)
+                    e('div', { className: 'security-row-actions' },
+                        e('button', {
+                            className: 'security-button security-button--danger',
+                            onClick: () => handleSessionLogout(session),
+                            disabled: pendingSessionID === session.sessionID
+                        }, pendingSessionID === session.sessionID ? 'Signing out...' : 'Sign out')
                     )
-                )
+                );
+            })
+        )
+        : e('div', { className: 'security-empty' },
+            e('h3', { className: 'security-empty-title' }, 'Only this device is signed in'),
+            e('p', { className: 'security-empty-copy' },
+                'That is a good sign. If another device appears here later and you do not recognize it, sign it out immediately.'
             )
         );
-    });
 
-    return React.createElement('div', {
+    const activityFeed = sortedAttempts.length > 0
+        ? e('div', { className: 'security-row-list' },
+            sortedAttempts.map((attempt) => {
+                const recent = isRecent(attempt.attemptDate, 12);
+                const iconClass = getDeviceTheme(attempt.attemptOS, attempt.attemptBrowser);
+
+                return e('div', {
+                    key: attempt.attemptID,
+                    className: 'security-row'
+                },
+                    e('div', { className: 'security-row-main' },
+                        e('div', {
+                            className: `security-row-icon ${iconClass}`
+                        }, getInitials(attempt.attemptBrowser || attempt.attemptOS)),
+                        e('div', { className: 'security-row-content' },
+                            e('div', { className: 'security-row-title-line' },
+                                e('h3', { className: 'security-row-title' }, attempt.attemptBrowser || 'Unknown browser'),
+                                recent
+                                    ? e('span', { className: 'security-chip security-chip--neutral' }, 'Recent')
+                                    : null
+                            ),
+                            e('p', { className: 'security-row-description' }, attempt.attemptOS || 'Unknown operating system'),
+                            e('div', { className: 'security-row-meta' },
+                                e('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(attempt.attemptIP)}`),
+                                e('span', { className: 'security-row-meta-item' }, formatDateTime(attempt.attemptDate))
+                            )
+                        )
+                    )
+                );
+            })
+        )
+        : e('div', { className: 'security-empty' },
+            e('h3', { className: 'security-empty-title' }, 'No recent activity'),
+            e('p', { className: 'security-empty-copy' },
+                'Recent sign-in attempts will show up here so you can spot devices and times that do not look familiar.'
+            )
+        );
+
+    return e('div', {
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
-        React.createElement('div', { className: 'group' },
-            // Sidebar Component
-            React.createElement(window.Sidebar, {
-                sidebarCollapsed: sidebarCollapsed,
-                setSidebarCollapsed: setSidebarCollapsed,
-                username: username,
+        e('div', { className: 'group' },
+            e(window.Sidebar, {
+                sidebarCollapsed,
+                setSidebarCollapsed,
+                username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
-                userMenuOpen: userMenuOpen,
-                setUserMenuOpen: setUserMenuOpen,
-                userInfo: userInfo
+                userMenuOpen,
+                setUserMenuOpen,
+                userInfo
             }),
-
-            // Main content area
-            React.createElement('main', { className: 'right-container' },
-                React.createElement('section', {
-                    className: 'main-screen',
-                    style: {
-                        backgroundColor: '#ffffff',
-                        width: '100%',
-                        height: '100vh',
-                        maxHeight: '100vh',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        padding: 0,
-                        alignItems: 'flex-start',
-                        overflow: 'hidden'
-                    }
-                },
-                    // Header with back button and title
-                    React.createElement(
-                        "div",
-                        {
-                            style: {
-                                display: 'flex',
-                                paddingLeft: isMobile ? '15px' : isTablet ? '20px' : '27px',
-                                paddingRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                width: '100%',
-                                position: 'sticky',
-                                top: '0',
-                                backgroundColor: '#ffffff',
-                                zIndex: window.ZIndex?.CHAT_TOPBAR || 12,
-                                paddingTop: isMobile ? '20px' : isTablet ? '30px' : '38px',
-                                paddingBottom: isMobile ? '10px' : isTablet ? '15px' : '20px',
-                                alignItems: 'center',
-                                gap: isMobile ? '10px' : '15px',
-                                boxSizing: 'border-box'
-                            }
-                        },
-                        React.createElement(
-                            "button",
-                            {
-                                style: {
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: isMobile ? '36px' : '44px',
-                                    height: isMobile ? '36px' : '44px',
-                                    padding: isMobile ? '8px' : '10px',
-                                    borderRadius: isMobile ? '8px' : '10px',
-                                    border: '1px solid #e0e0e0',
-                                    background: '#fff',
-                                    cursor: 'pointer',
-                                    flexShrink: 0
-                                },
-                                onClick: () => window.history.back(),
-                                'aria-label': 'Go back'
-                            },
-                            React.createElement(
-                                "div",
-                                { style: { position: 'relative', width: '24px', height: '24px' } },
-                                 React.createElement('img', {
-                                    src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                                    alt: 'Back',
-                                    style: {
-                                        width: '24px',
-                                        height: '24px'
-                                    }
-                                })
+            e('main', { className: 'right-container' },
+                e('section', { className: 'main-screen security-shell' },
+                    e('input', {
+                        type: 'hidden',
+                        name: '_csrf',
+                        id: 'hidden-csrf',
+                        value: csrfToken
+                    }),
+                    e('div', { className: 'security-page' },
+                        e('header', { className: 'security-header' },
+                            e('div', { className: 'security-header-copy' },
+                                e('p', { className: 'security-header-kicker' }, 'Security settings'),
+                                e('div', { className: 'security-header-title-row' },
+                                    e('h1', { className: 'security-header-title' }, 'Sessions'),
+                                    e('span', { className: pageStatusClass }, pageStatusLabel)
+                                ),
+                                e('p', { className: 'security-header-description' },
+                                    'Review the browsers that are signed into your account and keep the list limited to devices you recognize.'
+                                )
+                            ),
+                            e('div', { className: 'security-header-actions' },
+                                e('button', {
+                                    className: 'security-button security-button--secondary',
+                                    onClick: handleProfileRoute
+                                }, 'Back to profile')
                             )
                         ),
-                        React.createElement("div", {
-                            style: {
-                                position: 'relative',
-                                flex: '1',
-                                fontFamily: 'Urbanist, Helvetica',
-                                fontWeight: 700,
-                                color: '#000000',
-                                fontSize: isMobile ? '18px' : isTablet ? '20px' : '24px',
-                                letterSpacing: 0,
-                                lineHeight: 'normal',
-                                textAlign: 'left',
-                                whiteSpace: isMobile ? 'normal' : 'nowrap',
-                                overflow: 'visible'
-                            }
-                        }, "Manage Login Sessions")
-                    ),
-
-                    // Main content container
-                    React.createElement(
-                        "div",
-                        {
-                            style: {
-                                display: 'flex',
-                                paddingLeft: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                paddingRight: isMobile ? '15px' : isTablet ? '20px' : '33px',
-                                width: '100%',
-                                position: 'relative',
-                                flexDirection: 'column',
-                                alignItems: 'flex-start',
-                                gap: isMobile ? '10px' : '15px',
-                                marginTop: '0',
-                                paddingBottom: isMobile ? '15px' : '20px',
-                                boxSizing: 'border-box',
-                                minHeight: 0,
-                                height: '100vh',
-                                overflowY: 'auto'
-                            }
-                        },
-
-                        // Hidden CSRF
-                        React.createElement("input", {
-                            type: "hidden",
-                            name: "_csrf",
-                            id: "hidden-csrf",
-                            value: csrfToken,
-                        }),
-
-                        // Clear all button
-                        loginAttempts.length > 0 && React.createElement(
-                            "button",
-                            {
-                                style: {
-                                    display: 'flex',
-                                    width: isMobile ? '110px' : '129px',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: isMobile ? '8px' : '10px',
-                                    position: 'relative',
-                                    flex: '0 0 auto',
-                                    alignSelf: 'flex-end',
-                                    borderRadius: isMobile ? '8px' : '10px',
-                                    border: '1px solid #000000',
-                                    background: 'transparent',
-                                    cursor: 'pointer',
-                                    transition: 'background-color 0.2s ease'
-                                },
-                                onClick: handleClearLoginAttempts
+                        e('section', { className: 'security-summary' },
+                            summaryItems.map((item) => e('div', {
+                                key: item.label,
+                                className: 'security-summary-item'
                             },
-                            React.createElement(
-                                "div",
-                                { style: { position: 'relative', width: '24px', height: '24px', marginRight: '10px' } },
-                                React.createElement("img", {
-                                    src: "./img/clear_all_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24 1.svg",
-                                    alt: "",
-                                    style: {
-                                        width: '24px',
-                                        height: '24px',
-                                        marginRight: '20px'
-                                    }
-                                })
-                            ),
-                            React.createElement("div", {
-                                style: {
-                                    position: 'relative',
-                                    width: 'fit-content',
-                                    marginTop: '-1px',
-                                    fontFamily: 'Urbanist, Helvetica',
-                                    fontWeight: 600,
-                                    color: '#000000',
-                                    fontSize: isMobile ? '16px' : '20px',
-                                    letterSpacing: 0,
-                                    lineHeight: 'normal',
-                                    whiteSpace: 'nowrap'
-                                }
-                            }, "Clear all")
+                                e('div', { className: 'security-summary-label' }, item.label),
+                                e('div', { className: 'security-summary-value' }, item.value),
+                                e('div', { className: 'security-summary-note' }, item.note)
+                            ))
                         ),
-
-                        // Content sections container
-                        React.createElement(
-                            "div",
-                            {
-                                style: {
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    width: '100%',
-                                    alignItems: 'flex-start',
-                                    gap: isMobile ? '20px' : '26px',
-                                    position: 'relative',
-                                    flex: '1 1 auto',
-                                    minHeight: 0
-                                }
-                            },
-
-                            // Login attempts section
-                            React.createElement(
-                                "div",
-                                {
-                                    style: {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'flex-start',
-                                        gap: '15px',
-                                        position: 'relative',
-                                        width: '100%',
-                                        marginBottom: '20px'
-                                    }
-                                },
-                                React.createElement("div", {
-                                    style: {
-                                        position: 'relative',
-                                        width: '100%',
-                                        marginTop: '-1px',
-                                        fontFamily: 'Urbanist, Helvetica',
-                                        fontWeight: 700,
-                                        color: '#000000',
-                                        fontSize: isMobile ? '18px' : isTablet ? '20px' : '24px',
-                                        letterSpacing: 0,
-                                        lineHeight: 'normal'
-                                    }
-                                }, "Log in attempts"),
-                                // OPTION 1: Scrollable section wrapper (ACTIVE)
-                                React.createElement(
-                                    "div",
-                                    {
-                                        style: {
-                                            width: '100%',
-                                            maxHeight: '300px',
-                                            overflowY: 'auto',
-
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: isMobile ? '10px' : '15px',
-                                            paddingRight: '5px'
-                                        }
-                                    },
-                                    loginAttempts.length > 0
-                                        ? loginAttemptElement
-                                        : React.createElement("p", {
-                                            style: {
-                                                fontFamily: 'Inter, Helvetica',
-                                                fontWeight: 400,
-                                                fontSize: '14px',
-                                                color: '#000000',
-                                                padding: '10px 20px'
-                                            }
-                                        }, "No login attempts recorded")
-                                )
-
+                        e('div', { className: 'security-stack' },
+                            e('section', { className: 'security-section' },
+                                e('div', { className: 'security-section-header' },
+                                    e('div', { className: 'security-section-copy' },
+                                        e('h2', { className: 'security-section-title' }, 'Current device'),
+                                        e('p', { className: 'security-section-description' },
+                                            'This should match the browser and operating system you are using right now.'
+                                        )
+                                    )
+                                ),
+                                e('div', { className: 'security-section-body' }, currentSessionPanel)
                             ),
-
-                            // Logged in sessions section
-                            React.createElement(
-                                "div",
-                                {
-                                    style: {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'flex-start',
-                                        gap: '15px',
-                                        width: '100%'
-                                    }
-                                },
-                                React.createElement("div", {
-                                    style: {
-                                        position: 'relative',
-                                        width: 'fit-content',
-                                        marginTop: '-1px',
-                                        fontFamily: 'Urbanist, Helvetica',
-                                        fontWeight: 700,
-                                        color: '#000000',
-                                        fontSize: isMobile ? '18px' : isTablet ? '20px' : '24px',
-                                        letterSpacing: 0,
-                                        lineHeight: 'normal'
-                                    }
-                                }, "Logged in sessions"),
-                                // OPTION 1: Scrollable section wrapper (ACTIVE)
-                                React.createElement(
-                                    "div",
-                                    {
-                                        style: {
-                                            width: '100%',
-                                            maxHeight: '400px',
-                                            overflowY: 'auto',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: isMobile ? '10px' : '15px',
-                                            paddingRight: '5px'
-                                        }
-                                    },
-                                    sessions.length > 0
-                                        ? sessionElements
-                                        : React.createElement("p", {
-                                            style: {
-                                                fontFamily: 'Inter, Helvetica',
-                                                fontWeight: 400,
-                                                fontSize: '14px',
-                                                color: '#000000',
-                                                padding: '10px 20px'
-                                            }
-                                        }, "No active sessions")
-                                )
-
+                            e('section', { className: 'security-section' },
+                                e('div', { className: 'security-section-header' },
+                                    e('div', { className: 'security-section-copy' },
+                                        e('h2', { className: 'security-section-title' }, 'Other signed-in devices'),
+                                        e('p', { className: 'security-section-description' },
+                                            'Anything listed here can still access your account until you sign it out.'
+                                        )
+                                    ),
+                                    e('div', { className: 'security-section-actions' },
+                                        e('span', { className: 'security-chip security-chip--neutral' }, `${otherSessions.length} device${otherSessions.length === 1 ? '' : 's'}`),
+                                        e('button', {
+                                            className: 'security-button security-button--secondary',
+                                            onClick: handleSignOutOtherSessions,
+                                            disabled: !otherSessions.length || isSigningOutOthers
+                                        }, isSigningOutOthers ? 'Signing out others...' : 'Sign out other sessions')
+                                    )
+                                ),
+                                e('div', { className: 'security-section-body' }, otherSessionList)
+                            ),
+                            e('section', { className: 'security-section' },
+                                e('div', { className: 'security-section-header' },
+                                    e('div', { className: 'security-section-copy' },
+                                        e('h2', { className: 'security-section-title' }, 'Recent sign-in activity'),
+                                        e('p', { className: 'security-section-description' },
+                                            'Use this list to spot unfamiliar browsers, operating systems, or IP addresses.'
+                                        )
+                                    ),
+                                    e('div', { className: 'security-section-actions' },
+                                        e('button', {
+                                            className: 'security-button security-button--ghost',
+                                            onClick: handleClearLoginAttempts,
+                                            disabled: !attemptItems.length || isClearingHistory
+                                        }, isClearingHistory ? 'Clearing...' : 'Clear history')
+                                    )
+                                ),
+                                e('div', { className: 'security-section-body' }, activityFeed)
                             )
                         )
                     )
                 )
             ),
-
-            // Custom Modal
-            modal.isOpen && React.createElement('div', {
-                style: {
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: window.ZIndex?.MODAL_BACKDROP || 30,
-                    padding: '20px'
-                },
-                onClick: (e) => {
-                    if (e.target === e.currentTarget && modal.type === 'alert') {
-                        closeModal();
-                    }
-                }
-            },
-                React.createElement('div', {
-                    style: {
-                        backgroundColor: '#ffffff',
-                        borderRadius: '15px',
-                        padding: isMobile ? '25px' : '30px',
-                        maxWidth: isMobile ? '90%' : '500px',
-                        width: '100%',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '20px'
-                    },
-                    onClick: (e) => e.stopPropagation()
-                },
-                    React.createElement('div', {
-                        style: {
-                            fontFamily: 'Urbanist, Helvetica',
-                            fontWeight: 700,
-                            fontSize: isMobile ? '20px' : '24px',
-                            color: '#000000',
-                            lineHeight: 'normal'
-                        }
-                    }, modal.title),
-                    React.createElement('div', {
-                        style: {
-                            fontFamily: 'Inter, Helvetica',
-                            fontWeight: 400,
-                            fontSize: isMobile ? '14px' : '16px',
-                            color: '#000000',
-                            lineHeight: '1.5'
-                        }
-                    }, modal.message),
-                    React.createElement('div', {
-                        style: {
-                            display: 'flex',
-                            gap: '10px',
-                            justifyContent: 'flex-end',
-                            marginTop: '10px'
-                        }
-                    },
-                        modal.type === 'confirm' && React.createElement('button', {
-                            style: {
-                                padding: isMobile ? '10px 20px' : '12px 24px',
-                                borderRadius: '10px',
-                                border: '1px solid #e0e0e0',
-                                backgroundColor: '#ffffff',
-                                color: '#000000',
-                                fontFamily: 'Urbanist, Helvetica',
-                                fontWeight: 600,
-                                fontSize: isMobile ? '14px' : '16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
-                            onMouseLeave: (e) => e.target.style.backgroundColor = '#ffffff',
-                            onClick: handleModalCancel
-                        }, 'Cancel'),
-                        React.createElement('button', {
-                            style: {
-                                padding: isMobile ? '10px 20px' : '12px 24px',
-                                borderRadius: '10px',
-                                border: 'none',
-                                backgroundColor: '#000000',
-                                color: '#ffffff',
-                                fontFamily: 'Urbanist, Helvetica',
-                                fontWeight: 600,
-                                fontSize: isMobile ? '14px' : '16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#333333',
-                            onMouseLeave: (e) => e.target.style.backgroundColor = '#000000',
-                            onClick: modal.type === 'confirm' ? handleModalConfirm : closeModal
-                        }, modal.type === 'confirm' ? 'Confirm' : 'OK')
-                    )
-                )
-            )
+            renderModal(modal, closeModal, handleModalConfirm),
+            renderToast(toast)
         )
     );
 };
@@ -831,5 +614,4 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 window.Session = Session;
-
 })();

@@ -14,6 +14,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <!-- <link rel="stylesheet" href="/stylesheets/test/session.css"> -->
     <link rel="stylesheet" href="/stylesheets/session.css">
+    <link rel="stylesheet" href="/stylesheets/security-pages.css">
     <link rel="stylesheet" href="/stylesheets/z-index.css">
     <link rel="stylesheet" href="/stylesheets/skeleton.css">
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
@@ -107,23 +108,18 @@
 </div>
 
 <script src="/scripts/Sessions.js"></script>
+<script id="session-page-data" type="application/json"><%- JSON.stringify({ sessions: sessions || [], loginAttempts: loginAttempts || [], currentSessionID: currentSessionID || '', userInfo: userInfo || {} }) %></script>
 
 <script>
     const csrfToken = "<%= csrfToken %>";
-    const sessions = <%- JSON.stringify(sessions || []) %>;
-    const loginAttempts = <%- JSON.stringify(loginAttempts || []) %>;
-    const userInfo  = <%- JSON.stringify(userInfo || {}) %>;
+    const pageData = JSON.parse(document.getElementById('session-page-data').textContent || '{}');
+    const sessions = pageData.sessions || [];
+    const loginAttempts = pageData.loginAttempts || [];
+    const currentSessionID = pageData.currentSessionID || '';
+    const userInfo = pageData.userInfo || {};
 
     // Make userInfo globally available for socket initialization
     window.userInfo = userInfo;
-
-    console.log("tempSession.ejs ??userInfo received:", userInfo);
-    console.log("CSRF:", csrfToken);
-    console.log('FileUploadComponent available:', typeof window.FileUploadComponent);
-
-    console.log("window.Sidebar available?", typeof window.Sidebar);
-    console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
-
 
     // Add file upload event listener
     const handleOpenFileUpload = (event) => {
@@ -182,7 +178,7 @@
     window.addEventListener('openFileUpload', handleOpenFileUpload);
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(window.Session, { csrfToken, sessions, loginAttempts, userInfo }));
+    root.render(React.createElement(window.Session, { csrfToken, sessions, loginAttempts, currentSessionID, userInfo }));
 </script>
 
 <!-- Socket.io initialization for real-time notifications - load AFTER userInfo is set -->
