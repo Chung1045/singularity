@@ -951,6 +951,9 @@
         const [notificationCheckDisabled, setNotificationCheckDisabled] = useState(false);
         const notificationCheckStartTimeRef = useRef(null);
         const NOTIFICATION_CHECK_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
+        const [isDarkMode, setIsDarkMode] = useState(() => {
+            return window.themeManager?.isDarkTheme?.() === true || document.documentElement.dataset.theme === 'dark';
+        });
 
         // Search state
         const [searchQuery, setSearchQuery] = useState('');
@@ -1240,6 +1243,27 @@
             };
         }, [checkUnreadNotifications]);
 
+        useEffect(() => {
+            const syncThemeState = (event) => {
+                if (event?.detail?.theme) {
+                    setIsDarkMode(event.detail.theme === 'dark');
+                    return;
+                }
+
+                setIsDarkMode(
+                    window.themeManager?.isDarkTheme?.() === true ||
+                    document.documentElement.dataset.theme === 'dark'
+                );
+            };
+
+            syncThemeState();
+            window.addEventListener('appThemeChanged', syncThemeState);
+
+            return () => {
+                window.removeEventListener('appThemeChanged', syncThemeState);
+            };
+        }, []);
+
         const toggleSidebar = () => {
             const newState = !sidebarCollapsed;
             setSidebarCollapsed(newState);
@@ -1250,6 +1274,59 @@
         const toggleUserMenu = (e) => {
             e.stopPropagation();
             setUserMenuOpen(!userMenuOpen);
+        };
+
+        const handleThemeToggle = useCallback((event) => {
+            event?.stopPropagation();
+
+            if (window.themeManager?.toggleTheme) {
+                const nextTheme = window.themeManager.toggleTheme();
+                setIsDarkMode(nextTheme === 'dark');
+                return;
+            }
+
+            setIsDarkMode((currentValue) => !currentValue);
+        }, []);
+
+        const themeButtonLabel = isDarkMode ? 'Light mode' : 'Dark mode';
+        const themeButtonAriaLabel = isDarkMode ? 'Switch to light mode' : 'Switch to dark mode';
+
+        const renderThemeIcon = () => {
+            if (isDarkMode) {
+                return React.createElement('svg', {
+                        className: 'sidebar-theme-icon',
+                        viewBox: '0 0 24 24',
+                        fill: 'none',
+                        stroke: 'currentColor',
+                        strokeWidth: '2',
+                        strokeLinecap: 'round',
+                        strokeLinejoin: 'round',
+                        'aria-hidden': 'true'
+                    },
+                    React.createElement('circle', { cx: '12', cy: '12', r: '4' }),
+                    React.createElement('path', { d: 'M12 2v2' }),
+                    React.createElement('path', { d: 'M12 20v2' }),
+                    React.createElement('path', { d: 'm4.93 4.93 1.41 1.41' }),
+                    React.createElement('path', { d: 'm17.66 17.66 1.41 1.41' }),
+                    React.createElement('path', { d: 'M2 12h2' }),
+                    React.createElement('path', { d: 'M20 12h2' }),
+                    React.createElement('path', { d: 'm6.34 17.66-1.41 1.41' }),
+                    React.createElement('path', { d: 'm19.07 4.93-1.41 1.41' })
+                );
+            }
+
+            return React.createElement('svg', {
+                    className: 'sidebar-theme-icon',
+                    viewBox: '0 0 24 24',
+                    fill: 'none',
+                    stroke: 'currentColor',
+                    strokeWidth: '2',
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round',
+                    'aria-hidden': 'true'
+                },
+                React.createElement('path', { d: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z' })
+            );
         };
 
         const showError = (message) => {
@@ -2651,6 +2728,39 @@
                         style: {marginBottom: '20px'}
                     },
                     React.createElement('hr', { id: 'sidebar-divider-line' })
+                ),
+
+                !sidebarCollapsed && React.createElement('div', {
+                        id: 'sidebar-theme-wrapper-expanded'
+                    },
+                    React.createElement('button', {
+                            id: 'sidebar-theme-button',
+                            className: 'sidebar-theme-button',
+                            type: 'button',
+                            title: themeButtonAriaLabel,
+                            'aria-label': themeButtonAriaLabel,
+                            'aria-pressed': isDarkMode,
+                            onClick: handleThemeToggle
+                        },
+                        React.createElement('span', { className: 'sidebar-theme-icon-wrapper' }, renderThemeIcon()),
+                        React.createElement('span', { className: 'sidebar-theme-button-label' }, themeButtonLabel)
+                    )
+                ),
+
+                sidebarCollapsed && React.createElement('div', {
+                        id: 'sidebar-theme-wrapper-collapsed'
+                    },
+                    React.createElement('button', {
+                            id: 'sidebar-theme-button-collapsed',
+                            className: 'sidebar-theme-button sidebar-theme-button--collapsed',
+                            type: 'button',
+                            title: themeButtonAriaLabel,
+                            'aria-label': themeButtonAriaLabel,
+                            'aria-pressed': isDarkMode,
+                            onClick: handleThemeToggle
+                        },
+                        React.createElement('span', { className: 'sidebar-theme-icon-wrapper' }, renderThemeIcon())
+                    )
                 ),
 
                 // Notification trigger (expanded view)

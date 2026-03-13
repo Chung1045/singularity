@@ -493,11 +493,9 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                             ),
                             reactCreateElm('p', { className: 'security-row-description' }, theme.provider),
                             reactCreateElm('div', { className: 'security-row-meta' },
-                                e('span', { className: 'security-row-meta-item' }, `Created ${formatDateTime(passkey.dateCreate)}`),
+                                reactCreateElm('span', { className: 'security-row-meta-item' }, `Created ${formatDateTime(passkey.dateCreate)}`),
                                 reactCreateElm('span', { className: 'security-row-meta-item' },
-                                    passkey.lastUsed
-                                        ? reactCreateElm('span', { className: 'security-row-meta-item' }, `Last used ${formatRelativeDate(passkey.lastUsed)}`)
-                                        : 'Never used'
+                                    passkey.lastUsed ? `Last used ${formatRelativeDate(passkey.lastUsed)}` : 'Never used'
                                 )
                             )
                         )

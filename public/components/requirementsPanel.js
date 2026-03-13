@@ -1,6 +1,14 @@
 (function () {
     const { useState, useEffect, useCallback } = React;
 
+    const getCurrentTheme = () => {
+        if (window.themeManager && typeof window.themeManager.getTheme === 'function') {
+            return window.themeManager.getTheme();
+        }
+
+        return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    };
+
     /**
      * RequirementsPanel Component
      * A comprehensive pop-up panel for managing requirements, user stories, and reports
@@ -23,6 +31,19 @@
         const [generating, setGenerating] = useState(false);
         const [error, setError] = useState(null);
         const [successMessage, setSuccessMessage] = useState(null);
+        const [theme, setTheme] = useState(getCurrentTheme);
+        const isDarkTheme = theme === 'dark';
+
+        useEffect(() => {
+            const handleThemeChanged = (event) => {
+                setTheme(event.detail?.theme === 'dark' ? 'dark' : getCurrentTheme());
+            };
+
+            window.addEventListener('appThemeChanged', handleThemeChanged);
+            return () => {
+                window.removeEventListener('appThemeChanged', handleThemeChanged);
+            };
+        }, []);
 
         // Fetch data when component mounts or tabs change
         useEffect(() => {
@@ -344,6 +365,84 @@
 
         }
 
+        const colors = isDarkTheme ? {
+            panelSectionBg: '#162033',
+            panelSectionBorder: '1px solid rgba(148, 163, 184, 0.18)',
+            panelSectionShadow: 'none',
+            text: '#f8fafc',
+            muted: '#cbd5e1',
+            softText: '#e2e8f0',
+            rowBg: '#162033',
+            rowBorder: '#23324a',
+            rowHoverBg: '#f0f0f0',
+            rowHoverBorder: '#f0f0f0',
+            countBg: '#1e293b',
+            countText: '#e2e8f0',
+            badgeBg: '#f8fafc',
+            badgeText: '#020817',
+            roleBg: 'rgba(79, 70, 229, 0.18)',
+            roleIcon: '#a5b4fc',
+            roleText: '#c7d2fe',
+            sourceBg: 'rgba(22, 163, 74, 0.14)',
+            sourceBorder: '1px solid rgba(34, 197, 94, 0.24)',
+            sourceIcon: '#4ade80',
+            sourceText: '#86efac',
+            sourceLocation: '#4ade80',
+            errorBg: 'rgba(127, 29, 29, 0.3)',
+            errorText: '#fca5a5',
+            successBg: 'rgba(20, 83, 45, 0.28)',
+            successText: '#86efac',
+            generateBg: '#1e293b',
+            generateHoverBg: '#334155',
+            generateDisabledBg: '#94a3b8',
+            reportIconBg: 'rgba(2, 132, 199, 0.16)',
+            reportIcon: '#38bdf8',
+            iconButtonBg: '#1e293b',
+            iconButtonHoverBg: '#f0f0f0',
+            iconButtonIcon: '#f8fafc',
+            dangerButtonBg: 'rgba(127, 29, 29, 0.3)',
+            dangerButtonHoverBg: 'rgba(153, 27, 27, 0.38)',
+            dangerText: '#f87171'
+        } : {
+            panelSectionBg: '#ffffff',
+            panelSectionBorder: 'none',
+            panelSectionShadow: '0 1px 3px rgba(0, 0, 0, 0.06)',
+            text: '#1c1d21',
+            muted: '#666',
+            softText: '#999',
+            rowBg: '#f9f9fb',
+            rowBorder: '#f0f0f0',
+            rowHoverBg: '#f5f5f7',
+            rowHoverBorder: '#e8e8ed',
+            countBg: '#f2f2f7',
+            countText: '#666',
+            badgeBg: '#1c1d21',
+            badgeText: '#ffffff',
+            roleBg: '#e0e7ff',
+            roleIcon: '#4f46e5',
+            roleText: '#4f46e5',
+            sourceBg: '#f0fdf4',
+            sourceBorder: '1px solid #bbf7d0',
+            sourceIcon: '#16a34a',
+            sourceText: '#15803d',
+            sourceLocation: '#22c55e',
+            errorBg: '#fee2e2',
+            errorText: '#dc2626',
+            successBg: '#dcfce7',
+            successText: '#16a34a',
+            generateBg: '#1e293b',
+            generateHoverBg: '#334155',
+            generateDisabledBg: '#94a3b8',
+            reportIconBg: '#e0f2fe',
+            reportIcon: '#0284c7',
+            iconButtonBg: '#f2f2f7',
+            iconButtonHoverBg: '#e8e8ed',
+            iconButtonIcon: '#1c1d21',
+            dangerButtonBg: '#fef2f2',
+            dangerButtonHoverBg: '#fee2e2',
+            dangerText: '#dc2626'
+        };
+
         // Get current data to display
         const currentData = mainTab === 'requirements' ? requirements : userStories;
 
@@ -610,8 +709,8 @@
                         id: 'requirements-panel-error',
                         style: {
                             padding: '12px 16px',
-                            backgroundColor: '#fee2e2',
-                            color: '#dc2626',
+                            backgroundColor: colors.errorBg,
+                            color: colors.errorText,
                             borderRadius: '10px',
                             fontSize: '13px',
                             fontFamily: 'Inter, Helvetica',
@@ -628,8 +727,8 @@
                         id: 'requirements-panel-success',
                         style: {
                             padding: '12px 16px',
-                            backgroundColor: '#dcfce7',
-                            color: '#16a34a',
+                            backgroundColor: colors.successBg,
+                            color: colors.successText,
                             borderRadius: '10px',
                             fontSize: '13px',
                             fontFamily: 'Inter, Helvetica',
@@ -646,14 +745,15 @@
                     React.createElement('div', {
                         id: 'requirements-panel-list-section',
                         style: {
-                            backgroundColor: '#ffffff',
+                            backgroundColor: colors.panelSectionBg,
                             borderRadius: '16px',
                             padding: '16px',
                             flex: 1,
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)'
+                            boxShadow: colors.panelSectionShadow,
+                            border: colors.panelSectionBorder
                         }
                     },
                         // Section Header
@@ -674,7 +774,7 @@
                                     fontFamily: 'Inter, Helvetica',
                                     fontWeight: '600',
                                     fontSize: '15px',
-                                    color: '#1c1d21'
+                                    color: colors.text
                                 }
                             }, mainTab === 'requirements'
                                 ? (subTab === 'functional' ? 'Functional Requirements' : 'Non-Functional Requirements')
@@ -683,12 +783,12 @@
                                 id: 'requirements-panel-list-count',
                                 style: {
                                     padding: '4px 10px',
-                                    backgroundColor: '#f2f2f7',
+                                    backgroundColor: colors.countBg,
                                     borderRadius: '12px',
                                     fontFamily: 'Inter, Helvetica',
                                     fontSize: '12px',
                                     fontWeight: '500',
-                                    color: '#666'
+                                    color: colors.countText
                                 }
                             }, `${currentData.length} items`)
                         ),
@@ -712,7 +812,7 @@
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     padding: '40px',
-                                    color: '#666',
+                                    color: colors.muted,
                                     fontFamily: 'Inter, Helvetica',
                                     fontSize: '14px'
                                 }
@@ -725,7 +825,7 @@
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     padding: '40px',
-                                    color: '#999',
+                                    color: colors.softText,
                                     fontFamily: 'Inter, Helvetica',
                                     fontSize: '14px',
                                     textAlign: 'center'
@@ -762,19 +862,19 @@
                                     id: `requirements-panel-item-${itemId}`,
                                     key: itemId,
                                     style: {
-                                        backgroundColor: '#f9f9fb',
+                                        backgroundColor: colors.rowBg,
                                         borderRadius: '12px',
                                         padding: '14px 16px',
-                                        border: '1px solid #f0f0f0',
+                                        border: `1px solid ${colors.rowBorder}`,
                                         transition: 'all 0.2s'
                                     },
                                     onMouseEnter: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#f5f5f7';
-                                        e.currentTarget.style.borderColor = '#e8e8ed';
+                                        e.currentTarget.style.backgroundColor = colors.rowHoverBg;
+                                        e.currentTarget.style.borderColor = colors.rowHoverBorder;
                                     },
                                     onMouseLeave: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#f9f9fb';
-                                        e.currentTarget.style.borderColor = '#f0f0f0';
+                                        e.currentTarget.style.backgroundColor = colors.rowBg;
+                                        e.currentTarget.style.borderColor = colors.rowBorder;
                                     }
                                 },
                                     //////
@@ -791,8 +891,8 @@
                                             id: `requirements-panel-item-badge-${itemId}`,
                                             style: {
                                                 padding: '4px 10px',
-                                                backgroundColor: '#1c1d21',
-                                                color: '#ffffff',
+                                                    backgroundColor: colors.badgeBg,
+                                                    color: colors.badgeText,
                                                 borderRadius: '6px',
                                                 fontFamily: 'Inter, Helvetica',
                                                 fontSize: '11px',
@@ -812,7 +912,7 @@
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontWeight: '600',
                                                     fontSize: '13px',
-                                                    color: '#1c1d21'
+                                                    color: colors.text
                                                 }
                                             }, title),
                                             React.createElement('p', {
@@ -821,7 +921,7 @@
                                                     margin: '0 0 8px 0',
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontSize: '12px',
-                                                    color: '#666',
+                                                    color: colors.muted,
                                                     lineHeight: '1.5',
                                                     display: '-webkit-box',
                                                     WebkitLineClamp: 2,
@@ -837,7 +937,7 @@
                                                     alignItems: 'center',
                                                     gap: '4px',
                                                     padding: '3px 8px',
-                                                    backgroundColor: '#e0e7ff',
+                                                    backgroundColor: colors.roleBg,
                                                     borderRadius: '4px',
                                                     marginBottom: '8px'
                                                 }
@@ -851,7 +951,7 @@
                                                 },
                                                     React.createElement('path', {
                                                         d: 'M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z',
-                                                        stroke: '#4f46e5',
+                                                        stroke: colors.roleIcon,
                                                         strokeWidth: '2',
                                                         strokeLinecap: 'round',
                                                         strokeLinejoin: 'round'
@@ -863,7 +963,7 @@
                                                         fontFamily: 'Inter, Helvetica',
                                                         fontSize: '14px',
                                                         fontWeight: '500',
-                                                        color: '#4f46e5'
+                                                        color: colors.roleText
                                                     }
                                                 }, role)
                                             ),
@@ -887,9 +987,9 @@
                                                             alignItems: 'center',
                                                             gap: '6px',
                                                             padding: '4px 8px',
-                                                            backgroundColor: '#f0fdf4',
+                                                            backgroundColor: colors.sourceBg,
                                                             borderRadius: '4px',
-                                                            border: '1px solid #bbf7d0'
+                                                            border: colors.sourceBorder
                                                         }
                                                     },
                                                         // Document icon
@@ -903,14 +1003,14 @@
                                                         },
                                                             React.createElement('path', {
                                                                 d: 'M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z',
-                                                                stroke: '#16a34a',
+                                                                stroke: colors.sourceIcon,
                                                                 strokeWidth: '2',
                                                                 strokeLinecap: 'round',
                                                                 strokeLinejoin: 'round'
                                                             }),
                                                             React.createElement('path', {
                                                                 d: 'M14 2V8H20',
-                                                                stroke: '#16a34a',
+                                                                stroke: colors.sourceIcon,
                                                                 strokeWidth: '2',
                                                                 strokeLinecap: 'round',
                                                                 strokeLinejoin: 'round'
@@ -923,7 +1023,7 @@
                                                                 fontFamily: 'Inter, Helvetica',
                                                                 fontSize: '14px',
                                                                 fontWeight: '500',
-                                                                color: '#15803d',
+                                                                color: colors.sourceText,
                                                                 whiteSpace: 'nowrap',
                                                                 overflow: 'hidden',
                                                                 textOverflow: 'ellipsis',
@@ -937,7 +1037,7 @@
                                                             style: {
                                                                 fontFamily: 'Inter, Helvetica',
                                                                 fontSize: '14px',
-                                                                color: '#22c55e'
+                                                                color: colors.sourceLocation
                                                             }
                                                         }, `• ${src.location}`)
                                                     )
@@ -954,17 +1054,17 @@
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    backgroundColor: '#fef2f2',
+                                                    backgroundColor: colors.dangerButtonBg,
                                                     border: 'none',
                                                     borderRadius: '8px',
                                                     cursor: 'pointer',
                                                     transition: 'all 0.2s'
                                                 },
                                                 onMouseEnter: (e) => {
-                                                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                                                    e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
                                                 },
                                                 onMouseLeave: (e) => {
-                                                    e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                    e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
                                                 }
                                             },
                                             React.createElement('svg', {
@@ -975,7 +1075,7 @@
                                                 },
                                                 React.createElement('path', {
                                                     d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
-                                                    stroke: '#dc2626',
+                                                    stroke: colors.dangerText,
                                                     strokeWidth: '2',
                                                     strokeLinecap: 'round',
                                                     strokeLinejoin: 'round'
@@ -1004,7 +1104,7 @@
                             style: {
                                 flex: 1,
                                 padding: '12px 16px',
-                                backgroundColor: generating ? '#94a3b8' : '#1e293b',
+                                backgroundColor: generating ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
@@ -1019,10 +1119,10 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = '#334155';
+                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = '#1e293b';
+                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateBg;
                             }
                         },
                             React.createElement('img', {
@@ -1044,7 +1144,7 @@
                             style: {
                                 flex: 1,
                                 padding: '12px 16px',
-                                backgroundColor: generating ? '#94a3b8' : '#1e293b',
+                                backgroundColor: generating ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
@@ -1059,10 +1159,10 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = '#334155';
+                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = '#1e293b';
+                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateBg;
                             }
                         },
                             React.createElement('img', {
@@ -1083,7 +1183,7 @@
                     React.createElement('div', {
                         id: 'requirements-panel-reports-section',
                         style: {
-                            backgroundColor: '#ffffff',
+                            backgroundColor: colors.panelSectionBg,
                             borderRadius: '16px',
                             padding: '16px',
                             flexShrink: 0,
@@ -1091,7 +1191,8 @@
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)'
+                            boxShadow: colors.panelSectionShadow,
+                            border: colors.panelSectionBorder
                         }
                     },
                         // Section Header
@@ -1112,19 +1213,19 @@
                                     fontFamily: 'Inter, Helvetica',
                                     fontWeight: '600',
                                     fontSize: '15px',
-                                    color: '#1c1d21'
+                                    color: colors.text
                                 }
                             }, 'Generated Reports'),
                             React.createElement('span', {
                                 id: 'requirements-panel-reports-count',
                                 style: {
                                     padding: '4px 10px',
-                                    backgroundColor: '#f2f2f7',
+                                    backgroundColor: colors.countBg,
                                     borderRadius: '12px',
                                     fontFamily: 'Inter, Helvetica',
                                     fontSize: '12px',
                                     fontWeight: '500',
-                                    color: '#666'
+                                    color: colors.countText
                                 }
                             }, `${reports.length} reports`)
                         ),
@@ -1148,7 +1249,7 @@
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     padding: '20px',
-                                    color: '#999',
+                                    color: colors.softText,
                                     fontFamily: 'Inter, Helvetica',
                                     fontSize: '13px'
                                 }
@@ -1167,16 +1268,18 @@
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
                                         padding: '10px 14px',
-                                        backgroundColor: '#f9f9fb',
+                                        backgroundColor: colors.rowBg,
                                         borderRadius: '10px',
-                                        border: '1px solid #f0f0f0',
+                                        border: `1px solid ${colors.rowBorder}`,
                                         transition: 'all 0.2s'
                                     },
                                     onMouseEnter: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#f5f5f7';
+                                        e.currentTarget.style.backgroundColor = colors.rowHoverBg;
+                                        e.currentTarget.style.borderColor = colors.rowHoverBorder;
                                     },
                                     onMouseLeave: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#f9f9fb';
+                                        e.currentTarget.style.backgroundColor = colors.rowBg;
+                                        e.currentTarget.style.borderColor = colors.rowBorder;
                                     }
                                 },
                                     React.createElement('div', {
@@ -1195,7 +1298,7 @@
                                             style: {
                                                 width: '32px',
                                                 height: '32px',
-                                                backgroundColor: '#e0f2fe',
+                                                backgroundColor: colors.reportIconBg,
                                                 borderRadius: '8px',
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -1212,14 +1315,14 @@
                                             },
                                                 React.createElement('path', {
                                                     d: 'M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z',
-                                                    stroke: '#0284c7',
+                                                    stroke: colors.reportIcon,
                                                     strokeWidth: '2',
                                                     strokeLinecap: 'round',
                                                     strokeLinejoin: 'round'
                                                 }),
                                                 React.createElement('path', {
                                                     d: 'M14 2V8H20',
-                                                    stroke: '#0284c7',
+                                                    stroke: colors.reportIcon,
                                                     strokeWidth: '2',
                                                     strokeLinecap: 'round',
                                                     strokeLinejoin: 'round'
@@ -1237,7 +1340,7 @@
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontWeight: '500',
                                                     fontSize: '13px',
-                                                    color: '#1c1d21',
+                                                    color: colors.text,
                                                     whiteSpace: 'nowrap',
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis'
@@ -1248,7 +1351,7 @@
                                                 style: {
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontSize: '11px',
-                                                    color: '#888'
+                                                    color: colors.muted
                                                 }
                                             }, reportTypeLabel)
                                         )
@@ -1273,17 +1376,17 @@
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                backgroundColor: '#f2f2f7',
+                                                backgroundColor: colors.iconButtonBg,
                                                 border: 'none',
                                                 borderRadius: '8px',
                                                 cursor: 'pointer',
                                                 transition: 'all 0.2s'
                                             },
                                             onMouseEnter: (e) => {
-                                                e.currentTarget.style.backgroundColor = '#e8e8ed';
+                                                e.currentTarget.style.backgroundColor = colors.iconButtonHoverBg;
                                             },
                                             onMouseLeave: (e) => {
-                                                e.currentTarget.style.backgroundColor = '#f2f2f7';
+                                                e.currentTarget.style.backgroundColor = colors.iconButtonBg;
                                             }
                                         },
                                             React.createElement('svg', {
@@ -1295,7 +1398,7 @@
                                             },
                                                 React.createElement('path', {
                                                     d: 'M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M7 10L12 15M12 15L17 10M12 15V3',
-                                                    stroke: '#1c1d21',
+                                                    stroke: colors.iconButtonIcon,
                                                     strokeWidth: '2',
                                                     strokeLinecap: 'round',
                                                     strokeLinejoin: 'round'
@@ -1313,17 +1416,17 @@
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                backgroundColor: '#fef2f2',
+                                                backgroundColor: colors.dangerButtonBg,
                                                 border: 'none',
                                                 borderRadius: '8px',
                                                 cursor: 'pointer',
                                                 transition: 'all 0.2s'
                                             },
                                             onMouseEnter: (e) => {
-                                                e.currentTarget.style.backgroundColor = '#fee2e2';
+                                                e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
                                             },
                                             onMouseLeave: (e) => {
-                                                e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
                                             }
                                         },
                                             React.createElement('svg', {
@@ -1335,7 +1438,7 @@
                                             },
                                                 React.createElement('path', {
                                                     d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
-                                                    stroke: '#dc2626',
+                                                    stroke: colors.dangerText,
                                                     strokeWidth: '2',
                                                     strokeLinecap: 'round',
                                                     strokeLinejoin: 'round'
