@@ -45,10 +45,67 @@ function formatRelativeDate(value) {
     return pluralize(Math.max(1, Math.round(diffMs / year)), 'year');
 }
 
-function getInitials(label) {
-    const words = String(label || 'Session').trim().split(/\s+/).filter(Boolean);
-    if (!words.length) return 'SE';
-    return words.slice(0, 2).map((word) => word[0].toUpperCase()).join('');
+function renderSecurityIcon(name, className = '') {
+    const props = {
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        xmlns: 'http://www.w3.org/2000/svg',
+        'aria-hidden': 'true',
+        className,
+        stroke: 'currentColor',
+        strokeWidth: '1.9',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round'
+    };
+
+    switch (name) {
+        case 'arrowLeft':
+            return e('svg', props,
+                e('path', { d: 'M15 18l-6-6 6-6' }),
+                e('path', { d: 'M9 12h10' })
+            );
+        case 'logout':
+            return e('svg', props,
+                e('path', { d: 'M14 8l4 4-4 4' }),
+                e('path', { d: 'M18 12H9' }),
+                e('path', { d: 'M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10' })
+            );
+        case 'trash':
+            return e('svg', props,
+                e('path', { d: 'M4 7h16' }),
+                e('path', { d: 'M10 11v5' }),
+                e('path', { d: 'M14 11v5' }),
+                e('path', { d: 'M6 7l1 12h10l1-12' }),
+                e('path', { d: 'M9 7V4h6v3' })
+            );
+        case 'phone':
+            return e('svg', props,
+                e('rect', { x: '8', y: '3', width: '8', height: '18', rx: '2.2' }),
+                e('path', { d: 'M11 17.5h2' })
+            );
+        case 'laptop':
+            return e('svg', props,
+                e('rect', { x: '4.5', y: '5', width: '15', height: '10.5', rx: '1.8' }),
+                e('path', { d: 'M3 18.5h18' })
+            );
+        case 'globe':
+            return e('svg', props,
+                e('circle', { cx: '12', cy: '12', r: '8' }),
+                e('path', { d: 'M4 12h16' }),
+                e('path', { d: 'M12 4c2.4 2.3 3.5 5.1 3.5 8s-1.1 5.7-3.5 8' }),
+                e('path', { d: 'M12 4c-2.4 2.3-3.5 5.1-3.5 8s1.1 5.7 3.5 8' })
+            );
+        case 'clock':
+            return e('svg', props,
+                e('circle', { cx: '12', cy: '12', r: '8' }),
+                e('path', { d: 'M12 8v4l3 2' })
+            );
+        case 'shield':
+        default:
+            return e('svg', props,
+                e('path', { d: 'M12 3l7 3v5c0 5-3.4 8.1-7 10-3.6-1.9-7-5-7-10V6l7-3z' })
+            );
+    }
 }
 
 function normalizeIP(value) {
@@ -61,22 +118,22 @@ function getDeviceTheme(osValue, browserValue) {
     const label = `${osValue || ''} ${browserValue || ''}`.toLowerCase();
 
     if (label.includes('iphone') || label.includes('ipad') || label.includes('mac') || label.includes('safari')) {
-        return 'security-row-icon--apple';
+        return { iconClass: 'security-row-icon--apple', iconName: 'phone' };
     }
 
     if (label.includes('windows') || label.includes('edge')) {
-        return 'security-row-icon--windows';
+        return { iconClass: 'security-row-icon--windows', iconName: 'laptop' };
     }
 
     if (label.includes('android') || label.includes('chrome') || label.includes('google')) {
-        return 'security-row-icon--google';
+        return { iconClass: 'security-row-icon--google', iconName: 'globe' };
     }
 
     if (label.includes('samsung')) {
-        return 'security-row-icon--samsung';
+        return { iconClass: 'security-row-icon--samsung', iconName: 'phone' };
     }
 
-    return 'security-row-icon--generic';
+    return { iconClass: 'security-row-icon--generic', iconName: 'globe' };
 }
 
 function isRecent(value, hours = 24) {
@@ -390,7 +447,7 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                 e('div', { className: 'security-row-main' },
                     e('div', {
                         className: 'security-row-icon security-row-icon--current'
-                    }, getInitials(activeSession.sessionBrowser || activeSession.sessionOS)),
+                    }, renderSecurityIcon('shield', 'security-row-icon-svg')),
                     e('div', { className: 'security-row-content' },
                         e('div', { className: 'security-row-title-line' },
                             e('h3', { className: 'security-row-title' }, activeSession.sessionBrowser || 'Unknown browser'),
@@ -420,7 +477,7 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
     const otherSessionList = otherSessions.length > 0
         ? e('div', { className: 'security-row-list' },
             otherSessions.map((session) => {
-                const iconClass = getDeviceTheme(session.sessionOS, session.sessionBrowser);
+                const theme = getDeviceTheme(session.sessionOS, session.sessionBrowser);
 
                 return e('div', {
                     key: session.sessionID,
@@ -428,8 +485,8 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                 },
                     e('div', { className: 'security-row-main' },
                         e('div', {
-                            className: `security-row-icon ${iconClass}`
-                        }, getInitials(session.sessionBrowser || session.sessionOS)),
+                            className: `security-row-icon ${theme.iconClass}`
+                        }, renderSecurityIcon(theme.iconName, 'security-row-icon-svg')),
                         e('div', { className: 'security-row-content' },
                             e('div', { className: 'security-row-title-line' },
                                 e('h3', { className: 'security-row-title' }, session.sessionBrowser || 'Unknown browser')
@@ -448,7 +505,10 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                             className: 'security-button security-button--danger',
                             onClick: () => handleSessionLogout(session),
                             disabled: pendingSessionID === session.sessionID
-                        }, pendingSessionID === session.sessionID ? 'Signing out...' : 'Sign out')
+                        },
+                            e('span', { className: 'security-button-icon' }, renderSecurityIcon('logout', 'security-button-svg')),
+                            pendingSessionID === session.sessionID ? 'Signing out...' : 'Sign out'
+                        )
                     )
                 );
             })
@@ -464,7 +524,7 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
         ? e('div', { className: 'security-row-list' },
             sortedAttempts.map((attempt) => {
                 const recent = isRecent(attempt.attemptDate, 12);
-                const iconClass = getDeviceTheme(attempt.attemptOS, attempt.attemptBrowser);
+                const theme = getDeviceTheme(attempt.attemptOS, attempt.attemptBrowser);
 
                 return e('div', {
                     key: attempt.attemptID,
@@ -472,8 +532,8 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                 },
                     e('div', { className: 'security-row-main' },
                         e('div', {
-                            className: `security-row-icon ${iconClass}`
-                        }, getInitials(attempt.attemptBrowser || attempt.attemptOS)),
+                            className: `security-row-icon ${theme.iconClass}`
+                        }, renderSecurityIcon(recent ? 'clock' : theme.iconName, 'security-row-icon-svg')),
                         e('div', { className: 'security-row-content' },
                             e('div', { className: 'security-row-title-line' },
                                 e('h3', { className: 'security-row-title' }, attempt.attemptBrowser || 'Unknown browser'),
@@ -537,7 +597,10 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                                 e('button', {
                                     className: 'security-button security-button--secondary',
                                     onClick: handleProfileRoute
-                                }, 'Back to profile')
+                                },
+                                    e('span', { className: 'security-button-icon' }, renderSecurityIcon('arrowLeft', 'security-button-svg')),
+                                    'Back to profile'
+                                )
                             )
                         ),
                         e('section', { className: 'security-summary' },
@@ -576,7 +639,10 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                                             className: 'security-button security-button--secondary',
                                             onClick: handleSignOutOtherSessions,
                                             disabled: !otherSessions.length || isSigningOutOthers
-                                        }, isSigningOutOthers ? 'Signing out others...' : 'Sign out other sessions')
+                                        },
+                                            e('span', { className: 'security-button-icon' }, renderSecurityIcon('logout', 'security-button-svg')),
+                                            isSigningOutOthers ? 'Signing out others...' : 'Sign out other sessions'
+                                        )
                                     )
                                 ),
                                 e('div', { className: 'security-section-body' }, otherSessionList)
@@ -594,7 +660,10 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                                             className: 'security-button security-button--ghost',
                                             onClick: handleClearLoginAttempts,
                                             disabled: !attemptItems.length || isClearingHistory
-                                        }, isClearingHistory ? 'Clearing...' : 'Clear history')
+                                        },
+                                            e('span', { className: 'security-button-icon' }, renderSecurityIcon('trash', 'security-button-svg')),
+                                            isClearingHistory ? 'Clearing...' : 'Clear history'
+                                        )
                                     )
                                 ),
                                 e('div', { className: 'security-section-body' }, activityFeed)

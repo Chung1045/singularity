@@ -45,32 +45,106 @@ function formatRelativeDate(value) {
     return pluralize(Math.max(1, Math.round(diffMs / year)), 'year');
 }
 
-function getInitials(label) {
-    const words = String(label || 'Passkey').trim().split(/\s+/).filter(Boolean);
-    if (!words.length) return 'PK';
-    return words.slice(0, 2).map((word) => word[0].toUpperCase()).join('');
+function renderSecurityIcon(name, className = '') {
+    const props = {
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        xmlns: 'http://www.w3.org/2000/svg',
+        'aria-hidden': 'true',
+        className,
+        stroke: 'currentColor',
+        strokeWidth: '1.9',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round'
+    };
+
+    switch (name) {
+        case 'arrowLeft':
+            return e('svg', props,
+                e('path', { d: 'M15 18l-6-6 6-6' }),
+                e('path', { d: 'M9 12h10' })
+            );
+        case 'plus':
+            return e('svg', props,
+                e('path', { d: 'M12 5v14' }),
+                e('path', { d: 'M5 12h14' })
+            );
+        case 'phone':
+            return e('svg', props,
+                e('rect', { x: '8', y: '3', width: '8', height: '18', rx: '2.2' }),
+                e('path', { d: 'M11 17.5h2' })
+            );
+        case 'laptop':
+            return e('svg', props,
+                e('rect', { x: '4.5', y: '5', width: '15', height: '10.5', rx: '1.8' }),
+                e('path', { d: 'M3 18.5h18' })
+            );
+        case 'tag':
+            return e('svg', props,
+                e('path', { d: 'M4.5 7.5A2.5 2.5 0 0 1 7 5h5l7 7-7 7-7-7z' }),
+                e('circle', { cx: '9', cy: '9', r: '1' })
+            );
+        case 'trash':
+            return e('svg', props,
+                e('path', { d: 'M4 7h16' }),
+                e('path', { d: 'M10 11v5' }),
+                e('path', { d: 'M14 11v5' }),
+                e('path', { d: 'M6 7l1 12h10l1-12' }),
+                e('path', { d: 'M9 7V4h6v3' })
+            );
+        case 'shield':
+            return e('svg', props,
+                e('path', { d: 'M12 3l7 3v5c0 5-3.4 8.1-7 10-3.6-1.9-7-5-7-10V6l7-3z' })
+            );
+        case 'key':
+        default:
+            return e('svg', props,
+                e('circle', { cx: '8', cy: '12', r: '3.2' }),
+                e('path', { d: 'M11.2 12H20' }),
+                e('path', { d: 'M17 12v3' }),
+                e('path', { d: 'M14.5 12v2' })
+            );
+    }
+}
+
+function getGuidanceIcon(note) {
+    const value = String(note || '').toLowerCase();
+
+    if (value.includes('backup') || value.includes('second passkey') || value.includes('another device')) {
+        return 'key';
+    }
+
+    if (value.includes('name') || value.includes('recognize')) {
+        return 'tag';
+    }
+
+    if (value.includes('remove') || value.includes('sold') || value.includes('reset')) {
+        return 'trash';
+    }
+
+    return 'shield';
 }
 
 function getPasskeyTheme(label) {
     const value = String(label || '').toLowerCase();
 
     if (value.includes('icloud') || value.includes('apple') || value.includes('mac') || value.includes('iphone') || value.includes('ipad')) {
-        return { iconClass: 'security-row-icon--apple', provider: 'Apple ecosystem' };
+        return { iconClass: 'security-row-icon--apple', provider: 'Apple ecosystem', iconName: 'phone' };
     }
 
     if (value.includes('windows')) {
-        return { iconClass: 'security-row-icon--windows', provider: 'Windows Hello' };
+        return { iconClass: 'security-row-icon--windows', provider: 'Windows Hello', iconName: 'laptop' };
     }
 
     if (value.includes('google') || value.includes('android') || value.includes('chrome')) {
-        return { iconClass: 'security-row-icon--google', provider: 'Google Password Manager' };
+        return { iconClass: 'security-row-icon--google', provider: 'Google Password Manager', iconName: 'key' };
     }
 
     if (value.includes('samsung')) {
-        return { iconClass: 'security-row-icon--samsung', provider: 'Samsung Pass' };
+        return { iconClass: 'security-row-icon--samsung', provider: 'Samsung Pass', iconName: 'phone' };
     }
 
-    return { iconClass: 'security-row-icon--generic', provider: 'Saved passkey' };
+    return { iconClass: 'security-row-icon--generic', provider: 'Saved passkey', iconName: 'key' };
 }
 
 function getSetupStatus(total) {
@@ -382,7 +456,7 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                     e('div', { className: 'security-row-main' },
                         e('div', {
                             className: `security-row-icon ${theme.iconClass}`
-                        }, getInitials(passkey.keyName)),
+                        }, renderSecurityIcon(theme.iconName, 'security-row-icon-svg')),
                         e('div', { className: 'security-row-content' },
                             e('div', { className: 'security-row-title-line' },
                                 e('h3', { className: 'security-row-title' }, passkey.keyName || 'Unnamed passkey'),
@@ -465,12 +539,18 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                                 e('button', {
                                     className: 'security-button security-button--secondary',
                                     onClick: handleProfileRoute
-                                }, 'Back to profile'),
+                                },
+                                    e('span', { className: 'security-button-icon' }, renderSecurityIcon('arrowLeft', 'security-button-svg')),
+                                    'Back to profile'
+                                ),
                                 e('button', {
                                     className: 'security-button security-button--primary',
                                     onClick: registerPasskey,
                                     disabled: isRegistering
-                                }, isRegistering ? 'Creating passkey...' : 'Create passkey')
+                                },
+                                    e('span', { className: 'security-button-icon' }, renderSecurityIcon('plus', 'security-button-svg')),
+                                    isRegistering ? 'Creating passkey...' : 'Create passkey'
+                                )
                             )
                         ),
                         e('section', { className: 'security-summary' },
@@ -510,10 +590,15 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                                 e('div', { className: 'security-section-body' },
                                     e('div', { className: 'security-callout' },
                                         e('div', { className: 'security-callout-list' },
-                                            guidanceItems.map((item, index) => e('p', {
+                                            guidanceItems.map((item, index) => e('div', {
                                                 key: `guidance-${index}`,
                                                 className: 'security-callout-item'
-                                            }, item))
+                                            },
+                                                e('div', { className: 'security-callout-item-icon' },
+                                                    renderSecurityIcon(getGuidanceIcon(item), 'security-callout-icon-svg')
+                                                ),
+                                                e('p', { className: 'security-callout-item-copy' }, item)
+                                            ))
                                         )
                                     )
                                 )
