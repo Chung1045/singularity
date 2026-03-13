@@ -1,6 +1,6 @@
 (function() {
 const { useEffect, useMemo, useState } = React;
-const e = React.createElement;
+const reactCreateElm = React.createElement;
 const TOAST_DURATION_MS = 3200;
 
 function formatDateTime(value) {
@@ -45,6 +45,16 @@ function formatRelativeDate(value) {
     return pluralize(Math.max(1, Math.round(diffMs / year)), 'year');
 }
 
+function readStoredBoolean(key, fallbackValue) {
+    try {
+        const saved = localStorage.getItem(key);
+        return saved !== null ? JSON.parse(saved) : fallbackValue;
+    } catch (error) {
+        console.error('Failed to parse localStorage value for', key, error);
+        return fallbackValue;
+    }
+}
+
 function renderSecurityIcon(name, className = '') {
     const props = {
         viewBox: '0 0 24 24',
@@ -60,50 +70,50 @@ function renderSecurityIcon(name, className = '') {
 
     switch (name) {
         case 'arrowLeft':
-            return e('svg', props,
-                e('path', { d: 'M15 18l-6-6 6-6' }),
-                e('path', { d: 'M9 12h10' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M15 18l-6-6 6-6' }),
+                reactCreateElm('path', { d: 'M9 12h10' })
             );
         case 'logout':
-            return e('svg', props,
-                e('path', { d: 'M14 8l4 4-4 4' }),
-                e('path', { d: 'M18 12H9' }),
-                e('path', { d: 'M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M14 8l4 4-4 4' }),
+                reactCreateElm('path', { d: 'M18 12H9' }),
+                reactCreateElm('path', { d: 'M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10' })
             );
         case 'trash':
-            return e('svg', props,
-                e('path', { d: 'M4 7h16' }),
-                e('path', { d: 'M10 11v5' }),
-                e('path', { d: 'M14 11v5' }),
-                e('path', { d: 'M6 7l1 12h10l1-12' }),
-                e('path', { d: 'M9 7V4h6v3' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M4 7h16' }),
+                reactCreateElm('path', { d: 'M10 11v5' }),
+                reactCreateElm('path', { d: 'M14 11v5' }),
+                reactCreateElm('path', { d: 'M6 7l1 12h10l1-12' }),
+                reactCreateElm('path', { d: 'M9 7V4h6v3' })
             );
         case 'phone':
-            return e('svg', props,
-                e('rect', { x: '8', y: '3', width: '8', height: '18', rx: '2.2' }),
-                e('path', { d: 'M11 17.5h2' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('rect', { x: '8', y: '3', width: '8', height: '18', rx: '2.2' }),
+                reactCreateElm('path', { d: 'M11 17.5h2' })
             );
         case 'laptop':
-            return e('svg', props,
-                e('rect', { x: '4.5', y: '5', width: '15', height: '10.5', rx: '1.8' }),
-                e('path', { d: 'M3 18.5h18' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('rect', { x: '4.5', y: '5', width: '15', height: '10.5', rx: '1.8' }),
+                reactCreateElm('path', { d: 'M3 18.5h18' })
             );
         case 'globe':
-            return e('svg', props,
-                e('circle', { cx: '12', cy: '12', r: '8' }),
-                e('path', { d: 'M4 12h16' }),
-                e('path', { d: 'M12 4c2.4 2.3 3.5 5.1 3.5 8s-1.1 5.7-3.5 8' }),
-                e('path', { d: 'M12 4c-2.4 2.3-3.5 5.1-3.5 8s1.1 5.7 3.5 8' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('circle', { cx: '12', cy: '12', r: '8' }),
+                reactCreateElm('path', { d: 'M4 12h16' }),
+                reactCreateElm('path', { d: 'M12 4c2.4 2.3 3.5 5.1 3.5 8s-1.1 5.7-3.5 8' }),
+                reactCreateElm('path', { d: 'M12 4c-2.4 2.3-3.5 5.1-3.5 8s1.1 5.7 3.5 8' })
             );
         case 'clock':
-            return e('svg', props,
-                e('circle', { cx: '12', cy: '12', r: '8' }),
-                e('path', { d: 'M12 8v4l3 2' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('circle', { cx: '12', cy: '12', r: '8' }),
+                reactCreateElm('path', { d: 'M12 8v4l3 2' })
             );
         case 'shield':
         default:
-            return e('svg', props,
-                e('path', { d: 'M12 3l7 3v5c0 5-3.4 8.1-7 10-3.6-1.9-7-5-7-10V6l7-3z' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M12 3l7 3v5c0 5-3.4 8.1-7 10-3.6-1.9-7-5-7-10V6l7-3z' })
             );
     }
 }
@@ -145,10 +155,10 @@ function isRecent(value, hours = 24) {
 function renderToast(toast) {
     if (!toast) return null;
 
-    return e('div', { className: 'security-toast-stack' },
-        e('div', { className: `security-toast security-toast--${toast.type || 'info'}` },
-            e('div', { className: 'security-toast-title' }, toast.title),
-            toast.message ? e('div', { className: 'security-toast-copy' }, toast.message) : null
+    return reactCreateElm('div', { className: 'security-toast-stack' },
+        reactCreateElm('div', { className: `security-toast security-toast--${toast.type || 'info'}` },
+            reactCreateElm('div', { className: 'security-toast-title' }, toast.title),
+            toast.message ? reactCreateElm('div', { className: 'security-toast-copy' }, toast.message) : null
         )
     );
 }
@@ -156,7 +166,7 @@ function renderToast(toast) {
 function renderModal(modal, closeModal, handleConfirm) {
     if (!modal.isOpen) return null;
 
-    return e('div', {
+    return reactCreateElm('div', {
         className: 'security-modal-backdrop',
         onClick: (event) => {
             if (event.target === event.currentTarget) {
@@ -164,21 +174,22 @@ function renderModal(modal, closeModal, handleConfirm) {
             }
         }
     },
-        e('div', {
+        reactCreateElm('div', {
             className: 'security-modal',
             onClick: (event) => event.stopPropagation()
         },
-            e('h2', { className: 'security-modal-title' }, modal.title),
-            e('p', { className: 'security-modal-copy' }, modal.message),
-            e('div', { className: 'security-modal-actions' },
+            reactCreateElm('h2', { className: 'security-modal-title' }, modal.title),
+            reactCreateElm('p', { className: 'security-modal-copy' }, modal.message),
+            reactCreateElm('div', { className: 'security-modal-actions' },
                 modal.type === 'confirm'
-                    ? e('button', {
+                    ? reactCreateElm('button', {
                         className: 'security-button security-button--secondary',
                         onClick: closeModal
                     }, 'Cancel')
                     : null,
-                e('button', {
-                    className: `security-button ${modal.type === 'confirm' ? 'security-button--primary' : 'security-button--secondary'}`,
+                reactCreateElm('button', {
+                    className: 'security-button security-button--primary',
+                    style: modal.type === 'confirm' ? undefined : { minWidth: '70px' },
                     onClick: modal.type === 'confirm' ? handleConfirm : closeModal
                 }, modal.type === 'confirm' ? 'Confirm' : 'OK')
             )
@@ -189,11 +200,34 @@ function renderModal(modal, closeModal, handleConfirm) {
 const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInfo }) => {
     window.csrfToken = csrfToken;
 
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-        const saved = localStorage.getItem('sidebarCollapsed');
-        return saved !== null ? JSON.parse(saved) : true;
-    });
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+        readStoredBoolean('sidebarCollapsed', window.innerWidth <= 1040)
+    );
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+    const isOverlay = windowWidth <= 1040;
+
+    useEffect(() => {
+        let rafId = 0;
+        const handleResize = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => setWindowWidth(window.innerWidth));
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(rafId);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (isOverlay) {
+            setSidebarCollapsed(true);
+        } else {
+            setSidebarCollapsed(readStoredBoolean('sidebarCollapsed', false));
+        }
+    }, [isOverlay]);
     const [sessionItems, setSessionItems] = useState(() => Array.isArray(sessions) ? sessions : []);
     const [attemptItems, setAttemptItems] = useState(() => Array.isArray(loginAttempts) ? loginAttempts : []);
     const [modal, setModal] = useState({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: null });
@@ -201,10 +235,6 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
     const [pendingSessionID, setPendingSessionID] = useState(null);
     const [isSigningOutOthers, setIsSigningOutOthers] = useState(false);
     const [isClearingHistory, setIsClearingHistory] = useState(false);
-
-    useEffect(() => {
-        localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
-    }, [sidebarCollapsed]);
 
     useEffect(() => {
         if (!toast) return undefined;
@@ -232,11 +262,6 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
             return rightDate - leftDate;
         });
     }, [attemptItems]);
-
-    const pageStatusClass = otherSessions.length > 0
-        ? 'security-chip security-chip--warning'
-        : 'security-chip security-chip--success';
-    const pageStatusLabel = otherSessions.length > 0 ? 'Review devices' : 'Only this device';
 
     const showToast = (type, title, message = '') => {
         setToast({ id: Date.now(), type, title, message });
@@ -329,7 +354,9 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
     const handleSessionLogout = (session) => {
         showConfirm(
             'Sign out this device',
-            `Sign out ${session.sessionBrowser || 'this browser'} on ${session.sessionOS || 'this device'}?`,
+            // `Sign out ${session.sessionBrowser || 'this browser'} on ${session.sessionOS || 'this device'}?`,
+            `Do you want to sign out from this device?`,
+
             async () => {
                 setPendingSessionID(session.sessionID);
 
@@ -442,24 +469,24 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
     ];
 
     const currentSessionPanel = activeSession
-        ? e('div', { className: 'security-row-list' },
-            e('div', { className: 'security-row' },
-                e('div', { className: 'security-row-main' },
-                    e('div', {
+        ? reactCreateElm('div', { className: 'security-row-list' },
+            reactCreateElm('div', { className: 'security-row' },
+                reactCreateElm('div', { className: 'security-row-main' },
+                    reactCreateElm('div', {
                         className: 'security-row-icon security-row-icon--current'
                     }, renderSecurityIcon('shield', 'security-row-icon-svg')),
-                    e('div', { className: 'security-row-content' },
-                        e('div', { className: 'security-row-title-line' },
-                            e('h3', { className: 'security-row-title' }, activeSession.sessionBrowser || 'Unknown browser'),
-                            e('span', { className: 'security-chip security-chip--neutral' }, 'Current session'),
+                    reactCreateElm('div', { className: 'security-row-content' },
+                        reactCreateElm('div', { className: 'security-row-title-line' },
+                            reactCreateElm('h3', { className: 'security-row-title' }, activeSession.sessionBrowser || 'Unknown browser'),
+                            reactCreateElm('span', { className: 'security-chip security-chip--neutral' }, 'Current session'),
                             isRecent(activeSession.lastSeenTime)
-                                ? e('span', { className: 'security-chip security-chip--success' }, 'Active now')
+                                ? reactCreateElm('span', { className: 'security-chip security-chip--success' }, 'Active now')
                                 : null
                         ),
-                        e('p', { className: 'security-row-description' }, activeSession.sessionOS || 'Unknown operating system'),
-                        e('div', { className: 'security-row-meta' },
-                            e('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(activeSession.sessionIP)}`),
-                            e('span', { className: 'security-row-meta-item' },
+                        reactCreateElm('p', { className: 'security-row-description' }, activeSession.sessionOS || 'Unknown operating system'),
+                        reactCreateElm('div', { className: 'security-row-meta' },
+                            reactCreateElm('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(activeSession.sessionIP)}`),
+                            reactCreateElm('span', { className: 'security-row-meta-item' },
                                 `Last active ${formatRelativeDate(activeSession.lastSeenTime)}`
                             )
                         )
@@ -467,105 +494,110 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                 )
             )
         )
-        : e('div', { className: 'security-empty' },
-            e('h3', { className: 'security-empty-title' }, 'No active session found'),
-            e('p', { className: 'security-empty-copy' },
+        : reactCreateElm('div', { className: 'security-empty' },
+            reactCreateElm('h3', { className: 'security-empty-title' }, 'No active session found'),
+            reactCreateElm('p', { className: 'security-empty-copy' },
                 'We could not match the current browser session. Refresh the page or sign in again if this looks wrong.'
             )
         );
 
     const otherSessionList = otherSessions.length > 0
-        ? e('div', { className: 'security-row-list' },
+        ? reactCreateElm('div', { className: 'security-row-list' },
             otherSessions.map((session) => {
                 const theme = getDeviceTheme(session.sessionOS, session.sessionBrowser);
 
-                return e('div', {
+                return reactCreateElm('div', {
                     key: session.sessionID,
                     className: 'security-row'
                 },
-                    e('div', { className: 'security-row-main' },
-                        e('div', {
+                    reactCreateElm('div', { className: 'security-row-main' },
+                        reactCreateElm('div', {
                             className: `security-row-icon ${theme.iconClass}`
                         }, renderSecurityIcon(theme.iconName, 'security-row-icon-svg')),
-                        e('div', { className: 'security-row-content' },
-                            e('div', { className: 'security-row-title-line' },
-                                e('h3', { className: 'security-row-title' }, session.sessionBrowser || 'Unknown browser')
+                        reactCreateElm('div', { className: 'security-row-content' },
+                            reactCreateElm('div', { className: 'security-row-title-line' },
+                                reactCreateElm('h3', { className: 'security-row-title' }, session.sessionBrowser || 'Unknown browser')
                             ),
-                            e('p', { className: 'security-row-description' }, session.sessionOS || 'Unknown operating system'),
-                            e('div', { className: 'security-row-meta' },
-                                e('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(session.sessionIP)}`),
-                                e('span', { className: 'security-row-meta-item' },
+                            reactCreateElm('p', { className: 'security-row-description' }, session.sessionOS || 'Unknown operating system'),
+                            reactCreateElm('div', { className: 'security-row-meta' },
+                                reactCreateElm('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(session.sessionIP)}`),
+                                reactCreateElm('span', { className: 'security-row-meta-item' },
                                     `Last active ${formatRelativeDate(session.lastSeenTime)}`
                                 )
                             )
                         )
                     ),
-                    e('div', { className: 'security-row-actions' },
-                        e('button', {
+                    reactCreateElm('div', { className: 'security-row-actions' },
+                        reactCreateElm('button', {
                             className: 'security-button security-button--danger',
                             onClick: () => handleSessionLogout(session),
                             disabled: pendingSessionID === session.sessionID
                         },
-                            e('span', { className: 'security-button-icon' }, renderSecurityIcon('logout', 'security-button-svg')),
+                            reactCreateElm('span', { className: 'security-button-icon' }, renderSecurityIcon('logout', 'security-button-svg')),
                             pendingSessionID === session.sessionID ? 'Signing out...' : 'Sign out'
                         )
                     )
                 );
             })
         )
-        : e('div', { className: 'security-empty' },
-            e('h3', { className: 'security-empty-title' }, 'Only this device is signed in'),
-            e('p', { className: 'security-empty-copy' },
+        : reactCreateElm('div', { className: 'security-empty' },
+            reactCreateElm('h3', { className: 'security-empty-title' }, 'Only this device is signed in'),
+            reactCreateElm('p', { className: 'security-empty-copy' },
                 'That is a good sign. If another device appears here later and you do not recognize it, sign it out immediately.'
             )
         );
 
     const activityFeed = sortedAttempts.length > 0
-        ? e('div', { className: 'security-row-list' },
+        ? reactCreateElm('div', { className: 'security-row-list' },
             sortedAttempts.map((attempt) => {
                 const recent = isRecent(attempt.attemptDate, 12);
                 const theme = getDeviceTheme(attempt.attemptOS, attempt.attemptBrowser);
 
-                return e('div', {
+                return reactCreateElm('div', {
                     key: attempt.attemptID,
                     className: 'security-row'
                 },
-                    e('div', { className: 'security-row-main' },
-                        e('div', {
+                    reactCreateElm('div', { className: 'security-row-main' },
+                        reactCreateElm('div', {
                             className: `security-row-icon ${theme.iconClass}`
                         }, renderSecurityIcon(recent ? 'clock' : theme.iconName, 'security-row-icon-svg')),
-                        e('div', { className: 'security-row-content' },
-                            e('div', { className: 'security-row-title-line' },
-                                e('h3', { className: 'security-row-title' }, attempt.attemptBrowser || 'Unknown browser'),
+                        reactCreateElm('div', { className: 'security-row-content' },
+                            reactCreateElm('div', { className: 'security-row-title-line' },
+                                reactCreateElm('h3', { className: 'security-row-title' }, attempt.attemptBrowser || 'Unknown browser'),
                                 recent
-                                    ? e('span', { className: 'security-chip security-chip--neutral' }, 'Recent')
+                                    ? reactCreateElm('span', { className: 'security-chip security-chip--neutral' }, 'Recent')
                                     : null
                             ),
-                            e('p', { className: 'security-row-description' }, attempt.attemptOS || 'Unknown operating system'),
-                            e('div', { className: 'security-row-meta' },
-                                e('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(attempt.attemptIP)}`),
-                                e('span', { className: 'security-row-meta-item' }, formatDateTime(attempt.attemptDate))
+                            reactCreateElm('p', { className: 'security-row-description' }, attempt.attemptOS || 'Unknown operating system'),
+                            reactCreateElm('div', { className: 'security-row-meta' },
+                                reactCreateElm('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(attempt.attemptIP)}`),
+                                reactCreateElm('span', { className: 'security-row-meta-item' }, formatDateTime(attempt.attemptDate))
                             )
                         )
                     )
                 );
             })
         )
-        : e('div', { className: 'security-empty' },
-            e('h3', { className: 'security-empty-title' }, 'No recent activity'),
-            e('p', { className: 'security-empty-copy' },
+        : reactCreateElm('div', { className: 'security-empty' },
+            reactCreateElm('h3', { className: 'security-empty-title' }, 'No recent activity'),
+            reactCreateElm('p', { className: 'security-empty-copy' },
                 'Recent sign-in attempts will show up here so you can spot devices and times that do not look familiar.'
             )
         );
 
-    return e('div', {
-        className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
+    return reactCreateElm('div', {
+        className: 'sidebar-expand profile-shell' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
-        e('div', { className: 'group' },
-            e(window.Sidebar, {
+        reactCreateElm('div', { className: 'group profile-layout' },
+            isOverlay && !sidebarCollapsed && reactCreateElm('div', {
+                className: 'profile-sidebar-backdrop',
+                onClick: () => setSidebarCollapsed(true)
+            }),
+            reactCreateElm(window.Sidebar, {
                 sidebarCollapsed,
                 setSidebarCollapsed,
+                isOverlay,
                 username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
@@ -573,100 +605,98 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                 setUserMenuOpen,
                 userInfo
             }),
-            e('main', { className: 'right-container' },
-                e('section', { className: 'main-screen security-shell' },
-                    e('input', {
+            reactCreateElm('main', { className: 'right-container profile-right-container' },
+                reactCreateElm('section', { className: 'main-screen profile-main-screen security-shell' },
+                    reactCreateElm('input', {
                         type: 'hidden',
                         name: '_csrf',
                         id: 'hidden-csrf',
                         value: csrfToken
                     }),
-                    e('div', { className: 'security-page' },
-                        e('header', { className: 'security-header' },
-                            e('div', { className: 'security-header-copy' },
-                                e('p', { className: 'security-header-kicker' }, 'Security settings'),
-                                e('div', { className: 'security-header-title-row' },
-                                    e('h1', { className: 'security-header-title' }, 'Sessions'),
-                                    e('span', { className: pageStatusClass }, pageStatusLabel)
-                                ),
-                                e('p', { className: 'security-header-description' },
-                                    'Review the browsers that are signed into your account and keep the list limited to devices you recognize.'
-                                )
+                    reactCreateElm('div', { className: 'security-page' },
+                        reactCreateElm('header', { className: 'security-header' },
+                            reactCreateElm('button', {
+                                className: 'security-button security-button--secondary',
+                                onClick: handleProfileRoute
+                            },
+                                reactCreateElm('span', { className: 'security-button-icon' }, renderSecurityIcon('arrowLeft', 'security-button-svg')),
+                                'Back to profile'
                             ),
-                            e('div', { className: 'security-header-actions' },
-                                e('button', {
-                                    className: 'security-button security-button--secondary',
-                                    onClick: handleProfileRoute
-                                },
-                                    e('span', { className: 'security-button-icon' }, renderSecurityIcon('arrowLeft', 'security-button-svg')),
-                                    'Back to profile'
+                            reactCreateElm('div', { className: 'security-header-main' },
+                                reactCreateElm('div', { className: 'security-header-copy' },
+                                    // reactCreateElm('p', { className: 'security-header-kicker' }, 'Security settings'),
+                                    reactCreateElm('div', { className: 'security-header-title-row' },
+                                        reactCreateElm('h1', { className: 'security-header-title' }, 'Sessions')
+                                    ),
+                                    // reactCreateElm('p', { className: 'security-header-description' },
+                                    //     'Review the browsers that are signed into your account and keep the list limited to devices you recognize.'
+                                    // )
                                 )
                             )
                         ),
-                        e('section', { className: 'security-summary' },
-                            summaryItems.map((item) => e('div', {
+                        reactCreateElm('section', { className: 'security-summary' },
+                            summaryItems.map((item) => reactCreateElm('div', {
                                 key: item.label,
                                 className: 'security-summary-item'
                             },
-                                e('div', { className: 'security-summary-label' }, item.label),
-                                e('div', { className: 'security-summary-value' }, item.value),
-                                e('div', { className: 'security-summary-note' }, item.note)
+                                reactCreateElm('div', { className: 'security-summary-label' }, item.label),
+                                reactCreateElm('div', { className: 'security-summary-value' }, item.value),
+                                reactCreateElm  ('div', { className: 'security-summary-note' }, item.note)
                             ))
                         ),
-                        e('div', { className: 'security-stack' },
-                            e('section', { className: 'security-section' },
-                                e('div', { className: 'security-section-header' },
-                                    e('div', { className: 'security-section-copy' },
-                                        e('h2', { className: 'security-section-title' }, 'Current device'),
-                                        e('p', { className: 'security-section-description' },
+                        reactCreateElm('div', { className: 'security-stack' },
+                            reactCreateElm('section', { className: 'security-section' },
+                                reactCreateElm('div', { className: 'security-section-header' },
+                                    reactCreateElm('div', { className: 'security-section-copy' },
+                                        reactCreateElm('h2', { className: 'security-section-title' }, 'Current device'),
+                                        reactCreateElm('p', { className: 'security-section-description' },
                                             'This should match the browser and operating system you are using right now.'
                                         )
                                     )
                                 ),
-                                e('div', { className: 'security-section-body' }, currentSessionPanel)
+                                reactCreateElm('div', { className: 'security-section-body' }, currentSessionPanel)
                             ),
-                            e('section', { className: 'security-section' },
-                                e('div', { className: 'security-section-header' },
-                                    e('div', { className: 'security-section-copy' },
-                                        e('h2', { className: 'security-section-title' }, 'Other signed-in devices'),
-                                        e('p', { className: 'security-section-description' },
+                            reactCreateElm('section', { className: 'security-section' },
+                                reactCreateElm('div', { className: 'security-section-header' },
+                                    reactCreateElm('div', { className: 'security-section-copy' },
+                                        reactCreateElm('h2', { className: 'security-section-title' }, 'Other signed-in devices'),
+                                        reactCreateElm('p', { className: 'security-section-description' },
                                             'Anything listed here can still access your account until you sign it out.'
                                         )
                                     ),
-                                    e('div', { className: 'security-section-actions' },
-                                        e('span', { className: 'security-chip security-chip--neutral' }, `${otherSessions.length} device${otherSessions.length === 1 ? '' : 's'}`),
-                                        e('button', {
+                                    reactCreateElm('div', { className: 'security-section-actions' },
+                                        reactCreateElm('button', {
                                             className: 'security-button security-button--secondary',
                                             onClick: handleSignOutOtherSessions,
                                             disabled: !otherSessions.length || isSigningOutOthers
                                         },
-                                            e('span', { className: 'security-button-icon' }, renderSecurityIcon('logout', 'security-button-svg')),
+                                            reactCreateElm('span', { className: 'security-button-icon' }, renderSecurityIcon('logout', 'security-button-svg')),
                                             isSigningOutOthers ? 'Signing out others...' : 'Sign out other sessions'
                                         )
                                     )
                                 ),
-                                e('div', { className: 'security-section-body' }, otherSessionList)
+                                reactCreateElm('div', { className: 'security-section-body' }, otherSessionList)
                             ),
-                            e('section', { className: 'security-section' },
-                                e('div', { className: 'security-section-header' },
-                                    e('div', { className: 'security-section-copy' },
-                                        e('h2', { className: 'security-section-title' }, 'Recent sign-in activity'),
-                                        e('p', { className: 'security-section-description' },
+                            reactCreateElm('section', { className: 'security-section' },
+                                reactCreateElm('div', { className: 'security-section-header' },
+                                    reactCreateElm  ('div', { className: 'security-section-copy' },
+                                        reactCreateElm('h2', { className: 'security-section-title' }, 'Recent sign-in activity'),
+                                        reactCreateElm('p', { className: 'security-section-description' },
                                             'Use this list to spot unfamiliar browsers, operating systems, or IP addresses.'
                                         )
                                     ),
-                                    e('div', { className: 'security-section-actions' },
-                                        e('button', {
+                                    reactCreateElm('div', { className: 'security-section-actions' },
+                                        reactCreateElm('button', {
                                             className: 'security-button security-button--ghost',
                                             onClick: handleClearLoginAttempts,
                                             disabled: !attemptItems.length || isClearingHistory
                                         },
-                                            e('span', { className: 'security-button-icon' }, renderSecurityIcon('trash', 'security-button-svg')),
+                                            reactCreateElm('span', { className: 'security-button-icon' }, renderSecurityIcon('trash', 'security-button-svg')),
                                             isClearingHistory ? 'Clearing...' : 'Clear history'
                                         )
                                     )
                                 ),
-                                e('div', { className: 'security-section-body' }, activityFeed)
+                                reactCreateElm('div', { className: 'security-section-body' }, activityFeed)
                             )
                         )
                     )

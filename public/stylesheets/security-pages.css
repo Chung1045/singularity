@@ -1,3 +1,43 @@
+.profile-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: var(--z-sidebar-overlay-backdrop, 24);
+}
+
+.profile-shell {
+  width: 100vw;
+  min-height: 100vh;
+  background: #f4f4f4;
+}
+
+.profile-layout {
+  width: 100%;
+  min-height: 100vh;
+  gap: 0;
+}
+
+.profile-right-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  background: #f4f4f4;
+}
+
+.profile-main-screen {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: #ffffff;
+  overflow: hidden;
+}
+
 .security-shell {
   display: flex !important;
   flex-direction: column;
@@ -20,8 +60,16 @@
 
 .security-header {
   display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.security-header-main {
+  display: flex;
+  flex: 1;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
@@ -31,12 +79,12 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  flex: 1 1 520px;
+  flex: 1 1 auto;
 }
 
 .security-header-kicker {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -50,20 +98,19 @@
   gap: 8px;
   flex-wrap: wrap;
 }
-
 .security-header-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
-  font-size: clamp(28px, 3.8vw, 34px);
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: clamp(28px, 1.5vw, 34px);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.5;
   color: #111827;
 }
 
 .security-header-description {
   margin: 0;
   max-width: 720px;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: #4b5563;
@@ -87,7 +134,7 @@
   border: 1px solid #d7dce3;
   background: #ffffff;
   color: #111827;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
@@ -185,7 +232,7 @@
 }
 
 .security-summary-label {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -194,7 +241,7 @@
 }
 
 .security-summary-value {
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 22px;
   font-weight: 700;
   line-height: 1.2;
@@ -202,7 +249,7 @@
 }
 
 .security-summary-note {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -239,7 +286,7 @@
 
 .security-section-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #111827;
@@ -248,7 +295,7 @@
 .security-section-description {
   margin: 0;
   max-width: 700px;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -299,7 +346,7 @@
   flex-shrink: 0;
   background: #f3f4f6;
   color: #111827;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   font-weight: 700;
 }
@@ -356,7 +403,7 @@
 
 .security-row-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.4;
@@ -365,7 +412,7 @@
 
 .security-row-description {
   margin: 0;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -379,7 +426,7 @@
 }
 
 .security-row-meta-item {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -401,7 +448,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
@@ -445,7 +492,7 @@
 
 .security-empty-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #111827;
@@ -454,7 +501,7 @@
 .security-empty-copy {
   margin: 0;
   max-width: 700px;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.6;
   color: #6b7280;
@@ -503,9 +550,9 @@
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 2.2;
   color: #4b5563;
 }
 
@@ -554,13 +601,13 @@
 }
 
 .security-toast-title {
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 700;
 }
 
 .security-toast-copy {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.5;
   color: #4b5563;
@@ -573,9 +620,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(17, 24, 39, 0.2);
+  background: rgba(0, 0, 0, 0.5);
   z-index: var(--z-modal, 30);
 }
+
+/* .security-modal {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+} */
 
 .security-modal {
   width: 100%;
@@ -591,7 +650,7 @@
 
 .security-modal-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #111827;
@@ -599,7 +658,7 @@
 
 .security-modal-copy {
   margin: 0;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: #4b5563;
@@ -630,6 +689,11 @@
   }
 
   .security-header {
+    flex-direction: column;
+  }
+
+  .security-header-main {
+    flex-direction: column;
     align-items: flex-start;
   }
 
@@ -709,7 +773,7 @@
 }
 
 .security-eyebrow {
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -726,7 +790,7 @@
 
 .security-hero-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: clamp(28px, 3.8vw, 36px);
   font-weight: 700;
   line-height: 1.1;
@@ -736,7 +800,7 @@
 .security-hero-description {
   margin: 0;
   max-width: 760px;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: #4b5563;
@@ -760,7 +824,7 @@
   border: 1px solid #d6dae1;
   background: #ffffff;
   color: #111827;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0;
@@ -843,7 +907,7 @@
 }
 
 .security-stat-label {
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -852,7 +916,7 @@
 }
 
 .security-stat-value {
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: clamp(22px, 2.6vw, 28px);
   font-weight: 700;
   color: #111827;
@@ -860,7 +924,7 @@
 }
 
 .security-stat-note {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -905,7 +969,7 @@
 
 .security-card-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #111827;
@@ -914,7 +978,7 @@
 .security-card-description {
   margin: 0;
   max-width: 720px;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -965,7 +1029,7 @@
   flex-shrink: 0;
   background: #f3f4f6;
   color: #111827;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   font-weight: 700;
 }
@@ -1025,7 +1089,7 @@
 
 .security-item-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.4;
@@ -1034,7 +1098,7 @@
 
 .security-item-subtitle {
   margin: 0;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -1055,7 +1119,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
@@ -1114,7 +1178,7 @@
 }
 
 .security-meta-label {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
@@ -1122,7 +1186,7 @@
 }
 
 .security-meta-value {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.5;
   color: #111827;
@@ -1149,7 +1213,7 @@
 
 .security-empty-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #111827;
@@ -1158,7 +1222,7 @@
 .security-empty-copy {
   margin: 0;
   max-width: 700px;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.6;
   color: #6b7280;
@@ -1175,7 +1239,7 @@
   border-radius: 12px;
   border: 1px solid #e7eaef;
   background: #fafbfc;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.6;
   color: #4b5563;
@@ -1233,7 +1297,7 @@
 
 .security-activity-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 700;
   color: #111827;
@@ -1241,7 +1305,7 @@
 
 .security-activity-meta {
   margin: 0;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
   color: #6b7280;
@@ -1295,13 +1359,13 @@
 }
 
 .security-toast-title {
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 700;
 }
 
 .security-toast-copy {
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.5;
   color: #4b5563;
@@ -1314,7 +1378,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(17, 24, 39, 0.2);
+  background: rgba(0, 0, 0, 0.5);
   z-index: var(--z-modal, 30);
 }
 
@@ -1332,7 +1396,7 @@
 
 .security-modal-title {
   margin: 0;
-  font-family: "Urbanist", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #111827;
@@ -1340,7 +1404,7 @@
 
 .security-modal-copy {
   margin: 0;
-  font-family: "Inter", Helvetica;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: #4b5563;

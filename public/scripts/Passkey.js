@@ -1,6 +1,6 @@
 (function() {
 const { useEffect, useMemo, useState } = React;
-const e = React.createElement;
+const reactCreateElm = React.createElement;
 const TOAST_DURATION_MS = 3200;
 
 function formatDateTime(value) {
@@ -45,6 +45,16 @@ function formatRelativeDate(value) {
     return pluralize(Math.max(1, Math.round(diffMs / year)), 'year');
 }
 
+function readStoredBoolean(key, fallbackValue) {
+    try {
+        const saved = localStorage.getItem(key);
+        return saved !== null ? JSON.parse(saved) : fallbackValue;
+    } catch (error) {
+        console.error('Failed to parse localStorage value for', key, error);
+        return fallbackValue;
+    }
+}
+
 function renderSecurityIcon(name, className = '') {
     const props = {
         viewBox: '0 0 24 24',
@@ -60,49 +70,49 @@ function renderSecurityIcon(name, className = '') {
 
     switch (name) {
         case 'arrowLeft':
-            return e('svg', props,
-                e('path', { d: 'M15 18l-6-6 6-6' }),
-                e('path', { d: 'M9 12h10' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M15 18l-6-6 6-6' }),
+                reactCreateElm('path', { d: 'M9 12h10' })
             );
         case 'plus':
-            return e('svg', props,
-                e('path', { d: 'M12 5v14' }),
-                e('path', { d: 'M5 12h14' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M12 5v14' }),
+                reactCreateElm('path', { d: 'M5 12h14' })
             );
         case 'phone':
-            return e('svg', props,
-                e('rect', { x: '8', y: '3', width: '8', height: '18', rx: '2.2' }),
-                e('path', { d: 'M11 17.5h2' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('rect', { x: '8', y: '3', width: '8', height: '18', rx: '2.2' }),
+                reactCreateElm('path', { d: 'M11 17.5h2' })
             );
         case 'laptop':
-            return e('svg', props,
-                e('rect', { x: '4.5', y: '5', width: '15', height: '10.5', rx: '1.8' }),
-                e('path', { d: 'M3 18.5h18' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('rect', { x: '4.5', y: '5', width: '15', height: '10.5', rx: '1.8' }),
+                reactCreateElm('path', { d: 'M3 18.5h18' })
             );
         case 'tag':
-            return e('svg', props,
-                e('path', { d: 'M4.5 7.5A2.5 2.5 0 0 1 7 5h5l7 7-7 7-7-7z' }),
-                e('circle', { cx: '9', cy: '9', r: '1' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M4.5 7.5A2.5 2.5 0 0 1 7 5h5l7 7-7 7-7-7z' }),
+                reactCreateElm('circle', { cx: '9', cy: '9', r: '1' })
             );
         case 'trash':
-            return e('svg', props,
-                e('path', { d: 'M4 7h16' }),
-                e('path', { d: 'M10 11v5' }),
-                e('path', { d: 'M14 11v5' }),
-                e('path', { d: 'M6 7l1 12h10l1-12' }),
-                e('path', { d: 'M9 7V4h6v3' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M4 7h16' }),
+                reactCreateElm('path', { d: 'M10 11v5' }),
+                reactCreateElm('path', { d: 'M14 11v5' }),
+                reactCreateElm('path', { d: 'M6 7l1 12h10l1-12' }),
+                reactCreateElm('path', { d: 'M9 7V4h6v3' })
             );
         case 'shield':
-            return e('svg', props,
-                e('path', { d: 'M12 3l7 3v5c0 5-3.4 8.1-7 10-3.6-1.9-7-5-7-10V6l7-3z' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M12 3l7 3v5c0 5-3.4 8.1-7 10-3.6-1.9-7-5-7-10V6l7-3z' })
             );
         case 'key':
         default:
-            return e('svg', props,
-                e('circle', { cx: '8', cy: '12', r: '3.2' }),
-                e('path', { d: 'M11.2 12H20' }),
-                e('path', { d: 'M17 12v3' }),
-                e('path', { d: 'M14.5 12v2' })
+            return reactCreateElm('svg', props,
+                reactCreateElm('circle', { cx: '8', cy: '12', r: '3.2' }),
+                reactCreateElm('path', { d: 'M11.2 12H20' }),
+                reactCreateElm('path', { d: 'M17 12v3' }),
+                reactCreateElm('path', { d: 'M14.5 12v2' })
             );
     }
 }
@@ -151,33 +161,30 @@ function getSetupStatus(total) {
     if (total === 0) {
         return {
             label: 'Not set up',
-            note: 'Create your first passkey to start using passwordless sign-in.',
-            chipClass: 'security-chip security-chip--warning'
+            note: 'Create your first passkey for paswordless sign-in'
         };
     }
 
     if (total === 1) {
         return {
             label: 'Needs backup',
-            note: 'Add one more passkey on a different device for account recovery.',
-            chipClass: 'security-chip security-chip--warning'
+            note: 'Add one more passkey on a different device for account recovery.'
         };
     }
 
     return {
         label: 'Backup ready',
-        note: 'You already have more than one passkey available.',
-        chipClass: 'security-chip security-chip--success'
+        note: 'You already have more than one passkey available.'
     };
 }
 
 function renderToast(toast) {
     if (!toast) return null;
 
-    return e('div', { className: 'security-toast-stack' },
-        e('div', { className: `security-toast security-toast--${toast.type || 'info'}` },
-            e('div', { className: 'security-toast-title' }, toast.title),
-            toast.message ? e('div', { className: 'security-toast-copy' }, toast.message) : null
+    return reactCreateElm('div', { className: 'security-toast-stack' },
+        reactCreateElm('div', { className: `security-toast security-toast--${toast.type || 'info'}` },
+            reactCreateElm('div', { className: 'security-toast-title' }, toast.title),
+            toast.message ? reactCreateElm('div', { className: 'security-toast-copy' }, toast.message) : null
         )
     );
 }
@@ -185,7 +192,7 @@ function renderToast(toast) {
 function renderModal(modal, closeModal, handleConfirm) {
     if (!modal.isOpen) return null;
 
-    return e('div', {
+    return reactCreateElm('div', {
         className: 'security-modal-backdrop',
         onClick: (event) => {
             if (event.target === event.currentTarget) {
@@ -193,21 +200,22 @@ function renderModal(modal, closeModal, handleConfirm) {
             }
         }
     },
-        e('div', {
+        reactCreateElm('div', {
             className: 'security-modal',
             onClick: (event) => event.stopPropagation()
         },
-            e('h2', { className: 'security-modal-title' }, modal.title),
-            e('p', { className: 'security-modal-copy' }, modal.message),
-            e('div', { className: 'security-modal-actions' },
+            reactCreateElm('h2', { className: 'security-modal-title' }, modal.title),
+            reactCreateElm('p', { className: 'security-modal-copy' }, modal.message),
+            reactCreateElm('div', { className: 'security-modal-actions' },
                 modal.type === 'confirm'
-                    ? e('button', {
+                    ? reactCreateElm('button', {
                         className: 'security-button security-button--secondary',
                         onClick: closeModal
                     }, 'Cancel')
                     : null,
-                e('button', {
-                    className: `security-button ${modal.type === 'confirm' ? 'security-button--primary' : 'security-button--secondary'}`,
+                reactCreateElm('button', {
+                    className: 'security-button security-button--primary',
+                    style: modal.type === 'confirm' ? undefined : { minWidth: '70px' },
                     onClick: modal.type === 'confirm' ? handleConfirm : closeModal
                 }, modal.type === 'confirm' ? 'Confirm' : 'OK')
             )
@@ -218,20 +226,39 @@ function renderModal(modal, closeModal, handleConfirm) {
 const Passkey = ({ csrfToken, passkeys, userInfo }) => {
     window.csrfToken = csrfToken;
 
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-        const saved = localStorage.getItem('sidebarCollapsed');
-        return saved !== null ? JSON.parse(saved) : true;
-    });
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+        readStoredBoolean('sidebarCollapsed', window.innerWidth <= 1040)
+    );
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+    const isOverlay = windowWidth <= 1040;
+
+    useEffect(() => {
+        let rafId = 0;
+        const handleResize = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => setWindowWidth(window.innerWidth));
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(rafId);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (isOverlay) {
+            setSidebarCollapsed(true);
+        } else {
+            setSidebarCollapsed(readStoredBoolean('sidebarCollapsed', false));
+        }
+    }, [isOverlay]);
     const [items, setItems] = useState(() => Array.isArray(passkeys) ? passkeys : []);
     const [modal, setModal] = useState({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: null });
     const [toast, setToast] = useState(null);
     const [isRegistering, setIsRegistering] = useState(false);
     const [deletingPasskeyID, setDeletingPasskeyID] = useState(null);
-
-    useEffect(() => {
-        localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
-    }, [sidebarCollapsed]);
 
     useEffect(() => {
         if (!toast) return undefined;
@@ -445,38 +472,38 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
         ];
 
     const passkeyList = sortedItems.length > 0
-        ? e('div', { className: 'security-row-list' },
+        ? reactCreateElm('div', { className: 'security-row-list' },
             sortedItems.map((passkey) => {
                 const theme = getPasskeyTheme(passkey.keyName);
 
-                return e('div', {
+                return reactCreateElm('div', {
                     key: passkey.keyID,
                     className: 'security-row'
                 },
-                    e('div', { className: 'security-row-main' },
-                        e('div', {
+                    reactCreateElm('div', { className: 'security-row-main' },
+                        reactCreateElm('div', {
                             className: `security-row-icon ${theme.iconClass}`
                         }, renderSecurityIcon(theme.iconName, 'security-row-icon-svg')),
-                        e('div', { className: 'security-row-content' },
-                            e('div', { className: 'security-row-title-line' },
-                                e('h3', { className: 'security-row-title' }, passkey.keyName || 'Unnamed passkey'),
-                                !passkey.lastUsed
-                                    ? e('span', { className: 'security-chip security-chip--warning' }, 'Unused')
-                                    : null
+                        reactCreateElm('div', { className: 'security-row-content' },
+                            reactCreateElm('div', { className: 'security-row-title-line' },
+                                reactCreateElm('h3', { className: 'security-row-title' }, passkey.keyName || 'Unnamed passkey'),
+                                // !passkey.lastUsed
+                                //     ? reactCreateElm('span', { className: 'security-chip security-chip--warning' }, 'Unused')
+                                //     : null
                             ),
-                            e('p', { className: 'security-row-description' }, theme.provider),
-                            e('div', { className: 'security-row-meta' },
+                            reactCreateElm('p', { className: 'security-row-description' }, theme.provider),
+                            reactCreateElm('div', { className: 'security-row-meta' },
                                 e('span', { className: 'security-row-meta-item' }, `Created ${formatDateTime(passkey.dateCreate)}`),
-                                e('span', { className: 'security-row-meta-item' },
+                                reactCreateElm('span', { className: 'security-row-meta-item' },
                                     passkey.lastUsed
-                                        ? `Last used ${formatRelativeDate(passkey.lastUsed)}`
+                                        ? reactCreateElm('span', { className: 'security-row-meta-item' }, `Last used ${formatRelativeDate(passkey.lastUsed)}`)
                                         : 'Never used'
                                 )
                             )
                         )
                     ),
-                    e('div', { className: 'security-row-actions' },
-                        e('button', {
+                    reactCreateElm('div', { className: 'security-row-actions' },
+                        reactCreateElm('button', {
                             className: 'security-button security-button--danger',
                             onClick: () => requestRemovePasskey(passkey),
                             disabled: deletingPasskeyID === passkey.keyID
@@ -485,13 +512,13 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                 );
             })
         )
-        : e('div', { className: 'security-empty' },
-            e('h3', { className: 'security-empty-title' }, 'No passkeys yet'),
-            e('p', { className: 'security-empty-copy' },
+        : reactCreateElm('div', { className: 'security-empty' },
+            reactCreateElm('h3', { className: 'security-empty-title' }, 'No passkeys yet'),
+            reactCreateElm('p', { className: 'security-empty-copy' },
                 'Add your first passkey to sign in with Face ID, Touch ID, Windows Hello, or your device PIN instead of typing a password.'
             ),
-            e('div', { className: 'security-inline-row' },
-                e('button', {
+            reactCreateElm('div', { className: 'security-inline-row' },
+                reactCreateElm('button', {
                     className: 'security-button security-button--primary',
                     onClick: registerPasskey,
                     disabled: isRegistering
@@ -499,15 +526,20 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
             )
         );
 
-    return e('div', {
+    return reactCreateElm('div', {
         id: 'DIV_SIDEBAR_EXPANDER',
-        className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
+        className: 'sidebar-expand profile-shell' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
-        e('div', { className: 'group' },
-            e(window.Sidebar, {
+        reactCreateElm('div', { className: 'group profile-layout' },
+            isOverlay && !sidebarCollapsed && reactCreateElm('div', {
+                className: 'profile-sidebar-backdrop',
+                onClick: () => setSidebarCollapsed(true)
+            }),
+            reactCreateElm(window.Sidebar, {
                 sidebarCollapsed,
                 setSidebarCollapsed,
+                isOverlay,
                 username,
                 onLogout: logout,
                 onProfileRoute: handleProfileRoute,
@@ -515,89 +547,90 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                 setUserMenuOpen,
                 userInfo
             }),
-            e('main', { className: 'right-container' },
-                e('section', { className: 'main-screen security-shell' },
-                    e('input', {
+            reactCreateElm('main', { className: 'right-container profile-right-container' },
+                reactCreateElm('section', { className: 'main-screen profile-main-screen security-shell' },
+                    reactCreateElm('input', {
                         type: 'hidden',
                         name: '_csrf',
                         id: 'hidden-csrf',
                         value: csrfToken
                     }),
-                    e('div', { className: 'security-page' },
-                        e('header', { className: 'security-header' },
-                            e('div', { className: 'security-header-copy' },
-                                e('p', { className: 'security-header-kicker' }, 'Security settings'),
-                                e('div', { className: 'security-header-title-row' },
-                                    e('h1', { className: 'security-header-title' }, 'Passkeys'),
-                                    e('span', { className: setupStatus.chipClass }, setupStatus.label)
-                                ),
-                                e('p', { className: 'security-header-description' },
-                                    'Manage the devices and password managers that can sign you in with a passkey.'
-                                )
+                    reactCreateElm('div', { className: 'security-page' },
+                        reactCreateElm('header', { className: 'security-header' },
+                            reactCreateElm('button', {
+                                className: 'security-button security-button--secondary',
+                                onClick: handleProfileRoute
+                            },
+                                reactCreateElm('span', { className: 'security-button-icon' }, renderSecurityIcon('arrowLeft', 'security-button-svg')),
+                                'Back to profile'
                             ),
-                            e('div', { className: 'security-header-actions' },
-                                e('button', {
-                                    className: 'security-button security-button--secondary',
-                                    onClick: handleProfileRoute
-                                },
-                                    e('span', { className: 'security-button-icon' }, renderSecurityIcon('arrowLeft', 'security-button-svg')),
-                                    'Back to profile'
+                            reactCreateElm('div', { className: 'security-header-main' },
+                                reactCreateElm('div', { className: 'security-header-copy' },
+                                    // reactCreateElm('p', { className: 'security-header-kicker' }, 'Security settings'),
+                                    reactCreateElm('div', { className: 'security-header-title-row' },
+                                        reactCreateElm('h1', { className: 'security-header-title' }, 'Passkeys')
+                                    ),
+                                    // reactCreateElm('p', { className: 'security-header-description' },
+                                    //     'Manage the devices and password managers that can sign you in with a passkey.'
+                                    // )
                                 ),
-                                e('button', {
-                                    className: 'security-button security-button--primary',
-                                    onClick: registerPasskey,
-                                    disabled: isRegistering
-                                },
-                                    e('span', { className: 'security-button-icon' }, renderSecurityIcon('plus', 'security-button-svg')),
-                                    isRegistering ? 'Creating passkey...' : 'Create passkey'
+                                reactCreateElm('div', { className: 'security-header-actions' },
+                                    reactCreateElm('button', {
+                                        className: 'security-button security-button--primary',
+                                        onClick: registerPasskey,
+                                        disabled: isRegistering
+                                    },
+                                        reactCreateElm('span', { className: 'security-button-icon' }, renderSecurityIcon('plus', 'security-button-svg')),
+                                        isRegistering ? 'Creating passkey...' : 'Create passkey'
+                                    )
                                 )
                             )
                         ),
-                        e('section', { className: 'security-summary' },
-                            summaryItems.map((item) => e('div', {
+                        reactCreateElm('section', { className: 'security-summary' },
+                            summaryItems.map((item) => reactCreateElm('div', {
                                 key: item.label,
                                 className: 'security-summary-item'
                             },
-                                e('div', { className: 'security-summary-label' }, item.label),
-                                e('div', { className: 'security-summary-value' }, item.value),
-                                e('div', { className: 'security-summary-note' }, item.note)
+                                reactCreateElm('div', { className: 'security-summary-label' }, item.label),
+                                reactCreateElm('div', { className: 'security-summary-value' }, item.value),
+                                reactCreateElm('div', { className: 'security-summary-note' }, item.note)
                             ))
                         ),
-                        e('div', { className: 'security-stack' },
-                            e('section', { className: 'security-section' },
-                                e('div', { className: 'security-section-header' },
-                                    e('div', { className: 'security-section-copy' },
-                                        e('h2', { className: 'security-section-title' }, 'Your passkeys'),
-                                        e('p', { className: 'security-section-description' },
+                        reactCreateElm('div', { className: 'security-stack' },
+                            reactCreateElm('section', { className: 'security-section' },
+                                reactCreateElm('div', { className: 'security-section-header' },
+                                    reactCreateElm('div', { className: 'security-section-copy' },
+                                        reactCreateElm('h2', { className: 'security-section-title' }, 'Your passkeys'),
+                                        reactCreateElm  ('p', { className: 'security-section-description' },
                                             'Only keep passkeys for devices and apps you still trust and actively use.'
                                         )
                                     ),
-                                    e('div', { className: 'security-section-actions' },
-                                        e('span', { className: 'security-chip security-chip--neutral' }, `${items.length} saved`)
+                                    reactCreateElm('div', { className: 'security-section-actions' },
+                                        reactCreateElm('span', { className: 'security-chip security-chip--neutral' }, `${items.length} saved`)
                                     )
                                 ),
-                                e('div', { className: 'security-section-body' }, passkeyList)
+                                reactCreateElm('div', { className: 'security-section-body' }, passkeyList)
                             ),
-                            e('section', { className: 'security-section' },
-                                e('div', { className: 'security-section-header' },
-                                    e('div', { className: 'security-section-copy' },
-                                        e('h2', { className: 'security-section-title' }, 'Before you leave'),
-                                        e('p', { className: 'security-section-description' },
+                            reactCreateElm('section', { className: 'security-section' },
+                                reactCreateElm('div', { className: 'security-section-header' },
+                                    reactCreateElm('div', { className: 'security-section-copy' },
+                                        reactCreateElm('h2', { className: 'security-section-title' }, 'Before you leave'),
+                                        reactCreateElm('p', { className: 'security-section-description' },
                                             'A couple of small habits make passkeys much easier to live with over time.'
                                         )
                                     )
                                 ),
-                                e('div', { className: 'security-section-body' },
-                                    e('div', { className: 'security-callout' },
-                                        e('div', { className: 'security-callout-list' },
-                                            guidanceItems.map((item, index) => e('div', {
+                                reactCreateElm('div', { className: 'security-section-body' },
+                                    reactCreateElm('div', { className: 'security-callout' },
+                                        reactCreateElm('div', { className: 'security-callout-list' },
+                                            guidanceItems.map((item, index) => reactCreateElm('div', {
                                                 key: `guidance-${index}`,
                                                 className: 'security-callout-item'
                                             },
-                                                e('div', { className: 'security-callout-item-icon' },
+                                                reactCreateElm('div', { className: 'security-callout-item-icon' },
                                                     renderSecurityIcon(getGuidanceIcon(item), 'security-callout-icon-svg')
                                                 ),
-                                                e('p', { className: 'security-callout-item-copy' }, item)
+                                                reactCreateElm('p', { className: 'security-callout-item-copy' }, item)
                                             ))
                                         )
                                     )
