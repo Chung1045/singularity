@@ -1506,6 +1506,14 @@ html[data-theme='dark'] .security-button:hover:not(:disabled) .security-button-s
 html[data-theme='dark'] .security-button:hover:not(:disabled) .security-button-svg *,
 html[data-theme='dark'] .security-button:hover:not(:disabled) .security-button-icon,
 html[data-theme='dark'] .security-button:hover:not(:disabled) .security-button-icon * {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+html[data-theme='dark'] .security-button--primary:hover:not(:disabled) .security-button-svg,
+html[data-theme='dark'] .security-button--primary:hover:not(:disabled) .security-button-svg *,
+html[data-theme='dark'] .security-button--primary:hover:not(:disabled) .security-button-icon,
+html[data-theme='dark'] .security-button--primary:hover:not(:disabled) .security-button-icon * {
     color: #000000 !important;
     stroke: #000000 !important;
 }
