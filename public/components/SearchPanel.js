@@ -249,6 +249,7 @@
                     },
                     onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; }
                 }, React.createElement('img', {
+                    id: 'search-panel-close-btn-icon',
                     src: './img/close.svg',
                     alt: 'Close',
                     style: { width: '18px', height: '18px', pointerEvents: 'none' }
@@ -339,6 +340,7 @@
                             if (searchQuery) e.currentTarget.style.backgroundColor = 'transparent';
                         }
                     }, React.createElement('img', {
+                        id: 'search-panel-clear-btn-icon',
                         src: './img/close.svg',
                         alt: 'Clear',
                         style: { width: '18px', height: '18px', pointerEvents: 'none' }
@@ -397,6 +399,7 @@
                         }
                     },
                         React.createElement('img', {
+                            id: 'search-panel-back-btn-icon',
                             src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
                             alt: '',
                             style: { width: '18px', height: '18px', flexShrink: 0 }
@@ -463,9 +466,9 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'search-panel-file-name-text',
                                     className: selectedItem.name.length > 30 ? 'file-name-marquee' : '',
                                     style: {
-
                                         wordBreak: selectedItem.name.length <= 30 ? 'break-word' : 'normal'
                                     }
                                 }, selectedItem.name)
@@ -511,6 +514,7 @@
                                     }
                                 },
                                     React.createElement('span', {
+                                        id: 'search-panel-file-info-type-label',
                                         className: 'search-panel-meta-label',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
@@ -520,6 +524,7 @@
                                         }
                                     }, 'File Type'),
                                     React.createElement('span', {
+                                        id: 'search-panel-file-info-type-value',
                                         className: 'search-panel-meta-value',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
@@ -538,6 +543,7 @@
                                     }
                                 },
                                     React.createElement('span', {
+                                        id: 'search-panel-file-info-size-label',
                                         className: 'search-panel-meta-label',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
@@ -547,6 +553,7 @@
                                         }
                                     }, 'File Size'),
                                     React.createElement('span', {
+                                        id: 'search-panel-file-info-size-value',
                                         className: 'search-panel-meta-value',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
@@ -565,6 +572,7 @@
                                     }
                                 },
                                     React.createElement('span', {
+                                        id: 'search-panel-file-info-date-label',
                                         className: 'search-panel-meta-label',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
@@ -574,6 +582,7 @@
                                         }
                                     }, 'Upload Date'),
                                     React.createElement('span', {
+                                        id: 'search-panel-file-info-date-value',
                                         className: 'search-panel-meta-value',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
@@ -613,6 +622,7 @@
 
                             // Divider
                             React.createElement('div', {
+                                id: 'search-panel-file-divider',
                                 className: 'search-panel-divider',
                                 style: {
                                     height: '1px',
@@ -678,6 +688,7 @@
                             }
                         },
                             React.createElement('div', {
+                                id: 'search-panel-requirement-header-inner',
                                 style: {
                                     display: 'flex',
                                     alignItems: 'center',
@@ -687,6 +698,7 @@
                             },
                                 // Badge
                                 React.createElement('div', {
+                                    id: 'search-panel-requirement-badge',
                                     style: {
                                         padding: '4px 10px',
                                         backgroundColor: '#1c1d21',
@@ -728,6 +740,7 @@
                         },
                             // Description
                             selectedItem.details?.description && React.createElement('div', {
+                                id: 'search-panel-requirement-description-section',
                                 style: {
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -735,6 +748,7 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'search-panel-requirement-description-label',
                                     className: 'search-panel-section-label',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
@@ -746,6 +760,7 @@
                                     }
                                 }, 'Description'),
                                 React.createElement('div', {
+                                    id: 'search-panel-requirement-description-body',
                                     className: 'search-panel-section-body',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
@@ -758,6 +773,7 @@
 
                             // Role (for both requirements and user stories)
                             selectedItem.details?.role && React.createElement('div', {
+                                id: 'search-panel-requirement-role-section',
                                 style: {
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -765,6 +781,7 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'search-panel-requirement-role-label',
                                     className: 'search-panel-section-label',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
@@ -776,6 +793,7 @@
                                     }
                                 }, 'Role'),
                                 React.createElement('div', {
+                                    id: 'search-panel-requirement-role-body',
                                     className: 'search-panel-section-body',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
@@ -788,6 +806,7 @@
 
                             // Source References
                             selectedItem.details?.sourceReference && selectedItem.details.sourceReference.length > 0 && React.createElement('div', {
+                                id: 'search-panel-source-references-section',
                                 style: {
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -795,6 +814,7 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    id: 'search-panel-source-references-label',
                                     className: 'search-panel-section-label',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
@@ -806,6 +826,7 @@
                                     }
                                 }, 'Source References'),
                                 React.createElement('div', {
+                                    id: 'search-panel-source-references-list',
                                     style: {
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -815,6 +836,7 @@
                                     selectedItem.details.sourceReference.map((ref, idx) =>
                                         React.createElement('div', {
                                             key: idx,
+                                            id: `search-panel-source-reference-card-${idx}`,
                                             className: 'search-panel-source-reference-card',
                                             style: {
                                                 padding: '10px 12px',
@@ -829,10 +851,12 @@
                                         },
                                             typeof ref === 'string' ? ref : React.createElement(React.Fragment, null,
                                                 ref.documentName && React.createElement('div', {
+                                                    id: `search-panel-source-reference-name-${idx}`,
                                                     className: 'search-panel-source-reference-name',
                                                     style: { fontWeight: '600' }
                                                 }, ref.documentName),
                                                 ref.location && React.createElement('div', {
+                                                    id: `search-panel-source-reference-location-${idx}`,
                                                     className: 'search-panel-source-reference-location',
                                                     style: { fontSize: '11px' }
                                                 }, `Location: ${ref.location}`)

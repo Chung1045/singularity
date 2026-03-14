@@ -1861,9 +1861,10 @@ html[data-theme='dark'] #sidebar-search-requirement-preview * {
     color: var(--dm-text) !important;
 }
 
-html[data-theme='dark'] #sidebar-search-requirement-preview .sidebar-search-requirement-badge,
-html[data-theme='dark'] #sidebar-search-requirement-preview .sidebar-search-requirement-badge * {
-    color: #ffffff !important;
+/* Match requirements panel badge: light bg + dark text in dark mode */
+html[data-theme='dark'] #sidebar-search-requirement-badge {
+    background: #f8fafc !important;
+    color: #020817 !important;
 }
 
 html[data-theme='dark'] #sidebar-search-file-download-btn,
@@ -1906,6 +1907,11 @@ html[data-theme='dark'] .search-results-panel-content .search-result-item:hover 
 /* html[data-theme='dark'] #search-panel-file-header-section,
 html[data-theme='dark'] #search-panel-requirement-header,
 html[data-theme='dark'] #search-panel-file-icon, */
+html[data-theme='dark'] #search-panel-requirement-badge {
+    background: #f8fafc !important;
+    color: #020817 !important;
+}
+
 html[data-theme='dark'] .search-panel-source-reference-card {
     background: var(--dm-surface-2) !important;
     border: 2px solid var(--dm-border) !important;

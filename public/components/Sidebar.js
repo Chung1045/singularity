@@ -2198,13 +2198,14 @@
                                     marginBottom: '12px'
                                 }
                             },
-                                // Badge
+                                // Badge (matches requirements-panel-item-badge)
                                 React.createElement('div', {
+                                    id: 'sidebar-search-requirement-badge',
                                     className: 'sidebar-search-requirement-badge',
                                     style: {
                                         padding: '4px 10px',
-                                        backgroundColor: '#1c1d21',
-                                        color: '#ffffff',
+                                        backgroundColor: 'rgb(28, 29, 33)',
+                                        color: 'rgb(255, 255, 255)',
                                         borderRadius: '6px',
                                         fontFamily: 'Inter, Helvetica',
                                         fontSize: '11px',
