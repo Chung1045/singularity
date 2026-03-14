@@ -16,11 +16,57 @@
         }
     }
 
+    function clearHoverInlineStyles(nextTheme) {
+        const isDark = nextTheme === DARK_THEME;
+        const defaultBg = isDark ? 'var(--dm-surface-2)' : '#ffffff';
+        const defaultBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : '#e4e4e4';
+
+        ['#btn-generate-user-stories', '#btn-generate-requirements'].forEach(sel => {
+            const el = document.querySelector(sel);
+            if (el) {
+                el.style.backgroundColor = defaultBg;
+                el.style.borderColor = defaultBorder;
+            }
+        });
+
+        const manageBtn = document.querySelector('#right-sidebar-manage-requirements-button');
+        if (manageBtn) {
+            if (isDark) {
+                manageBtn.style.removeProperty('backgroundColor');
+            } else {
+                manageBtn.style.backgroundColor = 'rgb(30, 41, 59)';
+            }
+        }
+
+        const clearSelectors = [
+            '[id^="requirements-panel-btn-"]', '[id^="requirements-panel-tab-"]',
+            '[id^="requirements-panel-subtab-"]', '[id^="requirements-panel-item-"]',
+            '.chat-history-item', '.search-result-item',
+            '#sidebar-search-back-btn', '#search-panel-back-btn', '#search-panel-close-btn',
+            '#sidebar-create-project-button', '#sidebar-source-upload-button',
+            '#sidebar-manage-requirements-button', '#select-project-drop-down',
+            '[id^="chat-history-item-delete-button-"]', '[id^="source-file-delete-button-"]',
+            '#sidebar-project-option-delete', '[id^="sidebar-report-delete-btn-"]',
+            '[id^="project-share-"]', '[id^="notification-item-"]',
+            '.history', '.search-file-field', '.report-item', '.requirement-item', '.story-item'
+        ];
+        clearSelectors.forEach(sel => {
+            try {
+                document.querySelectorAll(sel).forEach(el => {
+                    el.style.removeProperty('backgroundColor');
+                    el.style.removeProperty('borderColor');
+                });
+            } catch (_) {}
+        });
+    }
+
     function applyTheme(theme) {
         const nextTheme = normalizeTheme(theme);
 
         document.documentElement.dataset.theme = nextTheme;
         document.documentElement.style.colorScheme = nextTheme;
+
+        clearHoverInlineStyles(nextTheme);
 
         window.dispatchEvent(new CustomEvent('appThemeChanged', {
             detail: { theme: nextTheme }

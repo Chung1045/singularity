@@ -2125,3 +2125,10 @@ html[data-theme='dark'] [id^='add-invite-btn-']:disabled {
     border-color: rgba(148, 163, 184, 0.18) !important;
     color: var(--dm-muted) !important;
 }
+
+/* KILL light/dark mode transition - instant switch, must be last */
+html, html *, html *::before, html *::after {
+    transition: none !important;
+    transition-duration: 0s !important;
+    transition-property: none !important;
+}
