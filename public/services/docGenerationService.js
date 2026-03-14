@@ -4,7 +4,6 @@ const aiDB = require("./aiAgentService/aiAgentDBService")
 const projectDB = require("./projectDBService")
 const lodash = require('lodash');
 const uuid = require("uuid-v4")
-const { convertMarkdownToDocx } = require("@mohtasham/md-to-docx");
 const { PassThrough } = require('stream');
 const {
     Document,
@@ -489,6 +488,8 @@ function generateChatThreadHistDoc(projectID, chatID) {
     // Start the async work but don't await it
     (async () => {
         try {
+            const { convertMarkdownToDocx } = await import("@mohtasham/md-to-docx");
+
             const projectName = await projectDB.fetchProjectName(projectID);
             const chatThread = await aiDB.fetchChatThread(projectID, chatID);
             const chatThreadName = await aiDB.getChatThreadName(projectID, chatID);
