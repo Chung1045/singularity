@@ -68,11 +68,21 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     }
                 } else {
                     console.error('Failed to delete chat:', data.message);
-                    alert('Failed to delete chat. Please try again.');
+                    window.showNotification?.({
+                        type: 'error',
+                        title: 'Delete Failed',
+                        message: 'Failed to delete chat. Please try again.',
+                        actionText: 'OK'
+                    });
                 }
             } catch (error) {
                 console.error('Error deleting chat:', error);
-                alert('An error occurred while deleting the chat.');
+                window.showNotification?.({
+                    type: 'error',
+                    title: 'Error',
+                    message: 'An error occurred while deleting the chat.',
+                    actionText: 'OK'
+                });
             }
         };
 
@@ -122,13 +132,16 @@ function createChatHistoryItem(chatThreadName, chatID) {
         const handleClick = (e) => {
             if (e.target.type === 'checkbox' || e.target.tagName === 'IMG' || e.target.closest('.chat-menu')) return;
 
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             document.querySelectorAll('.chat-history-item').forEach(item => {
                 item.classList.remove('selected');
                 item.style.backgroundColor = 'transparent';
+                item.style.borderLeft = 'none';
             });
 
             e.currentTarget.classList.add('selected');
-            e.currentTarget.style.backgroundColor = '#e0e0e0';
+            e.currentTarget.style.backgroundColor = isDark ? '#374151' : '#e0e0e0';
+            e.currentTarget.style.borderLeft = 'none';
 
             const newUrl = new URL(window.location);
             newUrl.searchParams.set('chatID', chatID);
@@ -161,7 +174,8 @@ function createChatHistoryItem(chatThreadName, chatID) {
             },
             onMouseEnter: (e) => {
                 if (!e.currentTarget.classList.contains('selected')) {
-                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                    e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f0f0f0';
                 }
             },
             onMouseLeave: (e) => {
@@ -211,7 +225,10 @@ function createChatHistoryItem(chatThreadName, chatID) {
                     },
                     src: './img/more_vert_24.svg',
                     alt: '',
-                    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#8e8e8e',
+                    onMouseEnter: (e) => {
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#8e8e8e';
+                    },
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                     onClick: (e) => {
                         e.stopPropagation();
@@ -248,9 +265,13 @@ function createChatHistoryItem(chatThreadName, chatID) {
                             fontSize: '13.3px',
                             fontWeight: '500',
                             fontFamily: '"Inter", Helvetica',
-                            transition: 'background-color 0.2s ease'
+                            transition: 'background-color 0.2s ease',
+                            borderBottom: '1px solid #f0f0f0'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                         onClick: (e) => {
                             e.stopPropagation();
@@ -273,7 +294,10 @@ function createChatHistoryItem(chatThreadName, chatID) {
                             fontFamily: '"Inter", Helvetica',
                             transition: 'background-color 0.2s ease'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? 'rgba(127, 29, 29, 0.3)' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                         onClick: (e) => {
                             e.stopPropagation();

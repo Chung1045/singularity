@@ -31,7 +31,7 @@ const FileChipsManager = {
                 flex-wrap: nowrap;
                 gap: 8px;
                 padding: 10px 15px;
-                background-color: #f9f9f9;
+                background-color:rgb(33, 51, 79);
                 border-radius: 16px 16px 0 0;
                 align-items: center;
                 justify-content: flex-start;

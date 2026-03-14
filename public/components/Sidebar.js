@@ -737,7 +737,8 @@
                         transition: 'background-color 0.2s'
                     },
                     onMouseEnter: (e) => {
-                        e.currentTarget.style.backgroundColor = '#f0f0f0';
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f0f0f0';
                     },
                     onMouseLeave: (e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
@@ -788,7 +789,8 @@
                         borderBottom: '1px solid #f0f0f0'
                     },
                     onMouseEnter: (e) => {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
                     },
                     onMouseLeave: (e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
@@ -817,7 +819,8 @@
                         borderBottom: '1px solid #f0f0f0'
                     },
                     onMouseEnter: (e) => {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
                     },
                     onMouseLeave: (e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
@@ -845,7 +848,8 @@
                         transition: 'background-color 0.2s ease'
                     },
                     onMouseEnter: (e) => {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(127, 29, 29, 0.3)' : '#f5f5f5';
                     },
                     onMouseLeave: (e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
@@ -1729,7 +1733,7 @@
                                 if (typeof fetchProjectReports === 'function') await fetchProjectReports(projectID);
                                 if (typeof fetchProjectChats === 'function') await fetchProjectChats(projectID);
                             },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                            onMouseEnter: (e) => { const dk = document.documentElement.getAttribute('data-theme') === 'dark'; e.target.style.backgroundColor = dk ? '#1e293b' : '#f5f5f5'; },
                             onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
                         }),
 
@@ -1760,7 +1764,7 @@
                                 height: '40px',
                                 flexShrink: 0
                             },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                            onMouseEnter: (e) => { const dk = document.documentElement.getAttribute('data-theme') === 'dark'; e.target.style.backgroundColor = dk ? '#1e293b' : '#f5f5f5'; },
                             onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
                         },
                         React.createElement('img', {
@@ -1802,8 +1806,12 @@
                             position: 'relative',
                             boxShadow: '0 2px 8px rgba(15, 23, 42, 0.2)'
                         },
-                        onMouseEnter: (e) => { e.target.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.3)'; },
-                        onMouseLeave: (e) => { e.target.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.2)'; }
+                        onMouseEnter: (e) => {
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.3)';
+                        },
+                        onMouseLeave: (e) => {
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.2)';
+                        }
                     },
                     React.createElement('img', {
                         id: 'sidebar-new-chat-icon',
@@ -1904,8 +1912,8 @@
                             width: 'fit-content',
                             transition: 'background-color 0.2s'
                         },
-                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
-                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }
+                        onMouseEnter: (e) => { const dk = document.documentElement.getAttribute('data-theme') === 'dark'; e.currentTarget.style.backgroundColor = dk ? '#1e293b' : '#f5f5f5'; },
+                        onMouseLeave: (e) => { const dk = document.documentElement.getAttribute('data-theme') === 'dark'; e.currentTarget.style.backgroundColor = dk ? 'transparent' : '#ffffff'; }
                     },
                         React.createElement('img', {
                             src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
@@ -2192,6 +2200,7 @@
                             },
                                 // Badge
                                 React.createElement('div', {
+                                    className: 'sidebar-search-requirement-badge',
                                     style: {
                                         padding: '4px 10px',
                                         backgroundColor: '#1c1d21',
@@ -2296,11 +2305,11 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    className: 'sidebar-source-references-header',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
                                         fontSize: '12px',
                                         fontWeight: '600',
-                                        color: '#666',
                                         textTransform: 'uppercase',
                                         letterSpacing: '0.5px'
                                     }
@@ -2315,13 +2324,12 @@
                                     selectedSearchItem.details.sourceReference.map((ref, idx) =>
                                         React.createElement('div', {
                                             key: idx,
+                                            className: 'search-panel-source-reference-card',
                                             style: {
                                                 padding: '10px 12px',
-                                                backgroundColor: '#f5f5f5',
                                                 borderRadius: '6px',
                                                 fontFamily: 'Inter, Helvetica',
                                                 fontSize: '12px',
-                                                color: '#1c1d21',
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 gap: '4px'
@@ -2329,10 +2337,12 @@
                                         },
                                             typeof ref === 'string' ? ref : React.createElement(React.Fragment, null,
                                                 ref.documentName && React.createElement('div', {
-                                                    style: { fontWeight: '600', color: '#1c1d21' }
+                                                    className: 'search-panel-source-reference-name',
+                                                    style: { fontWeight: '600' }
                                                 }, ref.documentName),
                                                 ref.location && React.createElement('div', {
-                                                    style: { fontSize: '11px', color: '#666' }
+                                                    className: 'search-panel-source-reference-location',
+                                                    style: { fontSize: '11px' }
                                                 }, `Location: ${ref.location}`)
                                             )
                                         )
@@ -2565,11 +2575,17 @@
                                         cursor: 'pointer',
                                         marginBottom: '10px',
                                         transition: 'background-color 0.2s',
-                                        width: 'calc(40px + 100%)', // Ensure this stretches too
+                                        width: 'calc(40px + 100%)',
                                         marginLeft: '-20px'
                                     },
-                                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)'; },
-                                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
+                                    onMouseEnter: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
+                                    },
+                                    onMouseLeave: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
+                                    }
                                 },
                                 React.createElement('img', {
                                     id: 'sidebar-source-upload-icon',
@@ -2698,8 +2714,14 @@
                                         width: 'calc(40px + 100%)',
                                         marginLeft: '-20px'
                                     },
-                                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)'; },
-                                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
+                                    onMouseEnter: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
+                                    },
+                                    onMouseLeave: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
+                                    }
                                 },
                                 React.createElement('img', {
                                     id: 'sidebar-manage-requirements-icon',
@@ -2795,7 +2817,7 @@
                             marginLeft: '0',
                             transition: 'background-color 0.2s'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        onMouseEnter: (e) => { const dk = document.documentElement.getAttribute('data-theme') === 'dark'; e.currentTarget.style.backgroundColor = dk ? '#1e293b' : '#f0f0f0'; },
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                     },
                         React.createElement('div', {
@@ -3300,7 +3322,7 @@
                                 cursor: 'pointer',
                                 transition: 'all 0.2s'
                             },
-                            onMouseEnter: (e) => e.target.style.backgroundColor = '#f5f5f5',
+                            onMouseEnter: (e) => { const dk = document.documentElement.getAttribute('data-theme') === 'dark'; e.target.style.backgroundColor = dk ? '#1e293b' : '#f5f5f5'; },
                             onMouseLeave: (e) => e.target.style.backgroundColor = 'transparent'
                         }, 'Skip'),
                         React.createElement('button', {

@@ -245,12 +245,14 @@
                                         boxSizing: 'border-box'
                                     },
                                     onMouseEnter: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                        e.currentTarget.style.borderColor = '#d0d0d0';
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f5f5f5';
+                                        e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#d0d0d0';
                                     },
                                     onMouseLeave: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#ffffff';
-                                        e.currentTarget.style.borderColor = '#e4e4e4';
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? 'var(--dm-surface-2, #162033)' : '#ffffff';
+                                        e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#e4e4e4';
                                     }
                                 },
                                 React.createElement('img', {
@@ -294,12 +296,14 @@
                                         boxSizing: 'border-box'
                                     },
                                     onMouseEnter: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                        e.currentTarget.style.borderColor = '#d0d0d0';
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f5f5f5';
+                                        e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#d0d0d0';
                                     },
                                     onMouseLeave: (e) => {
-                                        e.currentTarget.style.backgroundColor = '#ffffff';
-                                        e.currentTarget.style.borderColor = '#e4e4e4';
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? 'var(--dm-surface-2, #162033)' : '#ffffff';
+                                        e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#e4e4e4';
                                     }
                                 },
                                 React.createElement('img', {
@@ -355,8 +359,14 @@
                                         width: '100%',
                                         boxSizing: 'border-box'
                                     },
-                                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)'; },
-                                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)'; }
+                                    onMouseEnter: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
+                                    },
+                                    onMouseLeave: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
+                                    }
                                 },
                                 React.createElement('img', {
                                     id: 'right-sidebar-manage-requirements-icon',

@@ -1123,7 +1123,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
             // Create file name text element instead of chips
             const fileNameText = document.createElement('span');
-            fileNameText.style.cssText = 'font-size: 12px; color: #666; font-family: Inter, Helvetica; flex: 1; min-width: 0;';
+            fileNameText.style.cssText = 'font-size: 12px; color: inherit; font-family: Inter, Helvetica; flex: 1; min-width: 0;';
             fileNameText.textContent = fileNames.join(', ');
             fileNameText.title = fileNames.join(', '); // Full text on hover
 

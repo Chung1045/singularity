@@ -351,14 +351,27 @@
                                     minWidth: 0
                                 }
                             },
-                                React.createElement('span', {
-                                    className: 'search-result-item-title',
-                                    style: { fontWeight: '500' },
-                                    title: req.title
-                                }, req.title),
+                                React.createElement('div', {
+                                    style: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }
+                                },
+                                    React.createElement('span', {
+                                        className: 'search-result-item-id',
+                                        style: { fontSize: '11px', fontWeight: '600' }
+                                    }, (() => {
+                                        const reqType = req.details?.requirementType?.toLowerCase();
+                                        const seq = req.details?.requirementSeq || 0;
+                                        const prefix = (reqType === 'functional' || reqType === 'fr') ? 'FR' : 'NFR';
+                                        return `${prefix}-${String(seq).padStart(2, '0')}`;
+                                    })()),
+                                    React.createElement('span', {
+                                        className: 'search-result-item-title',
+                                        style: { fontWeight: '500' },
+                                        title: req.title
+                                    }, req.title)
+                                ),
                                 req.details?.description && React.createElement('span', {
                                     className: 'search-result-item-desc',
-                                    style: { fontSize: '11px', color: '#666' },
+                                    style: { fontSize: '11px' },
                                     title: req.details.description
                                 }, req.details.description)
                             )
@@ -392,14 +405,22 @@
                                     minWidth: 0
                                 }
                             },
-                                React.createElement('span', {
-                                    className: 'search-result-item-title',
-                                    style: { fontWeight: '500' },
-                                    title: story.title
-                                }, story.title),
+                                React.createElement('div', {
+                                    style: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }
+                                },
+                                    React.createElement('span', {
+                                        className: 'search-result-item-id',
+                                        style: { fontSize: '11px', fontWeight: '600' }
+                                    }, `US-${String(story.details?.storySeq || 0).padStart(2, '0')}`),
+                                    React.createElement('span', {
+                                        className: 'search-result-item-title',
+                                        style: { fontWeight: '500' },
+                                        title: story.title
+                                    }, story.title)
+                                ),
                                 story.details?.description && React.createElement('span', {
                                     className: 'search-result-item-desc',
-                                    style: { fontSize: '11px', color: '#666' },
+                                    style: { fontSize: '11px' },
                                     title: story.details.description
                                 }, story.details.description)
                             )
@@ -410,30 +431,12 @@
                 // Clear button
                 hasResults && React.createElement('div', {
                     id: 'sidebar-search-results-actions',
-                    className: 'search-result-actions',
-                    style: {
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        marginTop: '15px',
-                        paddingTop: '15px',
-                        borderTop: '1px solid #e4e4e4'
-                    }
+                    className: 'search-result-actions'
                 },
                     React.createElement('button', {
                         id: 'sidebar-search-results-clear-btn',
                         className: 'search-clear-btn',
-                        onClick: onClose,
-                        style: {
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            border: '1px solid #e4e4e4',
-                            backgroundColor: '#ffffff',
-                            cursor: 'pointer',
-                            fontFamily: 'Inter, Helvetica',
-                            fontSize: '12px',
-                            color: '#1c1d21',
-                            transition: 'all 0.2s'
-                        }
+                        onClick: onClose
                     }, 'Clear')
                 ),
 

@@ -296,6 +296,10 @@
 }
 
 /* File chips in user messages */
+.message-bottom-row {
+    color: #666;
+}
+
 .user-message .message-bottom-row {
     justify-content: flex-end;
 }
@@ -402,6 +406,8 @@
     transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    margin-right: 10px;
 }
 
 .chip:hover {

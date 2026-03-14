@@ -243,7 +243,10 @@
                         transition: 'background-color 0.2s',
                         color: '#666'
                     },
-                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                    onMouseEnter: (e) => {
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                    },
                     onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; }
                 }, React.createElement('img', {
                     src: './img/close.svg',
@@ -327,7 +330,10 @@
                             color: '#666'
                         },
                         onMouseEnter: (e) => {
-                            if (searchQuery) e.currentTarget.style.backgroundColor = '#e8e8e8';
+                            if (searchQuery) {
+                                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#e8e8e8';
+                            }
                         },
                         onMouseLeave: (e) => {
                             if (searchQuery) e.currentTarget.style.backgroundColor = 'transparent';
@@ -381,8 +387,14 @@
                             width: 'fit-content',
                             transition: 'background-color 0.2s'
                         },
-                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
-                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                        },
+                        onMouseLeave: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? 'transparent' : '#ffffff';
+                        }
                     },
                         React.createElement('img', {
                             src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
@@ -499,6 +511,7 @@
                                     }
                                 },
                                     React.createElement('span', {
+                                        className: 'search-panel-meta-label',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
@@ -507,6 +520,7 @@
                                         }
                                     }, 'File Type'),
                                     React.createElement('span', {
+                                        className: 'search-panel-meta-value',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
@@ -524,6 +538,7 @@
                                     }
                                 },
                                     React.createElement('span', {
+                                        className: 'search-panel-meta-label',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
@@ -532,6 +547,7 @@
                                         }
                                     }, 'File Size'),
                                     React.createElement('span', {
+                                        className: 'search-panel-meta-value',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
@@ -549,6 +565,7 @@
                                     }
                                 },
                                     React.createElement('span', {
+                                        className: 'search-panel-meta-label',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
@@ -557,6 +574,7 @@
                                         }
                                     }, 'Upload Date'),
                                     React.createElement('span', {
+                                        className: 'search-panel-meta-value',
                                         style: {
                                             fontFamily: 'Inter, Helvetica',
                                             fontSize: '13px',
@@ -595,6 +613,7 @@
 
                             // Divider
                             React.createElement('div', {
+                                className: 'search-panel-divider',
                                 style: {
                                     height: '1px',
                                     backgroundColor: '#e4e4e4'
@@ -654,8 +673,8 @@
                             id: 'search-panel-requirement-header',
                             style: {
                                 padding: '20px',
-                                backgroundColor: '#f9f9f9',
-                                borderBottom: '1px solid #e4e4e4'
+                            backgroundColor: '#f9f9f9',
+                            borderBottom: '1px solid #e4e4e4'
                             }
                         },
                             React.createElement('div', {
@@ -716,6 +735,7 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    className: 'search-panel-section-label',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
                                         fontSize: '12px',
@@ -726,6 +746,7 @@
                                     }
                                 }, 'Description'),
                                 React.createElement('div', {
+                                    className: 'search-panel-section-body',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
                                         fontSize: '13px',
@@ -744,6 +765,7 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    className: 'search-panel-section-label',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
                                         fontSize: '12px',
@@ -754,6 +776,7 @@
                                     }
                                 }, 'Role'),
                                 React.createElement('div', {
+                                    className: 'search-panel-section-body',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
                                         fontSize: '13px',
@@ -772,6 +795,7 @@
                                 }
                             },
                                 React.createElement('div', {
+                                    className: 'search-panel-section-label',
                                     style: {
                                         fontFamily: 'Inter, Helvetica',
                                         fontSize: '12px',
@@ -791,13 +815,13 @@
                                     selectedItem.details.sourceReference.map((ref, idx) =>
                                         React.createElement('div', {
                                             key: idx,
+                                            className: 'search-panel-source-reference-card',
                                             style: {
                                                 padding: '10px 12px',
                                                 backgroundColor: '#f5f5f5',
                                                 borderRadius: '6px',
                                                 fontFamily: 'Inter, Helvetica',
                                                 fontSize: '12px',
-                                                color: '#1c1d21',
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 gap: '4px'
@@ -805,10 +829,12 @@
                                         },
                                             typeof ref === 'string' ? ref : React.createElement(React.Fragment, null,
                                                 ref.documentName && React.createElement('div', {
-                                                    style: { fontWeight: '600', color: '#1c1d21' }
+                                                    className: 'search-panel-source-reference-name',
+                                                    style: { fontWeight: '600' }
                                                 }, ref.documentName),
                                                 ref.location && React.createElement('div', {
-                                                    style: { fontSize: '11px', color: '#666' }
+                                                    className: 'search-panel-source-reference-location',
+                                                    style: { fontSize: '11px' }
                                                 }, `Location: ${ref.location}`)
                                             )
                                         )

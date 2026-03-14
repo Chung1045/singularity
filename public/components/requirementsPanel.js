@@ -374,8 +374,8 @@
             softText: '#e2e8f0',
             rowBg: '#162033',
             rowBorder: '#23324a',
-            rowHoverBg: '#f0f0f0',
-            rowHoverBorder: '#f0f0f0',
+            rowHoverBg: '#1f2937',
+            rowHoverBorder: '#1f2937',
             countBg: '#1e293b',
             countText: '#e2e8f0',
             badgeBg: '#f8fafc',
@@ -392,13 +392,13 @@
             errorText: '#fca5a5',
             successBg: 'rgba(20, 83, 45, 0.28)',
             successText: '#86efac',
-            generateBg: '#1e293b',
-            generateHoverBg: '#334155',
+            generateBg: '#374151',
+            generateHoverBg: '#374151',
             generateDisabledBg: '#94a3b8',
             reportIconBg: 'rgba(2, 132, 199, 0.16)',
             reportIcon: '#38bdf8',
             iconButtonBg: '#1e293b',
-            iconButtonHoverBg: '#f0f0f0',
+            iconButtonHoverBg: '#1f2937',
             iconButtonIcon: '#f8fafc',
             dangerButtonBg: 'rgba(127, 29, 29, 0.3)',
             dangerButtonHoverBg: 'rgba(153, 27, 27, 0.38)',
@@ -1119,10 +1119,16 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
+                                if (!generating) {
+                                    const dk = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    if (!dk) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
+                                }
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateBg;
+                                if (!generating) {
+                                    const dk = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    if (!dk) e.currentTarget.style.backgroundColor = colors.generateBg;
+                                }
                             }
                         },
                             React.createElement('img', {
@@ -1159,10 +1165,16 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
+                                if (!generating) {
+                                    const dk = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    if (!dk) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
+                                }
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) e.currentTarget.style.backgroundColor = colors.generateBg;
+                                if (!generating) {
+                                    const dk = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    if (!dk) e.currentTarget.style.backgroundColor = colors.generateBg;
+                                }
                             }
                         },
                             React.createElement('img', {

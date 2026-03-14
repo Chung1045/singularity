@@ -268,7 +268,11 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
     };
 
     const showAlert = (title, message, onConfirm = null) => {
-        setModal({ isOpen: true, type: 'alert', title, message, onConfirm });
+        if (onConfirm) {
+            setModal({ isOpen: true, type: 'alert', title, message, onConfirm });
+        } else {
+            showToast('danger', title, message);
+        }
     };
 
     const showConfirm = (title, message, onConfirm) => {

@@ -420,10 +420,30 @@
                                     id: 'import-add-more-button',
                                     onClick: triggerFileInput,
                                     style: { padding: '12px', backgroundColor: '#ffffff', border: '2px dashed rgb(30, 41, 59)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: 'rgb(30, 41, 59)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' },
-                                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f0f4f8'; e.currentTarget.style.borderColor = 'rgb(51, 65, 85)'; },
-                                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.borderColor = 'rgb(30, 41, 59)'; },
-                                    onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.backgroundColor = '#e8f4f8'; e.currentTarget.style.borderColor = 'rgb(51, 65, 85)'; },
-                                    onDragLeave: (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.borderColor = 'rgb(30, 41, 59)'; },
+                                    onMouseEnter: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f0f4f8';
+                                        e.currentTarget.style.borderColor = isDark ? '#ffffff' : 'rgb(51, 65, 85)';
+                                    },
+                                    onMouseLeave: (e) => {
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? 'transparent' : '#ffffff';
+                                        e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgb(30, 41, 59)';
+                                    },
+                                    onDragOver: (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? '#111827' : '#e8f4f8';
+                                        e.currentTarget.style.borderColor = isDark ? '#ffffff' : 'rgb(51, 65, 85)';
+                                    },
+                                    onDragLeave: (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                        e.currentTarget.style.backgroundColor = isDark ? 'transparent' : '#ffffff';
+                                        e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgb(30, 41, 59)';
+                                    },
                                     onDrop: handleDrop
                                 },
                                 React.createElement('span', { id: 'import-add-more-plus-icon', style: { fontSize: '18px' } }, '+'),
@@ -530,8 +550,16 @@
                                 alignItems: 'center',
                                 gap: '6px'
                             },
-                            onMouseEnter: (e) => { if (!isUploading) e.currentTarget.style.backgroundColor = '#f5f5f5'; },
-                            onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }
+                            onMouseEnter: (e) => {
+                                if (!isUploading) {
+                                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                                }
+                            },
+                            onMouseLeave: (e) => {
+                                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                e.currentTarget.style.backgroundColor = isDark ? 'var(--dm-surface-2)' : '#ffffff';
+                            }
                         },
                         React.createElement('img', {
                             id: 'upload-reupload-icon',
@@ -616,7 +644,12 @@
                                         backgroundColor: isEditing ? '#f9fafb' : 'transparent',
                                         transition: 'background-color 0.2s'
                                     },
-                                    onMouseEnter: (e) => { if (!isEditing) e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                                    onMouseEnter: (e) => {
+                                        if (!isEditing) {
+                                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                            e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f5f5f5';
+                                        }
+                                    },
                                     onMouseLeave: (e) => { if (!isEditing) e.currentTarget.style.backgroundColor = 'transparent'; }
                                 },
                                 React.createElement('div', {
@@ -749,7 +782,12 @@
                                                     backgroundColor: isMenuOpen ? '#e4e4e4' : 'transparent',
                                                     cursor: 'pointer'
                                                 },
-                                                onMouseEnter: (e) => { if (!isMenuOpen) e.currentTarget.style.backgroundColor = '#f0f0f0'; },
+                                                onMouseEnter: (e) => {
+                                                    if (!isMenuOpen) {
+                                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                                        e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f0f0f0';
+                                                    }
+                                                },
                                                 onMouseLeave: (e) => { if (!isMenuOpen) e.currentTarget.style.backgroundColor = 'transparent'; }
                                             },
                                             React.createElement('img', { id: `upload-menu-icon-${file.tempID}`, src: './img/more_vert_24.svg', style: { width: '24px', height: '24px' } })
@@ -773,14 +811,20 @@
                                                 id: `upload-menu-rename-button-${file.tempID}`,
                                                 onClick: () => startRename(file.tempID),
                                                 style: { width: '100%', padding: '10px 15px', textAlign: 'left', background: 'transparent', border: 'none', fontSize: '13px', color: '#000' },
-                                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                                                onMouseEnter: (e) => {
+                                                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                                    e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                                                },
                                                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                                             }, 'Rename'),
                                             React.createElement('button', {
                                                 id: `upload-menu-delete-button-${file.tempID}`,
                                                 onClick: () => handleDelete(file.tempID),
                                                 style: { width: '100%', padding: '10px 15px', textAlign: 'left', background: 'transparent', border: 'none', fontSize: '13px', color: '#c1281e' },
-                                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#fff5f5',
+                                                onMouseEnter: (e) => {
+                                                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(127, 29, 29, 0.3)' : '#fff5f5';
+                                                },
                                                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                                             }, 'Delete')
                                         )

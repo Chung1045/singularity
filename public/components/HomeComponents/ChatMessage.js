@@ -208,7 +208,7 @@ const FileChip = ({ fileId }) => {
             border: '1px solid rgba(195, 171, 111, 0.3)',
             borderRadius: '12px',
             fontSize: '11px',
-            color: '#666',
+            color: 'inherit',
             fontFamily: "'Inter', Helvetica"
         }
     }, `${fileName}`);

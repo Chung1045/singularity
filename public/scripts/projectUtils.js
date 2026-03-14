@@ -335,7 +335,10 @@ function createChatHistoryItem(threadName, chatID) {
                     },
                     src: './img/more_vert_24.svg',
                     alt: '',
-                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#8e8e8e'; },
+                    onMouseEnter: (e) => {
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#8e8e8e';
+                    },
                     onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                     onClick: (e) => {
                         e.stopPropagation();
@@ -616,7 +619,8 @@ function createFileItem(fileName, documentID) {
                 position: 'relative'
             },
             onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f0f0f0';
             },
             onMouseLeave: (e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
@@ -687,7 +691,10 @@ function createFileItem(fileName, documentID) {
                     },
                     src: './img/more_vert_24.svg',
                     alt: '',
-                    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#8e8e8e'; },
+                    onMouseEnter: (e) => {
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? 'var(--dm-surface-3)' : '#8e8e8e';
+                    },
                     onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                     onClick: (e) => {
                         e.stopPropagation();
@@ -727,7 +734,10 @@ function createFileItem(fileName, documentID) {
                             fontFamily: '"Inter", Helvetica',
                             transition: 'background-color 0.2s ease'
                         },
-                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                         onClick: (e) => { e.stopPropagation(); handleRename(); }
                     }, 'Rename'),
@@ -747,7 +757,10 @@ function createFileItem(fileName, documentID) {
                             fontFamily: '"Inter", Helvetica',
                             transition: 'background-color 0.2s ease'
                         },
-                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                         onClick: (e) => { e.stopPropagation(); handleDownload(); }
                     }, 'Download'),
@@ -767,7 +780,10 @@ function createFileItem(fileName, documentID) {
                             fontFamily: '"Inter", Helvetica',
                             transition: 'background-color 0.2s ease'
                         },
-                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? 'rgba(127, 29, 29, 0.3)' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                         onClick: (e) => { e.stopPropagation(); handleDelete(); }
                     }, 'Delete')
@@ -1148,7 +1164,8 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                 boxSizing: 'border-box'
             },
             onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f5f5f5';
             },
             onMouseLeave: (e) => {
                 if (!menuOpen) {
@@ -1237,7 +1254,10 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                         backgroundColor: 'transparent',
                         cursor: 'pointer'
                     },
-                    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#e4e4e4',
+                    onMouseEnter: (e) => {
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e4e4e4';
+                    },
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                     onClick: (e) => {
                         e.stopPropagation();
@@ -1279,7 +1299,10 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                             transition: 'background-color 0.2s',
                             borderBottom: '1px solid #f0f0f0'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                         onClick: handleDownload
                     }, 'Download'),
@@ -1295,12 +1318,14 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                             textAlign: 'left',
                             cursor: 'pointer',
                             fontSize: '12px',
-                            color: '#c1281e',
                             fontWeight: '500',
                             fontFamily: 'Inter, Helvetica',
                             transition: 'background-color 0.2s'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f5f5f5',
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? 'rgba(127, 29, 29, 0.3)' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                         onClick: handleDelete
                     }, 'Delete')
