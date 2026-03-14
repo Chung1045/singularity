@@ -361,6 +361,11 @@ html[data-theme='dark'] .profile-page-title,
 html[data-theme='dark'] .profile-overview-name,
 html[data-theme='dark'] .profile-section-title,
 html[data-theme='dark'] .profile-detail-value,
+html[data-theme='dark'] .profile-avatar-editor-zoom-row,
+html[data-theme='dark'] .profile-avatar-editor-zoom-row * {
+    color: #ffffff !important;
+}
+
 html[data-theme='dark'] .profile-action-title,
 html[data-theme='dark'] .profile-modal-title,
 html[data-theme='dark'] .security-header-title,
