@@ -270,7 +270,6 @@ html[data-theme='dark'] #sidebar-manage-requirements-button:hover,
 html[data-theme='dark'] #sidebar-source-upload-button:hover,
 html[data-theme='dark'] #right-sidebar-manage-requirements-button:hover,
 html[data-theme='dark'] .security-button--primary:hover:not(:disabled),
-html[data-theme='dark'] .profile-avatar-button:hover,
 html[data-theme='dark'] .profile-modal-button--primary:hover:not(:disabled),
 html[data-theme='dark'] [id^='requirements-panel-btn-']:hover:not(:disabled),
 html[data-theme='dark'] .btn-analyze-documents:hover,
@@ -300,9 +299,13 @@ html[data-theme='dark'] .home-alert-modal-button:hover,
 html[data-theme='dark'] #file-upload-notification-action-button:hover:not(:disabled),
 html[data-theme='dark'] #import-next-button:hover:not(:disabled),
 html[data-theme='dark'] .security-button--primary:hover:not(:disabled),
-html[data-theme='dark'] .profile-modal-button--primary:hover:not(:disabled),
-html[data-theme='dark'] .profile-avatar-button:hover {
+html[data-theme='dark'] .profile-modal-button--primary:hover:not(:disabled) {
     color: #000000 !important;
+}
+
+html[data-theme='dark'] .profile-avatar-button:hover {
+    background: var(--dm-surface-3) !important;
+    border-color: var(--dm-border-strong) !important;
 }
 
 html[data-theme='dark'] #sidebar-new-chat-button:hover img,
@@ -1507,8 +1510,6 @@ html[data-theme='dark'] #file-upload-overlay {
 /* ============================================
    DARK MODE HOVER / PANEL FINAL PASSES
    ============================================ */
-html[data-theme='dark'] .profile-main-screen .profile-avatar-button:hover,
-html[data-theme='dark'] .profile-main-screen .profile-avatar-button:hover *,
 html[data-theme='dark'] .profile-main-screen .profile-modal-button:hover:not(:disabled),
 html[data-theme='dark'] .profile-main-screen .profile-modal-button:hover:not(:disabled) *,
 html[data-theme='dark'] .profile-main-screen .profile-modal-button--primary:hover:not(:disabled),
@@ -1516,7 +1517,6 @@ html[data-theme='dark'] .profile-main-screen .profile-modal-button--primary:hove
     color: #000000 !important;
 }
 
-html[data-theme='dark'] .profile-main-screen .profile-avatar-button:hover img,
 html[data-theme='dark'] .profile-main-screen .profile-modal-button:hover:not(:disabled) img,
 html[data-theme='dark'] .profile-main-screen .profile-modal-button--primary:hover:not(:disabled) img {
     filter: brightness(0) saturate(100%) invert(0%) !important;
@@ -2035,9 +2035,10 @@ html[data-theme='dark'] #file-selection-confirm-button:hover {
     color: #000000 !important;
 }
 
-html[data-theme='dark'] .profile-avatar-button:hover span,
-html[data-theme='dark'] .profile-main-screen .profile-avatar-button:hover span {
-    color: #000000 !important;
+html[data-theme='dark'] .profile-avatar-button:hover,
+html[data-theme='dark'] .profile-avatar-button:hover *,
+html[data-theme='dark'] .profile-avatar-button:hover span {
+    color: var(--dm-text) !important;
 }
 
 html[data-theme='dark'] #requirements-panel-btn-generate-requirements:hover:not(:disabled),
