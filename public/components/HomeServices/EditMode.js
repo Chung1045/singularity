@@ -2,6 +2,15 @@
  * EditMode - Handles message editing functionality
  */
 
+function truncateFileNameWithExtension(name, maxBaseChars = 28) {
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot <= 0) return { base: name, ext: '' };
+    const base = name.slice(0, lastDot);
+    const ext = name.slice(lastDot);
+    if (base.length <= maxBaseChars) return { base, ext };
+    return { base: base.slice(0, maxBaseChars) + '...', ext };
+}
+
 const EditMode = {
     // Current editing state
     _state: null,
@@ -323,8 +332,10 @@ const EditMode = {
                     const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
 
                     const chip = document.createElement('div');
+                    chip.id = `selected-file-chip-${fileId}`;
                     chip.setAttribute('data-file-id', fileId);
                     chip.setAttribute('data-file-name', fileName);
+                    chip.title = fileName;
                     chip.style.cssText = `
                         display: flex;
                         align-items: center;
@@ -338,11 +349,22 @@ const EditMode = {
                         color: #000;
                     `;
 
+                    const { base, ext: extPart } = truncateFileNameWithExtension(fileName);
                     const nameSpan = document.createElement('span');
-                    nameSpan.textContent = fileName;
-                    nameSpan.style.cssText = 'max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+                    nameSpan.id = `selected-file-chip-${fileId}-name`;
+                    nameSpan.title = fileName;
+                    nameSpan.style.cssText = 'max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: baseline;';
+                    nameSpan.appendChild(document.createTextNode(base));
+                    if (extPart) {
+                        const extSpan = document.createElement('span');
+                        extSpan.id = `selected-file-chip-${fileId}-ext`;
+                        extSpan.textContent = extPart;
+                        extSpan.style.fontWeight = '600';
+                        nameSpan.appendChild(extSpan);
+                    }
 
                     const removeBtn = document.createElement('button');
+                    removeBtn.id = `selected-file-chip-${fileId}-remove-btn`;
                     removeBtn.textContent = '×';
                     removeBtn.style.cssText = 'border: none; background: transparent; font-size: 18px; color: #666; cursor: pointer; padding: 0; width: 20px; height: 20px;';
                     removeBtn.onclick = () => {

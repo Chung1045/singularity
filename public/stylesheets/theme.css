@@ -232,7 +232,7 @@ html[data-theme='dark'] .security-button--primary,
 html[data-theme='dark'] .profile-avatar-button,
 html[data-theme='dark'] .profile-modal-button--primary,
 html[data-theme='dark'] [id^='requirements-panel-btn-'],
-html[data-theme='dark'] .btn-analyze-documents,
+
 html[data-theme='dark'] #suggestion-chips .chip,
 html[data-theme='dark'] .home-alert-modal-button {
     background: #374151 !important;
@@ -240,6 +240,13 @@ html[data-theme='dark'] .home-alert-modal-button {
     color: #ffffff !important;
     box-shadow: none !important;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+}
+
+html[data-theme='dark'] .btn-analyze-documents{
+    background: #374151 !important;
+    border-color: #374151 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
 }
 
 html[data-theme='dark'] #sidebar-new-chat-button:hover,
@@ -901,14 +908,8 @@ html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-
     filter: brightness(0) saturate(100%) invert(100%) !important;
 }
 
-html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-options-btn-']:hover,
-html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-item-']:hover [id^='sidebar-report-options-btn-'],
 html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-item-']:hover [id^='sidebar-report-icon-'] {
     filter: brightness(0) saturate(100%) invert(100%) !important;
-}
-
-html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-options-btn-']:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
 }
 
 html[data-theme='dark'] #sidebar-project-options-icon,
@@ -929,11 +930,6 @@ html[data-theme='dark'] #div-requirements-list-right img {
 }
 
 html[data-theme='dark'] #sidebar-project-options-button:hover #sidebar-project-options-icon {
-    filter: brightness(0) saturate(100%) invert(100%) !important;
-}
-
-html[data-theme='dark'] [id^='sidebar-report-options-btn-']:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
     filter: brightness(0) saturate(100%) invert(100%) !important;
 }
 
@@ -1020,8 +1016,7 @@ html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-
 }
 
 html[data-theme='dark'] .profile-shell .source-item .source-menu-btn:hover,
-html[data-theme='dark'] .profile-shell .chat-history-item .chat-menu-btn:hover,
-html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-options-btn-']:hover {
+html[data-theme='dark'] .profile-shell .chat-history-item .chat-menu-btn:hover {
     background: var(--dm-surface-3) !important;
 }
 
@@ -1533,8 +1528,15 @@ html[data-theme='dark'] #sidebar-project-options-button:hover #sidebar-project-o
 
 html[data-theme='dark'] .source-item .source-menu-btn:hover,
 html[data-theme='dark'] img[id^='source-file-menu-']:hover,
-html[data-theme='dark'] .profile-shell .source-item .source-menu-btn:hover {
+html[data-theme='dark'] .profile-shell .source-item .source-menu-btn:hover,
+html[data-theme='dark'] [id^='sidebar-report-options-btn-']:hover,
+html[data-theme='dark'] #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-options-btn-']:hover {
     background-color: rgba(255, 255, 255, 0.08) !important;
+    filter: brightness(0) saturate(100%) invert(100%) !important;
+}
+
+html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-options-btn-']:hover {
+    background: var(--dm-surface-3) !important;
     filter: brightness(0) saturate(100%) invert(100%) !important;
 }
 
@@ -1542,12 +1544,6 @@ html[data-theme='dark'] .chat-history-item img[id^='chat-history-item-menu-butto
 html[data-theme='dark'] .chat-history-item .chat-menu-button:hover,
 html[data-theme='dark'] .chat-history-item .chat-menu-btn:hover,
 html[data-theme='dark'] .profile-shell .chat-history-item .chat-menu-btn:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
-    filter: brightness(0) saturate(100%) invert(100%) !important;
-}
-
-html[data-theme='dark'] [id^='sidebar-report-options-btn-']:hover,
-html[data-theme='dark'] .profile-shell #right-sidebar-content #div-requirements-list-right [id^='sidebar-report-options-btn-']:hover {
     background: rgba(255, 255, 255, 0.08) !important;
     filter: brightness(0) saturate(100%) invert(100%) !important;
 }

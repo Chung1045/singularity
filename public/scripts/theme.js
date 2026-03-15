@@ -48,7 +48,8 @@
             '[id^="chat-history-item-delete-button-"]', '[id^="source-file-delete-button-"]',
             '#sidebar-project-option-delete', '[id^="sidebar-report-delete-btn-"]',
             '[id^="project-share-"]', '[id^="notification-item-"]',
-            '.history', '.search-file-field', '.report-item', '.requirement-item', '.story-item'
+            '.history', '.search-file-field', '.report-item', '.requirement-item', '.story-item',
+            '[id^="source-file-menu-"]', '[id^="sidebar-report-options-btn-"]'
         ];
         clearSelectors.forEach(sel => {
             try {
