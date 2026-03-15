@@ -27,7 +27,10 @@ html[data-theme='dark'] body {
 }
 
 html[data-theme='dark'] .sidebar-expand .side-bar,
+html[data-theme='dark'] .profile-shell .side-bar,
 html[data-theme='dark'] .sidebar-expand .side-bar *,
+html[data-theme='dark'] .profile-shell .side-bar,
+html[data-theme='dark'] .profile-shell .side-bar *,
 html[data-theme='dark'] #right-sidebar,
 html[data-theme='dark'] #right-sidebar *,
 html[data-theme='dark'] .profile-main-screen,
@@ -53,6 +56,12 @@ html[data-theme='dark'] .sidebar-expand .side-bar [id^='source-file-delete-butto
 html[data-theme='dark'] .sidebar-expand .side-bar [id^='source-file-delete-button-']:hover,
 html[data-theme='dark'] .sidebar-expand .side-bar #sidebar-project-option-delete,
 html[data-theme='dark'] .sidebar-expand .side-bar #sidebar-project-option-delete:hover,
+html[data-theme='dark'] .profile-shell .side-bar [id^='chat-history-item-delete-button-'],
+html[data-theme='dark'] .profile-shell .side-bar [id^='chat-history-item-delete-button-']:hover,
+html[data-theme='dark'] .profile-shell .side-bar [id^='source-file-delete-button-'],
+html[data-theme='dark'] .profile-shell .side-bar [id^='source-file-delete-button-']:hover,
+html[data-theme='dark'] .profile-shell .side-bar #sidebar-project-option-delete,
+html[data-theme='dark'] .profile-shell .side-bar #sidebar-project-option-delete:hover,
 html[data-theme='dark'] #right-sidebar [id^='sidebar-report-delete-btn-'],
 html[data-theme='dark'] #right-sidebar [id^='sidebar-report-delete-btn-']:hover {
     color: var(--dm-danger-text) !important;
@@ -68,6 +77,7 @@ html[data-theme='dark'] .security-shell {
 
 html[data-theme='dark'] .sk-sidebar,
 html[data-theme='dark'] .sidebar-expand .side-bar,
+html[data-theme='dark'] .profile-shell .side-bar,
 html[data-theme='dark'] #right-sidebar,
 html[data-theme='dark'] .profile-main-screen,
 html[data-theme='dark'] .profile-card,
@@ -110,7 +120,8 @@ html[data-theme='dark'] .sidebar-expand .main-screen.chat-mode {
     ) !important;
 }
 
-html[data-theme='dark'] .sidebar-expand .side-bar::after {
+html[data-theme='dark'] .sidebar-expand .side-bar::after,
+html[data-theme='dark'] .profile-shell .side-bar::after {
     background: rgba(148, 163, 184, 0.14) !important;
 }
 
@@ -122,6 +133,7 @@ html[data-theme='dark'] .sk-sidebar-divider,
 html[data-theme='dark'] .sk-card,
 html[data-theme='dark'] .sk-table-row,
 html[data-theme='dark'] .sidebar-expand .divider,
+html[data-theme='dark'] .profile-shell .divider,
 html[data-theme='dark'] #sidebar-divider-line,
 html[data-theme='dark'] .profile-section-heading,
 html[data-theme='dark'] .profile-detail-row,
@@ -149,6 +161,8 @@ html[data-theme='dark'] #right-sidebar-content {
 
 html[data-theme='dark'] .sidebar-expand .history,
 html[data-theme='dark'] .sidebar-expand .search-file-field,
+html[data-theme='dark'] .profile-shell .history,
+html[data-theme='dark'] .profile-shell .search-file-field,
 html[data-theme='dark'] #select-project-drop-down,
 html[data-theme='dark'] #sidebar-create-project-button,
 html[data-theme='dark'] #sidebar-source-upload-button,
@@ -182,6 +196,8 @@ html[data-theme='dark'] .profile-danger-button {
 
 html[data-theme='dark'] .sidebar-expand .history:hover,
 html[data-theme='dark'] .sidebar-expand .search-file-field:hover,
+html[data-theme='dark'] .profile-shell .history:hover,
+html[data-theme='dark'] .profile-shell .search-file-field:hover,
 html[data-theme='dark'] #select-project-drop-down:hover,
 html[data-theme='dark'] #sidebar-create-project-button:hover,
 html[data-theme='dark'] #sidebar-theme-button:hover,
@@ -781,9 +797,11 @@ html[data-theme='dark'] [id^='sidebar-report-delete-btn-'] {
     color: var(--dm-danger-text) !important;
 }
 
-html[data-theme='dark'] [id^='chat-history-item-dropdown-'] {
-    background: #000000 !important;
+html[data-theme='dark'] [id^='chat-history-item-dropdown-'],
+html[data-theme='dark'] .chat-menu-dropdown {
+    background: var(--dm-surface) !important;
     border-color: var(--dm-border) !important;
+    box-shadow: var(--dm-shadow) !important;
 }
 
 html[data-theme='dark'] [id^='chat-history-item-export-button-'] {
@@ -1334,11 +1352,13 @@ html[data-theme='dark'] #sidebar-project-options-menu #sidebar-project-option-de
 }
 
 /* Chat history dropdown menu items */
-html[data-theme='dark'] [id^='chat-history-item-dropdown-'] button {
+html[data-theme='dark'] [id^='chat-history-item-dropdown-'] button,
+html[data-theme='dark'] .chat-menu-dropdown button {
     border-bottom-color: var(--dm-border) !important;
 }
 
-html[data-theme='dark'] [id^='chat-history-item-dropdown-'] button:last-child {
+html[data-theme='dark'] [id^='chat-history-item-dropdown-'] button:last-child,
+html[data-theme='dark'] .chat-menu-dropdown button:last-child {
     border-bottom-color: transparent !important;
 }
 

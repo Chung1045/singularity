@@ -231,6 +231,43 @@ function createChatHistoryItem(threadName, chatID) {
             }
         };
 
+        const handleChatExport = async (chatID) => {
+            setMenuOpen(false);
+            const projectID = window.getCurrentProjectID ? window.getCurrentProjectID() : document.getElementById('select-project-drop-down')?.value || localStorage.getItem('selectedProjectID');
+            if (!projectID) {
+                await window.showNotification?.({ type: 'error', title: 'Error', message: 'No project selected', actionText: 'OK' });
+                return;
+            }
+            try {
+                const response = await fetch('/api/agent/chat/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ projectID, chatID })
+                });
+                if (response.ok) {
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    const filename = contentDisposition
+                        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                        : `chat-export-${Date.now()}.docx`;
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    throw new Error('Export failed');
+                }
+            } catch (err) {
+                console.error('Error exporting the chat:', err);
+                await window.showNotification?.({ type: 'error', title: 'Error', message: 'Unable to export chat', actionText: 'OK' });
+            }
+        };
+
         return React.createElement('div', {
             className: 'sidebar-items chat-history-item',
             'data-chat-id': chatID,
@@ -346,6 +383,8 @@ function createChatHistoryItem(threadName, chatID) {
                     }
                 }),
                 menuOpen && React.createElement('div', {
+                    id: `chat-history-item-dropdown-${chatID}`,
+                    className: 'chat-menu-dropdown',
                     style: {
                         position: 'absolute',
                         top: '100%',
@@ -361,6 +400,29 @@ function createChatHistoryItem(threadName, chatID) {
                     }
                 },
                     React.createElement('button', {
+                        id: `chat-history-item-export-button-${chatID}`,
+                        style: {
+                            width: '100%',
+                            padding: '12px 14.5px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '13.3px',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease',
+                            borderBottom: '1px solid #f0f0f0'
+                        },
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
+                        },
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+                        onClick: (e) => { e.stopPropagation(); handleChatExport(chatID); }
+                    }, 'Export Chat'),
+                    React.createElement('button', {
+                        id: `chat-history-item-delete-button-${chatID}`,
                         style: {
                             width: '100%',
                             padding: '12px 14.5px',
@@ -374,7 +436,10 @@ function createChatHistoryItem(threadName, chatID) {
                             fontFamily: '"Inter", Helvetica',
                             transition: 'background-color 0.2s ease'
                         },
-                        onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f5f5f5'; },
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? 'rgba(127, 29, 29, 0.3)' : '#f5f5f5';
+                        },
                         onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                         onClick: (e) => { e.stopPropagation(); handleDelete(); }
                     }, 'Delete')
@@ -1502,8 +1567,12 @@ window.createNewChat = function() {
 
         console.log('New chat created - ready for first message');
     } else {
-        // On other pages - navigate to home page
+        // On other pages - clear chat state and navigate to home so welcome screen shows
         console.log('Navigating to home page for new chat...');
+        window.currentChatID = null;
+        localStorage.removeItem('activeChatID');
+        localStorage.removeItem('activeChatProjectID');
+        localStorage.setItem('wentBackToInitial', 'true');
         window.location.href = '/home';
     }
 };
