@@ -1,5 +1,8 @@
 const UAParser = require("ua-parser-js");
 const sharp = require("sharp");
+const ServiceError = require('../errors/ServiceError');
+
+const SERVICE_NAME = 'UtilsService';
 
 async function getClientDeviceInfo(req){
     const parser = new UAParser(req.headers['user-agent']);
@@ -7,7 +10,7 @@ async function getClientDeviceInfo(req){
 
     const ip =
         req.headers['x-forwarded-for']?.split(',').shift() ||
-        req.socket?.remoteAddress;
+        req.socket?.remoteAddress || 'Unknown';
 
     const osName = uaResult.os.name || 'Unknown';
     const osVersion = uaResult.os.version || '';
@@ -28,18 +31,25 @@ async function getClientDeviceInfo(req){
 }
 
 async function cropAndCompressImage(image) {
-    const compressedBuffer = await sharp(image.path)
-        .resize(800, 800, {
-            fit: 'cover',
-            position: 'center'
-        })
-        .jpeg({ quality: 80 })
-        .toBuffer();
+    if (!image?.path) {
+        throw new ServiceError(SERVICE_NAME, 'cropAndCompressImage', 'Missing file path');
+    }
 
-    console.log(`Compressed size: ${compressedBuffer.length} bytes`);
+    try{
+        const compressedBuffer = await sharp(image.path)
+            .resize(800, 800, {
+                fit: 'cover',
+                position: 'center'
+            })
+            .jpeg({ quality: 80 })
+            .toBuffer();
 
-    return compressedBuffer
+        console.log(`Compressed size: ${compressedBuffer.length} bytes`);
 
+        return compressedBuffer
+    } catch(err) {
+        throw new ServiceError(SERVICE_NAME, 'cropAndCompressImage', 'Image processing failed', err);
+    }
 }
 
 module.exports = {
