@@ -452,6 +452,51 @@ html[data-theme='dark'] .suggestion-chip::before {
     border-color: var(--dm-border) !important;
 }
 
+/* Edit mode - dark theme */
+html[data-theme='dark'] .edit-mode-indicator-btn {
+    background: rgba(251, 191, 36, 0.15) !important;
+    border-color: rgba(251, 191, 36, 0.4) !important;
+    color: var(--dm-muted) !important;
+}
+
+html[data-theme='dark'] .edit-mode-indicator-btn:hover {
+    background: rgba(251, 191, 36, 0.22) !important;
+    color: #fbbf24 !important;
+}
+
+html[data-theme='dark'] .edit-mode-dot {
+    background: #fbbf24 !important;
+}
+
+html[data-theme='dark'] .edit-input-label {
+    background: rgba(251, 191, 36, 0.1) !important;
+    border-left-color: #fbbf24 !important;
+}
+
+html[data-theme='dark'] .edit-input-label-text {
+    color: #fbbf24 !important;
+}
+
+html[data-theme='dark'] .edit-input-label-original {
+    color: var(--dm-muted) !important;
+}
+
+html[data-theme='dark'] .message-bubble.user-bubble.edit-mode-editing {
+    border-left-color: #fbbf24 !important;
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.12) 0%, transparent 100%) !important;
+}
+
+html[data-theme='dark'] .input-field.edit-mode-active {
+    border-color: rgba(251, 191, 36, 0.5) !important;
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.15) !important;
+}
+
+
+html[data-theme='dark'] .chip.cancel-edit {
+    background: var(--dm-surface-3) !important;
+    color: var(--dm-text) !important;
+}
+
 html[data-theme='dark'] .search-result-item:hover,
 html[data-theme='dark'] .search-results-panel-content .search-result-item:hover {
     background: var(--dm-surface-3) !important;

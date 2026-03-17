@@ -77,8 +77,7 @@ const ChatController = {
         EditMode.removeMessagesFromSeq(chatSeq);
 
         const inputBox = document.getElementById('input-field-form');
-        // inputBox.style.transition = "border 0.5s";
-        inputBox.style.border = ""
+        if (inputBox) inputBox.classList.remove('edit-mode-active');
 
         const cancelBtn = document.querySelector('.chip.cancel-edit');
         if (cancelBtn) cancelBtn.remove();

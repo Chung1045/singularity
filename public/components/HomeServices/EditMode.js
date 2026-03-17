@@ -38,34 +38,9 @@ const EditMode = {
      * @param {number} chatSeq
      */
     start(text, conversationID, chatSeq) {
+        console.log(`chatSeq is ${chatSeq}`);
 
-        console.log(`chatSeq is ${chatSeq}`)
-
-        // Set input value
-        const input = document.getElementById('main-message-input') || document.getElementById('message-input');
-        if (input) {
-            input.value = text;
-            input.focus();
-        }
-
-        const inputBox = document.getElementById('input-field-form');
-        // inputBox.style.transition = "border 0.5s";
-        inputBox.style.border = "2px solid #000000"
-
-        const suggestionChipsContainer = document.getElementById('suggestion-chips');
-
-        if (!suggestionChipsContainer.querySelector('.chip.cancel-edit')) {
-            const button = document.createElement('button');
-            button.className = 'chip cancel-edit';
-            button.style.background = '#1E293B';
-            button.style.color = '#FFFFFF';
-            button.textContent = 'Cancel Edit';
-            button.addEventListener('click', () => this.cancel());
-
-            suggestionChipsContainer.prepend(button);
-        }
-
-        // Find attached file IDs from the message
+        // Find attached file IDs from the message first (before DOM changes)
         let attachedFileIDs = [];
         const messagesContainer = document.getElementById('chat-messages');
         if (messagesContainer) {
@@ -87,9 +62,43 @@ const EditMode = {
             originalText: text,
             attachedFileIDs
         };
-
-        // Also set on window for backward compatibility
         window.editingMessage = this._state;
+
+        // Set input value and focus (P0: Focus management)
+        const input = document.getElementById('main-message-input') || document.getElementById('message-input');
+        if (input) {
+            input.value = text;
+            input.focus();
+            input.setAttribute('aria-label', 'Editing message. Press Escape to cancel.');
+        }
+
+        const inputBox = document.getElementById('input-field-form');
+        if (inputBox) inputBox.classList.add('edit-mode-active');
+
+        const suggestionChipsContainer = document.getElementById('suggestion-chips');
+        if (!suggestionChipsContainer.querySelector('.chip.cancel-edit')) {
+            const button = document.createElement('button');
+            button.className = 'chip cancel-edit';
+            button.setAttribute('aria-label', 'Cancel editing');
+            button.textContent = 'Cancel Edit';
+            button.addEventListener('click', () => this.cancel());
+            suggestionChipsContainer.prepend(button);
+        }
+
+        // P0: Escape key to cancel
+        this._escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.cancel();
+            }
+        };
+        document.addEventListener('keydown', this._escapeHandler);
+
+        // P0: ARIA live announcement
+        this._announceToScreenReader(`Editing message ${chatSeq}. Modify and press Send, or Escape to cancel.`);
+
+        // P1: Scroll to keep edited message visible
+        this._scrollToEditedMessage(conversationID, chatSeq);
 
         // Show cancel button on the message
         this._showCancelButton(conversationID, chatSeq);
@@ -101,6 +110,7 @@ const EditMode = {
 
         // Update UI
         this._showEditIndicator();
+        this._showInputEditLabel();
         this._updateSendButton(true);
         this._updateCancelButton();
 
@@ -111,77 +121,141 @@ const EditMode = {
      * Cancel editing
      */
     cancel() {
+        // P0: Remove Escape listener before clearing state
+        if (this._escapeHandler) {
+            document.removeEventListener('keydown', this._escapeHandler);
+            this._escapeHandler = null;
+        }
+
         this._state = null;
         window.editingMessage = null;
 
-        // Reset send button
         this._updateSendButton(false);
 
-        // Remove edit indicator
         const indicator = document.getElementById('edit-mode-indicator');
         if (indicator) indicator.remove();
 
-        // Hide cancel buttons and restore edit buttons
+        this._hideInputEditLabel();
         this._hideCancelButtons();
 
-        // Clear input
+        const input = document.getElementById('main-message-input') || document.getElementById('message-input');
+        if (input) input.removeAttribute('aria-label');
         ChatUtils.clearInput();
-
-        // Clear selected files
         ChatUtils.clearSelectedFiles();
 
         const inputBox = document.getElementById('input-field-form');
-        // inputBox.style.transition = "border 0.5s";
-        inputBox.style.border = ""
+        if (inputBox) inputBox.classList.remove('edit-mode-active');
 
         const cancelBtn = document.querySelector('.chip.cancel-edit');
         if (cancelBtn) cancelBtn.remove();
 
+        this._announceToScreenReader('Edit cancelled.');
     },
 
     /**
-     * Show edit mode indicator in chat title
+     * Show edit mode indicator in chat title (P2: Progressive disclosure - hover for details)
      */
     _showEditIndicator() {
-        // Remove existing
         const existing = document.getElementById('edit-mode-indicator');
         if (existing) existing.remove();
 
         const chatTitle = document.getElementById('chat-title');
         if (!chatTitle) return;
 
-        // Add ripple animation style
-        if (!document.getElementById('edit-ripple-style')) {
-            const style = document.createElement('style');
-            style.id = 'edit-ripple-style';
-            style.textContent = `
-                @keyframes ripple {
-                    0% { transform: scale(1); opacity: 1; }
-                    50% { transform: scale(1.3); opacity: 0.7; }
-                    100% { transform: scale(1); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
+        const chatSeq = this._state?.chatSeq ?? 0;
+        const preview = (this._state?.originalText ?? '').slice(0, 60);
+        const tooltip = preview ? `Original: ${preview}${preview.length >= 60 ? '...' : ''}` : 'Editing message';
 
-        const indicator = document.createElement('span');
+        const indicator = document.createElement('button');
         indicator.id = 'edit-mode-indicator';
-        indicator.style.cssText = `
-            margin-left: 12px;
-            margin-right: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-            vertical-align: middle;
-        `;
+        indicator.type = 'button';
+        indicator.className = 'edit-mode-indicator-btn';
+        indicator.setAttribute('aria-label', `Editing message ${chatSeq}. Click to focus input. ${tooltip}`);
+        indicator.title = tooltip;
+        indicator.onclick = () => {
+            const input = document.getElementById('main-message-input') || document.getElementById('message-input');
+            if (input) input.focus();
+        };
 
         indicator.innerHTML = `
-            <span style="width: 8px; height: 8px; background-color: #ff9800; border-radius: 50%; animation: ripple 1.5s ease-in-out infinite;"></span>
-            <span style="font-family: 'Inter', Helvetica; font-size: 13px; color: #999;">On Edit</span>
+            <span class="edit-mode-dot" aria-hidden="true"></span>
+            <span class="edit-mode-label">Editing #${chatSeq}</span>
+            <span class="edit-mode-preview" aria-hidden="true">${preview ? preview + (preview.length >= 60 ? '...' : '') : ''}</span>
         `;
 
         chatTitle.appendChild(indicator);
+    },
+
+    /**
+     * Input area label - "Editing message #N" with optional original preview
+     */
+    _showInputEditLabel() {
+        const existing = document.getElementById('edit-input-label');
+        if (existing) existing.remove();
+
+        const inputArea = document.getElementById('input-area-wrapper');
+        const form = document.getElementById('input-field-form');
+        if (!inputArea || !form) return;
+
+        const chatSeq = this._state?.chatSeq ?? 0;
+        const originalText = this._state?.originalText ?? '';
+
+        const wrapper = document.createElement('div');
+        wrapper.id = 'edit-input-label';
+        wrapper.className = 'edit-input-label';
+        wrapper.setAttribute('role', 'status');
+        wrapper.setAttribute('aria-live', 'polite');
+
+        const label = document.createElement('span');
+        label.className = 'edit-input-label-text';
+        label.textContent = `Editing message #${chatSeq}`;
+
+        wrapper.appendChild(label);
+
+        if (originalText) {
+            const preview = document.createElement('span');
+            preview.className = 'edit-input-label-original';
+            preview.textContent = originalText.slice(0, 80) + (originalText.length > 80 ? '...' : '');
+            preview.title = originalText;
+            wrapper.appendChild(preview);
+        }
+
+        inputArea.insertBefore(wrapper, form);
+    },
+
+    _hideInputEditLabel() {
+        const el = document.getElementById('edit-input-label');
+        if (el) el.remove();
+    },
+
+    /**
+     * P0: ARIA live region for screen readers
+     */
+    _announceToScreenReader(message) {
+        let region = document.getElementById('edit-mode-aria-live');
+        if (!region) {
+            region = document.createElement('div');
+            region.id = 'edit-mode-aria-live';
+            region.setAttribute('aria-live', 'polite');
+            region.setAttribute('aria-atomic', 'true');
+            region.className = 'sr-only';
+            region.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
+            document.body.appendChild(region);
+        }
+        region.textContent = message;
+    },
+
+    /**
+     * P1: Scroll to keep edited message visible
+     */
+    _scrollToEditedMessage(conversationID, chatSeq) {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return;
+
+        const msg = messagesContainer.querySelector(`.message[data-conversation-id="${conversationID}"][data-chat-seq="${chatSeq}"]`);
+        if (msg) {
+            msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     },
 
     /**
@@ -189,10 +263,11 @@ const EditMode = {
      * @param {boolean} editing
      */
     _updateSendButton(editing) {
-        const sendBtn = document.querySelector('.btn-send') || document.getElementById('btn-send-message');
+        const sendBtn = document.getElementById('input-field-send-button') || document.querySelector('.btn-send') || document.getElementById('btn-send-message');
         if (sendBtn) {
-            sendBtn.style.backgroundColor = editing ? '#ff9800' : '';
+            sendBtn.classList.toggle('edit-mode-send', editing);
             sendBtn.title = editing ? 'Send edited message' : 'Send message';
+            sendBtn.setAttribute('aria-label', editing ? 'Send edited message' : 'Send message');
         }
     },
 
@@ -212,27 +287,20 @@ const EditMode = {
             if (editButton) editButton.style.display = "flex";
 
             const messageBubble = msg.querySelector('.message-bubble.user-bubble');
-            if (messageBubble) {
-                // messageBubble.style.transition = "border 0.5s";
-                messageBubble.style.border = null
-            }
+            if (messageBubble) messageBubble.classList.remove('edit-mode-editing');
         });
 
-        // Then apply editing state to the specific message
+        // Then apply editing state to the specific message (P1: visual connection)
         messagesContainer.querySelectorAll('.message').forEach(msg => {
             if (msg.dataset.conversationId === conversationID && parseInt(msg.dataset.chatSeq) === chatSeq) {
-            const editingLabel = msg.querySelector(".message-edit-indicator");
-            if (editingLabel) editingLabel.style.display = 'inline-flex';
+                const editingLabel = msg.querySelector(".message-edit-indicator");
+                if (editingLabel) editingLabel.style.display = 'inline-flex';
 
                 const editButton = msg.querySelector(".message-edit-btn");
                 if (editButton) editButton.style.display = "none";
 
                 const messageBubble = msg.querySelector('.message-bubble.user-bubble');
-                if (messageBubble) {
-                    // messageBubble.style.transition = "border 0.5s";
-                    messageBubble.style.border = "2px solid #000"
-                }
-
+                if (messageBubble) messageBubble.classList.add('edit-mode-editing');
             }
         });
     },
@@ -255,8 +323,7 @@ const EditMode = {
         });
 
         document.querySelectorAll('.message-bubble.user-bubble').forEach(bubble => {
-            // bubble.style.transition = "border 0.5s";
-            bubble.style.border = null
+            bubble.classList.remove('edit-mode-editing');
         });
 
     },
