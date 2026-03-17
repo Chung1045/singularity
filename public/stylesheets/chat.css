@@ -42,6 +42,7 @@
     display: none; /* Hidden by default, shown when chat is active */
     align-items: center;
     gap: 20px; /* Increased gap between button and title */
+    min-height: 52px; /* Lock height to prevent shift when edit indicator is added */
     padding: 16px 20px;
     margin: 0;
     background: rgba(255, 255, 255, 0.95);
@@ -879,9 +880,11 @@
 .edit-mode-indicator-btn {
     display: inline-flex;
     align-items: center;
+    flex-shrink: 0;
     gap: 8px;
     margin-left: 12px;
-    padding: 6px 12px;
+    padding: 4px 12px;
+    line-height: 1.2; /* Match title to prevent vertical shift */
     border-radius: 20px;
     background: rgba(255, 152, 0, 0.12);
     border: 1px solid rgba(255, 152, 0, 0.4);

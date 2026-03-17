@@ -183,7 +183,8 @@ const EditMode = {
             <span class="edit-mode-preview" aria-hidden="true">${preview ? preview + (preview.length >= 60 ? '...' : '') : ''}</span>
         `;
 
-        chatTitle.appendChild(indicator);
+        // Insert as sibling after chat-title (not inside it) to prevent title layout shift
+        chatTitle.parentNode.insertBefore(indicator, chatTitle.nextSibling);
     },
 
     /**
