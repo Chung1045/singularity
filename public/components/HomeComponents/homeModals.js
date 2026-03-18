@@ -280,44 +280,22 @@ const ConfirmModal = {
 };
 
 /**
- * AlertModal - Simple alert modal
+ * AlertModal - Simple alert modal (theme-aware)
  */
 const AlertModal = {
     show({ title, message, buttonText = 'OK', autoClose = 5000 }) {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: rgba(0, 0, 0, 0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: ${window.ZIndex?.MODAL || 10001};
-                padding: 20px;
-            `;
+            modal.className = 'alert-modal-backdrop';
 
             const content = document.createElement('div');
-            content.style.cssText = `
-                background-color: #ffffff;
-                border-radius: 15px;
-                padding: 30px;
-                max-width: 500px;
-                width: 100%;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            `;
+            content.className = 'alert-modal-content';
 
             content.innerHTML = `
-                <div id="modal-title" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 18px; color: #1a1a1a; margin: 0;">${title}</div>
-                <div id="notification-message" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 14px; color: #666666; margin: 0; line-height: 1.5;">${message}</div>
-                <div style="display: flex; justify-content: flex-end;">
-                    <button id="alert-ok-btn" style="padding: 12px 32px; border-radius: 10px; border: none; background-color: #000000; color: #ffffff; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${buttonText}</button>
+                <div class="alert-modal-title">${title}</div>
+                <div class="alert-modal-message">${message}</div>
+                <div class="alert-modal-actions">
+                    <button type="button" id="alert-ok-btn" class="alert-modal-btn">${buttonText}</button>
                 </div>
             `;
 

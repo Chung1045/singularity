@@ -866,25 +866,16 @@ async function reorderUserStories(projectID) {
     }
 }
 
-async function exportChat(chatID, projectID){
-
+async function exportChat(chatID, projectID) {
+    if (!chatID || !projectID) return null;
     try {
-        let chatThread = await fetchChatThread(projectID, chatID);
-        console.log(chatThread)
-
-        let conversations = chatThread.conversations;
-        let content = ""
-
-
+        const chatThread = await fetchChatThread(projectID, chatID);
+        return chatThread?.conversations ?? [];
     } catch (err) {
-
+        console.error('exportChat error:', err);
+        return null;
     }
-
-
 }
-
-// can it be removed or to make it be dynamic?
-exportChat("109565be-5e85-4977-ba6b-a22b6c5561b5", "e719a12c-6831-4feb-8e9d-23c3cdcd5837")
 
 module.exports = {
     conversationEdit,
@@ -912,5 +903,6 @@ module.exports = {
     updateProjectRequirementSourceRef,
     updateProjectRequirementStoryRef,
     updateUserStorySourceRef,
-    getChatThreadName
+    getChatThreadName,
+    exportChat
 }
