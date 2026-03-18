@@ -13,6 +13,9 @@ async function startupCheck() {
         await fss.testConnection(process.env.MINIO_BUCKET);
         serverLogger.info("MinIO connection OK.");
 
+        await fss.init();
+        serverLogger.info("MinIO bucket initialized.");
+
         if (!process.env.XAI_API_KEY) {
             throw new ServiceError(SERVICE_NAME, 'startupChecks', 'XAI_API_KEY is not set. AI chat functionality will not work. Please set it in your .env file.');
         }
