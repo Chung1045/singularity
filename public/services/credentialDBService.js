@@ -1,284 +1,186 @@
-const db = require("./db")
-const uuid = require("uuid-v4")
-const fss = require("./fsServices")
+const db = require("./db");
+const uuid = require("uuid-v4");
+const fss = require("./fsServices");
 const argon2 = require('argon2');
+const { serverLogger } = require("./loggingService");
+const ServiceError = require("../errors/ServiceError");
+const { checkUsernameEmail } = require("./accountDBService");
 
-// Import findUserByUsername for use in insertGoogleOAuthUserAccount
-const { findUserByUsername } = require("./accountDBService")
+const SERVICE_NAME = 'CredentialDBService';
 
-async function insertCredentials(data){
+async function insertUserAccount(data) {
     const id = uuid();
-    const sql = `
-    INSERT INTO credential (
-      credentialID, uid, credentialPassword, changeDate
-    ) VALUES (?, ?, ?, ?)
-  `;
-
-    const now = new Date();
-    const dateIsoString = now.toISOString();
-
-    const passwordHash = await argon2.hash(data.credentialPassword);
-
-    const params = [
-        id,
-        data.uid,
-        passwordHash,
-        dateIsoString,
-    ];
-
     try {
-        await db.run(sql, params); // safe: values are bound, not interpolated
-        return id;
+        await db.run(
+            `INSERT INTO user (uid, firstName, lastName, userType, userEmail, userName)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, data.firstName.trim(), data.lastName.trim(), 'general',
+                data.userEmail?.trim() || null, data.userName.trim()]
+        );
+        return { uid: id };
     } catch (err) {
-        // handle unique constraint / validation errors
         if (err.code === 'SQLITE_CONSTRAINT') {
-            throw new Error('Unique constraint failed (uid or userName or userEmail already exists)');
+            throw new ServiceError(SERVICE_NAME, 'insertUserAccount', 'Username or email already exists', err);
         }
-        throw err;
+        throw new ServiceError(SERVICE_NAME, 'insertUserAccount', 'Failed to insert user account', err);
     }
 }
 
-async function insertUserAccount(data){
+async function insertCredentials(data) {
     const id = uuid();
-    const sql = `
-    INSERT INTO user (
-      uid, firstName, lastName, userType, userEmail, userName
-    ) VALUES (?, ?, ?, ?, ?, ?)
-  `;
-    const params = [
-        id,
-        data.firstName.trim(),
-        data.lastName.trim(),
-        'general',
-        data.userEmail ? data.userEmail.trim() : null,
-        data.userName.trim()
-    ];
-
     try {
-        await db.run(sql, params); // safe: values are bound, not interpolated
-        return { uid: id };
+        const passwordHash = await argon2.hash(data.credentialPassword);
+        await db.run(
+            `INSERT INTO credential (credentialID, uid, credentialPassword, changeDate)
+             VALUES (?, ?, ?, ?)`,
+            [id, data.uid, passwordHash, new Date().toISOString()]
+        );
+        return id;
     } catch (err) {
-        // handle unique constraint / validation errors
         if (err.code === 'SQLITE_CONSTRAINT') {
-            throw new Error('Unique constraint failed (uid or userName or userEmail already exists)');
+            throw new ServiceError(SERVICE_NAME, 'insertCredentials', 'Credential already exists for this user', err);
         }
-        throw err;
+        throw new ServiceError(SERVICE_NAME, 'insertCredentials', 'Failed to insert credentials', err);
     }
 }
 
 async function insertGoogleOAuthUserAccount(profile) {
     const uid = uuid();
-    const firstName = profile.name?.givenName?.trim() || "user";
-    const lastName  = profile.name?.familyName?.trim() || "";
-    const email     = profile.emails?.[0]?.value;
-    const userType  = "google";
+    const firstName = profile.name?.givenName?.trim() || 'user';
+    const lastName = profile.name?.familyName?.trim() || '';
+    const email = profile.emails?.[0]?.value;
 
-    console.log(`\n========================================`);
-    console.log(` NEW OAUTH REQUEST`);
-    console.log(`Profile ID: ${profile.id}`);
-    console.log(`Name: ${firstName} ${lastName}`);
-    console.log(`Email: ${email}`);
-    console.log(`Generated UID: ${uid}`);
-    console.log(`========================================\n`);
-
-    let baseUsername = `${firstName}_${lastName}`
-        .replace(/\s+/g, "_")
-        .toLowerCase();
-    if (baseUsername === "_" || !baseUsername.trim()) baseUsername = "user";
+    // ✅ Generate unique username
+    let baseUsername = `${firstName}_${lastName}`.replace(/\s+/g, '_').toLowerCase();
+    if (!baseUsername.trim() || baseUsername === '_') baseUsername = 'user';
 
     let username = baseUsername;
-    let attempt  = 0;
+    let attempt = 0;
 
-    while (!await findUserByUsername(username)) {
-        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-        username = `${baseUsername}_${randomSuffix}`;
+    while (await checkUsernameEmail(username)) {
+        const suffix = Math.floor(1000 + Math.random() * 9000);
+        username = `${baseUsername}_${suffix}`;
         attempt++;
         if (attempt > 50) {
-            throw new Error("Error (Google Oauth Register) Failed to generate a unique username after 50 attempts");
+            throw new ServiceError(SERVICE_NAME, 'insertGoogleOAuthUserAccount', 'Failed to generate unique username after 50 attempts');
         }
     }
 
-    const sqlUser = `
-        INSERT INTO user (uid, firstName, lastName, userType, userEmail, userName)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    const paramsUser = [uid, firstName, lastName, userType, email, username];
-
     try {
-        await new Promise((resolve, reject) => {
-            db.run(sqlUser, paramsUser, function(err) {
-                if (err) {
-                    console.error(`Error code: ${err.code}`);
-                    if (err.code === "SQLITE_CONSTRAINT") {
-                        console.error("Error (Google Oauth Register) User info insert - Constraint violation - possible duplicate uid, userName, or userEmail");
-                    }
-                    return reject(err);
-                }
-                resolve(this);
-            });
-        });
-    } catch (err) {
-        console.error(`Error (Google Oauth Register) - Error occurred, abort account registration`)
-        throw err;
-    }
+        await db.run('BEGIN TRANSACTION');
 
-    try {
-        await new Promise((resolve, reject) => {
-            db.run(
-                `INSERT INTO googleOauth_identity (userGoogleId, uid) VALUES (?, ?)`,
-                [profile.id, uid],
-                function(err) {
-                    if (err) return reject(err);
-                    resolve(this);
-                }
-            );
-        });
+        await db.run(
+            `INSERT INTO user (uid, firstName, lastName, userType, userEmail, userName)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [uid, firstName, lastName, 'google', email, username]
+        );
+
+        await db.run(
+            `INSERT INTO googleOauth_identity (userGoogleId, uid) VALUES (?, ?)`,
+            [profile.id, uid]
+        );
+
+        await db.run('COMMIT');
+        serverLogger.info(`[${SERVICE_NAME}] Google OAuth user registered: ${uid}`);
+
     } catch (err) {
-        console.error(`Error (Google Oauth Register) OAuth insert error: ${err.message}`);
-        throw err;
+        await db.run('ROLLBACK').catch(() => {});
+        if (err.code === 'SQLITE_CONSTRAINT') {
+            throw new ServiceError(SERVICE_NAME, 'insertGoogleOAuthUserAccount', 'Duplicate user or OAuth identity', err);
+        }
+        throw new ServiceError(SERVICE_NAME, 'insertGoogleOAuthUserAccount', 'Failed to register Google OAuth user', err);
     }
 
     if (profile.photos?.[0]?.value) {
         try {
             const response = await fetch(profile.photos[0].value);
-
-            if (!response.ok) {
-                console.error(`Error (Google Oauth Register) Unable to fetch Google Avatar: ${response.status}`);
-            } else {
-                const arrayBuffer = await response.arrayBuffer();
-                const imageBuffer = Buffer.from(arrayBuffer);
-
-                const fileObj = {
-                    buffer: imageBuffer,
+            if (response.ok) {
+                const buffer = Buffer.from(await response.arrayBuffer());
+                await fss.updateProfilePic(uid, {
+                    buffer,
                     mimetype: response.headers.get('content-type') || 'image/jpeg',
-                    size: imageBuffer.length
-                };
-
-                await fss.updateProfilePic(uid, fileObj);
+                    size: buffer.length
+                });
             }
         } catch (e) {
-            console.error(`WARNING (Google Oauth Register) Failed to save Google avatar (non-critical):`, e.message);
+            serverLogger.warn(`[${SERVICE_NAME}:insertGoogleOAuthUserAccount] Failed to save Google avatar (non-critical): ${e.message}`);
         }
     }
 
     return { uid, userName: username };
 }
 
-async function savePasskey(data) {
-    console.log("Data received: " + JSON.stringify(data))
-
-    // MODIFIED: Include lastUsed set to NULL initially (will update on first use)
-    const sql = `INSERT INTO passkeys (keyID, uid, keyName, transports, signCount, publicKey, dateCreate, lastUsed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    const now = new Date().toISOString();
-    const params = [
-        data.keyID,
-        data.uid,
-        data.keyName,
-        data.transports,
-        data.signCount,
-        data.publicKey,
-        now,
-        null  // lastUsed starts as null
-    ]
-
-    console.log("Params: " + params)
+async function checkPassword(data) {
     try {
-        await db.run(sql, params);
-        return true;
-    } catch (error) {
-        throw error;
+        const row = await db.get(
+            `SELECT credentialPassword FROM credential WHERE uid = ?`,
+            [data.uid]
+        );
+        if (!row) return false;
+        return await argon2.verify(row.credentialPassword, data.password);
+    } catch (err) {
+        throw new ServiceError(SERVICE_NAME, 'checkPassword', 'Failed to verify password', err);
     }
 }
 
-async function checkPassword(data) {
-    const query = `
-        SELECT credentialPassword
-        FROM credential
-        WHERE uid = ?
-    `;
-    const params = [data.uid];
-
-    return new Promise((resolve, reject) => {
-        db.get(query, params, async (err, row) => {
-            if (err) return reject(err);
-
-            // No user found
-            if (!row) return resolve(false);
-
-            try {
-                // Verify the password against the stored hash
-                const isValid = await argon2.verify(row.credentialPassword, data.password);
-                resolve(isValid);
-            } catch (verifyErr) {
-                reject(verifyErr);
-            }
-        });
-    });
-}
-
 async function updatePassword(data) {
-    const query = `
-        UPDATE credential
-        SET credentialPassword = ?, changeDate = ?
-        WHERE uid = ?
-    `;
-
-    let passwordHash = await argon2.hash(data.password);
-    const params = [passwordHash, Date.now(), data.uid];
-
-    return new Promise((resolve, reject) => {
-        db.run(query, params, function (err) {
-            if (err) {
-                console.error("Error updating password:", err);
-                return reject(err);
-            }
-            resolve(true);
-        });
-    });
+    try {
+        const passwordHash = await argon2.hash(data.password);
+        await db.run(
+            `UPDATE credential SET credentialPassword = ?, changeDate = ? WHERE uid = ?`,
+            [passwordHash, new Date().toISOString(), data.uid] // ✅ fixed: was Date.now()
+        );
+        return true;
+    } catch (err) {
+        throw new ServiceError(SERVICE_NAME, 'updatePassword', 'Failed to update password', err);
+    }
 }
 
-
-async function checkUsernameEmail(data) {
-    const query = `
-        SELECT uid
-        FROM user
-        WHERE userName = ? OR userEmail = ?
-        LIMIT 1
-    `;
-    const params = [data, data];
-
-    return new Promise((resolve, reject) => {
-        db.get(query, params, (err, row) => {
-            if (err) return reject(err);
-            if (row) {
-                console.log("Found with uid", row.uid);
-                resolve(row.uid);
-            } else {
-                console.log("Username or email address is not found.");
-                resolve(false);
-            }
-        });
-    });
+async function checkUsernameEmailExists(data) {
+    try {
+        const row = await db.get(
+            `SELECT uid FROM user WHERE userName = ? OR userEmail = ? LIMIT 1`,
+            [data, data]
+        );
+        return row ? row.uid : false;
+    } catch (err) {
+        throw new ServiceError(SERVICE_NAME, 'checkUsernameEmailExists', 'Failed to check username/email', err);
+    }
 }
 
-// TODO: Fix logic
-// MODIFIED: Updated to include device information
+async function savePasskey(data) {
+    try {
+        await db.run(
+            `INSERT INTO passkeys (keyID, uid, keyName, transports, signCount, publicKey, dateCreate, lastUsed)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [data.keyID, data.uid, data.keyName, data.transports,
+                data.signCount, data.publicKey, new Date().toISOString(), null]
+        );
+        return true;
+    } catch (err) {
+        throw new ServiceError(SERVICE_NAME, 'savePasskey', 'Failed to save passkey', err);
+    }
+}
+
 async function updatePasskeyLastUsed(keyID) {
-    const sql = `UPDATE passkeys SET lastUsed = ? WHERE keyID = ?`;
-    const params = [new Date().toISOString(), keyID];
-
-    return new Promise((resolve, reject) => {
-        db.run(sql, params, function(err) {
-            if (err) {
-                console.error(` Error updating passkey lastUsed:`, err);
-                return reject(err);
-            }
-            // console.log(` Updated lastUsed for passkey: ${keyID} with device: ${deviceInfo}`);
-            resolve(true);
-        });
-    });
+    try {
+        await db.run(
+            `UPDATE passkeys SET lastUsed = ? WHERE keyID = ?`,
+            [new Date().toISOString(), keyID]
+        );
+        return true;
+    } catch (err) {
+        throw new ServiceError(SERVICE_NAME, 'updatePasskeyLastUsed', 'Failed to update passkey last used', err);
+    }
 }
 
-
-
-module.exports = { insertCredentials, insertUserAccount, insertGoogleOAuthUserAccount, savePasskey, checkPassword, checkUsernameEmail, updatePassword, updatePasskeyLastUsed }
+module.exports = {
+    insertCredentials,
+    insertUserAccount,
+    insertGoogleOAuthUserAccount,
+    savePasskey,
+    checkPassword,
+    checkUsernameEmailExists,
+    updatePassword,
+    updatePasskeyLastUsed
+};
