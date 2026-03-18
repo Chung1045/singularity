@@ -12,7 +12,7 @@ const https = require('https');
 const socketIo = require('socket.io');
 
 const {serverLogger, logAccessedPath, logger} = require("./public/services/loggingService");
-const startupCheck = require("./public/services/startupCheck");
+const {startupCheck} = require("./public/services/startupCheck");
 const routeManager = require("./public/managers/routesManager");
 const accountManagerRouter = require("./public/managers/accountManager");
 const aiAgentManagerRouter = require("./public/managers/aiAgentManager");
