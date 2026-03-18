@@ -488,7 +488,7 @@ function generateChatThreadHistDoc(projectID, chatID) {
     // Start the async work but don't await it
     (async () => {
         try {
-            const { convertMarkdownToDocx } = require("@mohtasham/md-to-docx");
+            const { convertMarkdownToDocx } = await import("@mohtasham/md-to-docx");
 
             const projectName = await projectDB.fetchProjectName(projectID);
             const chatThread = await aiDB.fetchChatThread(projectID, chatID);
