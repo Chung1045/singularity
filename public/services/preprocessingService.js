@@ -7,6 +7,10 @@ const { pipeline, env } = require('@huggingface/transformers');
 const { WaveFile } = require('wavefile');
 const libre = require('libreoffice-convert');
 const crypto = require('crypto');
+const ServiceError = require("../errors/ServiceError");
+const {serverLogger} = require("./loggingService");
+
+const SERVICE_NAME = 'PreprocessingService';
 
 // Environment Setting
 libre.convertAsync = require('util').promisify(libre.convert);
@@ -24,54 +28,45 @@ let modelLoadFailed = false;
 async function getTranscriber() {
     // If model previously failed to load, don't retry
     if (modelLoadFailed) {
-        throw new Error('Whisper model previously failed to load');
+        throw new ServiceError(SERVICE_NAME, 'getTranscriber', 'Whisper model previously failed to load');
     }
 
-    // If already loaded, return immediately
-    if (transcriber) {
-        return transcriber;
-    }
+    if (transcriber) return transcriber;
+    if (modelLoading) return modelLoading;
 
-    // If currently loading, wait for it
-    if (modelLoading) {
-        return modelLoading;
-    }
-
-    // Start loading
-    console.log('Loading Whisper model (this happens once)...');
+    serverLogger.info(`[${SERVICE_NAME}] Loading Whisper model...`);
     const startTime = Date.now();
 
-    modelLoading = await pipeline(
+    modelLoading = pipeline(
         'automatic-speech-recognition',
-        // 'Xenova/whisper-large-v2',
         'Xenova/whisper-base',
         {
             quantized: true,
-            dtype: {
-                encoder_model: 'q8',
-                decoder_model_merged: 'q8'
-            },
+            dtype: { encoder_model: 'q8', decoder_model_merged: 'q8' },
             cache_dir: path.join(__dirname, '../model_cache')
         }
     ).then(model => {
         transcriber = model;
         modelLoading = null;
-        const loadTime = ((Date.now() - startTime) / 1000).toFixed(2);
-        console.log(`Whisper model loaded in ${loadTime}s and ready for requests`);
+        serverLogger.info(`[${SERVICE_NAME}] Whisper model loaded in ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
         return model;
     }).catch(err => {
-        console.error(`Failed to load whisper model: ${err.message}`);
         modelLoading = null;
         modelLoadFailed = true;
         transcriber = null;
-        throw err;
+        throw new ServiceError(SERVICE_NAME, 'getTranscriber', 'Failed to load Whisper model', err);
     });
 
     return modelLoading;
 }
 
-async function init(){
-    transcriber = await getTranscriber()
+async function init() {
+    try {
+        transcriber = await getTranscriber();
+    } catch (err) {
+        if (err instanceof ServiceError) throw err;
+        throw new ServiceError(SERVICE_NAME, 'init', 'Failed to initialize transcriber', err);
+    }
 }
 
 // lazy singleton for pdfjslib
@@ -88,69 +83,75 @@ function createTempPath(extension) {
 }
 
 async function processAudioBuffer(wavBuffer) {
-    const wav = new WaveFile(wavBuffer);
-    wav.toBitDepth('32f');
-    wav.toSampleRate(16000);
+    try {
+        const wav = new WaveFile(wavBuffer);
+        wav.toBitDepth('32f');
+        wav.toSampleRate(16000);
 
-    let audioData = wav.getSamples();
-    if (Array.isArray(audioData)) {
-        if (audioData.length > 1) {
-            const SCALING_FACTOR = Math.sqrt(2);
-            for (let i = 0; i < audioData[0].length; i++) {
-                audioData[0][i] = SCALING_FACTOR * (audioData[0][i] + audioData[1][i]) / 2;
+        let audioData = wav.getSamples();
+        if (Array.isArray(audioData)) {
+            if (audioData.length > 1) {
+                const SCALING_FACTOR = Math.sqrt(2);
+                for (let i = 0; i < audioData[0].length; i++) {
+                    audioData[0][i] = SCALING_FACTOR * (audioData[0][i] + audioData[1][i]) / 2;
+                }
             }
+            audioData = audioData[0];
         }
-        audioData = audioData[0];
-    }
 
-    let maxAbs = 0;
-    for (const v of audioData) maxAbs = Math.max(maxAbs, Math.abs(v));
-    if (maxAbs > 0 && maxAbs < 0.9) {
-        const gain = 0.9 / maxAbs;
-        for (let i = 0; i < audioData.length; i++) audioData[i] *= gain;
-    }
+        let maxAbs = 0;
+        for (const v of audioData) maxAbs = Math.max(maxAbs, Math.abs(v));
+        if (maxAbs > 0 && maxAbs < 0.9) {
+            const gain = 0.9 / maxAbs;
+            for (let i = 0; i < audioData.length; i++) audioData[i] *= gain;
+        }
 
-    return audioData;
+        return audioData;
+    } catch (err) {
+        throw new ServiceError(SERVICE_NAME, 'processAudioBuffer', 'Failed to process audio buffer', err);
+    }
 }
 
 async function transcribeAudioData(audioData) {
-    const model = await getTranscriber();
-    const output = await model(audioData, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        language: 'en',
-    });
-    return output.text?.trim();
+    try {
+        const model = await getTranscriber();
+        const output = await model(audioData, {
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            language: 'en',
+        });
+        return output.text?.trim();
+    } catch (err) {
+        if (err instanceof ServiceError) throw err;
+        throw new ServiceError(SERVICE_NAME, 'transcribeAudioData', 'Transcription failed', err);
+    }
 }
 
 // OTHER SMALL HELPER FUNCTION
 // Convert video and audio to different file type
 async function convert_ffmpeg(inputPath, outputPath, convertType) {
-    const audioCodecMap = {
-        mp3: 'libmp3lame',
-        wav: 'pcm_s16le',
-    };
-
+    const audioCodecMap = { mp3: 'libmp3lame', wav: 'pcm_s16le' };
     const audioCodec = audioCodecMap[convertType];
-    if (!audioCodec) throw new Error(`Unsupported convert type: ${convertType}`);
 
-    await new Promise((resolve, reject) => {
-        ffmpeg(inputPath)
-            .audioFrequency(16000)
-            .audioChannels(1)
-            .audioCodec(audioCodec)
-            .format(convertType)
-            .audioBitrate('128k')
-            .on('end', () => {
-                console.log(`ffmpeg ${convertType} conversion completed`);
-                resolve();
-            })
-            .on('error', (err) => {
-                console.error(`ffmpeg ${convertType} error:`, err);
-                reject(err);
-            })
-            .save(outputPath);
-    });
+    if (!audioCodec) {
+        throw new ServiceError(SERVICE_NAME, 'convert_ffmpeg', `Unsupported convert type: ${convertType}`);
+    }
+
+    try {
+        await new Promise((resolve, reject) => {
+            ffmpeg(inputPath)
+                .audioFrequency(16000)
+                .audioChannels(1)
+                .audioCodec(audioCodec)
+                .format(convertType)
+                .audioBitrate('128k')
+                .on('end', resolve)
+                .on('error', reject)
+                .save(outputPath);
+        });
+    } catch (err) {
+        throw new ServiceError(SERVICE_NAME, 'convert_ffmpeg', `FFmpeg conversion to ${convertType} failed`, err);
+    }
 }
 
 // Extract text from video/audio using ffmpeg and Whisper model
@@ -168,17 +169,16 @@ async function videoAudioExtracted_ffmpeg(inputPath) {
         const wavBuffer = await fs.readFile(tempWavPath);
         const audioData = await processAudioBuffer(wavBuffer);
 
-        console.log(`WAV conversion done in ${((Date.now() - conversionStart) / 1000).toFixed(2)}s`);
+        serverLogger.info(`[${SERVICE_NAME}] WAV conversion done in ${((Date.now() - conversionStart) / 1000).toFixed(2)}s`);
 
         const transcriptionStart = Date.now();
         const text = await transcribeAudioData(audioData);
-        console.log(`Transcription done in ${((Date.now() - transcriptionStart) / 1000).toFixed(2)}s`);
-        console.log(`Total processing time: ${((Date.now() - conversionStart) / 1000).toFixed(2)}s`);
+        serverLogger.info(`[${SERVICE_NAME}] Transcription done in ${((Date.now() - transcriptionStart) / 1000).toFixed(2)}s`);
 
         return text;
     } catch (err) {
-        console.error('Transcription pipeline failed:', err);
-        throw err;
+        if (err instanceof ServiceError) throw err;
+        throw new ServiceError(SERVICE_NAME, 'videoAudioExtracted_ffmpeg', 'Video/audio extraction failed', err);
     } finally {
         await fs.unlink(tempWavPath).catch(() => {});
     }
@@ -191,25 +191,22 @@ async function videoAudioExtracted_ffmpeg(inputPath) {
 async function pdfExtracted_pdfjslib(inputPath){
     try {
         const pdfjs = await getPdfjsLib();
-        const loadingTask = pdfjs.getDocument({
+        const pdfDocument = pdfjs.getDocument({
             url: inputPath,
             standardFontDataUrl: '/standard_fonts/'
-        });
+        }).promise;
 
-        const pdfDocument = await loadingTask.promise;
         const extractedText = [];
-
         for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
             const page = await pdfDocument.getPage(pageNum);
             const content = await page.getTextContent();
             const text = content.items.map(item => item.str).join(' ');
-            extractedText.push("Page " + pageNum + ":\n" + text);
+            extractedText.push(`Page ${pageNum}:\n${text}`);
         }
 
         return extractedText.join('\n\n');
     } catch (err) {
-        console.error('Document to PDF conversion failed:', err.message);
-        return err;
+        throw new ServiceError(SERVICE_NAME, 'pdfExtracted_pdfjslib', 'PDF extraction failed', err);
     }
 }
 
@@ -223,8 +220,7 @@ async function documentToPdf_libreofficeconvert(inputPath, outputPath) {
         let pdfBuf = await libre.convertAsync(docBuffer, '.pdf', undefined);
         await fs.writeFile(outputPath, pdfBuf);
     } catch (err) {
-        console.error('Document to PDF conversion failed:', err.message);
-        return err;
+        throw new ServiceError(SERVICE_NAME, 'documentToPdf_libreofficeconvert', 'Document to PDF conversion failed', err);
     }
 }
 
@@ -233,14 +229,15 @@ async function documentToPdf_libreofficeconvert(inputPath, outputPath) {
 // InputPath: ALL DOCUMENT, VIDEO, AUDIO TYPE
 // IMPORTANT: Return Raw Text
 async function documentPreprocessing(buffer, documentExt) {
-    let tempDir = "";
-    let tempWavPath = "";
-    let tempPdfPath = "";
+    let tempDir = null;
+    let tempFilePath = null;
+    let tempWavPath = null;
+    let tempPdfPath = null;
 
     // Create temporary directory
     try {
         tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'doc-'));
-        const tempFilePath = path.join(tempDir, `${crypto.randomUUID()}${documentExt}`);
+        tempFilePath = path.join(tempDir, `${crypto.randomUUID()}${documentExt}`);
         await fs.writeFile(tempFilePath, buffer);
 
         // Check file type
@@ -253,19 +250,14 @@ async function documentPreprocessing(buffer, documentExt) {
 
             // Convert to WAV
             await convert_ffmpeg(tempFilePath, tempWavPath, 'wav');
-
-            const conversionTime = ((Date.now() - conversionStart) / 1000).toFixed(2);
-            console.log(`WAV conversion completed in ${conversionTime}s`);
+            serverLogger.info(`[${SERVICE_NAME}] WAV conversion completed in ${((Date.now() - conversionStart) / 1000).toFixed(2)}s`);
 
             // Read and process WAV file
             const wavBuffer = await fs.readFile(tempWavPath);
             const audioData = await processAudioBuffer(wavBuffer);
-
-            console.log('Video / audio is now being transcribed');
             const transcriptionStart = Date.now();
             const text = await transcribeAudioData(audioData);
-            console.log(`Transcription completed in ${((Date.now() - transcriptionStart) / 1000).toFixed(2)}s`);
-
+            serverLogger.info(`[${SERVICE_NAME}] Transcription completed in ${((Date.now() - transcriptionStart) / 1000).toFixed(2)}s`);
             return text;
 
         } else if (supportedDocumentFormats.includes(documentExt)) {
@@ -279,20 +271,16 @@ async function documentPreprocessing(buffer, documentExt) {
             // Extract text from original PDF
             return await pdfExtracted_pdfjslib(tempFilePath);
         } else {
-            console.error('Unsupported file format');
-            return null;
+            throw new ServiceError(SERVICE_NAME, 'documentPreprocessing', `Unsupported file format: ${documentExt}`);
         }
     } catch (err) {
-        console.error('Document preprocessing failed:', err.message);
-        return null;
+        if (err instanceof ServiceError) throw err;
+        throw new ServiceError(SERVICE_NAME, 'documentPreprocessing', 'Document preprocessing failed', err);
     } finally {
         // Cleanup on error
         if (tempWavPath) await fs.unlink(tempWavPath).catch(() => {});
         if (tempPdfPath) await fs.unlink(tempPdfPath).catch(() => {});
-        if (tempFilePath) {
-            const tempDir = path.dirname(tempFilePath);
-            await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-        }
+        if (tempDir) await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
 }
 
@@ -300,9 +288,9 @@ async function documentPreprocessing(buffer, documentExt) {
 async function writeTxtFile(extractedText, outputPath) {
     try {
         await fs.writeFile(outputPath, extractedText, 'utf8');
-        console.log(`\nSaved extracted text to:\n   ${outputPath}`);
+        serverLogger.info(`[${SERVICE_NAME}] Saved extracted text to: ${outputPath}`);
     } catch (err) {
-        console.error('Main failed:', err.message);
+        throw new ServiceError(SERVICE_NAME, 'writeTxtFile', 'Failed to write text file', err);
     }
 }
 
@@ -311,25 +299,23 @@ async function extractTxtFile(filePath) {
     try {
         return await fs.readFile(filePath, 'utf8');
     } catch (err) {
-        console.error('Text file extraction failed:', err.message);
-        throw err;
+        throw new ServiceError(SERVICE_NAME, 'extractTxtFile', 'Failed to read text file', err);
     }
 }
+
 
 // Group multiple report files into a single text data
 async function groupMultipleFile(requirementReports) {
     try {
-        let groupedData = "";
+        let groupedData = '';
         for (const report of requirementReports) {
-            groupedData += `\n\n==============================
-Report File ${report}
-==============================\n\n`;
-            groupedData +=  await extractTxtFile(report);
+            groupedData += `\n\n==============================\nReport File ${report}\n==============================\n\n`;
+            groupedData += await extractTxtFile(report);
         }
         return groupedData;
     } catch (err) {
-        console.error('Grouping report failed:', err.message);
-        throw err;
+        if (err instanceof ServiceError) throw err;
+        throw new ServiceError(SERVICE_NAME, 'groupMultipleFile', 'Failed to group report files', err);
     }
 }
 
@@ -346,4 +332,4 @@ module.exports = {
     groupMultipleFile,
     supportedVideoAudioFormats,
     supportedDocumentFormats
-};
+}
