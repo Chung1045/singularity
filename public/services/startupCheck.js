@@ -5,7 +5,7 @@ const ServiceError = require("../errors/ServiceError");
 
 const SERVICE_NAME = 'StartupService';
 
-async function startupChecks() {
+async function startupCheck() {
     try {
         await dbService.testConnection();
         serverLogger.info("Database connection OK.");
@@ -32,5 +32,5 @@ async function startupChecks() {
 }
 
 module.exports = {
-    startupChecks
+    startupCheck
 }
