@@ -84,15 +84,15 @@ router.get("/passkeys", async (req, res) => {
     passkeys = (Array.isArray(passkeys) ? passkeys : []).map(pk => ({
         keyID: pk.keyID || "",
         keyName: pk.keyName || "Unnamed Passkey",
-        dateCreate: pk.dateCreate || new Date().toISOString()
+        dateCreate: pk.dateCreate || new Date().toISOString(),
+        lastUsed: pk.lastUsed || null
     }));
-
-    res.locals.passkeys = passkeys;
 
     const userInfo = await dbService.getUserInfo(userID)
 
     res.render("Passkey", {
         csrfToken: req.csrfToken(),
+        passkeys,
         userInfo
     });
 });
@@ -112,17 +112,19 @@ router.get("/profile", async (req, res) => {
  * Session Activity
  * ---------------------------------------- */
 router.get("/session", async (req, res) => {
-    const userID = await getUserID(req);
+    const userID = await requireLogin(req, res);
     if (!userID) return res.redirect("/login");
 
     const sessions = await dbService.listSessions(userID);
     const loginAttempts = await dbService.listLoginAttempts(userID);
     const userInfo = await dbService.getUserInfo(userID)
+    const currentSessionID = req.cookies?.session_id || "";
 
     res.render("Session", {
         csrfToken: req.csrfToken(),
         sessions,
         loginAttempts,
+        currentSessionID,
         userInfo
     });
 });

@@ -374,12 +374,14 @@
                                     gap: '6px'
                                 },
                                 onMouseEnter: (e) => {
-                                    e.currentTarget.style.backgroundColor = '#e5e7eb';
-                                    e.currentTarget.style.borderColor = '#9ca3af';
+                                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#e5e7eb';
+                                    e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#9ca3af';
                                 },
                                 onMouseLeave: (e) => {
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.borderColor = '#d1d5db';
+                                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    e.currentTarget.style.backgroundColor = isDark ? 'transparent' : '#ffffff';
+                                    e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.18)' : '#d1d5db';
                                 },
                                 onClick: () => setShowAddInvite(true)
                             },
@@ -419,7 +421,10 @@
                                     transition: 'background-color 0.2s',
                                     flexShrink: 0
                                 },
-                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                                onMouseEnter: (e) => {
+                                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f0f0f0';
+                                },
                                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                                 onClick: onClose
                             },
@@ -900,7 +905,10 @@
                                                                 fontFamily: '"Inter", Helvetica',
                                                                 transition: 'background-color 0.2s'
                                                             },
-                                                            onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f3f4f6',
+                                                            onMouseEnter: (e) => {
+                                                                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                                                e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f3f4f6';
+                                                            },
                                                             onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                                                             onClick: () => handleAcceptInvite(invite.inviteID, invite.username)
                                                         }, 'Add Invite')

@@ -162,7 +162,7 @@
                         }
                     }, cancelText || 'Cancel'),
 
-                    // 3. ACTION BUTTON (Confirm/OK)
+                    // 3. ACTION BUTTON
                     React.createElement('button', {
                         id: 'file-upload-notification-action-button',
                         'aria-label': actionText || 'Close notification',
@@ -193,12 +193,14 @@
                         },
                         onMouseEnter: (e) => {
                             if (!showInput || inputText.trim()) {
-                                e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
+                                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(51, 65, 85)';
                             }
                         },
                         onMouseLeave: (e) => {
                             if (!showInput || inputText.trim()) {
-                                e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
+                                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                if (!isDark) e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
                             }
                         }
                     }, actionText || 'OK')

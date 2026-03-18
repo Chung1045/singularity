@@ -15,13 +15,16 @@
     <script src="https://unpkg.com/@simplewebauthn/browser@10.0.0/dist/bundle/index.umd.min.js"></script>
     <!-- <link rel="stylesheet" href="/stylesheets/test/passkey.css"> -->
     <link rel="stylesheet" href="/stylesheets/passkey.css">
+    <link rel="stylesheet" href="/stylesheets/security-pages.css">
     <link rel="stylesheet" href="/stylesheets/z-index.css">
     <link rel="stylesheet" href="/stylesheets/skeleton.css">
+    <link rel="stylesheet" href="/stylesheets/theme.css?v=<%= Date.now() %>">
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
     <!-- Socket.io Client -->
     <script src="/socket.io/socket.io.js"></script>
     <!-- Load z-index helper -->
     <script src="/scripts/zIndexHelper.js"></script>
+    <script src="/scripts/theme.js?v=<%= Date.now() %>"></script>
     <!-- Load shared utilities first -->
     <script src="/scripts/projectUtils.js"></script>
     <!-- Load Notification Panel component -->
@@ -99,24 +102,16 @@
 </div>
 
 <script src="/scripts/Passkey.js"></script>
+<script id="passkey-page-data" type="application/json"><%- JSON.stringify({ passkeys: passkeys || [], userInfo: userInfo || {} }) %></script>
 
 <script>
     const csrfToken = "<%= csrfToken %>";
-    const passkeys = <%- JSON.stringify(passkeys || []) %>;
-    const userInfo  = <%- JSON.stringify(userInfo || {}) %>;
+    const pageData = JSON.parse(document.getElementById('passkey-page-data').textContent || '{}');
+    const passkeys = pageData.passkeys || [];
+    const userInfo = pageData.userInfo || {};
 
     // Make userInfo globally available for socket initialization
     window.userInfo = userInfo;
-
-    console.log("CSRF:", csrfToken);
-    console.log("Passkeys:", passkeys);
-    console.log("tempPasskey.ejs ??userInfo received:", userInfo);
-    console.log('FileUploadComponent available:', typeof window.FileUploadComponent);
-
-    console.log("window.Sidebar available?", typeof window.Sidebar);
-    console.log("window.FileUploadComponent available?", typeof window.FileUploadComponent);
-
-
 
     // Add file upload event listener
     const handleOpenFileUpload = (event) => {

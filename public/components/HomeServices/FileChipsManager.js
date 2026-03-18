@@ -2,6 +2,21 @@
  * FileChipsManager - Manages file chips for chat input
  */
 
+/**
+ * Truncate file name to show extension: "longname....pdf"
+ * @param {string} name - Full file name
+ * @param {number} maxBaseChars - Max chars for base (before extension)
+ * @returns {{ base: string, ext: string }}
+ */
+function truncateFileNameWithExtension(name, maxBaseChars = 28) {
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot <= 0) return { base: name, ext: '' };
+    const base = name.slice(0, lastDot);
+    const ext = name.slice(lastDot);
+    if (base.length <= maxBaseChars) return { base, ext };
+    return { base: base.slice(0, maxBaseChars) + '...', ext };
+}
+
 const FileChipsManager = {
     /**
      * Add files as chips to the chat input area
@@ -31,7 +46,7 @@ const FileChipsManager = {
                 flex-wrap: nowrap;
                 gap: 8px;
                 padding: 10px 15px;
-                background-color: #f9f9f9;
+                background-color:rgb(33, 51, 79);
                 border-radius: 16px 16px 0 0;
                 align-items: center;
                 justify-content: flex-start;
@@ -66,8 +81,10 @@ const FileChipsManager = {
             const displayFileName = file.fileName || fullFileName;
 
             const chip = document.createElement('div');
+            chip.id = `selected-file-chip-${file.documentID}`;
             chip.setAttribute('data-file-id', file.documentID);
             chip.setAttribute('data-file-name', displayFileName);
+            chip.title = displayFileName;
             chip.style.cssText = `
                 display: flex;
                 align-items: center;
@@ -81,11 +98,22 @@ const FileChipsManager = {
                 color: #000;
             `;
 
+            const { base, ext: extPart } = truncateFileNameWithExtension(displayFileName);
             const fileName = document.createElement('span');
-            fileName.textContent = displayFileName;
-            fileName.style.cssText = 'max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+            fileName.id = `selected-file-chip-${file.documentID}-name`;
+            fileName.title = displayFileName;
+            fileName.style.cssText = 'max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: baseline;';
+            fileName.appendChild(document.createTextNode(base));
+            if (extPart) {
+                const extSpan = document.createElement('span');
+                extSpan.id = `selected-file-chip-${file.documentID}-ext`;
+                extSpan.textContent = extPart;
+                extSpan.style.fontWeight = '600';
+                fileName.appendChild(extSpan);
+            }
 
             const removeBtn = document.createElement('button');
+            removeBtn.id = `selected-file-chip-${file.documentID}-remove-btn`;
             removeBtn.textContent = '×';
             removeBtn.style.cssText = `
                 border: none;
@@ -165,6 +193,7 @@ const FileChipsManager = {
 // Export
 Object.assign(window, {
     FileChipsManager,
+    truncateFileNameWithExtension,
     // Backward compatibility
     addFilesToChatInput: FileChipsManager.add.bind(FileChipsManager)
 });

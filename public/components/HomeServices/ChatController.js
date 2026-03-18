@@ -77,8 +77,7 @@ const ChatController = {
         EditMode.removeMessagesFromSeq(chatSeq);
 
         const inputBox = document.getElementById('input-field-form');
-        // inputBox.style.transition = "border 0.5s";
-        inputBox.style.border = ""
+        if (inputBox) inputBox.classList.remove('edit-mode-active');
 
         const cancelBtn = document.querySelector('.chip.cancel-edit');
         if (cancelBtn) cancelBtn.remove();
@@ -1123,7 +1122,7 @@ function addMessage(role, text, conversationID = null, chatSeq = null, attachedF
 
             // Create file name text element instead of chips
             const fileNameText = document.createElement('span');
-            fileNameText.style.cssText = 'font-size: 12px; color: #666; font-family: Inter, Helvetica; flex: 1; min-width: 0;';
+            fileNameText.style.cssText = 'font-size: 12px; color: inherit; font-family: Inter, Helvetica; flex: 1; min-width: 0;';
             fileNameText.textContent = fileNames.join(', ');
             fileNameText.title = fileNames.join(', '); // Full text on hover
 

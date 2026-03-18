@@ -173,12 +173,15 @@ window.handleAnalyzeDocuments = async function() {
                 const selectChatItem = async (attempt = 0) => {
                     const newChatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatID}"]`);
                     if (newChatItem) {
+                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                         document.querySelectorAll('.chat-history-item').forEach(item => {
                             item.classList.remove('selected');
                             item.style.backgroundColor = 'transparent';
+                            item.style.borderLeft = 'none';
                         });
                         newChatItem.classList.add('selected');
-                        newChatItem.style.backgroundColor = '#e0e0e0';
+                        newChatItem.style.backgroundColor = isDark ? '#374151' : '#e0e0e0';
+                        newChatItem.style.borderLeft = 'none';
                         console.log('[Analyze Documents] Chat item selected in sidebar');
                     } else if (attempt < 5) {
                         // If not found and we haven't exceeded retries, refresh again and retry
@@ -224,6 +227,7 @@ window.handleAnalyzeDocuments = async function() {
 // Alert Modal sub-component - defined first to ensure it's available
 const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
     return React.createElement('div', {
+        className: 'home-alert-modal-backdrop',
         style: {
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -233,6 +237,7 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
         onClick: (e) => e.target === e.currentTarget && modal.type === 'alert' && closeModal()
     },
         React.createElement('div', {
+            className: 'home-alert-modal-card',
             style: {
                 backgroundColor: '#ffffff', borderRadius: '15px',
                 padding: isMobile ? '25px' : '30px',
@@ -242,10 +247,11 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
             },
             onClick: (e) => e.stopPropagation()
         },
-            React.createElement('div', { style: { fontFamily: 'Urbanist, Helvetica', fontWeight: 700, fontSize: isMobile ? '20px' : '24px', color: '#000' } }, modal.title),
-            React.createElement('div', { style: { fontFamily: 'Inter, Helvetica', fontSize: isMobile ? '14px' : '16px', color: '#000', lineHeight: '1.5' } }, modal.message),
+            React.createElement('div', { className: 'home-alert-modal-title', style: { fontFamily: 'Urbanist, Helvetica', fontWeight: 700, fontSize: isMobile ? '20px' : '24px', color: '#000' } }, modal.title),
+            React.createElement('div', { className: 'home-alert-modal-message', style: { fontFamily: 'Inter, Helvetica', fontSize: isMobile ? '14px' : '16px', color: '#000', lineHeight: '1.5' } }, modal.message),
             React.createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' } },
                 React.createElement('button', {
+                    className: 'home-alert-modal-button',
                     style: {
                         padding: isMobile ? '10px 20px' : '12px 24px', borderRadius: '10px', border: 'none',
                         backgroundColor: '#000', color: '#fff', fontFamily: 'Urbanist, Helvetica',
@@ -620,21 +626,60 @@ const Home = ({ csrfToken, userInfo }) => {
                         React.createElement('div', { id: 'chat-messages', className: 'chat-messages' })
                     ),
 
-                    // Suggestion chips
-                    React.createElement('div', { id: 'suggestion-chips', className: 'suggestion-chips', style: { display: 'none' } },
-                        React.createElement('button', { className: 'chip', onClick: handleAnalyzeDocuments }, 'Analyze Documents')
-                    ),
-
-                    // Anchor for dynamic suggestion chips (injected above input)
-                    React.createElement('div', { id: 'suggestion-chips-anchor' }),
-
-                    // Input field
-                    React.createElement('form', {
-                        id: 'input-field-form',
-                        className: 'input-field',
-                        role: 'search',
-                        onSubmit: (e) => { e.preventDefault(); submitConversationRequest(); }
+                    // Input area wrapper (analyze button + suggestion anchor + input)
+                    React.createElement('div', {
+                        id: 'input-area-wrapper',
+                        style: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            width: '90%',
+                            maxWidth: '650px',
+                            margin: '0 auto',
+                            gap: '0'
+                        }
                     },
+                        // Analyze Documents button
+                        React.createElement('div', {
+                            id: 'suggestion-chips',
+                            style: {
+                                display: 'none',
+                                paddingBottom: '8px'
+                            }
+                        },
+                            React.createElement('button', {
+                                id: 'btn-analyze-documents',
+                                className: 'btn-analyze-documents',
+                                onClick: handleAnalyzeDocuments,
+                                // style: {
+                                //     display: 'inline-flex',
+                                //     alignItems: 'center',
+                                //     gap: '6px',
+                                //     padding: '10px 18px',
+                                //     borderRadius: '50px',
+                                //     border: '1px solid rgba(226, 232, 240, 0.8)',
+                                //     background: 'rgba(255, 255, 255, 0.95)',
+                                //     color: '#1a1a1a',
+                                //     fontSize: '14px',
+                                //     fontWeight: '600',
+                                //     fontFamily: 'Inter, Helvetica',
+                                //     cursor: 'pointer',
+                                //     transition: 'all 0.2s ease',
+                                //     whiteSpace: 'nowrap',
+                                //     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                                // }
+                            }, 'Analyze Documents')
+                        ),
+
+                        // Anchor for dynamic suggestion chips (injected above input)
+                        React.createElement('div', { id: 'suggestion-chips-anchor' }),
+
+                        // Input field
+                        React.createElement('form', {
+                            id: 'input-field-form',
+                            className: 'input-field',
+                            role: 'search',
+                            onSubmit: (e) => { e.preventDefault(); submitConversationRequest(); }
+                        },
                         React.createElement('div', { id: 'input-field-attachment-wrapper', style: { position: 'relative' } },
                             // Attachment menu button
                             React.createElement('button', {
@@ -697,7 +742,8 @@ const Home = ({ csrfToken, userInfo }) => {
                         },
                             React.createElement('img', { id: 'input-field-send-icon', className: 'img', src: './img/Send.svg', alt: '' })
                         )
-                    ),
+                    )
+                    ), // close input-area-wrapper
 
                     // Quick Prompts Component
                     React.createElement(window.QuickPrompts)

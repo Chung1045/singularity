@@ -42,6 +42,7 @@
     display: none; /* Hidden by default, shown when chat is active */
     align-items: center;
     gap: 20px; /* Increased gap between button and title */
+    min-height: 52px; /* Lock height to prevent shift when edit indicator is added */
     padding: 16px 20px;
     margin: 0;
     background: rgba(255, 255, 255, 0.95);
@@ -296,6 +297,10 @@
 }
 
 /* File chips in user messages */
+.message-bottom-row {
+    color: #666;
+}
+
 .user-message .message-bottom-row {
     justify-content: flex-end;
 }
@@ -306,7 +311,19 @@
     border: 1px solid #e0e0e0;
 }
 
-/* Message Edit Button */
+/* Message edit indicator (shown when editing that message) */
+.message-edit-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255, 152, 0, 0.12);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    font-size: 11px;
+    font-weight: 500;
+    color: #e65100;
+}
 
 /* Typing Indicator */
 .typing-bubble {
@@ -402,6 +419,8 @@
     transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    margin-right: 10px;
 }
 
 .chip:hover {
@@ -849,5 +868,109 @@
     .quick-prompt-item {
         font-size: 12px;
         padding: 6px 4px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EDIT MODE — Senior UI/UX improvements
+   P0: Accessibility, P1: Visual connection, P2: Progressive disclosure
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Chat title indicator — primary cue, minimal by default */
+.edit-mode-indicator-btn {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+    margin-left: 12px;
+    padding: 4px 12px;
+    line-height: 1.2; /* Match title to prevent vertical shift */
+    border-radius: 20px;
+    background: rgba(255, 152, 0, 0.12);
+    border: 1px solid rgba(255, 152, 0, 0.4);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    color: #999;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edit-mode-indicator-btn:hover {
+    background: rgba(255, 152, 0, 0.18);
+    color: #e65100;
+}
+
+.edit-mode-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff9800;
+}
+
+.edit-mode-label {
+    font-weight: 500;
+}
+
+/* Preview hidden — uses native title tooltip to avoid overflow clipping in chat-title */
+.edit-mode-preview {
+    display: none !important;
+}
+
+/* Input area label */
+.edit-input-label {
+    margin: 0 auto 8px;
+    width: 90%;
+    max-width: 650px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255, 152, 0, 0.08);
+    border-left: 3px solid #ff9800;
+}
+
+.edit-input-label-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e65100;
+}
+
+.edit-input-label-original {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Message bubble when editing — P1: visual connection */
+.message-bubble.user-bubble.edit-mode-editing {
+    border-left: 3px solid #ff9800;
+    background: linear-gradient(90deg, rgba(255, 152, 0, 0.1) 0%, transparent 100%);
+}
+
+/* Input field when editing */
+.input-field.edit-mode-active {
+    border: 2px solid #ff9800;
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+}
+
+/* Cancel chip */
+.chip.cancel-edit {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: #1e293b;
+    color: #fff;
+    font-weight: 500;
+}
+
+/* P0: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .edit-mode-indicator-btn,
+    .edit-mode-dot,
+    .edit-input-label,
+    .message-bubble.edit-mode-editing,
+    .input-field.edit-mode-active {
+        transition: none !important;
     }
 }

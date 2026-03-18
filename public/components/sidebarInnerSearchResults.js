@@ -307,6 +307,7 @@
                             onClick: () => onResultClick('file', file)
                         },
                             React.createElement('div', {
+                                id: `sidebar-search-file-item-${index}-inner`,
                                 className: 'search-result-item-inner',
                                 style: {
                                     display: 'flex',
@@ -316,6 +317,7 @@
                                 }
                             },
                                 React.createElement('span', {
+                                    id: `sidebar-search-file-item-${index}-title`,
                                     className: 'search-result-item-title',
                                     style: { fontWeight: '500' },
                                     title: file.name
@@ -343,6 +345,7 @@
                             onClick: () => onResultClick('requirement', req)
                         },
                             React.createElement('div', {
+                                id: `sidebar-search-requirement-item-${index}-inner`,
                                 className: 'search-result-item-inner',
                                 style: {
                                     display: 'flex',
@@ -351,14 +354,31 @@
                                     minWidth: 0
                                 }
                             },
-                                React.createElement('span', {
-                                    className: 'search-result-item-title',
-                                    style: { fontWeight: '500' },
-                                    title: req.title
-                                }, req.title),
+                                React.createElement('div', {
+                                    id: `sidebar-search-requirement-item-${index}-header`,
+                                    style: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }
+                                },
+                                    React.createElement('span', {
+                                        id: `sidebar-search-requirement-item-${index}-id`,
+                                        className: 'search-result-item-id',
+                                        style: { fontSize: '11px', fontWeight: '600' }
+                                    }, (() => {
+                                        const reqType = req.details?.requirementType?.toLowerCase();
+                                        const seq = req.details?.requirementSeq || 0;
+                                        const prefix = (reqType === 'functional' || reqType === 'fr') ? 'FR' : 'NFR';
+                                        return `${prefix}-${String(seq).padStart(2, '0')}`;
+                                    })()),
+                                    React.createElement('span', {
+                                        id: `sidebar-search-requirement-item-${index}-title`,
+                                        className: 'search-result-item-title',
+                                        style: { fontWeight: '500' },
+                                        title: req.title
+                                    }, req.title)
+                                ),
                                 req.details?.description && React.createElement('span', {
+                                    id: `sidebar-search-requirement-item-${index}-desc`,
                                     className: 'search-result-item-desc',
-                                    style: { fontSize: '11px', color: '#666' },
+                                    style: { fontSize: '11px' },
                                     title: req.details.description
                                 }, req.details.description)
                             )
@@ -384,6 +404,7 @@
                             onClick: () => onResultClick('story', story)
                         },
                             React.createElement('div', {
+                                id: `sidebar-search-story-item-${index}-inner`,
                                 className: 'search-result-item-inner',
                                 style: {
                                     display: 'flex',
@@ -392,14 +413,26 @@
                                     minWidth: 0
                                 }
                             },
-                                React.createElement('span', {
-                                    className: 'search-result-item-title',
-                                    style: { fontWeight: '500' },
-                                    title: story.title
-                                }, story.title),
+                                React.createElement('div', {
+                                    id: `sidebar-search-story-item-${index}-header`,
+                                    style: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }
+                                },
+                                    React.createElement('span', {
+                                        id: `sidebar-search-story-item-${index}-id`,
+                                        className: 'search-result-item-id',
+                                        style: { fontSize: '11px', fontWeight: '600' }
+                                    }, `US-${String(story.details?.storySeq || 0).padStart(2, '0')}`),
+                                    React.createElement('span', {
+                                        id: `sidebar-search-story-item-${index}-title`,
+                                        className: 'search-result-item-title',
+                                        style: { fontWeight: '500' },
+                                        title: story.title
+                                    }, story.title)
+                                ),
                                 story.details?.description && React.createElement('span', {
+                                    id: `sidebar-search-story-item-${index}-desc`,
                                     className: 'search-result-item-desc',
-                                    style: { fontSize: '11px', color: '#666' },
+                                    style: { fontSize: '11px' },
                                     title: story.details.description
                                 }, story.details.description)
                             )
@@ -410,30 +443,12 @@
                 // Clear button
                 hasResults && React.createElement('div', {
                     id: 'sidebar-search-results-actions',
-                    className: 'search-result-actions',
-                    style: {
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        marginTop: '15px',
-                        paddingTop: '15px',
-                        borderTop: '1px solid #e4e4e4'
-                    }
+                    className: 'search-result-actions'
                 },
                     React.createElement('button', {
                         id: 'sidebar-search-results-clear-btn',
                         className: 'search-clear-btn',
-                        onClick: onClose,
-                        style: {
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            border: '1px solid #e4e4e4',
-                            backgroundColor: '#ffffff',
-                            cursor: 'pointer',
-                            fontFamily: 'Inter, Helvetica',
-                            fontSize: '12px',
-                            color: '#1c1d21',
-                            transition: 'all 0.2s'
-                        }
+                        onClick: onClose
                     }, 'Clear')
                 ),
 

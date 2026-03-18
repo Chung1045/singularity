@@ -46,6 +46,7 @@ const FileSelectionModal = {
 
         // Header
         const header = document.createElement('div');
+        header.id = 'file-selection-modal-header';
         header.style.cssText = `
             padding: 18px 17px;
             display: flex;
@@ -54,7 +55,7 @@ const FileSelectionModal = {
             border-bottom: 1px solid #e4e4e4;
         `;
         header.innerHTML = `
-            <div style="font-family: 'SF Pro-Bold', Helvetica; font-weight: 400; font-size: 18px; color: #000;">Select Files</div>
+            <div id="file-selection-modal-title" style="font-family: 'SF Pro-Bold', Helvetica; font-weight: 400; font-size: 18px; color: #000;">Select Files</div>
             <button id="close-file-selection-modal" style="width: 30px; height: 30px; border: none; background: transparent; cursor: pointer; font-size: 20px; color: #666;">×</button>
         `;
 
@@ -74,6 +75,7 @@ const FileSelectionModal = {
             const fileName = ext.startsWith('.') ? `${cleanName}${ext}` : `${cleanName}.${ext}`;
 
             const fileItem = document.createElement('div');
+            fileItem.className = 'file-selection-item';
             fileItem.style.cssText = `
                 display: flex;
                 align-items: center;
@@ -106,6 +108,7 @@ const FileSelectionModal = {
 
             const label = document.createElement('label');
             label.htmlFor = `file-checkbox-${index}`;
+            label.className = 'file-selection-item-label';
             label.style.cssText = `
                 flex: 1;
                 font-family: 'Inter', Helvetica;
@@ -129,6 +132,7 @@ const FileSelectionModal = {
 
         // Footer with buttons
         const footer = document.createElement('div');
+        footer.id = 'file-selection-modal-footer';
         footer.style.cssText = `
             padding: 15px 17px;
             display: flex;
@@ -138,6 +142,7 @@ const FileSelectionModal = {
         `;
 
         const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'file-selection-cancel-button';
         cancelBtn.textContent = 'Cancel';
         cancelBtn.style.cssText = `
             padding: 8px 24px;
@@ -153,6 +158,7 @@ const FileSelectionModal = {
         cancelBtn.onclick = () => this.close();
 
         const confirmBtn = document.createElement('button');
+        confirmBtn.id = 'file-selection-confirm-button';
         confirmBtn.textContent = 'Add to Chat';
         confirmBtn.style.cssText = `
             padding: 8px 24px;

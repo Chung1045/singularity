@@ -191,7 +191,7 @@ async function logLoginAttempts(data) {
 }
 
 async function listPasskey(data) {  //  Just pass uid directly, not data object
-    const query = `SELECT keyID, keyName, dateCreate
+    const query = `SELECT keyID, keyName, dateCreate, lastUsed
                    FROM passkeys
                    WHERE uid = ?
                    ORDER BY dateCreate DESC`;

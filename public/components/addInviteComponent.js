@@ -208,7 +208,10 @@
                             padding: 0,
                             transition: 'background-color 0.2s'
                         },
-                        onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f0f0f0',
+                        onMouseEnter: (e) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f0f0f0';
+                        },
                         onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
                         onClick: onClose
                     },
@@ -304,8 +307,14 @@
                                 boxSizing: 'border-box',
                                 transition: 'border-color 0.2s'
                             },
-                            onFocus: (e) => e.currentTarget.style.borderColor = '#3b82f6',
-                            onBlur: (e) => e.currentTarget.style.borderColor = '#d1d5db'
+                            onFocus: (e) => {
+                                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                e.currentTarget.style.borderColor = isDark ? '#ffffff' : '#3b82f6';
+                            },
+                            onBlur: (e) => {
+                                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.18)' : '#d1d5db';
+                            }
                         })
                     ),
 
@@ -361,7 +370,10 @@
                                     border: '1px solid #e5e7eb',
                                     transition: 'background-color 0.2s'
                                 },
-                                onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f9fafb',
+                                onMouseEnter: (e) => {
+                                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                    e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f9fafb';
+                                },
                                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                             },
                                 // Avatar

@@ -187,12 +187,62 @@ a {
   margin-bottom: 32px; /* More space from bottom */
 }
 
+/* Input area wrapper - keeps analyze button + input tightly stacked */
+#input-area-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 650px;
+  margin: 0 auto;
+  gap: 0;
+}
+
+#input-area-wrapper .input-field {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.sidebar-expand .main-screen.chat-mode #input-area-wrapper {
+  max-width: 800px;
+}
+
+.sidebar-expand .main-screen.chat-mode #input-area-wrapper .input-field {
+  max-width: none;
+}
+
+/* Analyze Documents button */
+.btn-analyze-documents {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 50px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(255, 255, 255, 0.95);
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: Inter, Helvetica;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.btn-analyze-documents:hover {
+  background: rgba(15, 23, 42, 1);
+  color: #ffffff;
+  border-color: rgba(15, 23, 42, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 /* Suggestion chips container (main screen / input area) */
 .main-screen > .suggestion-chips-container {
   display: none;
-  gap: 12px; /* More space between chips */
+  gap: 12px;
   justify-content: left;
-  margin-bottom: 16px; /* More space below chips */
+  margin-bottom: 16px;
   flex-wrap: wrap;
   width: 100%;
   max-width: 800px;
