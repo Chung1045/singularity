@@ -264,6 +264,59 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
     );
 };
 
+// One-time signup welcome overlay
+const WelcomeOverlayComponent = ({ onGetStarted }) => {
+    return React.createElement('div', {
+        className: 'welcome-overlay-backdrop',
+        style: {
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: window.ZIndex?.MODAL_BACKDROP || 30, padding: '20px'
+        }
+    },
+        React.createElement('div', {
+            className: 'welcome-overlay-card',
+            style: {
+                backgroundColor: '#ffffff', borderRadius: '15px',
+                padding: '40px', maxWidth: '625px', width: '100%',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+                display: 'flex', flexDirection: 'column', gap: '10px',
+                textAlign: 'left'
+            },
+            onClick: (e) => e.stopPropagation()
+        },
+            React.createElement('div', {
+                style: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', marginLeft: '0' }
+            },
+                React.createElement('img', { src: './img/union.svg', alt: 'Singularity', style: { width: '30px', height: '30px' } }),
+                React.createElement('span', {
+                    style: { fontFamily: '"Playfair Display", serif', fontWeight: 700, fontSize: '24px', color: '#000' ,   marginLeft: '10px', lineHeight: '1.2', letterSpacing: '3px'}
+                    
+                }, 'Singularity')
+            ),
+            React.createElement('h1', {
+                style: { fontFamily: '"SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 700, fontSize: '20px', color: '#000', margin: 0 }
+            }, 'Welcome!'),
+            React.createElement('div', {
+                style: { fontFamily: '"SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif', fontSize: '16px', color: 'rgb(90, 90, 90)', lineHeight: '1.7', display: 'flex', flexDirection: 'column', gap: '12px' }
+            },
+                React.createElement('p', { style: { margin: 0 } }, 'This is Singularity, an agent powered requirement conversation platform.'),
+                React.createElement('p', { style: { margin: 0 } }, 'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'),
+                React.createElement('p', { style: { margin: 0 } }, 'Feel free to start a project and chat to the agent with documentations for requirement suggestions.')
+            ),
+            React.createElement('button', {
+                style: {
+                    padding: '10px', borderRadius: '10px', border: 'none',
+                    backgroundColor: '#1a1a2e', color: '#fff', fontFamily: '"SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif',
+                    fontWeight: 600, fontSize: '16px', cursor: 'pointer', width: '100%'
+                },
+                onClick: onGetStarted
+            }, 'Get Started')
+        )
+    );
+};
+
 const Home = ({ csrfToken, userInfo }) => {
     window.csrfToken = csrfToken;
     const shouldShowWelcomeOnLoad = new URLSearchParams(window.location.search).get('welcome') === '1';
@@ -293,6 +346,12 @@ const Home = ({ csrfToken, userInfo }) => {
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
     const [selectedProjectID, setSelectedProjectID] = useState(null);
     const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(shouldShowWelcomeOnLoad);
+
+    // Expose for console: window.showWelcomeOverlay()
+    // React.useEffect(() => {
+    //     window.showWelcomeOverlay = () => setShowWelcomeOverlay(true);
+    //     return () => { delete window.showWelcomeOverlay; };
+    // }, []);
 
     const isMobile = windowWidth <= 480;
     const isOverlay = windowWidth <= 1040;
