@@ -1,4 +1,6 @@
-const USER_TABLE_SCHEMA = () => `
+// ─── User & Auth ──────────────────────────────────────────────────────
+
+const USER_TABLE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS user
     (
         uid             TEXT PRIMARY KEY UNIQUE,
@@ -12,7 +14,7 @@ const USER_TABLE_SCHEMA = () => `
     );
 `;
 
-const CREDENTIAL_TABLE_SCHEMA = () => `
+const CREDENTIAL_TABLE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS credential
     (
         credentialID       TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -23,7 +25,7 @@ const CREDENTIAL_TABLE_SCHEMA = () => `
     );
 `;
 
-const SESSION_TABLE_SCHEMA = () => `
+const SESSION_TABLE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS session
     (
         sessionID      TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -34,9 +36,9 @@ const SESSION_TABLE_SCHEMA = () => `
         sessionIP      TEXT             NOT NULL,
         FOREIGN KEY (uid) REFERENCES user (uid) ON DELETE CASCADE
     );
-`
+`;
 
-const LOGINATTEMPTS_TABLE_SCHEMA = () => `
+const LOGINATTEMPTS_TABLE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS loginAttempts
     (
         attemptID      TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -47,18 +49,18 @@ const LOGINATTEMPTS_TABLE_SCHEMA = () => `
         attemptIP      TEXT             NOT NULL,
         FOREIGN KEY (uid) REFERENCES user (uid) ON DELETE CASCADE
     );
-`
+`;
 
-const GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA = () => `
+const GOOGLEOAUTH_IDENTITY_TABLE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS googleOauth_identity
     (
         userGoogleId TEXT PRIMARY KEY NOT NULL UNIQUE,
         uid          TEXT             NOT NULL UNIQUE,
         FOREIGN KEY (uid) REFERENCES user (uid) ON DELETE CASCADE
     );
-`
+`;
 
-const PASSKEYS_SCHEMA = () => `
+const PASSKEYS_SCHEMA = `
     CREATE TABLE IF NOT EXISTS passkeys
     (
         keyID      TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -71,9 +73,11 @@ const PASSKEYS_SCHEMA = () => `
         lastUsed   TEXT,
         FOREIGN KEY (uid) REFERENCES user (uid) ON DELETE CASCADE
     );
-`
+`;
 
-const PROJECT_SCHEMA = () => `
+// ─── Project ──────────────────────────────────────────────────────────
+
+const PROJECT_SCHEMA = `
     CREATE TABLE IF NOT EXISTS project
     (
         projectID       TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -82,10 +86,9 @@ const PROJECT_SCHEMA = () => `
         dateCreate      TEXT             NOT NULL,
         FOREIGN KEY (projectOwnerUid) REFERENCES user (uid) ON DELETE CASCADE
     );
+`;
 
-`
-
-const PROJECT_SHARE_SCHEMA = () => `
+const PROJECT_SHARE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS projectShare
     (
         shareID   TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -95,25 +98,30 @@ const PROJECT_SHARE_SCHEMA = () => `
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
         FOREIGN KEY (collabUid) REFERENCES user (uid) ON DELETE CASCADE
     );
-`
-// kind: invitation / remove / leaving project / delete / create / rename
-const NOTIFICATION_SCHEMA = () => `
+`;
+
+// ─── Notifications ────────────────────────────────────────────────────
+
+// NOTE: projectID is nullable to support 'delete' notifications
+// where the project no longer exists at time of notification creation
+const NOTIFICATION_SCHEMA = `
     CREATE TABLE IF NOT EXISTS notification
     (
         notifID     TEXT PRIMARY KEY NOT NULL UNIQUE,
         receiveUid  TEXT             NOT NULL,
         dateReceive TEXT             NOT NULL,
-        kind        TEXT             NOT NULL CHECK (kind IN
-                                                     ('invitation', 'remove', 'leaving', 'delete', 'create', 'rename')),
+        kind        TEXT             NOT NULL CHECK (kind IN ('invitation', 'remove', 'leaving', 'delete', 'create', 'rename')),
         projectID   TEXT,
         message     TEXT,
         isRead      INTEGER          NOT NULL DEFAULT 0,
         FOREIGN KEY (receiveUid) REFERENCES user (uid) ON DELETE CASCADE,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
-`
+`;
 
-const DOCUMENTS_SCHEMA = () => `
+// ─── Documents ────────────────────────────────────────────────────────
+
+const DOCUMENTS_SCHEMA = `
     CREATE TABLE IF NOT EXISTS documents
     (
         documentID    TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -123,9 +131,11 @@ const DOCUMENTS_SCHEMA = () => `
         documentAlias TEXT,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
-`
+`;
 
-const USERSTORIES_SCHEMA = () => `
+// ─── User Stories ─────────────────────────────────────────────────────
+
+const USERSTORIES_SCHEMA = `
     CREATE TABLE IF NOT EXISTS userStories
     (
         storyID      TEXT    NOT NULL UNIQUE,
@@ -138,27 +148,11 @@ const USERSTORIES_SCHEMA = () => `
         PRIMARY KEY (storyID, storySeq),
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
-`
+`;
 
-// OLD - Had foreign key mismatch issues:
-// const USERSTORIES_SOURCE_SCHEMA = () => `
-//     CREATE TABLE IF NOT EXISTS userStorySource
-//     (
-//         refID      TEXT PRIMARY KEY NOT NULL UNIQUE,
-//         storyID    INTEGER          NOT NULL,  -- WRONG: Should be TEXT to match userStories
-//         projectID  TEXT NOT NULL,
-//         documentID TEXT             NOT NULL,
-//         remarks    TEXT,
-//         location TEXT,
-//         FOREIGN KEY (storyID) REFERENCES userStories ON DELETE CASCADE,  -- Missing column name
-//         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
-//         FOREIGN KEY (documentID) REFERENCES documents  -- Missing column name and ON DELETE
-//     )
-// `
-
-// FIXED - Corrected data types and foreign key references:
-// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
-const USERSTORIES_SOURCE_SCHEMA = () => `
+// NOTE: documentID foreign key intentionally removed to allow
+// document deletion without cascading constraint errors
+const USERSTORIES_SOURCE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS userStorySource
     (
         refID      TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -169,38 +163,26 @@ const USERSTORIES_SOURCE_SCHEMA = () => `
         location   TEXT,
         FOREIGN KEY (storyID) REFERENCES userStories (storyID) ON DELETE CASCADE,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
-    )
-`
+    );
+`;
 
-const REQUIREMENTS_SCHEMA = () => `
+// ─── Requirements ─────────────────────────────────────────────────────
+
+const REQUIREMENTS_SCHEMA = `
     CREATE TABLE IF NOT EXISTS requirements
     (
         requirementsID     TEXT PRIMARY KEY NOT NULL UNIQUE,
         requirementSeq     INTEGER          NOT NULL,
         projectID          TEXT             NOT NULL,
-        requirementType    TEXT             NOT NULL CHECK ( requirementType in ('functional', 'non-functional') ),
+        requirementType    TEXT             NOT NULL CHECK (requirementType IN ('functional', 'non-functional')),
         requirementTitle   TEXT             NOT NULL,
         requirementContent TEXT             NOT NULL,
         requirementRole    TEXT             NOT NULL,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
-`
+`;
 
-// OLD - Missing ON DELETE CASCADE on storyID foreign key:
-// const REQUIREMENTS_STORY_REF_SCHEMA = () => `
-//     CREATE TABLE IF NOT EXISTS requirementsStoryRef
-//     (
-//         refID          TEXT PRIMARY KEY NOT NULL UNIQUE,
-//         requirementsID TEXT             NOT NULL,
-//         projectID      TEXT             NOT NULL,
-//         storyID        TEXT             NOT NULL,
-//         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
-//         FOREIGN KEY (storyID) REFERENCES userStories (storyID)  -- Missing ON DELETE CASCADE
-//     )
-// `
-
-// FIXED - Added ON DELETE CASCADE:
-const REQUIREMENTS_STORY_REF_SCHEMA = () => `
+const REQUIREMENTS_STORY_REF_SCHEMA = `
     CREATE TABLE IF NOT EXISTS requirementsStoryRef
     (
         refID          TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -209,28 +191,12 @@ const REQUIREMENTS_STORY_REF_SCHEMA = () => `
         storyID        TEXT             NOT NULL,
         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
         FOREIGN KEY (storyID) REFERENCES userStories (storyID) ON DELETE CASCADE
-    )
-`
+    );
+`;
 
-// OLD - Missing column name and ON DELETE CASCADE on documentID foreign key:
-// const REQUIREMENTS_SOURCE_SCHEMA = () => `
-//     CREATE TABLE IF NOT EXISTS requirementsSource
-//     (
-//         refID          TEXT PRIMARY KEY NOT NULL UNIQUE,
-//         requirementsID TEXT             NOT NULL,
-//         projectID      TEXT             NOT NULL,
-//         documentID     TEXT             NOT NULL,
-//         remarks        TEXT,
-//         location       TEXT,
-//         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
-//         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE,
-//         FOREIGN KEY (documentID) REFERENCES documents (documentID)  -- Missing ON DELETE CASCADE
-//     )
-// `
-
-// FIXED - Added ON DELETE CASCADE:
-// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
-const REQUIREMENTS_SOURCE_SCHEMA = () => `
+// NOTE: documentID foreign key intentionally removed to allow
+// document deletion without cascading constraint errors
+const REQUIREMENTS_SOURCE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS requirementsSource
     (
         refID          TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -241,25 +207,29 @@ const REQUIREMENTS_SOURCE_SCHEMA = () => `
         location       TEXT,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
         FOREIGN KEY (requirementsID) REFERENCES requirements (requirementsID) ON DELETE CASCADE
-    )
-`
+    );
+`;
 
-const VOICEANALYSIS_SCHEMA = () => `
+// ─── Voice Analysis ───────────────────────────────────────────────────
+
+const VOICEANALYSIS_SCHEMA = `
     CREATE TABLE IF NOT EXISTS voiceAnalysis
     (
         voiceAnalysisID    TEXT PRIMARY KEY NOT NULL UNIQUE,
         projectID          TEXT             NOT NULL,
-        analysisType       TEXT             NOT NULL CHECK ( analysisType in ('userStories', 'requirements') ),
-        analysisID         INTEGER          NOT NULL,
+        analysisType       TEXT             NOT NULL CHECK (analysisType IN ('userStories', 'requirements')),
+        analysisID         TEXT             NOT NULL,
         analysisTranscribe TEXT             NOT NULL,
         analysisTitle      TEXT             NOT NULL,
         analysisContent    TEXT             NOT NULL,
         analysisSource     TEXT             NOT NULL,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
-`
+`;
 
-const CHAT_SCHEMA = () => `
+// ─── Chat ─────────────────────────────────────────────────────────────
+
+const CHAT_SCHEMA = `
     CREATE TABLE IF NOT EXISTS chat
     (
         chatID     TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -267,53 +237,22 @@ const CHAT_SCHEMA = () => `
         threadName TEXT,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
-`
+`;
 
-// OLD - Missing column name in foreign key reference:
-// // Rename conversationID to chatID
-// const CONVERSATION_SCHEMA = () => `
-//     CREATE TABLE IF NOT EXISTS conversation
-//     (
-//         conversationID      TEXT    NOT NULL UNIQUE,
-//         chatSeq             INTEGER NOT NULL,
-//         chatID              TEXT    NOT NULL,
-//         conversationMessage TEXT    NOT NULL,
-//         PRIMARY KEY (conversationID, chatSeq),
-//         FOREIGN KEY (chatID) REFERENCES chat ON DELETE CASCADE  -- Missing column name
-//     );
-// `
-
-// FIXED - Added column name (chatID) and conversationTimeDate:
-const CONVERSATION_SCHEMA = () => `
+const CONVERSATION_SCHEMA = `
     CREATE TABLE IF NOT EXISTS conversation
     (
-        conversationID      TEXT    NOT NULL UNIQUE,
-        chatSeq             INTEGER NOT NULL,
-        chatID              TEXT    NOT NULL,
-        conversationMessage TEXT    NOT NULL,
+        conversationID       TEXT    NOT NULL UNIQUE,
+        chatSeq              INTEGER NOT NULL,
+        chatID               TEXT    NOT NULL,
+        conversationMessage  TEXT    NOT NULL,
         conversationTimeDate TEXT,
         PRIMARY KEY (conversationID, chatSeq),
         FOREIGN KEY (chatID) REFERENCES chat (chatID) ON DELETE CASCADE
     );
-`
+`;
 
-// OLD - Missing column names in composite foreign key and missing ON DELETE CASCADE:
-// const CONVERSATION_DOC_REF_SCHEMA = () => `
-//     CREATE TABLE IF NOT EXISTS conversationDocRef
-//     (
-//         refID           TEXT PRIMARY KEY NOT NULL UNIQUE,
-//         conversationID  TEXT             NOT NULL,
-//         conversationSeq INTEGER          NOT NULL,
-//         documentID      TEXT             NOT NULL,
-//         remarks         TEXT,
-//         FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation ON DELETE CASCADE,  -- Missing column names
-//         FOREIGN KEY (documentID) REFERENCES documents  -- Missing column name and ON DELETE CASCADE
-//     )
-// `
-
-// FIXED - Added column names and ON DELETE CASCADE:
-// Removed FOREIGN KEY on documentID to allow document deletion without constraint errors
-const CONVERSATION_DOC_REF_SCHEMA = () => `
+const CONVERSATION_DOC_REF_SCHEMA = `
     CREATE TABLE IF NOT EXISTS conversationDocRef
     (
         refID           TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -322,26 +261,10 @@ const CONVERSATION_DOC_REF_SCHEMA = () => `
         documentID      TEXT             NOT NULL,
         remarks         TEXT,
         FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation (conversationID, chatSeq) ON DELETE CASCADE
-    )
-`
+    );
+`;
 
-// OLD - Missing column names in composite foreign key reference:
-// const RESPONSE_SCHEMA = () => `
-//     CREATE TABLE IF NOT EXISTS response
-//     (
-//         responseID       TEXT PRIMARY KEY NOT NULL UNIQUE,
-//         responseSeq      INTEGER          NOT NULL,
-//         conversationID   TEXT             NOT NULL,
-//         conversationSeq  INTEGER          NOT NULL,
-//         responseMessage  TEXT             NOT NULL,
-//         responseTimeDate TEXT             NOT NULL,
-//         isActive         INTEGER          NOT NULL,
-//         FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation ON DELETE CASCADE  -- Missing column names
-//     );
-// `
-
-// FIXED - Added column names (conversationID, chatSeq):
-const RESPONSE_SCHEMA = () => `
+const RESPONSE_SCHEMA = `
     CREATE TABLE IF NOT EXISTS response
     (
         responseID       TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -353,21 +276,26 @@ const RESPONSE_SCHEMA = () => `
         isActive         INTEGER          NOT NULL,
         FOREIGN KEY (conversationID, conversationSeq) REFERENCES conversation (conversationID, chatSeq) ON DELETE CASCADE
     );
-`
+`;
 
-const REPORTS_SCHEMA = () => `
+// ─── Reports ──────────────────────────────────────────────────────────
+
+// ✅ Includes all 4 report types matching FSS constants in fsServices
+const REPORTS_SCHEMA = `
     CREATE TABLE IF NOT EXISTS reports
     (
         reportID   TEXT PRIMARY KEY NOT NULL UNIQUE,
         projectID  TEXT             NOT NULL,
         reportName TEXT             NOT NULL,
-        reportType TEXT             NOT NULL CHECK ( reportType in ('userStories', 'requirements') ),
+        reportType TEXT             NOT NULL CHECK (reportType IN ('userStories', 'requirements', 'userStories_pdf', 'requirements_pdf')),
         reportDate TEXT             NOT NULL,
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE
     );
-`
+`;
 
-const SUGGESTED_ACTION_SCHEMA = () => `
+// ─── Suggested Actions ────────────────────────────────────────────────
+
+const SUGGESTED_ACTION_SCHEMA = `
     CREATE TABLE IF NOT EXISTS suggested_action
     (
         projectID         TEXT    NOT NULL,
@@ -378,7 +306,7 @@ const SUGGESTED_ACTION_SCHEMA = () => `
         FOREIGN KEY (projectID) REFERENCES project (projectID) ON DELETE CASCADE,
         FOREIGN KEY (chatID) REFERENCES chat (chatID) ON DELETE CASCADE
     );
-`
+`;
 
 module.exports = {
     USER_TABLE_SCHEMA,
@@ -403,7 +331,4 @@ module.exports = {
     VOICEANALYSIS_SCHEMA,
     REQUIREMENTS_STORY_REF_SCHEMA,
     SUGGESTED_ACTION_SCHEMA
-}
-
-
-
+};
