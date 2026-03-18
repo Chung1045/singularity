@@ -1,87 +1,55 @@
 const winston = require('winston');
+const path = require("path");
 
-const logger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.printf(({ timestamp, level, message }) => {
-            return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
-        })
-    ),
-    transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: 'application.log' })
-    ],
-});
+const LOG_DIR = 'log';
+const TIMESTAMP_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
-const serverLogger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.printf(({ timestamp, level, message }) => {
-            return `[SERVER][${timestamp}] ${level.toUpperCase()}: ${message}`;
+function createLogger(label, logFile, toConsole = false) {
+    const transports = [
+        new winston.transports.File({
+            filename: path.join(LOG_DIR, logFile)
         })
-    ),
-    transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: 'log/application.log' })
-    ],
-});
+    ];
 
-const pathLogger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.printf(({ timestamp, level, message }) => {
-            return `[PATH][${timestamp}] ${level.toUpperCase()}: ${message}`;
-        })
-    ),
-    transports: [
-        new winston.transports.File({ filename: 'log/pathAccessLog.log' })
-    ],
-});
+    if (toConsole) {
+        transports.push(new winston.transports.Console());
+    }
 
-const dbLogger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.printf(({ timestamp, level, message }) => {
-            return `[DB][${timestamp}] ${level.toUpperCase()}: ${message}`;
-        })
-    ),
-    transports: [
-        new winston.transports.File({ filename: 'application.log' })
-    ],
-});
+    return winston.createLogger({
+        level: 'info',
+        format: winston.format.combine(
+            winston.format.timestamp({ format: TIMESTAMP_FORMAT }),
+            winston.format.printf(({ timestamp, level, message, stack }) => {
+                const base = `[${label}][${timestamp}] ${level.toUpperCase()}: ${message}`;
+                return stack ? `${base}\n${stack}` : base; // ✅ include stack trace for errors
+            })
+        ),
+        transports
+    });
+}
 
-const serviceLogger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.printf(({ timestamp, level, message }) => {
-            return `[SERVICE][${timestamp}] ${level.toUpperCase()}: ${message}`;
-        })
-    ),
-    transports: [
-        new winston.transports.File({ filename: 'application.log' })
-    ],
-});
+const logger = createLogger('APP', 'application.log', true);
+const serverLogger = createLogger('SERVER', 'application.log', true);
+const pathLogger = createLogger('PATH', 'pathAccessLog.log', false);
+const dbLogger = createLogger('DB', 'application.log', false);
+const serviceLogger = createLogger('SERVICE', 'application.log', false);
 
 function logAccessedPath(req) {
-    pathLogger.info(`\nIP: ${req.ip}\n${req.method} ${req.originalUrl}\nUser-Agent: ${req.get('user-agent')}`);
+    pathLogger.info(`IP: ${req.ip} | ${req.method} ${req.originalUrl} | User-Agent: ${req.get('user-agent')}`);
 }
 
 // Accept parameters for user info and result
-function logLoginAttempt(userId, success, ip) {
+function logLoginAttempt(userID, success, ip) {
     const status = success ? 'SUCCESS' : 'FAILED';
-    logger.info(`Login attempt - User: ${userId}, Status: ${status}, IP: ${ip}`);
+    logger.info(`Login attempt | User: ${userID} | Status: ${status} | IP: ${ip}`);
 }
 
 module.exports = {
-    logAccessedPath,
-    logLoginAttempt,
     logger,
     serverLogger,
+    pathLogger,
     dbLogger,
-    serviceLogger
+    serviceLogger,
+    logAccessedPath,
+    logLoginAttempt
 }
