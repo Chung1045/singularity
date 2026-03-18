@@ -1548,8 +1548,11 @@ window.createNewChat = function() {
         if (mainScreenTitle) mainScreenTitle.style.display = 'flex';
         if (quickPromptsContainer) quickPromptsContainer.style.display = 'flex';
 
-        // Clear current chat ID tracking
+        // Clear current chat ID tracking (both window and ChatController)
         window.currentChatID = null;
+        if (window.ChatController) {
+            window.ChatController.currentChatID = null;
+        }
         localStorage.removeItem('activeChatID');
         localStorage.removeItem('activeChatProjectID');
         localStorage.setItem('wentBackToInitial', 'true');
