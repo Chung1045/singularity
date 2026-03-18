@@ -240,6 +240,14 @@ html[data-theme='dark'] #sidebar-profile-avatar-collapsed:focus {
     box-shadow: none !important;
 }
 
+/* Default sidebar profile avatar (user.svg) - white in dark mode */
+html[data-theme='dark'] #sidebar-profile-avatar img[src="./img/user.svg"],
+html[data-theme='dark'] #sidebar-profile-avatar img[src*="user.svg"],
+html[data-theme='dark'] #sidebar-profile-avatar-collapsed img[src="./img/user.svg"],
+html[data-theme='dark'] #sidebar-profile-avatar-collapsed img[src*="user.svg"] {
+    filter: invert(1);
+}
+
 html[data-theme='dark'] #sidebar-new-chat-button,
 html[data-theme='dark'] #sidebar-manage-requirements-button,
 html[data-theme='dark'] #sidebar-source-upload-button,
@@ -433,6 +441,10 @@ html[data-theme='dark'] #p-label-requirements-no-entry,
 html[data-theme='dark'] #p-label-requirements-no-entry-right,
 html[data-theme='dark'] #search-panel-file-info-size,
 html[data-theme='dark'] #search-panel-file-info-date {
+    color: var(--dm-muted) !important;
+}
+
+html[data-theme='dark'] .profile-avatar-fallback {
     color: var(--dm-muted) !important;
 }
 
