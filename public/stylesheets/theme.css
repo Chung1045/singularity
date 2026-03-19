@@ -13,7 +13,7 @@ html[data-theme='dark'] {
     --dm-muted-strong: #e2e8f0;
     --dm-accent-soft: rgba(96, 165, 250, 0.14);
     --dm-danger-bg: rgba(127, 29, 29, 0.3);
-    --dm-danger-border: rgba(248, 113, 113, 0.28);
+    --dm-danger-border: rgba(248, 113, 113, 0.25);
     --dm-danger-text: #fca5a5;
     --dm-shadow: 0 22px 48px rgba(2, 6, 23, 0.45);
     --dm-icon-filter: brightness(0) saturate(100%) invert(91%) sepia(7%) saturate(531%) hue-rotate(179deg) brightness(101%) contrast(92%);
