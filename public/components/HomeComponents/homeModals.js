@@ -220,6 +220,8 @@ const ConfirmModal = {
     show({ title, message, confirmText = 'Delete', cancelText = 'Cancel', confirmColor = '#000000' }) {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
+            modal.id = 'confirm-modal-backdrop';
+            modal.className = 'confirm-modal-backdrop';
             modal.style.cssText = `
                 position: fixed;
                 top: 0;
@@ -235,6 +237,8 @@ const ConfirmModal = {
             `;
 
             const modalContent = document.createElement('div');
+            modalContent.id = 'confirm-modal-content';
+            modalContent.className = 'confirm-modal-content';
             modalContent.style.cssText = `
                 background-color: #ffffff;
                 border-radius: 15px;
@@ -248,11 +252,11 @@ const ConfirmModal = {
             `;
 
             modalContent.innerHTML = `
-                <div style="font-family: Urbanist, Helvetica; font-weight: 700; font-size: 24px; color: #000000;">${title}</div>
-                <div style="font-family: Inter, Helvetica; font-weight: 400; font-size: 16px; color: #000000; line-height: 1.5;">${message}</div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
-                    <button id="modal-cancel-btn" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e0e0e0; background-color: #ffffff; color: #000000; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${cancelText}</button>
-                    <button id="modal-confirm-btn" style="padding: 12px 24px; border-radius: 10px; border: none; background-color: ${confirmColor}; color: #ffffff; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${confirmText}</button>
+                <div class="confirm-modal-title" style="font-family: Urbanist, Helvetica; font-weight: 700; font-size: 24px; color: #000000;">${title}</div>
+                <div class="confirm-modal-message" style="font-family: Inter, Helvetica; font-weight: 400; font-size: 16px; color: #000000; line-height: 1.5;">${message}</div>
+                <div class="confirm-modal-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                    <button id="modal-cancel-btn" class="confirm-modal-cancel-btn" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e0e0e0; background-color: #ffffff; color: #000000; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${cancelText}</button>
+                    <button id="modal-confirm-btn" class="confirm-modal-confirm-btn" style="padding: 12px 24px; border-radius: 10px; border: none; background-color: ${confirmColor}; color: #ffffff; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${confirmText}</button>
                 </div>
             `;
 

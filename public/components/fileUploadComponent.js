@@ -17,7 +17,7 @@
         const uploadAbortController = useRef(null);
 
         // Preserve existing checked state - new files start unchecked
-        useEffect(() => {``
+        useEffect(() => {
             setCheckedTempIDs(prev => {
                 const newSet = new Set();
                 selectedFiles.forEach(file => {
@@ -641,7 +641,9 @@
                                         padding: '12px 16px',
                                         borderBottom: '1px solid #f0f0f0',
                                         alignItems: 'center',
-                                        backgroundColor: isEditing ? '#f9fafb' : 'transparent',
+                                        backgroundColor: isEditing
+                                            ? (document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#f9fafb')
+                                            : 'transparent',
                                         transition: 'background-color 0.2s'
                                     },
                                     onMouseEnter: (e) => {

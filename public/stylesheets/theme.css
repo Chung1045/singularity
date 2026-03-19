@@ -379,6 +379,29 @@ html[data-theme='dark'] #sidebar-username-text-collapsed,
 html[data-theme='dark'] #sidebar-project-option-rename,
 html[data-theme='dark'] #sidebar-project-option-share,
 html[data-theme='dark'] #sidebar-create-project-modal-title,
+html[data-theme='dark'] #sidebar-create-project-modal-description,
+html[data-theme='dark'] #sidebar-create-project-modal-skip {
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] #sidebar-create-project-modal-skip {
+    background: transparent !important;
+    border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] #sidebar-create-project-modal-skip:hover {
+    background: var(--dm-surface-3) !important;
+}
+
+html[data-theme='dark'] #sidebar-create-project-modal-submit {
+    background: var(--dm-surface-3) !important;
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] #sidebar-create-project-modal-submit:hover {
+    background: var(--dm-surface-4) !important;
+}
+
 html[data-theme='dark'] #search-panel-title,
 html[data-theme='dark'] #search-panel-file-name,
 html[data-theme='dark'] #search-panel-requirement-title,
@@ -730,7 +753,10 @@ html[data-theme='dark'] #notification-backdrop,
 html[data-theme='dark'] #requirements-panel-overlay,
 html[data-theme='dark'] .profile-modal-overlay,
 html[data-theme='dark'] .home-alert-modal-backdrop,
-html[data-theme='dark'] .welcome-overlay-backdrop {
+html[data-theme='dark'] .welcome-overlay-backdrop,
+html[data-theme='dark'] #sidebar-create-project-modal-overlay,
+html[data-theme='dark'] #confirm-modal-backdrop,
+html[data-theme='dark'] .confirm-modal-backdrop {
     background: rgba(2, 6, 23, 0.72) !important;
 }
 
@@ -793,6 +819,10 @@ html[data-theme='dark'] #sidebar-notification-icon *,
 html[data-theme='dark'] #sidebar-notification-icon-collapsed * {
     stroke: currentColor !important;
     color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] img.security-button-svg {
+    filter: brightness(0) saturate(100%) invert(100%) !important;
 }
 
 html[data-theme='dark'] .home-alert-modal-card {
@@ -979,6 +1009,38 @@ html[data-theme='dark'] .rename-project-modal-save-btn {
 }
 
 html[data-theme='dark'] .rename-project-modal-save-btn:hover {
+    background: var(--dm-surface-4) !important;
+}
+
+/* ConfirmModal (homeModals.js - requirements panel delete, etc.) */
+html[data-theme='dark'] #confirm-modal-content,
+html[data-theme='dark'] .confirm-modal-content {
+    background: var(--dm-surface) !important;
+    border: 1px solid var(--dm-border) !important;
+    box-shadow: var(--dm-shadow) !important;
+}
+
+html[data-theme='dark'] .confirm-modal-title,
+html[data-theme='dark'] .confirm-modal-message {
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .confirm-modal-cancel-btn {
+    background: var(--dm-surface-2) !important;
+    color: var(--dm-text) !important;
+    border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] .confirm-modal-cancel-btn:hover {
+    background: var(--dm-surface-3) !important;
+}
+
+html[data-theme='dark'] .confirm-modal-confirm-btn {
+    background: var(--dm-surface-3) !important;
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .confirm-modal-confirm-btn:hover {
     background: var(--dm-surface-4) !important;
 }
 
@@ -1767,6 +1829,10 @@ html[data-theme='dark'] .security-button--primary:hover:not(:disabled) .security
     stroke: #000000 !important;
 }
 
+html[data-theme='dark'] .security-button--primary:hover:not(:disabled) img.security-button-svg {
+    filter: brightness(0) saturate(100%) invert(0%) !important;
+}
+
 html[data-theme='dark'] #sidebar-project-options-button:hover {
     background: #ffffff !important;
 }
@@ -1915,7 +1981,15 @@ html[data-theme='dark'] [id^='upload-file-row-'] {
 }
 
 html[data-theme='dark'] [id^='upload-file-row-']:hover {
-    background: #1f2937 !important;
+    background: var(--dm-surface-3) !important;
+}
+
+html[data-theme='dark'] [id^='upload-file-row-']:hover [id^='upload-filename-text-'],
+html[data-theme='dark'] [id^='upload-file-row-']:hover [id^='upload-type-cell-'],
+html[data-theme='dark'] [id^='upload-file-row-']:hover [id^='upload-duration-size-cell-'],
+html[data-theme='dark'] [id^='upload-file-row-']:hover [id^='upload-date-cell-'],
+html[data-theme='dark'] [id^='upload-file-row-']:hover [id^='upload-rename-extension-'] {
+    color: var(--dm-text) !important;
 }
 
 html[data-theme='dark'] [id^='upload-rename-input-'] {
