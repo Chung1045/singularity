@@ -299,6 +299,7 @@ const WelcomeOverlayComponent = ({ onGetStarted }) => {
                 style: { fontFamily: '"SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 700, fontSize: '20px', color: '#000', margin: 0 }
             }, 'Welcome!'),
             React.createElement('div', {
+                className: 'welcome-overlay-body',
                 style: { fontFamily: '"SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif', fontSize: '16px', color: 'rgb(90, 90, 90)', lineHeight: '1.7', display: 'flex', flexDirection: 'column', gap: '12px' }
             },
                 React.createElement('p', { style: { margin: 0 } }, 'This is Singularity, an agent powered requirement conversation platform.'),

@@ -32,6 +32,8 @@
             // Rename modal
             const newName = await new Promise((resolve) => {
                 const modal = document.createElement('div');
+                modal.id = 'rename-project-modal-backdrop';
+                modal.className = 'rename-project-modal-backdrop';
                 modal.style.cssText = `
                     position: fixed;
                     top: 0;
@@ -47,6 +49,8 @@
                 `;
 
                 const modalContent = document.createElement('div');
+                modalContent.id = 'rename-project-modal-content';
+                modalContent.className = 'rename-project-modal-content';
                 modalContent.style.cssText = `
                     background-color: #ffffff;
                     border-radius: 15px;
@@ -60,21 +64,21 @@
                 `;
 
                 modalContent.innerHTML = `
-                    <div style="
+                    <div class="rename-project-modal-title" style="
                         font-family: Urbanist, Helvetica;
                         font-weight: 700;
                         font-size: 24px;
                         color: #000000;
                         line-height: normal;
                     ">Rename Project</div>
-                    <div style="
+                    <div class="rename-project-modal-message" style="
                         font-family: Inter, Helvetica;
                         font-weight: 400;
                         font-size: 16px;
                         color: #000000;
                         line-height: 1.5;
                     ">Enter a new name for "${currentProject?.projectName}":</div>
-                    <input type="text" id="project-rename-input" value="${currentProject?.projectName || ''}" style="
+                    <input type="text" id="project-rename-input" class="rename-project-modal-input" value="${currentProject?.projectName || ''}" style="
                         width: 100%;
                         padding: 12px;
                         border: 1.67px solid #e4e4e4;
@@ -89,7 +93,7 @@
                         justify-content: flex-end;
                         margin-top: 10px;
                     ">
-                        <button id="cancel-rename-btn" style="
+                        <button id="cancel-rename-btn" class="rename-project-modal-cancel-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: 1px solid #e0e0e0;
@@ -101,7 +105,7 @@
                             cursor: pointer;
                             transition: all 0.2s ease;
                         ">Cancel</button>
-                        <button id="save-rename-btn" style="
+                        <button id="save-rename-btn" class="rename-project-modal-save-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: none;
@@ -197,6 +201,8 @@
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
+                    successModal.id = 'sidebar-success-modal-backdrop';
+                    successModal.className = 'sidebar-success-modal-backdrop';
                     successModal.style.cssText = `
                         position: fixed;
                         top: 0;
@@ -212,6 +218,8 @@
                     `;
 
                     const successContent = document.createElement('div');
+                    successContent.id = 'sidebar-success-modal-content';
+                    successContent.className = 'sidebar-success-modal-content';
                     successContent.style.cssText = `
                         background-color: #ffffff;
                         border-radius: 15px;
@@ -225,25 +233,25 @@
                     `;
 
                     successContent.innerHTML = `
-                        <div style="
+                        <div class="sidebar-success-modal-title" style="
                             font-family: Urbanist, Helvetica;
                             font-weight: 700;
                             font-size: 24px;
                             color: #000000;
                             line-height: normal;
                         ">Rename Successful</div>
-                        <div style="
+                        <div class="sidebar-success-modal-message" style="
                             font-family: Inter, Helvetica;
                             font-weight: 400;
                             font-size: 14px;
                             color: #000000;
                             line-height: 1.4;
                         ">Project renamed successfully.</div>
-                        <div style="
+                        <div class="sidebar-success-modal-actions" style="
                             display: flex;
                             justify-content: flex-end;
                         ">
-                            <button id="rename-success-ok-btn" style="
+                            <button id="rename-success-ok-btn" class="sidebar-success-modal-ok-btn" style="
                                 padding: 12px 32px;
                                 border-radius: 10px;
                                 border: none;
@@ -302,6 +310,8 @@
             // First confirmation modal - Warning
             const firstConfirm = await new Promise((resolve) => {
                 const modal = document.createElement('div');
+                modal.id = 'delete-project-modal-backdrop';
+                modal.className = 'delete-project-modal-backdrop';
                 modal.style.cssText = `
                     position: fixed;
                     top: 0;
@@ -317,6 +327,8 @@
                 `;
 
                 const modalContent = document.createElement('div');
+                modalContent.id = 'delete-project-modal-content';
+                modalContent.className = 'delete-project-modal-content';
                 modalContent.style.cssText = `
                     background-color: #ffffff;
                     border-radius: 15px;
@@ -330,14 +342,14 @@
                 `;
 
                 modalContent.innerHTML = `
-                    <div style="
+                    <div class="delete-project-modal-title" style="
                         font-family: Urbanist, Helvetica;
                         font-weight: 700;
                         font-size: 24px;
                         color: #000000;
                         line-height: normal;
                     ">Warning</div>
-                    <div style="
+                    <div class="delete-project-modal-message" style="
                         font-family: Inter, Helvetica;
                         font-weight: 400;
                         font-size: 16px;
@@ -357,7 +369,7 @@
                         justify-content: flex-end;
                         margin-top: 10px;
                     ">
-                        <button id="cancel-btn" style="
+                        <button id="cancel-btn" class="delete-project-modal-cancel-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: 1px solid #e0e0e0;
@@ -369,7 +381,7 @@
                             cursor: pointer;
                             transition: all 0.2s ease;
                         ">Cancel</button>
-                        <button id="continue-btn" style="
+                        <button id="continue-btn" class="delete-project-modal-confirm-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: none;
@@ -431,6 +443,8 @@
             // Second confirmation modal - Type project name
             const secondConfirm = await new Promise((resolve) => {
                 const modal = document.createElement('div');
+                modal.id = 'delete-project-modal-backdrop';
+                modal.className = 'delete-project-modal-backdrop';
                 modal.style.cssText = `
                     position: fixed;
                     top: 0;
@@ -446,6 +460,8 @@
                 `;
 
                 const modalContent = document.createElement('div');
+                modalContent.id = 'delete-project-modal-content';
+                modalContent.className = 'delete-project-modal-content';
                 modalContent.style.cssText = `
                     background-color: #ffffff;
                     border-radius: 15px;
@@ -459,14 +475,14 @@
                 `;
 
                 modalContent.innerHTML = `
-                    <div style="
+                    <div class="delete-project-modal-title" style="
                         font-family: Urbanist, Helvetica;
                         font-weight: 700;
                         font-size: 24px;
                         color: #000000;
                         line-height: normal;
                     ">Final Confirmation</div>
-                    <div style="
+                    <div class="delete-project-modal-message" style="
                         font-family: Inter, Helvetica;
                         font-weight: 400;
                         font-size: 16px;
@@ -474,7 +490,7 @@
                         line-height: 1.5;
                     ">Type the project name to confirm deletion:<br><br>
                     <strong>${currentProject?.projectName}</strong></div>
-                    <input type="text" id="project-name-input" placeholder="Type project name here" style="
+                    <input type="text" id="project-name-input" class="delete-project-modal-input" placeholder="Type project name here" style="
                         width: 100%;
                         padding: 12px;
                         border: 1.67px solid #e4e4e4;
@@ -489,7 +505,7 @@
                         justify-content: flex-end;
                         margin-top: 10px;
                     ">
-                        <button id="cancel-btn-2" style="
+                        <button id="cancel-btn-2" class="delete-project-modal-cancel-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: 1px solid #e0e0e0;
@@ -501,7 +517,7 @@
                             cursor: pointer;
                             transition: all 0.2s ease;
                         ">Cancel</button>
-                        <button id="delete-btn" style="
+                        <button id="delete-btn" class="delete-project-modal-confirm-btn delete-project-modal-delete-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: none;
@@ -598,6 +614,8 @@
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
+                    successModal.id = 'sidebar-success-modal-backdrop';
+                    successModal.className = 'sidebar-success-modal-backdrop';
                     successModal.style.cssText = `
                         position: fixed;
                         top: 0;
@@ -613,6 +631,8 @@
                     `;
 
                     const successContent = document.createElement('div');
+                    successContent.id = 'sidebar-success-modal-content';
+                    successContent.className = 'sidebar-success-modal-content';
                     successContent.style.cssText = `
                         background-color: #ffffff;
                         border-radius: 15px;
@@ -626,25 +646,25 @@
                     `;
 
                     successContent.innerHTML = `
-                        <div style="
+                        <div class="sidebar-success-modal-title" style="
                             font-family: Urbanist, Helvetica;
                             font-weight: 700;
                             font-size: 24px;
                             color: #000000;
                             line-height: normal;
                         ">Delete Successful</div>
-                        <div style="
+                        <div class="sidebar-success-modal-message" style="
                             font-family: Inter, Helvetica;
                             font-weight: 400;
                             font-size: 14px;
                             color: #000000;
                             line-height: 1.4;
                         ">Project successfully deleted.</div>
-                        <div style="
+                        <div class="sidebar-success-modal-actions" style="
                             display: flex;
                             justify-content: flex-end;
                         ">
-                            <button id="success-ok-btn" style="
+                            <button id="success-ok-btn" class="sidebar-success-modal-ok-btn" style="
                                 padding: 12px 32px;
                                 border-radius: 10px;
                                 border: none;

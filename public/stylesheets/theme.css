@@ -11,8 +11,6 @@ html[data-theme='dark'] {
     --dm-text: #f8fafc;
     --dm-muted: #cbd5e1;
     --dm-muted-strong: #e2e8f0;
-    --dm-accent: #60a5fa;
-    --dm-accent-strong: #3b82f6;
     --dm-accent-soft: rgba(96, 165, 250, 0.14);
     --dm-danger-bg: rgba(127, 29, 29, 0.3);
     --dm-danger-border: rgba(248, 113, 113, 0.28);
@@ -46,7 +44,9 @@ html[data-theme='dark'] #requirements-panel-container *,
 html[data-theme='dark'] .security-modal,
 html[data-theme='dark'] .security-modal *,
 html[data-theme='dark'] .home-alert-modal-card,
-html[data-theme='dark'] .home-alert-modal-card * {
+html[data-theme='dark'] .home-alert-modal-card *,
+html[data-theme='dark'] .welcome-overlay-card,
+html[data-theme='dark'] .welcome-overlay-card * {
     color: var(--dm-text) !important;
 }
 
@@ -729,7 +729,8 @@ html[data-theme='dark'] #search-backdrop,
 html[data-theme='dark'] #notification-backdrop,
 html[data-theme='dark'] #requirements-panel-overlay,
 html[data-theme='dark'] .profile-modal-overlay,
-html[data-theme='dark'] .home-alert-modal-backdrop {
+html[data-theme='dark'] .home-alert-modal-backdrop,
+html[data-theme='dark'] .welcome-overlay-backdrop {
     background: rgba(2, 6, 23, 0.72) !important;
 }
 
@@ -808,6 +809,177 @@ html[data-theme='dark'] .home-alert-modal-button {
     background: var(--dm-accent-strong) !important;
     color: #ffffff !important;
     border: 1px solid var(--dm-accent-strong) !important;
+}
+
+/* Welcome overlay (post-signup) */
+html[data-theme='dark'] .welcome-overlay-card {
+    background: var(--dm-surface) !important;
+    border: 1px solid var(--dm-border) !important;
+    box-shadow: var(--dm-shadow) !important;
+}
+
+html[data-theme='dark'] .welcome-overlay-body,
+html[data-theme='dark'] .welcome-overlay-body p {
+    color: var(--dm-muted) !important;
+}
+
+html[data-theme='dark'] .welcome-overlay-card button {
+    background: var(--dm-surface-3) !important;
+    color: var(--dm-text) !important;
+    border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] .welcome-overlay-card button:hover {
+    background: var(--dm-surface-4) !important;
+}
+
+html[data-theme='dark'] .welcome-overlay-card img[src="./img/union.svg"] {
+    filter: brightness(0) saturate(100%) invert(100%);
+}
+
+/* Sidebar success/error notifications (create project, etc.) */
+html[data-theme='dark'] #sidebar-success-notification {
+    background: rgba(34, 197, 94, 0.25) !important;
+    border: 1px solid rgba(34, 197, 94, 0.5) !important;
+    color: #86efac !important;
+}
+
+html[data-theme='dark'] #sidebar-error-notification {
+    background: var(--dm-danger-bg) !important;
+    border: 1px solid var(--dm-danger-border) !important;
+    color: var(--dm-danger-text) !important;
+}
+
+/* Delete project confirmation modals (Sidebar.js) */
+html[data-theme='dark'] #delete-project-modal-backdrop,
+html[data-theme='dark'] .delete-project-modal-backdrop {
+    background: rgba(2, 6, 23, 0.72) !important;
+}
+
+html[data-theme='dark'] #delete-project-modal-content,
+html[data-theme='dark'] .delete-project-modal-content {
+    background: var(--dm-surface) !important;
+    border: 1px solid var(--dm-border) !important;
+    box-shadow: var(--dm-shadow) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-title,
+html[data-theme='dark'] .delete-project-modal-message,
+html[data-theme='dark'] .delete-project-modal-message strong {
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-input {
+    background: var(--dm-surface-2) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-input::placeholder {
+    color: var(--dm-muted) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-cancel-btn {
+    background: var(--dm-surface-2) !important;
+    color: var(--dm-text) !important;
+    border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-cancel-btn:hover {
+    background: var(--dm-surface-3) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-confirm-btn {
+    background: var(--dm-surface-3) !important;
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-confirm-btn:hover {
+    background: var(--dm-surface-4) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-delete-btn {
+    background: var(--dm-danger-bg) !important;
+    color: var(--dm-danger-text) !important;
+    border: 1px solid var(--dm-danger-border) !important;
+}
+
+html[data-theme='dark'] .delete-project-modal-delete-btn:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.2) !important;
+}
+
+/* Sidebar success modals (Rename / Delete successful) */
+html[data-theme='dark'] #sidebar-success-modal-backdrop,
+html[data-theme='dark'] .sidebar-success-modal-backdrop {
+    background: rgba(2, 6, 23, 0.72) !important;
+}
+
+html[data-theme='dark'] #sidebar-success-modal-content,
+html[data-theme='dark'] .sidebar-success-modal-content {
+    background: var(--dm-surface) !important;
+    border: 1px solid var(--dm-border) !important;
+    box-shadow: var(--dm-shadow) !important;
+}
+
+html[data-theme='dark'] .sidebar-success-modal-title,
+html[data-theme='dark'] .sidebar-success-modal-message {
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .sidebar-success-modal-ok-btn {
+    background: var(--dm-surface-3) !important;
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .sidebar-success-modal-ok-btn:hover {
+    background: var(--dm-surface-4) !important;
+}
+
+/* Rename project modal (form with input) */
+html[data-theme='dark'] #rename-project-modal-backdrop,
+html[data-theme='dark'] .rename-project-modal-backdrop {
+    background: rgba(2, 6, 23, 0.72) !important;
+}
+
+html[data-theme='dark'] #rename-project-modal-content,
+html[data-theme='dark'] .rename-project-modal-content {
+    background: var(--dm-surface) !important;
+    border: 1px solid var(--dm-border) !important;
+    box-shadow: var(--dm-shadow) !important;
+}
+
+html[data-theme='dark'] .rename-project-modal-title,
+html[data-theme='dark'] .rename-project-modal-message {
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .rename-project-modal-input {
+    background: var(--dm-surface-2) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .rename-project-modal-input::placeholder {
+    color: var(--dm-muted) !important;
+}
+
+html[data-theme='dark'] .rename-project-modal-cancel-btn {
+    background: var(--dm-surface-2) !important;
+    color: var(--dm-text) !important;
+    border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] .rename-project-modal-cancel-btn:hover {
+    background: var(--dm-surface-3) !important;
+}
+
+html[data-theme='dark'] .rename-project-modal-save-btn {
+    background: var(--dm-surface-3) !important;
+    color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] .rename-project-modal-save-btn:hover {
+    background: var(--dm-surface-4) !important;
 }
 
 html[data-theme='dark'] .quick-prompts-container,
