@@ -129,6 +129,17 @@
                 window.removeEventListener('mouseup', stopResizing);
             };
         }, [isResizing, resize, stopResizing]);
+
+        useEffect(() => {
+            const expandForTour = () => {
+                setIsCollapsed(false);
+                try {
+                    localStorage.setItem('rightSidebarCollapsed', JSON.stringify(false));
+                } catch (_) {}
+            };
+            window.addEventListener('singularity-tour-expand-right', expandForTour);
+            return () => window.removeEventListener('singularity-tour-expand-right', expandForTour);
+        }, []);
         // -----------------------
 
         return React.createElement(
@@ -222,7 +233,16 @@
                                     }
                                 }, 'Reports'
                             ),
-                            selectedProjectID && React.createElement('button', {
+                            selectedProjectID && React.createElement('div', {
+                                    id: 'right-sidebar-tour-report-actions',
+                                    style: {
+                                        width: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 0
+                                    }
+                                },
+                            React.createElement('button', {
                                     id: 'btn-generate-user-stories',
                                     'aria-label': 'Generate User Stories Report',
                                     onClick: async () => {
@@ -273,7 +293,7 @@
                                     }
                                 }, 'Generate User Stories Report')
                             ),
-                            selectedProjectID && React.createElement('button', {
+                            React.createElement('button', {
                                     id: 'btn-generate-requirements',
                                     'aria-label': 'Generate Requirement Report',
                                     onClick: async () => {
@@ -325,15 +345,15 @@
                                 }, 'Generate Requirement Report')
                             ),
                             React.createElement('hr', {
-                                id: 'right-sidebar-divider',
-                                style: {
-                                    width: '100%',
-                                    border: 'none',
-                                    borderTop: '2px solid #e4e4e4',
-                                    margin: '0 0 20px 0'
-                                }
-                            }),
-                            selectedProjectID && React.createElement('button', {
+                                    id: 'right-sidebar-divider',
+                                    style: {
+                                        width: '100%',
+                                        border: 'none',
+                                        borderTop: '2px solid #e4e4e4',
+                                        margin: '0 0 20px 0'
+                                    }
+                                }),
+                            React.createElement('button', {
                                     id: 'right-sidebar-manage-requirements-button',
                                     'aria-label': 'Manage requirement / stories',
                                     onClick: async () => {
@@ -377,6 +397,7 @@
                                 React.createElement('span', {
                                     id: 'right-sidebar-manage-requirements-text'
                                 }, 'Manage Requirements / Stories')
+                            )
                             ),
                             React.createElement('div', {
                                 id: 'div-requirements-list-right',

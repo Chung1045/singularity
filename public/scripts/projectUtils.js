@@ -867,6 +867,11 @@ function createFileItem(fileName, documentID) {
 async function fetchProjectReports(projectID) {
     console.log(` fetchProjectReports called with ProjectID: ${projectID}`);
 
+    if (projectID == null || String(projectID).trim() === '') {
+        console.warn(' fetchProjectReports skipped: missing projectID');
+        return;
+    }
+
     // Wait a bit for DOM to be ready if needed (especially for React-rendered components)
     let reportsListContainer = document.getElementById("div-requirements-list");
     let reportsListContainerRight = document.getElementById("div-requirements-list-right");
@@ -904,7 +909,7 @@ async function fetchProjectReports(projectID) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'CSRF-Token': csrfToken
+                'CSRF-Token': (typeof window !== 'undefined' && window.csrfToken) ? window.csrfToken : (typeof csrfToken !== 'undefined' ? csrfToken : '')
             },
             credentials: 'include', // Include cookies for authentication
             body: JSON.stringify({

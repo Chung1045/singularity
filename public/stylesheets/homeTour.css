@@ -1,0 +1,64 @@
+/* driver.js popover — align with Singularity light/dark (driver overlay stays default) */
+
+.driver-popover {
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.driver-popover-title {
+    font-family: "SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+/* Body copy: pre-line respects \n\n from homeTour.js step descriptions */
+.driver-popover-description {
+    font-family: "SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.62;
+    color: #475569;
+    white-space: pre-line;
+    margin: 0.15rem 0 0;
+}
+
+#driver-popover-content .driver-popover-description {
+    max-height: min(50vh, 25rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+}
+
+.driver-popover-close-btn {
+    color: #64748b;
+}
+
+.driver-popover-navigation-btns .driver-popover-prev-btn,
+.driver-popover-navigation-btns .driver-popover-next-btn,
+.driver-popover-footer .driver-popover-prev-btn,
+.driver-popover-footer .driver-popover-next-btn {
+    font-family: "SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 600;
+}
+
+html[data-theme='dark'] .driver-popover {
+    background: #0f172a;
+    border-color: rgba(148, 163, 184, 0.25);
+    box-shadow: 0 22px 48px rgba(2, 6, 23, 0.55);
+}
+
+html[data-theme='dark'] .driver-popover-title {
+    color: #f8fafc;
+}
+
+html[data-theme='dark'] .driver-popover-description {
+    color: #cbd5e1;
+}
+
+html[data-theme='dark'] .driver-popover-close-btn {
+    color: #94a3b8;
+}
+
+html[data-theme='dark'] .driver-popover-progress-text {
+    color: #94a3b8;
+}

@@ -6,6 +6,22 @@
 (function() {
     const { useState, useEffect, useRef } = React;
 
+    /** Same tour rows filtered on server; keep here so stale servers / cache never show them. */
+    function shouldHideTourDemoNotification(n) {
+        const msg = String((n && n.notificationMessage) || '')
+            .replace(/\u201c/g, '"')
+            .replace(/\u201d/g, '"')
+            .trim();
+        if (!msg.includes('Singularity tour')) return false;
+        if (/"Singularity tour(?: \u00b7 [^"]*)?"/i.test(msg)) return true;
+        if (/^You deleted project\s+/i.test(msg)) return true;
+        if (/^Project\s+"Singularity tour(?: \u00b7 [^"]*)?"\s+has been deleted/i.test(msg)) return true;
+        if (/^You are invited to join Singularity tour/i.test(msg)) return true;
+        if (/^You have been removed from the project Singularity tour/i.test(msg)) return true;
+        if (/\bSingularity tour(?: \u00b7 [A-Za-z0-9]+)?[.!?'"]*\s*$/i.test(msg)) return true;
+        return false;
+    }
+
     const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed, isOverlay }) => {
         const [notifications, setNotifications] = useState([]);
         const [loading, setLoading] = useState(false);
@@ -94,7 +110,10 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    setNotifications(data.notifications || []);
+                    const list = (data.notifications || []).filter(
+                        (n) => !shouldHideTourDemoNotification(n)
+                    );
+                    setNotifications(list);
                 }
             } catch (error) {
                 console.error('Error fetching notifications:', error);
