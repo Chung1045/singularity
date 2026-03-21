@@ -1,13 +1,15 @@
 /**
- * Live UI tour (driver.js) — matches WELCOME_STEPS in WelcomeOverlay.js:
- * Overview (full layout) → 1 Create project → 2 Select project → 3 Import → 4 Select & analyze →
- * 5 Chat → 6 Requirements → 7 Generate reports
+ * Live UI tour (driver.js) — aligns with WelcomeOverlay.js topics:
+ * Overview → 1 Create → 2 Select project → 3 Import → 4 Select & analyze → 5 Chat →
+ * 6 Requirements (full #right-sidebar) → 8 Generate reports & manage (report actions + list)
  *
  * On start we create a short-lived “Singularity tour” project and select it so Upload /
  * Reports controls exist. When the tour ends (Done, ✕, or overlay), that project is
  * deleted and your previous selection is restored when possible.
  *
  * window.startSingularityHomeTour()
+ *
+ * Steps after overview: 1–5 unchanged, 6 = full #right-sidebar, 8 = report actions + list (#right-sidebar-tour-reports-spotlight).
  */
 (function () {
     var TOUR_PROJECT_NAME_PREFIX = 'Singularity tour';
@@ -188,7 +190,7 @@
 
     function buildSteps() {
         var uploadEl = document.getElementById('sidebar-source-upload-button');
-        var reportActions = document.getElementById('right-sidebar-tour-report-actions');
+        var reportsSpotlightEl = document.getElementById('right-sidebar-tour-reports-spotlight');
         var seeded = !!window.__singularityTourSeeded;
 
         return [
@@ -205,7 +207,9 @@
                         'Right: Reports, generate exports, and Manage Requirements / Stories.\n\n' +
                         'A temporary tour project is already selected. Use only the tour buttons here until you tap Next — then we’ll spotlight each area in turn.',
                     side: 'bottom',
-                    align: 'center'
+                    align: 'center',
+                    /* No “Back” on the first screen — there is no prior step */
+                    showButtons: ['next', 'close']
                 }
             },
             {
@@ -276,29 +280,25 @@
                 }
             },
             {
-                element: '#right-sidebar-reports-header',
+                element: '#right-sidebar',
                 popover: {
                     title: '6 · Requirements & reports (right)',
                     description:
-                        'The Reports column on the right is where Manage Requirements / Stories and your generated exports live once a project is active.\n\n' +
-                        'The left sidebar has a matching “Report” section, but this right panel is the main place for those actions.',
+                        'The whole right column is highlighted: this is the Reports area—header, actions, export list, and collapse control.\n\n' +
+                        'The left sidebar has a matching “Report” section; this panel is the main place for requirements and generated exports.',
                     side: 'left',
-                    align: 'start'
+                    align: 'center'
                 }
             },
             {
-                element: reportActions
-                    ? '#right-sidebar-tour-report-actions'
+                element: reportsSpotlightEl
+                    ? '#right-sidebar-tour-reports-spotlight'
                     : '#right-sidebar-requirements-wrapper',
-                stagePadding: 6,
                 popover: {
-                    title: '7 · Generate reports',
-                    description: reportActions
-                        ? 'The highlighted block is this whole group: both report buttons, then “Manage Requirements / Stories.”\n\n' +
-                          'Completed exports appear in the list under this section.\n\n' +
-                          'Any of these actions can also be opened from the requirements panel.'
-                        : 'After a project is selected, these controls appear in this Reports panel:\n\n' +
-                          '“Generate Requirement Report,” “Generate User Stories Report,” and “Manage Requirements / Stories.”',
+                    title: '8 · Generate reports & manage',
+                    description:
+                        'This block is highlighted: generate a User Stories or Requirement report, open Manage Requirements / Stories, and use the list below for completed exports (or “No reports yet” until the first run).\n\n' +
+                        'You can also start some of these actions from the left sidebar.',
                     side: 'left',
                     align: 'start'
                 }
@@ -322,8 +322,18 @@
                         smoothScroll: true,
                         animate: true,
                         allowClose: true,
-                        stagePadding: 6,
-                        overlayOpacity: 0.75,
+                        /* Escape / arrows would call the same internal handlers as overlay; only × and Done should end the tour */
+                        allowKeyboardControl: false,
+                        /* Highlighted node must not steal clicks in the cutout; #root is pointer-events none via homeTour.css */
+                        disableActiveInteraction: true,
+                        /* driver.js 1.3.x uses global stagePadding only (per-step values are ignored) */
+                        stagePadding: 16,
+                        stageRadius: 8,
+                        popoverOffset: 12,
+                        overlayColor: '#0b1120',
+                        overlayOpacity: 0.72,
+                        popoverClass: 'singularity-tour-popover',
+                        progressText: 'Step {{current}} of {{total}}',
                         nextBtnText: 'Next →',
                         prevBtnText: '← Back',
                         doneBtnText: 'Done',

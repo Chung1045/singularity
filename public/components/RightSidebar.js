@@ -233,6 +233,15 @@
                                     }
                                 }, 'Reports'
                             ),
+                            React.createElement('div', {
+                                id: 'right-sidebar-tour-reports-spotlight',
+                                style: {
+                                    width: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0
+                                }
+                            },
                             selectedProjectID && React.createElement('div', {
                                     id: 'right-sidebar-tour-report-actions',
                                     style: {
@@ -413,6 +422,7 @@
                                     fontFamily: 'Inter, Helvetica'
                                 }
                             }, 'No reports yet')
+                            )
                         )
                     ),
                     React.createElement('div', { className: 'right-sidebar-footer' },

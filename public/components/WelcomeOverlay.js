@@ -1,7 +1,7 @@
 /**
  * Post-signup welcome / onboarding — text + optional static media per step (`media.src`).
  *
- * Compliance with homeTour.js: eight slides — overview + seven topics (create → select project → …).
+ * Compliance with homeTour.js: live tour has nine driver steps (overview + eight targets); these slides are eight welcome topics.
  * Use images, GIFs, or short videos per step; no built-in wireframe UI.
  *
  * Do not destructure useState/useCallback at top level — classic scripts share
@@ -79,20 +79,20 @@ const WELCOME_STEPS = [
     {
         id: 'requirements',
         title: 'View requirements',
-        heading: 'Where to open them',
+        heading: 'The right Reports column',
         paragraphs: [
-            'Use “Manage requirements” in the left sidebar, or the matching control on the right sidebar in the reports area.',
-            'That opens the requirements panel where you browse functional and non-functional items and user stories.'
+            'The interactive tour highlights the whole right sidebar: that column is where reports, exports, and Manage Requirements / Stories live.',
+            'You can also open requirements from the left sidebar; the next tour step zooms into the generate-and-manage block.'
         ],
         media: null
     },
     {
         id: 'reports',
         title: 'Generate reports',
-        heading: 'From the requirements panel',
+        heading: 'User Stories, Requirements, Manage',
         paragraphs: [
-            'Inside the panel, use “Generate requirements report” or “Generate user stories report”. New exports appear in the reports list and sidebars when complete.',
-            'Finish with “Get started”, or choose “Interactive tour” to walk the real UI in eight steps (overview → create → select project → …).'
+            'In the right column, use “Generate User Stories Report” or “Generate Requirement Report”, then “Manage Requirements / Stories”. Completed exports show in the list under that block.',
+            'Finish with “Get started”, or choose “Interactive tour” to walk the real UI in nine steps (overview → … → full right sidebar → report actions).'
         ],
         media: null
     }
