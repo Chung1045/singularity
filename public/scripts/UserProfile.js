@@ -282,6 +282,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
     const [avatarUrl, setAvatarUrl] = useState(
         profileUser.userAvatarPath || profileUser.googleAvatarUrl || DEFAULT_AVATAR
     );
+    const [avatarImgError, setAvatarImgError] = useState(false);
     const [avatarEditor, setAvatarEditor] = useState(createEmptyAvatarEditorState);
     const [avatarEditorDragging, setAvatarEditorDragging] = useState(false);
     const [overviewLayout, setOverviewLayout] = useState(null);
@@ -324,8 +325,14 @@ const UserProfile = ({ userInfo, csrfToken }) => {
     }, [isOverlay]);
 
     useEffect(() => {
-        setAvatarUrl(profileUser.userAvatarPath || profileUser.googleAvatarUrl || DEFAULT_AVATAR);
+        const url = profileUser.userAvatarPath || profileUser.googleAvatarUrl || DEFAULT_AVATAR;
+        setAvatarUrl(url);
+        setAvatarImgError(false);
     }, [profileUser.googleAvatarUrl, profileUser.userAvatarPath]);
+
+    useEffect(() => {
+        setAvatarImgError(false);
+    }, [avatarUrl]);
 
     const clearAvatarEditorUrl = useCallback(() => {
         if (avatarEditorUrlRef.current) {
@@ -523,6 +530,7 @@ const UserProfile = ({ userInfo, csrfToken }) => {
         }
 
         setAvatarLoading(false);
+        setAvatarImgError(true);
     };
 
     useEffect(() => {
@@ -968,12 +976,17 @@ const UserProfile = ({ userInfo, csrfToken }) => {
                                                             borderRadius: '50%'
                                                         }
                                                     })
-                                                    : reactCreateElm('img', {
-                                                        className: 'profile-avatar-image',
-                                                        src: avatarUrl || DEFAULT_AVATAR,
-                                                        alt: 'User avatar',
-                                                        onError: handleAvatarError
-                                                    })
+                                                    : avatarImgError
+                                                        ? reactCreateElm('div', {
+                                                            className: 'profile-avatar-image profile-avatar-fallback',
+                                                            'aria-label': 'User avatar'
+                                                        }, 'User avatar')
+                                                        : reactCreateElm('img', {
+                                                            className: 'profile-avatar-image',
+                                                            src: avatarUrl || DEFAULT_AVATAR,
+                                                            alt: 'User avatar',
+                                                            onError: handleAvatarError
+                                                        })
                                             ),
                                             reactCreateElm('input', {
                                                 id: 'avatar-upload-input',

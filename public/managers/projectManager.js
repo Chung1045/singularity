@@ -15,6 +15,18 @@ const agentDB = require("../services/aiAgentService/aiAgentDBService")
 
 router.use(dbService.apiAuthUser);
 
+/** When ENABLE_USER_CHECKING is false, apiAuthUser may set req.userID to "". Re-resolve from session cookie. */
+async function resolveAuthenticatedUserId(req) {
+    let uid = req.userID;
+    if (uid != null && uid !== '') {
+        return uid;
+    }
+    if (req.cookies && req.cookies.session_id) {
+        uid = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    }
+    return uid && uid !== '' ? uid : null;
+}
+
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
         const uploadDir = './temp_uploads';
@@ -97,7 +109,7 @@ router.post('/project/create', async (req, res) => {
  */
 router.post('/project/delete', async (req, res) => {
     try {
-        const { projectID } = req.body;
+        const { projectID, silentTourCleanup } = req.body;
 
         console.log(`\n${'═'.repeat(60)}`);
         console.log(` DELETE PROJECT REQUEST`);
@@ -124,50 +136,61 @@ router.post('/project/delete', async (req, res) => {
 
         // Get project name before deletion for notification
         const projectName = await projectDBService.fetchProjectName(projectID);
+        /** Ephemeral tour project name from public/scripts/homeTour.js (exact or legacy "Singularity tour · …"). */
+        const isTourDemoProject =
+            typeof projectName === 'string' && projectName.startsWith('Singularity tour');
+        const suppressDeletionNotifications =
+            silentTourCleanup === true && isTourDemoProject;
 
         // Get all collaborators BEFORE deletion
         const collaborators = await projectDBService.fetchProjectCollaborator(projectID);
 
         // Notify all collaborators BEFORE deletion (while project still exists in DB)
-        await notifDB.notifyCollaboratorsProjectDeleted(projectID, projectName, req.userID);
+        if (!suppressDeletionNotifications) {
+            await notifDB.notifyCollaboratorsProjectDeleted(projectID, projectName, req.userID);
+        }
 
         const successful = await projectDBService.deleteProject(projectID);
 
         if (successful) {
-            // Notify owner that they deleted the project
-            await notifDB.notifyOwnerProjectDeleted(projectID, projectName, req.userID);
+            if (!suppressDeletionNotifications) {
+                // Notify owner that they deleted the project
+                await notifDB.notifyOwnerProjectDeleted(projectID, projectName, req.userID);
+            }
 
             // Send real-time notifications via Socket.io to kick collaborators
             const io = global.io;
             const userSockets = global.userSockets;
 
-            console.log(`\n[Socket.io] Sending real-time deletion notifications (kick):`);
-            console.log(`  Project: "${projectName}"`);
+            if (!suppressDeletionNotifications) {
+                console.log(`\n[Socket.io] Sending real-time deletion notifications (kick):`);
+                console.log(`  Project: "${projectName}"`);
 
-            if (io && userSockets) {
-                let sentCount = 0;
+                if (io && userSockets) {
+                    let sentCount = 0;
 
-                // Notify all collaborators - instant kick
-                for (const collab of collaborators) {
-                    if (collab.uid) {
-                        const socketID = userSockets.get(collab.uid);
-                        if (socketID) {
-                            io.to(socketID).emit('projectDeleted', {
-                                projectID,
-                                projectName,
-                                deletedByOwner: true
-                            });
-                            console.log(` Kicked collaborator (${collab.uid})`);
-                            sentCount++;
-                        } else {
-                            console.log(` Collaborator not connected (${collab.uid})`);
+                    // Notify all collaborators - instant kick
+                    for (const collab of collaborators) {
+                        if (collab.uid) {
+                            const socketID = userSockets.get(collab.uid);
+                            if (socketID) {
+                                io.to(socketID).emit('projectDeleted', {
+                                    projectID,
+                                    projectName,
+                                    deletedByOwner: true
+                                });
+                                console.log(` Kicked collaborator (${collab.uid})`);
+                                sentCount++;
+                            } else {
+                                console.log(` Collaborator not connected (${collab.uid})`);
+                            }
                         }
                     }
-                }
 
-                console.log(`  Total kicked: ${sentCount} collaborator(s)\n`);
-            } else {
-                console.log(` Socket.io not available\n`);
+                    console.log(`  Total kicked: ${sentCount} collaborator(s)\n`);
+                } else {
+                    console.log(` Socket.io not available\n`);
+                }
             }
 
             console.log(`\n${'═'.repeat(60)}`);
@@ -631,16 +654,21 @@ router.post("/project/file/list", async(req, res) => {
 router.post("/project/report/list", async(req, res) => {
     const { projectID } = req.body;
 
-    if (!req.cookies.session_id) {
-        console.log("Unauthorized attempt for listing project documents");
+    if (projectID == null || projectID === '') {
+        return res.status(400).json({ success: false, message: `Missing required fields` });
+    }
+
+    const projectOwnerUid = await projectDBService.queryProjectOwner(projectID);
+    if (projectOwnerUid === false) {
+        return res.status(200).json({ successful: true, reports: [] });
+    }
+
+    const userID = await resolveAuthenticatedUserId(req);
+
+    if (!userID) {
+        console.log("Unauthorized attempt for listing project reports (no user)");
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
-
-    if (projectID == null) {
-        return res.status(400).json({success: false, message: `Missing required fields`})
-    }
-
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
@@ -666,16 +694,20 @@ router.post("/project/report/list", async(req, res) => {
 router.post("/project/report/delete", async(req, res) => {
     const { projectID, reportID } = req.body;
 
-    if (!req.cookies.session_id) {
-        console.log("Unauthorized attempt for listing project documents");
+    if (projectID == null || projectID === '' || reportID == null || reportID === '') {
+        return res.status(400).json({ success: false, message: `Missing required fields` });
+    }
+
+    const projectOwnerUid = await projectDBService.queryProjectOwner(projectID);
+    if (projectOwnerUid === false) {
+        return res.status(404).json({ successful: false, message: "Project not found" });
+    }
+
+    const userID = await resolveAuthenticatedUserId(req);
+
+    if (!userID) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
-
-    if (projectID == null || reportID == null) {
-        return res.status(400).json({success: false, message: `Missing required fields`})
-    }
-
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
 
     if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
@@ -707,16 +739,21 @@ router.post("/project/report/download", async (req, res) => {
 
     const { projectID, reportID } = req.body;
 
-    if (!req.cookies.session_id) {
-        console.log("Unauthorized attempt for downloading project report");
-        return res.status(403).json({ successful: false, message: "Unauthorized" });
-    }
-
-    if (projectID == null || reportID == null) {
+    if (projectID == null || projectID === '' || reportID == null || reportID === '') {
         return res.status(400).json({ success: false, message: "Missing required field(s)" });
     }
 
-    const userID = await dbService.findUserIDBySessionID(req.cookies.session_id);
+    const projectOwnerUid = await projectDBService.queryProjectOwner(projectID);
+    if (projectOwnerUid === false) {
+        return res.status(404).json({ successful: false, message: "Project not found" });
+    }
+
+    const userID = await resolveAuthenticatedUserId(req);
+
+    if (!userID) {
+        console.log("Unauthorized attempt for downloading project report");
+        return res.status(403).json({ successful: false, message: "Unauthorized" });
+    }
 
     if (!await projectDBService.isProjectCollaborator(projectID, userID)) {
         return res.status(403).json({ successful: false, message: "Unauthorized" });

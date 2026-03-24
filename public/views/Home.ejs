@@ -46,6 +46,7 @@
     <script src="/components/fileUploadNotificationModal.js"></script>
     <!-- Load File Upload Component -->
     <script src="/components/fileUploadComponent.js"></script>
+    <script src="/components/WelcomeOverlay.js"></script>
     <!-- Load modular components (refactored from tempHome.js) -->
     <script src="/components/HomeComponents/ChatMessage.js"></script>
     <script src="/components/HomeComponents/homeModals.js"></script>
@@ -62,12 +63,18 @@
     <script src="/components/addInviteComponent.js"></script>
     <script src="/components/projectShareComponent.js"></script>
     <!-- Load main TempHome component -->
+    <script src="/vendor/driver.iife.min.js"></script>
+    <script src="/scripts/homeTour.js?v=<%= Date.now() %>"></script>
     <script src="/scripts/Home.js"></script>
 
     <link rel="stylesheet" href="/stylesheets/z-index.css">
     <link rel="stylesheet" href="/stylesheets/home.css">
     <link rel="stylesheet" href="/stylesheets/chat.css">
     <link rel="stylesheet" href="/stylesheets/skeleton.css">
+    <link rel="stylesheet" href="/stylesheets/theme.css?v=<%= Date.now() %>">
+    <link rel="stylesheet" href="/vendor/driver.css">
+    <link rel="stylesheet" href="/stylesheets/homeTour.css?v=<%= Date.now() %>">
+    <link rel="stylesheet" href="/stylesheets/welcomeOverlay.css?v=<%= Date.now() %>">
     <link rel="stylesheet" href="/stylesheets/theme.css?v=<%= Date.now() %>">
 </head>
 <body>

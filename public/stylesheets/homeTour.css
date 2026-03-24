@@ -1,0 +1,315 @@
+/* Singularity home tour — driver.js popover + overlay polish (light / dark) */
+
+/*
+ * Block all interaction with the app during the tour. driver.js mounts the popover on document.body
+ * (outside #root), so Next / Back / Done / Close keep working. The overlay SVG and its <path> use
+ * pointer-events: none !important (driver sets the path to auto inline). Escape is disabled in
+ * homeTour.js (allowKeyboardControl: false) so only × or Done ends the tour.
+ */
+body.driver-active #root,
+body.driver-active #root * {
+    pointer-events: none !important;
+}
+
+body.driver-active .driver-popover,
+body.driver-active .driver-popover * {
+    pointer-events: auto !important;
+}
+
+/*
+ * Do not end the tour when clicking the dimmed overlay — driver calls overlayClick → destroy.
+ * The SVG root alone is not enough: driver sets the mask <path> to pointer-events: auto inline,
+ * which wins over the parent unless we override the path explicitly.
+ */
+body.driver-active .driver-overlay,
+body.driver-active .driver-overlay path {
+    pointer-events: none !important;
+}
+
+/*
+ * driver.css: :not(body):has(> .driver-active-element) { overflow: hidden !important }
+ * That applies to direct parents of the highlighted node (e.g. #source-submenu, #sidebar-scrollable-wrapper).
+ * It clips children that extend past the box (e.g. Upload’s calc(40px + 100%) + negative margin) and can
+ * make Source / sidebar scroll feel wrong. During a tour, restore sensible overflow on these shells.
+ */
+.driver-active #source-submenu {
+    overflow: visible !important;
+}
+
+.driver-active #sidebar-scrollable-wrapper {
+    overflow-x: visible !important;
+    overflow-y: auto !important;
+}
+
+.driver-active #right-sidebar {
+    overflow: visible !important;
+}
+
+/* #right-sidebar is a direct child of #singularity-workspace-root; driver hides overflow on that parent too */
+.driver-active #singularity-workspace-root {
+    overflow: visible !important;
+}
+
+/* Light (default + explicit data-theme='light') */
+.driver-popover.singularity-tour-popover,
+html[data-theme='light'] .driver-popover.singularity-tour-popover {
+    color-scheme: light;
+    --tour-pop-bg: rgba(255, 255, 255, 0.94);
+    --tour-pop-bg-solid: #ffffff;
+    --tour-pop-border: rgba(15, 23, 42, 0.12);
+    --tour-pop-shadow: 0 24px 56px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    --tour-title: #0f172a;
+    --tour-body: #475569;
+    --tour-muted: #64748b;
+    /* Back / Next / Done: readable outline on white card */
+    --tour-ghost-border: rgba(15, 23, 42, 0.2);
+    --tour-ghost-hover: rgba(15, 23, 42, 0.07);
+    --tour-ghost-active: rgba(15, 23, 42, 0.11);
+    --tour-close-hover: rgba(15, 23, 42, 0.08);
+    --tour-progress-bg: rgba(15, 23, 42, 0.06);
+    --tour-progress-fg: #334155;
+    --tour-focus-ring: rgba(59, 130, 246, 0.45);
+
+    min-width: min(100vw - 32px, 288px);
+    max-width: min(100vw - 24px, 400px);
+    padding: 1.35rem 1.35rem 1.1rem;
+    border-radius: 14px;
+    border: 1px solid var(--tour-pop-border);
+    background: var(--tour-pop-bg);
+    background-color: var(--tour-pop-bg-solid);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--tour-pop-shadow);
+    /* Arrow is absolutely positioned; must not clip outside the card */
+    overflow: visible;
+    /* Default card text; driver.css sets .driver-popover { color: #2d2d2d } which otherwise wins inheritance for footer buttons after all:unset */
+    color: var(--tour-title);
+}
+
+/*
+ * Popover triangle: driver.js uses transparent borders on three sides.
+ * Do NOT set `border: 5px solid <color>` here — higher specificity than
+ * `.driver-popover-arrow-side-*` wipes the transparent sides and kills the arrow.
+ */
+.driver-popover.singularity-tour-popover .driver-popover-arrow.driver-popover-arrow-side-left {
+    border: 5px solid transparent;
+    border-left-color: var(--tour-pop-bg-solid);
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-arrow.driver-popover-arrow-side-right {
+    border: 5px solid transparent;
+    border-right-color: var(--tour-pop-bg-solid);
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-arrow.driver-popover-arrow-side-top {
+    border: 5px solid transparent;
+    border-top-color: var(--tour-pop-bg-solid);
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-arrow.driver-popover-arrow-side-bottom {
+    border: 5px solid transparent;
+    border-bottom-color: var(--tour-pop-bg-solid);
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-title {
+    font-family: "SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    color: var(--tour-title);
+    padding-right: 2.25rem;
+    margin: 0;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-description {
+    font-family: "SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--tour-body);
+    white-space: pre-line;
+    margin: 0.35rem 0 0;
+    font-weight: 400;
+}
+
+#driver-popover-content.singularity-tour-popover .driver-popover-description {
+    max-height: min(46vh, 22rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 6px;
+    margin-right: -2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(15, 23, 42, 0.25) transparent;
+}
+
+#driver-popover-content.singularity-tour-popover .driver-popover-description::-webkit-scrollbar {
+    width: 6px;
+}
+
+#driver-popover-content.singularity-tour-popover .driver-popover-description::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.22);
+    border-radius: 999px;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-close-btn {
+    top: 0.65rem;
+    right: 0.55rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1.35rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--tour-muted);
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-close-btn:hover,
+.driver-popover.singularity-tour-popover .driver-popover-close-btn:focus-visible {
+    color: var(--tour-title);
+    background-color: var(--tour-close-hover);
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-close-btn:focus-visible {
+    outline: 2px solid var(--tour-focus-ring);
+    outline-offset: 1px;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-footer {
+    margin-top: 1.15rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--tour-pop-border);
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-progress-text {
+    font-family: "SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tour-progress-fg);
+    background: var(--tour-progress-bg);
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    line-height: 1.2;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-navigation-btns {
+    gap: 0.45rem;
+    flex-grow: 1;
+    justify-content: flex-end;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-navigation-btns button + button {
+    margin-left: 0;
+}
+
+/* Primary / secondary actions — override driver defaults */
+.driver-popover.singularity-tour-popover .driver-popover-footer button {
+    all: unset;
+    box-sizing: border-box;
+    font-family: "SF Pro-Regular", Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.25;
+    padding: 0.5rem 0.95rem;
+    border-radius: 9px;
+    cursor: pointer;
+    text-shadow: none;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+        opacity 0.15s ease, transform 0.12s ease;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-prev-btn,
+.driver-popover.singularity-tour-popover .driver-popover-next-btn {
+    color: var(--tour-title);
+    background: transparent;
+    border: 1px solid var(--tour-ghost-border);
+    box-shadow: none;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-prev-btn:hover,
+.driver-popover.singularity-tour-popover .driver-popover-prev-btn:focus-visible,
+.driver-popover.singularity-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.singularity-tour-popover .driver-popover-next-btn:focus-visible {
+    background: var(--tour-ghost-hover);
+    border-color: var(--tour-ghost-border);
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-next-btn:active,
+.driver-popover.singularity-tour-popover .driver-popover-prev-btn:active {
+    transform: scale(0.98);
+    background: var(--tour-ghost-active);
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-footer .driver-popover-btn-disabled {
+    opacity: 0.38;
+    pointer-events: none;
+    transform: none;
+    filter: none;
+}
+
+.driver-popover.singularity-tour-popover .driver-popover-prev-btn:focus-visible,
+.driver-popover.singularity-tour-popover .driver-popover-next-btn:focus-visible {
+    outline: 2px solid var(--tour-focus-ring);
+    outline-offset: 2px;
+}
+
+/* Dark: align with theme.css --dm-* (set on html[data-theme='dark']) */
+html[data-theme='dark'] .driver-popover.singularity-tour-popover {
+    color-scheme: dark;
+    color: var(--dm-text, #f8fafc);
+    --tour-pop-bg: rgba(15, 23, 42, 0.92);
+    --tour-pop-bg-solid: var(--dm-surface, #0f172a);
+    --tour-pop-border: var(--dm-border-strong, rgba(148, 163, 184, 0.3));
+    --tour-pop-shadow: var(--dm-shadow, 0 28px 64px rgba(2, 6, 23, 0.65)),
+        0 0 0 1px rgba(148, 163, 184, 0.08);
+    --tour-title: var(--dm-text, #f8fafc);
+    --tour-body: var(--dm-muted, #cbd5e1);
+    --tour-muted: #94a3b8;
+    /* Back / Next / Done on navy card */
+    --tour-ghost-border: var(--dm-border-strong, rgba(148, 163, 184, 0.35));
+    --tour-ghost-hover: var(--dm-accent-soft, rgba(96, 165, 250, 0.14));
+    --tour-ghost-active: rgba(148, 163, 184, 0.2);
+    --tour-close-hover: rgba(148, 163, 184, 0.14);
+    --tour-progress-bg: rgba(148, 163, 184, 0.12);
+    --tour-progress-fg: var(--dm-muted-strong, #e2e8f0);
+    --tour-focus-ring: rgba(96, 165, 250, 0.55);
+}
+
+/* Light nav labels on dark card — beat driver.css + any inherited #2d2d2d after all:unset */
+html[data-theme='dark'] .driver-popover.singularity-tour-popover .driver-popover-prev-btn,
+html[data-theme='dark'] .driver-popover.singularity-tour-popover .driver-popover-next-btn {
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .driver-popover.singularity-tour-popover .driver-popover-prev-btn.driver-popover-btn-disabled,
+html[data-theme='dark'] .driver-popover.singularity-tour-popover .driver-popover-next-btn.driver-popover-btn-disabled {
+    color: rgba(248, 250, 252, 0.5) !important;
+}
+
+html[data-theme='dark'] #driver-popover-content.singularity-tour-popover .driver-popover-description {
+    scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+html[data-theme='dark'] #driver-popover-content.singularity-tour-popover .driver-popover-description::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .driver-popover.singularity-tour-popover .driver-popover-footer button,
+    .driver-popover.singularity-tour-popover .driver-popover-close-btn {
+        transition: none;
+    }
+
+    .driver-popover.singularity-tour-popover .driver-popover-next-btn:active,
+    .driver-popover.singularity-tour-popover .driver-popover-prev-btn:active {
+        transform: none;
+    }
+}

@@ -1393,8 +1393,8 @@
 .security-modal-copy {
   margin: 0;
   font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 2;
   color: #4b5563;
 }
 
