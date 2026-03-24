@@ -4,34 +4,6 @@ const router = express.Router();
 const notifDB = require('../services/notificationDBService');
 const dbService = require("../services/accountDBService");
 
-/**
- * Ephemeral driver-tour project is named "Singularity tour" (legacy: "Singularity tour · rand").
- * Omit those rows from list endpoints so NotificationPanel never shows tour lifecycle noise.
- */
-function normalizeNotificationMessage(raw) {
-    return String(raw == null ? '' : raw)
-        .replace(/\u201c/g, '"')
-        .replace(/\u201d/g, '"')
-        .replace(/\u2018/g, "'")
-        .replace(/\u2019/g, "'")
-        .trim();
-}
-
-function isTourDemoNotificationRow(row) {
-    if (!row) return false;
-    const msg = normalizeNotificationMessage(row.message != null ? row.message : row.Message);
-    if (!msg.includes('Singularity tour')) return false;
-
-    const quotedTour = /"Singularity tour(?: \u00b7 [^"]*)?"/i;
-    if (quotedTour.test(msg)) return true;
-    if (/^You deleted project\s+/i.test(msg)) return true;
-    if (/^Project\s+"Singularity tour(?: \u00b7 [^"]*)?"\s+has been deleted/i.test(msg)) return true;
-    if (/^You are invited to join Singularity tour/i.test(msg)) return true;
-    if (/^You have been removed from the project Singularity tour/i.test(msg)) return true;
-    if (/\bSingularity tour(?: \u00b7 [A-Za-z0-9]+)?[.!?'"]*\s*$/i.test(msg)) return true;
-    return false;
-}
-
 router.use(json());
 router.use(dbService.apiAuthUser);
 
@@ -92,12 +64,7 @@ router.post('/notification/fetch', async (req, res) => {
 
     try {
         console.log(`Attempt to fetch notifications for user ${userID}`)
-        const rawList = await notifDB.getAllNotifications(userID);
-        if (!Array.isArray(rawList)) {
-            console.error('[Notifications] getAllNotifications did not return an array', rawList);
-            return res.status(500).json({ successful: false, message: `Server Error: Failed to fetch notifications` });
-        }
-        const notifications = rawList.filter((row) => !isTourDemoNotificationRow(row));
+        const notifications = await notifDB.getAllNotifications(userID);
 
         // Transform notifications to match frontend expectations
         const transformedNotifications = notifications.map(notif => {
@@ -150,12 +117,7 @@ router.post('/notifications/list', async (req, res) => {
 
     try {
         console.log(`Attempt to fetch notifications for user ${userID}`)
-        const rawList = await notifDB.getAllNotifications(userID);
-        if (!Array.isArray(rawList)) {
-            console.error('[Notifications] getAllNotifications did not return an array', rawList);
-            return res.status(500).json({ successful: false, message: `Server Error: Failed to fetch notifications` });
-        }
-        const notifications = rawList.filter((row) => !isTourDemoNotificationRow(row));
+        const notifications = await notifDB.getAllNotifications(userID);
 
         // Transform notifications to match frontend expectations
         const transformedNotifications = notifications.map(notif => {

@@ -220,8 +220,6 @@ const ConfirmModal = {
     show({ title, message, confirmText = 'Delete', cancelText = 'Cancel', confirmColor = '#000000' }) {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
-            modal.id = 'confirm-modal-backdrop';
-            modal.className = 'confirm-modal-backdrop';
             modal.style.cssText = `
                 position: fixed;
                 top: 0;
@@ -237,8 +235,6 @@ const ConfirmModal = {
             `;
 
             const modalContent = document.createElement('div');
-            modalContent.id = 'confirm-modal-content';
-            modalContent.className = 'confirm-modal-content';
             modalContent.style.cssText = `
                 background-color: #ffffff;
                 border-radius: 15px;
@@ -252,11 +248,11 @@ const ConfirmModal = {
             `;
 
             modalContent.innerHTML = `
-                <div class="confirm-modal-title" style="font-family: Urbanist, Helvetica; font-weight: 700; font-size: 24px; color: #000000;">${title}</div>
-                <div class="confirm-modal-message" style="font-family: Inter, Helvetica; font-weight: 400; font-size: 16px; color: #000000; line-height: 1.5;">${message}</div>
-                <div class="confirm-modal-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
-                    <button id="modal-cancel-btn" class="confirm-modal-cancel-btn" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e0e0e0; background-color: #ffffff; color: #000000; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${cancelText}</button>
-                    <button id="modal-confirm-btn" class="confirm-modal-confirm-btn" style="padding: 12px 24px; border-radius: 10px; border: none; background-color: ${confirmColor}; color: #ffffff; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${confirmText}</button>
+                <div style="font-family: Urbanist, Helvetica; font-weight: 700; font-size: 24px; color: #000000;">${title}</div>
+                <div style="font-family: Inter, Helvetica; font-weight: 400; font-size: 16px; color: #000000; line-height: 1.5;">${message}</div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                    <button id="modal-cancel-btn" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e0e0e0; background-color: #ffffff; color: #000000; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${cancelText}</button>
+                    <button id="modal-confirm-btn" style="padding: 12px 24px; border-radius: 10px; border: none; background-color: ${confirmColor}; color: #ffffff; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${confirmText}</button>
                 </div>
             `;
 
@@ -284,22 +280,44 @@ const ConfirmModal = {
 };
 
 /**
- * AlertModal - Simple alert modal (theme-aware)
+ * AlertModal - Simple alert modal
  */
 const AlertModal = {
     show({ title, message, buttonText = 'OK', autoClose = 5000 }) {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
-            modal.className = 'alert-modal-backdrop';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: ${window.ZIndex?.MODAL || 10001};
+                padding: 20px;
+            `;
 
             const content = document.createElement('div');
-            content.className = 'alert-modal-content';
+            content.style.cssText = `
+                background-color: #ffffff;
+                border-radius: 15px;
+                padding: 30px;
+                max-width: 500px;
+                width: 100%;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            `;
 
             content.innerHTML = `
-                <div class="alert-modal-title">${title}</div>
-                <div class="alert-modal-message">${message}</div>
-                <div class="alert-modal-actions">
-                    <button type="button" id="alert-ok-btn" class="alert-modal-btn">${buttonText}</button>
+                <div id="modal-title" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 18px; color: #1a1a1a; margin: 0;">${title}</div>
+                <div id="notification-message" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 14px; color: #666666; margin: 0; line-height: 1.5;">${message}</div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button id="alert-ok-btn" style="padding: 12px 32px; border-radius: 10px; border: none; background-color: #000000; color: #ffffff; font-family: Urbanist, Helvetica; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">${buttonText}</button>
                 </div>
             `;
 

@@ -294,12 +294,6 @@ const Home = ({ csrfToken, userInfo }) => {
     const [selectedProjectID, setSelectedProjectID] = useState(null);
     const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(shouldShowWelcomeOnLoad);
 
-    // Dev / support: window.showWelcomeOverlay() from browser console
-    React.useEffect(() => {
-        window.showWelcomeOverlay = () => setShowWelcomeOverlay(true);
-        return () => { delete window.showWelcomeOverlay; };
-    }, []);
-
     const isMobile = windowWidth <= 480;
     const isOverlay = windowWidth <= 1040;
 
@@ -320,20 +314,6 @@ const Home = ({ csrfToken, userInfo }) => {
             const saved = localStorage.getItem('sidebarCollapsed');
             setSidebarCollapsed(saved !== null ? JSON.parse(saved) : false);
         }
-    }, [isOverlay]);
-
-    // Product tour: expand left sidebar on wide screens so steps target visible DOM
-    React.useEffect(() => {
-        const onTourPrep = (event) => {
-            if (event.detail && event.detail.expandLeftSidebar && !isOverlay) {
-                setSidebarCollapsed(false);
-                try {
-                    localStorage.setItem('sidebarCollapsed', JSON.stringify(false));
-                } catch (_) {}
-            }
-        };
-        document.addEventListener('singularity-tour-prep', onTourPrep);
-        return () => document.removeEventListener('singularity-tour-prep', onTourPrep);
     }, [isOverlay]);
 
     // Fetch user avatar
@@ -365,8 +345,10 @@ const Home = ({ csrfToken, userInfo }) => {
     React.useEffect(() => {
         const handleProjectSelected = (event) => {
             const projectID = event.detail?.projectID;
-            console.log('[TempHome] Project selected event received:', projectID);
-            setSelectedProjectID(projectID || null);
+            if (projectID) {
+                console.log('[TempHome] Project selected event received:', projectID);
+                setSelectedProjectID(projectID);
+            }
         };
 
         // Initial sync on mount
@@ -533,14 +515,11 @@ const Home = ({ csrfToken, userInfo }) => {
         showUploadedFilesSelectionModal();
     };
 
-    const handleWelcomeGetStarted = (opts) => {
+    const handleWelcomeGetStarted = () => {
         setShowWelcomeOverlay(false);
         const url = new URL(window.location.href);
         url.searchParams.delete('welcome');
         window.history.replaceState({}, '', url.pathname + url.search + url.hash);
-        if (opts && opts.liveTour && typeof window.startSingularityHomeTour === 'function') {
-            window.setTimeout(() => window.startSingularityHomeTour(), 450);
-        }
     };
 
     const username = userInfo?.userName || userInfo?.email || 'User';
@@ -551,7 +530,7 @@ const Home = ({ csrfToken, userInfo }) => {
         className: 'sidebar-expand' + (sidebarCollapsed ? ' collapsed' : ''),
         onClick: () => setUserMenuOpen(false)
     },
-        React.createElement('div', { id: 'singularity-workspace-root', className: 'group' },
+        React.createElement('div', { className: 'group' },
             // Sidebar overlay backdrop (narrow screens only, when sidebar is open)
             isOverlay && !sidebarCollapsed && React.createElement('div', {
                 className: 'sidebar-overlay-backdrop',
@@ -582,7 +561,7 @@ const Home = ({ csrfToken, userInfo }) => {
             modal.isOpen && React.createElement(AlertModalComponent, { modal, closeModal, isMobile }),
 
             // One-time signup welcome overlay
-            showWelcomeOverlay && window.WelcomeOverlay && React.createElement(window.WelcomeOverlay, { onComplete: handleWelcomeGetStarted }),
+            showWelcomeOverlay && React.createElement(WelcomeOverlayComponent, { onGetStarted: handleWelcomeGetStarted }),
 
             // File Upload Modal
             showFileUpload && window.FileUploadComponent && React.createElement('div', {

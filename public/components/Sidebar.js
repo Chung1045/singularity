@@ -32,8 +32,6 @@
             // Rename modal
             const newName = await new Promise((resolve) => {
                 const modal = document.createElement('div');
-                modal.id = 'rename-project-modal-backdrop';
-                modal.className = 'rename-project-modal-backdrop';
                 modal.style.cssText = `
                     position: fixed;
                     top: 0;
@@ -49,8 +47,6 @@
                 `;
 
                 const modalContent = document.createElement('div');
-                modalContent.id = 'rename-project-modal-content';
-                modalContent.className = 'rename-project-modal-content';
                 modalContent.style.cssText = `
                     background-color: #ffffff;
                     border-radius: 15px;
@@ -64,21 +60,21 @@
                 `;
 
                 modalContent.innerHTML = `
-                    <div class="rename-project-modal-title" style="
+                    <div style="
                         font-family: Urbanist, Helvetica;
                         font-weight: 700;
                         font-size: 24px;
                         color: #000000;
                         line-height: normal;
                     ">Rename Project</div>
-                    <div class="rename-project-modal-message" style="
+                    <div style="
                         font-family: Inter, Helvetica;
                         font-weight: 400;
                         font-size: 16px;
                         color: #000000;
                         line-height: 1.5;
                     ">Enter a new name for "${currentProject?.projectName}":</div>
-                    <input type="text" id="project-rename-input" class="rename-project-modal-input" value="${currentProject?.projectName || ''}" style="
+                    <input type="text" id="project-rename-input" value="${currentProject?.projectName || ''}" style="
                         width: 100%;
                         padding: 12px;
                         border: 1.67px solid #e4e4e4;
@@ -93,7 +89,7 @@
                         justify-content: flex-end;
                         margin-top: 10px;
                     ">
-                        <button id="cancel-rename-btn" class="rename-project-modal-cancel-btn" style="
+                        <button id="cancel-rename-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: 1px solid #e0e0e0;
@@ -105,7 +101,7 @@
                             cursor: pointer;
                             transition: all 0.2s ease;
                         ">Cancel</button>
-                        <button id="save-rename-btn" class="rename-project-modal-save-btn" style="
+                        <button id="save-rename-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: none;
@@ -201,8 +197,6 @@
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
-                    successModal.id = 'sidebar-success-modal-backdrop';
-                    successModal.className = 'sidebar-success-modal-backdrop';
                     successModal.style.cssText = `
                         position: fixed;
                         top: 0;
@@ -218,8 +212,6 @@
                     `;
 
                     const successContent = document.createElement('div');
-                    successContent.id = 'sidebar-success-modal-content';
-                    successContent.className = 'sidebar-success-modal-content';
                     successContent.style.cssText = `
                         background-color: #ffffff;
                         border-radius: 15px;
@@ -233,25 +225,25 @@
                     `;
 
                     successContent.innerHTML = `
-                        <div class="sidebar-success-modal-title" style="
+                        <div style="
                             font-family: Urbanist, Helvetica;
                             font-weight: 700;
                             font-size: 24px;
                             color: #000000;
                             line-height: normal;
                         ">Rename Successful</div>
-                        <div class="sidebar-success-modal-message" style="
+                        <div style="
                             font-family: Inter, Helvetica;
                             font-weight: 400;
                             font-size: 14px;
                             color: #000000;
                             line-height: 1.4;
                         ">Project renamed successfully.</div>
-                        <div class="sidebar-success-modal-actions" style="
+                        <div style="
                             display: flex;
                             justify-content: flex-end;
                         ">
-                            <button id="rename-success-ok-btn" class="sidebar-success-modal-ok-btn" style="
+                            <button id="rename-success-ok-btn" style="
                                 padding: 12px 32px;
                                 border-radius: 10px;
                                 border: none;
@@ -310,8 +302,6 @@
             // First confirmation modal - Warning
             const firstConfirm = await new Promise((resolve) => {
                 const modal = document.createElement('div');
-                modal.id = 'delete-project-modal-backdrop';
-                modal.className = 'delete-project-modal-backdrop';
                 modal.style.cssText = `
                     position: fixed;
                     top: 0;
@@ -327,8 +317,6 @@
                 `;
 
                 const modalContent = document.createElement('div');
-                modalContent.id = 'delete-project-modal-content';
-                modalContent.className = 'delete-project-modal-content';
                 modalContent.style.cssText = `
                     background-color: #ffffff;
                     border-radius: 15px;
@@ -342,14 +330,14 @@
                 `;
 
                 modalContent.innerHTML = `
-                    <div class="delete-project-modal-title" style="
+                    <div style="
                         font-family: Urbanist, Helvetica;
                         font-weight: 700;
                         font-size: 24px;
                         color: #000000;
                         line-height: normal;
                     ">Warning</div>
-                    <div class="delete-project-modal-message" style="
+                    <div style="
                         font-family: Inter, Helvetica;
                         font-weight: 400;
                         font-size: 16px;
@@ -369,7 +357,7 @@
                         justify-content: flex-end;
                         margin-top: 10px;
                     ">
-                        <button id="cancel-btn" class="delete-project-modal-cancel-btn" style="
+                        <button id="cancel-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: 1px solid #e0e0e0;
@@ -381,7 +369,7 @@
                             cursor: pointer;
                             transition: all 0.2s ease;
                         ">Cancel</button>
-                        <button id="continue-btn" class="delete-project-modal-confirm-btn" style="
+                        <button id="continue-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: none;
@@ -443,8 +431,6 @@
             // Second confirmation modal - Type project name
             const secondConfirm = await new Promise((resolve) => {
                 const modal = document.createElement('div');
-                modal.id = 'delete-project-modal-backdrop';
-                modal.className = 'delete-project-modal-backdrop';
                 modal.style.cssText = `
                     position: fixed;
                     top: 0;
@@ -460,8 +446,6 @@
                 `;
 
                 const modalContent = document.createElement('div');
-                modalContent.id = 'delete-project-modal-content';
-                modalContent.className = 'delete-project-modal-content';
                 modalContent.style.cssText = `
                     background-color: #ffffff;
                     border-radius: 15px;
@@ -475,14 +459,14 @@
                 `;
 
                 modalContent.innerHTML = `
-                    <div class="delete-project-modal-title" style="
+                    <div style="
                         font-family: Urbanist, Helvetica;
                         font-weight: 700;
                         font-size: 24px;
                         color: #000000;
                         line-height: normal;
                     ">Final Confirmation</div>
-                    <div class="delete-project-modal-message" style="
+                    <div style="
                         font-family: Inter, Helvetica;
                         font-weight: 400;
                         font-size: 16px;
@@ -490,7 +474,7 @@
                         line-height: 1.5;
                     ">Type the project name to confirm deletion:<br><br>
                     <strong>${currentProject?.projectName}</strong></div>
-                    <input type="text" id="project-name-input" class="delete-project-modal-input" placeholder="Type project name here" style="
+                    <input type="text" id="project-name-input" placeholder="Type project name here" style="
                         width: 100%;
                         padding: 12px;
                         border: 1.67px solid #e4e4e4;
@@ -505,7 +489,7 @@
                         justify-content: flex-end;
                         margin-top: 10px;
                     ">
-                        <button id="cancel-btn-2" class="delete-project-modal-cancel-btn" style="
+                        <button id="cancel-btn-2" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: 1px solid #e0e0e0;
@@ -517,7 +501,7 @@
                             cursor: pointer;
                             transition: all 0.2s ease;
                         ">Cancel</button>
-                        <button id="delete-btn" class="delete-project-modal-confirm-btn delete-project-modal-delete-btn" style="
+                        <button id="delete-btn" style="
                             padding: 12px 24px;
                             border-radius: 10px;
                             border: none;
@@ -614,8 +598,6 @@
                 if (response.ok && data.success) {
                     // Show success modal
                     const successModal = document.createElement('div');
-                    successModal.id = 'sidebar-success-modal-backdrop';
-                    successModal.className = 'sidebar-success-modal-backdrop';
                     successModal.style.cssText = `
                         position: fixed;
                         top: 0;
@@ -631,8 +613,6 @@
                     `;
 
                     const successContent = document.createElement('div');
-                    successContent.id = 'sidebar-success-modal-content';
-                    successContent.className = 'sidebar-success-modal-content';
                     successContent.style.cssText = `
                         background-color: #ffffff;
                         border-radius: 15px;
@@ -646,25 +626,25 @@
                     `;
 
                     successContent.innerHTML = `
-                        <div class="sidebar-success-modal-title" style="
+                        <div style="
                             font-family: Urbanist, Helvetica;
                             font-weight: 700;
                             font-size: 24px;
                             color: #000000;
                             line-height: normal;
                         ">Delete Successful</div>
-                        <div class="sidebar-success-modal-message" style="
+                        <div style="
                             font-family: Inter, Helvetica;
                             font-weight: 400;
                             font-size: 14px;
                             color: #000000;
                             line-height: 1.4;
                         ">Project successfully deleted.</div>
-                        <div class="sidebar-success-modal-actions" style="
+                        <div style="
                             display: flex;
                             justify-content: flex-end;
                         ">
-                            <button id="success-ok-btn" class="sidebar-success-modal-ok-btn" style="
+                            <button id="success-ok-btn" style="
                                 padding: 12px 32px;
                                 border-radius: 10px;
                                 border: none;
@@ -996,20 +976,6 @@
             }
         }, [sidebarCollapsed]);
 
-        // Product tour: expand Source + Requirements so Upload / Manage controls are in the layout
-        useEffect(() => {
-            const expandForTour = () => {
-                setSourceExpanded(true);
-                setRequirementsExpanded(true);
-                try {
-                    localStorage.setItem('sourceExpanded', JSON.stringify(true));
-                    localStorage.setItem('requirementsExpanded', JSON.stringify(true));
-                } catch (_) {}
-            };
-            document.addEventListener('singularity-tour-sidebar-prep', expandForTour);
-            return () => document.removeEventListener('singularity-tour-sidebar-prep', expandForTour);
-        }, []);
-
         // Selected project state
         const [selectedProjectID, setSelectedProjectID] = useState(() => {
             return localStorage.getItem('selectedProjectID') || null;
@@ -1120,40 +1086,6 @@
         // Load projects & history
         useEffect(() => {
             const loadProjectsAndHistory = async () => {
-                // Interactive tour: temp project is tracked in localStorage; refresh skips driver onDestroyed,
-                // so delete the orphan and clear selection before rebuilding the project list.
-                const pendingTourId = localStorage.getItem('singularityTourPendingProjectId');
-                if (pendingTourId) {
-                    if (window.csrfToken) {
-                        try {
-                            await fetch('/api/project/delete', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'CSRF-Token': window.csrfToken
-                                },
-                                body: JSON.stringify({
-                                    projectID: pendingTourId,
-                                    silentTourCleanup: true
-                                })
-                            });
-                        } catch (err) {
-                            console.warn('[Sidebar] Orphan tour project delete failed', err);
-                        }
-                    }
-                    try {
-                        localStorage.removeItem('singularityTourPendingProjectId');
-                    } catch (_) {}
-                    if (localStorage.getItem('selectedProjectID') === pendingTourId) {
-                        localStorage.removeItem('selectedProjectID');
-                    }
-                    window.dispatchEvent(
-                        new CustomEvent('projectSelected', {
-                            detail: { projectID: localStorage.getItem('selectedProjectID') || null }
-                        })
-                    );
-                }
-
                 const projectID = await fetchProjects();
                 if (!projectID) return;
 
@@ -1190,89 +1122,6 @@
         useEffect(() => {
             window.fetchProjects = fetchProjects;
             return () => { delete window.fetchProjects; };
-        }, [fetchProjects]);
-
-        // Live tour: homeTour.js creates a temp project, selects it here, then deletes it when the tour closes
-        useEffect(() => {
-            const clearListsForTourSwitch = () => {
-                const chatHistoryList = document.getElementById('div-chat-history-list');
-                const noChatLabel = document.getElementById('p-label-chat-history-no-entry');
-                const sourceList = document.getElementById('div-project-source-list');
-                const noSourceLabel = document.getElementById('p-label-source-no-entry');
-                const requirementsList = document.getElementById('div-requirements-list');
-                const noRequirementsLabel = document.getElementById('p-label-requirements-no-entry');
-
-                if (chatHistoryList) {
-                    chatHistoryList.innerHTML = '';
-                    if (noChatLabel) noChatLabel.style.display = 'block';
-                }
-                if (sourceList) {
-                    sourceList.innerHTML = '';
-                    if (noSourceLabel) noSourceLabel.style.display = 'block';
-                }
-                if (requirementsList) {
-                    requirementsList.innerHTML = '';
-                    if (noRequirementsLabel) noRequirementsLabel.style.display = 'block';
-                }
-            };
-
-            const onTourDemoReady = async (e) => {
-                const projectID = e.detail?.projectID;
-                if (!projectID) return;
-
-                window.currentChatID = null;
-                localStorage.removeItem('activeChatID');
-                localStorage.removeItem('activeChatProjectID');
-                localStorage.setItem('wentBackToInitial', 'true');
-                window.pendingChatRestoration = null;
-
-                const currentUrl = new URL(window.location);
-                if (currentUrl.searchParams.has('chatID')) {
-                    currentUrl.searchParams.delete('chatID');
-                    window.history.replaceState({}, '', currentUrl);
-                }
-
-                if (typeof window.backToInitialScreen === 'function') {
-                    window.backToInitialScreen();
-                } else {
-                    const chatInterface = document.getElementById('chat-interface');
-                    const chatTopBar = document.getElementById('chat-top-bar');
-                    if (chatInterface) chatInterface.style.display = 'none';
-                    if (chatTopBar) chatTopBar.style.display = 'none';
-                }
-
-                localStorage.setItem('selectedProjectID', projectID);
-                setSelectedProjectID(projectID);
-                setHasProjects(true);
-                window.dispatchEvent(new CustomEvent('projectSelected', { detail: { projectID } }));
-
-                window.skipProjectDataLoad = true;
-                clearListsForTourSwitch();
-                setTimeout(clearListsForTourSwitch, 50);
-                setTimeout(clearListsForTourSwitch, 200);
-
-                await fetchProjects();
-                const dropdown = document.getElementById('select-project-drop-down');
-                if (dropdown) dropdown.value = projectID;
-                setTimeout(() => {
-                    window.skipProjectDataLoad = false;
-                }, 300);
-            };
-
-            const onTourDemoDeleted = async () => {
-                await fetchProjects();
-                const nextId = localStorage.getItem('selectedProjectID');
-                window.dispatchEvent(
-                    new CustomEvent('projectSelected', { detail: { projectID: nextId || null } })
-                );
-            };
-
-            document.addEventListener('singularity-tour-demo-project-ready', onTourDemoReady);
-            document.addEventListener('singularity-tour-demo-deleted', onTourDemoDeleted);
-            return () => {
-                document.removeEventListener('singularity-tour-demo-project-ready', onTourDemoReady);
-                document.removeEventListener('singularity-tour-demo-deleted', onTourDemoDeleted);
-            };
         }, [fetchProjects]);
 
         useEffect(() => {
@@ -1335,22 +1184,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    /** Match notificationManager + NotificationPanel: hide driver tour project rows */
-                    const hideTourNotif = (n) => {
-                        const msg = String((n && n.notificationMessage) || '')
-                            .replace(/\u201c/g, '"')
-                            .replace(/\u201d/g, '"')
-                            .trim();
-                        if (!msg.includes('Singularity tour')) return false;
-                        if (/"Singularity tour(?: \u00b7 [^"]*)?"/i.test(msg)) return true;
-                        if (/^You deleted project\s+/i.test(msg)) return true;
-                        if (/^Project\s+"Singularity tour(?: \u00b7 [^"]*)?"\s+has been deleted/i.test(msg)) return true;
-                        if (/^You are invited to join Singularity tour/i.test(msg)) return true;
-                        if (/^You have been removed from the project Singularity tour/i.test(msg)) return true;
-                        if (/\bSingularity tour(?: \u00b7 [A-Za-z0-9]+)?[.!?'"]*\s*$/i.test(msg)) return true;
-                        return false;
-                    };
-                    const notifications = (data.notifications || []).filter((n) => !hideTourNotif(n));
+                    const notifications = data.notifications || [];
 
                     console.log(`[Sidebar] Fetched ${notifications.length} notifications total`);
 
