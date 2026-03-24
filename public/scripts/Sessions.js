@@ -70,13 +70,10 @@ function renderSecurityIcon(name, className = '') {
 
     switch (name) {
         case 'arrowLeft':
-            return reactCreateElm('img', {
-                src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                alt: 'Back',
-                className,
-                'aria-hidden': 'true',
-                style: { width: '20px', height: '20px', objectFit: 'contain' }
-            });
+            return reactCreateElm('svg', props,
+                reactCreateElm('path', { d: 'M15 18l-6-6 6-6' }),
+                reactCreateElm('path', { d: 'M9 12h10' })
+            );
         case 'logout':
             return reactCreateElm('svg', props,
                 reactCreateElm('path', { d: 'M14 8l4 4-4 4' }),
