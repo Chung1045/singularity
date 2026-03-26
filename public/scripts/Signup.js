@@ -29,6 +29,7 @@ const Signup = ({ csrfToken }) => {
     });
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
     const [messageShown, setMessageShown] = useState(false);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // Show validation errors in message notification
     useEffect(() => {
@@ -71,37 +72,54 @@ const Signup = ({ csrfToken }) => {
         let errorMessage = '';
 
         if (field === 'email') {
-            isValid = value.trim() !== '';
-            if (!isValid) {
-                errorMessage = 'Please provide a valid email.';
-            }
-        } else if (field === 'confirmPassword') {
-            isValid = value.length > 0 && value === formData.password;
-            if (!isValid) {
-                if (value.length === 0) {
-                    errorMessage = 'Please confirm your password.';
-                } else {
-                    errorMessage = 'Passwords do not match!';
-                }
+            const trimmed = value.trim();
+
+            if (!trimmed) {
+                errorMessage = 'Email is required.';
+            } else if (!emailRegex.test(trimmed)) {
+                errorMessage = 'Enter a valid email (example@domain.com).';
+            } else {
+                isValid = true;
             }
         } else if (field === 'password') {
-            isValid = value.length > 0;
-            if (!isValid) {
-                errorMessage = 'Please enter a password.';
+            isValid = value.length >= 6;
+
+            if (!value) {
+                errorMessage = 'Password is required.';
+            } else if (!isValid) {
+                errorMessage = 'Password must be at least 6 characters.';
             }
-            // Also revalidate confirmPassword when password changes
+
+            // revalidate confirm password when password changes
             if (formData.confirmPassword) {
-                const confirmIsValid = formData.confirmPassword.length > 0 && formData.confirmPassword === value;
-                setValidFields(prev => ({ ...prev, confirmPassword: confirmIsValid }));
-                if (!confirmIsValid) {
-                    if (formData.confirmPassword.length === 0) {
-                        setErrors(prev => ({ ...prev, confirmPassword: 'Please confirm your password.' }));
-                    } else {
-                        setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match!' }));
-                    }
-                } else {
-                    setErrors(prev => ({ ...prev, confirmPassword: '' }));
-                }
+                const confirmIsValid =
+                    formData.confirmPassword === value &&
+                    formData.confirmPassword.length >= 6;
+
+                setValidFields(prev => ({
+                    ...prev,
+                    confirmPassword: confirmIsValid
+                }));
+
+                setErrors(prev => ({
+                    ...prev,
+                    confirmPassword: confirmIsValid
+                        ? ''
+                        : 'Passwords do not match!'
+                }));
+            }
+        } else if (field === 'confirmPassword') {
+            const password = formData.password;
+            const confirmPassword = value;
+
+            if (!confirmPassword) {
+                errorMessage = 'Please confirm your password.';
+            } else if (confirmPassword.length < 6) {
+                errorMessage = 'Password must be at least 6 characters.';
+            } else if (confirmPassword !== password) {
+                errorMessage = 'Passwords do not match!';
+            } else {
+                isValid = true;
             }
         } else if (field === 'username') {
             isValid = value.trim() !== '';
@@ -149,6 +167,10 @@ const Signup = ({ csrfToken }) => {
 
         if (!formData.email.trim()) {
             newErrors.email = 'Please provide a valid email.';
+        } else {
+            if (!emailRegex.test(formData.email.trim())) {
+                newErrors.email = 'Please provide a valid email.';
+            }
         }
 
         if (!formData.firstName.trim()) {
@@ -161,6 +183,8 @@ const Signup = ({ csrfToken }) => {
 
         if (!formData.password) {
             newErrors.password = 'Please enter a password.';
+        } else if (formData.password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters.';
         }
 
         if (!formData.confirmPassword) {

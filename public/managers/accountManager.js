@@ -162,6 +162,15 @@ router.post('/signup', async (req, res) => {
             userName: formData.username
         };
 
+        if (!await utils.checkValidEmail(userData.userEmail)) {
+            return res.status(400).json({
+                success: false,
+                fieldMessage: 'Invalid email address format',
+                slideUpMessage: 'An account with this username already exists. Please enter a different one to proceed.',
+                field: 'email'
+            });
+        }
+
         let uidResult = await credDBService.insertUserAccount(userData)
         console.log("user Data is inserted")
         let uid = uidResult.uid;

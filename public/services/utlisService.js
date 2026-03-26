@@ -1,7 +1,7 @@
 const UAParser = require("ua-parser-js");
 const sharp = require("sharp");
 
-async function getClientDeviceInfo(req){
+async function getClientDeviceInfo(req) {
     const parser = new UAParser(req.headers['user-agent']);
     const uaResult = parser.getResult();
 
@@ -33,7 +33,7 @@ async function cropAndCompressImage(image) {
             fit: 'cover',
             position: 'center'
         })
-        .jpeg({ quality: 80 })
+        .jpeg({quality: 80})
         .toBuffer();
 
     console.log(`Compressed size: ${compressedBuffer.length} bytes`);
@@ -42,7 +42,13 @@ async function cropAndCompressImage(image) {
 
 }
 
+async function checkValidEmail(email) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+}
+
 module.exports = {
     cropAndCompressImage,
-    getClientDeviceInfo
+    getClientDeviceInfo,
+    checkValidEmail
 }
