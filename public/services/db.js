@@ -134,12 +134,12 @@ const db = new sqlite3.Database(dbPath, async (err) => {
     console.log("Connected to SQLite database.");
 
     try {
-        await run(db, "PRAGMA foreign_keys = ON;");
+        await runPatched(db, "PRAGMA foreign_keys = ON;");
 
         for (const [name, schemaFn] of Object.entries(dbModel)) {
             if (typeof schemaFn === "function") {
                 const sql = schemaFn();
-                await run(db, sql);
+                await runPatched(db, sql);
             }
         }
 
@@ -151,13 +151,61 @@ const db = new sqlite3.Database(dbPath, async (err) => {
     }
 });
 
-function run(db, sql, params = []) {
+const nativeRun = sqlite3.Database.prototype.run;
+
+/**
+ * Promise-based run using the native .run (avoids recursion when db.run is patched).
+ */
+function runPatched(dbInstance, sql, params = []) {
     return new Promise((resolve, reject) => {
-        db.run(sql, params, function(err) {
+        nativeRun.call(dbInstance, sql, params, function(err) {
             if (err) return reject(err);
             resolve(this);
         });
     });
+}
+
+/**
+ * When called as run(sql, params) or run(sql) without a callback, return a Promise so
+ * await db.run(...) actually waits and errors propagate (fixes signup / credentials).
+ * Callback style run(sql, cb) and run(sql, params, cb) is unchanged.
+ */
+function patchRunToReturnPromises(dbInstance) {
+    const boundNative = nativeRun.bind(dbInstance);
+    const bindParams = (p) => (p == null ? [] : p);
+    dbInstance.run = function(sql, params, callback) {
+        if (arguments.length === 1) {
+            return new Promise((resolve, reject) => {
+                boundNative(sql, function(err) {
+                    if (err) return reject(err);
+                    resolve(this);
+                });
+            });
+        }
+        if (arguments.length === 2) {
+            if (typeof params === "function") {
+                return boundNative(sql, params);
+            }
+            return new Promise((resolve, reject) => {
+                boundNative(sql, bindParams(params), function(err) {
+                    if (err) return reject(err);
+                    resolve(this);
+                });
+            });
+        }
+        return boundNative(sql, bindParams(params), callback);
+    };
+}
+
+patchRunToReturnPromises(db);
+
+// Without a listener, EventEmitter's "error" event can throw and terminate the process.
+db.on("error", (err) => {
+    console.error("[SQLite database error]", err && err.message ? err.message : err);
+});
+
+function run(dbInstance, sql, params = []) {
+    return runPatched(dbInstance, sql, params);
 }
 
 function get(db, sql, params = []) {

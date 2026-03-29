@@ -26,16 +26,8 @@ async function insertCredentials(data){
         dateIsoString,
     ];
 
-    try {
-        await db.run(sql, params); // safe: values are bound, not interpolated
-        return id;
-    } catch (err) {
-        // handle unique constraint / validation errors
-        if (err.code === 'SQLITE_CONSTRAINT') {
-            throw new Error('Unique constraint failed (uid or userName or userEmail already exists)');
-        }
-        throw err;
-    }
+    await db.run(sql, params);
+    return id;
 }
 
 async function insertUserAccount(data){
@@ -45,24 +37,64 @@ async function insertUserAccount(data){
       uid, firstName, lastName, userType, userEmail, userName
     ) VALUES (?, ?, ?, ?, ?, ?)
   `;
+    const userType =
+        typeof data.userType === 'string' && data.userType.trim()
+            ? data.userType.trim()
+            : 'general';
     const params = [
         id,
         data.firstName.trim(),
         data.lastName.trim(),
-        'general',
+        userType,
         data.userEmail ? data.userEmail.trim() : null,
         data.userName.trim()
     ];
 
-    try {
-        await db.run(sql, params); // safe: values are bound, not interpolated
-        return { uid: id };
-    } catch (err) {
-        // handle unique constraint / validation errors
-        if (err.code === 'SQLITE_CONSTRAINT') {
-            throw new Error('Unique constraint failed (uid or userName or userEmail already exists)');
+    await db.run(sql, params);
+    return { uid: id };
+}
+
+/**
+ * Block signup when username or email is already registered (email compared case-insensitively).
+ * Throws err with code SIGNUP_CONFLICT and field 'username' | 'email'.
+ */
+async function assertSignupIdentifiersAvailable(userName, userEmail) {
+    const name = String(userName || '').trim();
+    const emailRaw = String(userEmail || '').trim();
+
+    if (name.length > 0) {
+        const existingName = await new Promise((resolve, reject) => {
+            db.get(
+                'SELECT uid FROM user WHERE userName = ?',
+                [name],
+                (err, row) => (err ? reject(err) : resolve(row || null))
+            );
+        });
+        if (existingName) {
+            const e = new Error('USERNAME_TAKEN');
+            e.code = 'SIGNUP_CONFLICT';
+            e.field = 'username';
+            throw e;
         }
-        throw err;
+    }
+
+    if (emailRaw.length > 0) {
+        const emailLower = emailRaw.toLowerCase();
+        const existingEmail = await new Promise((resolve, reject) => {
+            db.get(
+                `SELECT uid FROM user
+                 WHERE userEmail IS NOT NULL AND TRIM(userEmail) != ''
+                   AND LOWER(TRIM(userEmail)) = ?`,
+                [emailLower],
+                (err, row) => (err ? reject(err) : resolve(row || null))
+            );
+        });
+        if (existingEmail) {
+            const e = new Error('EMAIL_TAKEN');
+            e.code = 'SIGNUP_CONFLICT';
+            e.field = 'email';
+            throw e;
+        }
     }
 }
 
@@ -281,4 +313,14 @@ async function updatePasskeyLastUsed(keyID) {
 
 
 
-module.exports = { insertCredentials, insertUserAccount, insertGoogleOAuthUserAccount, savePasskey, checkPassword, checkUsernameEmail, updatePassword, updatePasskeyLastUsed }
+module.exports = {
+    insertCredentials,
+    insertUserAccount,
+    assertSignupIdentifiersAvailable,
+    insertGoogleOAuthUserAccount,
+    savePasskey,
+    checkPassword,
+    checkUsernameEmail,
+    updatePassword,
+    updatePasskeyLastUsed
+}

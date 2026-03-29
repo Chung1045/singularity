@@ -1,5 +1,11 @@
 require('dotenv').config();
 
+// Log rejections instead of risking abrupt process exit (e.g. legacy DB paths).
+process.on('unhandledRejection', (reason) => {
+    const msg = reason && reason.stack ? reason.stack : String(reason);
+    console.error('[unhandledRejection]', msg);
+});
+
 const express = require('express');
 const helmet = require('helmet');
 const session = require('express-session');

@@ -738,11 +738,11 @@ CSS FOR MESSAGE / ANIMATION HERE
   position: fixed;
   transform: translate(-50%, -24px);
   transition: transform 0.5s cubic-bezier(1, -0.5, .25, 1.25);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-width: 320px;
-  max-width: 500px;
+  max-width: min(560px, calc(100vw - 32px));
+  box-sizing: border-box;
   z-index: 1;
 }
 
@@ -759,7 +759,9 @@ CSS FOR MESSAGE / ANIMATION HERE
 }
 
 #message .alert-text {
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 #message.hidden {
@@ -790,7 +792,7 @@ CSS FOR MESSAGE / ANIMATION HERE
   #message {
     bottom: auto;
     top: 0;
-    min-width: calc(100% - 32px);
+    max-width: calc(100vw - 32px);
     transform: translate(-50%, 16px);
   }
 
