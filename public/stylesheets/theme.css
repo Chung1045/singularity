@@ -1998,6 +1998,39 @@ html[data-theme='dark'] [id^='upload-rename-input-'] {
     color: var(--dm-text) !important;
 }
 
+/* Upload rename ✓ / ✕ — light (default) */
+html:not([data-theme='dark']) .upload-rename-action-btn {
+    background-color: #475569 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+
+html:not([data-theme='dark']) .upload-rename-action-btn:hover {
+    background-color: #334155 !important;
+    border-color: rgba(15, 23, 42, 0.2) !important;
+}
+
+html:not([data-theme='dark']) .upload-rename-action-btn:active {
+    background-color: #1e293b !important;
+}
+
+/* Upload rename ✓ / ✕ — dark */
+html[data-theme='dark'] .upload-rename-action-btn {
+    background-color: var(--dm-surface-4) !important;
+    color: var(--dm-text) !important;
+    border: 1px solid var(--dm-border-strong) !important;
+}
+
+html[data-theme='dark'] .upload-rename-action-btn:hover {
+    background-color: #334155 !important;
+    border-color: rgba(148, 163, 184, 0.45) !important;
+    color: #ffffff !important;
+}
+
+html[data-theme='dark'] .upload-rename-action-btn:active {
+    background-color: var(--dm-surface-3) !important;
+}
+
 html[data-theme='dark'] [id^='upload-menu-toggle-button-'] {
     background: transparent !important;
 }

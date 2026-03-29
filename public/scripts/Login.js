@@ -182,7 +182,7 @@ const Login = ({ csrfToken }) => {
                                         background: 'transparent',
                                         outline: 'none',
                                         width: '100%',
-                                        fontSize: '10px',
+                                        fontSize: '14px',
                                         margin: '10px'
                                     }
                                 })
@@ -207,7 +207,7 @@ const Login = ({ csrfToken }) => {
                                         background: 'transparent',
                                         outline: 'none',
                                         width: '100%',
-                                        fontSize: '10px',
+                                        fontSize: '14px',
                                         margin: '10px',
                                         paddingRight: '35px'
                                     }

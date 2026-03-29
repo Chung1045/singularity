@@ -586,11 +586,16 @@ const Home = ({ csrfToken, userInfo }) => {
 
             // File Upload Modal
             showFileUpload && window.FileUploadComponent && React.createElement('div', {
+                id: 'file-upload-overlay',
                 style: {
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    zIndex: window.ZIndex?.MODAL || 31, padding: '20px'
+                    zIndex: window.ZIndex?.MODAL || 31,
+                    paddingTop: 'max(clamp(12px, 4vw, 20px), env(safe-area-inset-top, 0px))',
+                    paddingRight: 'max(clamp(12px, 4vw, 20px), env(safe-area-inset-right, 0px))',
+                    paddingBottom: 'max(clamp(12px, 4vw, 20px), env(safe-area-inset-bottom, 0px))',
+                    paddingLeft: 'max(clamp(12px, 4vw, 20px), env(safe-area-inset-left, 0px))'
                 },
                 onClick: (e) => e.target === e.currentTarget && setShowFileUpload(false)
             },

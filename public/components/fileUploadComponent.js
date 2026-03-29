@@ -2,6 +2,30 @@
     const { useState, useEffect, useRef } = React;
     console.log('[FileUpload] fileUploadComponent.js loading...');
 
+    const uploadRenameCheckIcon = React.createElement('svg', {
+        xmlns: 'http://www.w3.org/2000/svg',
+        width: 12,
+        height: 12,
+        viewBox: '0 0 24 24',
+        fill: 'currentColor',
+        'aria-hidden': 'true',
+        focusable: false
+    }, React.createElement('path', {
+        d: 'M9.99 16.901a1 1 0 0 1-1.414 0L4.29 12.615c-.39-.39-.385-1.029.006-1.42.39-.39 1.029-.395 1.42-.005l3.567 3.568 8.468-8.468c.39-.39 1.03-.385 1.42.006.39.39.396 1.029.005 1.42z'
+    }));
+
+    const uploadRenameCloseIcon = React.createElement('svg', {
+        xmlns: 'http://www.w3.org/2000/svg',
+        width: 12,
+        height: 12,
+        viewBox: '0 0 24 24',
+        fill: 'currentColor',
+        'aria-hidden': 'true',
+        focusable: false
+    }, React.createElement('path', {
+        d: 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'
+    }));
+
     window.FileUploadComponent = ({ projectID, onClose, onFilesUploaded}) => {
         console.log('[FileUpload] Component rendered with projectID:', projectID);
         const [uploadStage, setUploadStage] = useState('initial');
@@ -10,11 +34,54 @@
         const [isDragging, setIsDragging] = useState(false);
         const [checkedTempIDs, setCheckedTempIDs] = useState(new Set());
         const [menuOpen, setMenuOpen] = useState(null);
+        const [menuFixedPos, setMenuFixedPos] = useState(null);
         const [editingFile, setEditingFile] = useState(null);
         const [editingFilename, setEditingFilename] = useState('');
         const headerCheckboxRef = useRef(null);
         const renameContainerRef = useRef(null);
         const uploadAbortController = useRef(null);
+
+        const modalShellStyle = {
+            width: '100%',
+            maxWidth: 'min(650px, calc(100vw - 32px))',
+            height: 'min(422px, calc(100vh - 32px))',
+            maxHeight: 'min(422px, calc(100vh - 32px))',
+            minHeight: '240px',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            backgroundColor: '#ffffff',
+            borderRadius: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative'
+        };
+
+        const closeFileMenu = () => {
+            setMenuOpen(null);
+            setMenuFixedPos(null);
+        };
+
+        const toggleFileRowMenu = (tempID, anchorEl) => {
+            if (menuOpen === tempID) {
+                closeFileMenu();
+                return;
+            }
+            const rect = anchorEl.getBoundingClientRect();
+            const MENU_W = 150;
+            const MENU_H = 92;
+            const GAP = 6;
+            const vh = window.innerHeight;
+            const vw = window.innerWidth;
+            const spaceBelow = vh - rect.bottom - GAP;
+            const spaceAbove = rect.top - GAP;
+            const openUpward = spaceBelow < MENU_H && spaceAbove > spaceBelow;
+            let top = openUpward ? rect.top - MENU_H - GAP : rect.bottom + GAP;
+            let left = rect.right - MENU_W;
+            left = Math.max(GAP, Math.min(left, vw - MENU_W - GAP));
+            top = Math.max(GAP, Math.min(top, vh - MENU_H - GAP));
+            setMenuFixedPos({ top, left });
+            setMenuOpen(tempID);
+        };
 
         // Preserve existing checked state - new files start unchecked
         useEffect(() => {
@@ -38,15 +105,28 @@
             }
         }, [checkedTempIDs, selectedFiles]);
 
-        // Close menu when clicking outside
+        // Close menu when clicking outside (dropdown is fixed; match portal class too)
         useEffect(() => {
             const handleClickOutside = (event) => {
-                if (menuOpen !== null && !event.target.closest('.file-menu-container')) {
-                    setMenuOpen(null);
+                if (menuOpen === null) return;
+                if (event.target.closest('.file-menu-container') || event.target.closest('.upload-file-menu-dropdown-fixed')) {
+                    return;
                 }
+                closeFileMenu();
             };
             document.addEventListener('mousedown', handleClickOutside);
             return () => document.removeEventListener('mousedown', handleClickOutside);
+        }, [menuOpen]);
+
+        useEffect(() => {
+            if (menuOpen === null) return;
+            const dismiss = () => closeFileMenu();
+            window.addEventListener('scroll', dismiss, true);
+            window.addEventListener('resize', dismiss);
+            return () => {
+                window.removeEventListener('scroll', dismiss, true);
+                window.removeEventListener('resize', dismiss);
+            };
         }, [menuOpen]);
 
         // Cancel rename when clicking outside rename controls (desktop only)
@@ -91,7 +171,6 @@
             }).then((confirmed) => {
                 if (confirmed) {
                     setSelectedFiles(prev => prev.filter(f => f.tempID !== tempID));
-                    setMenuOpen(null);
                 }
             });
         };
@@ -101,7 +180,7 @@
             if (file) {
                 setEditingFile(tempID);
                 setEditingFilename(file.fileName);
-                setMenuOpen(null);
+                closeFileMenu();
             }
         };
 
@@ -394,18 +473,18 @@
 
             return React.createElement('div', {
                     id: 'file-upload-modal-root',
-                    style: { width: '650px', height: '422px', maxWidth: '650px', backgroundColor: '#ffffff', borderRadius: '10px', display: 'flex', flexDirection: 'column' }
+                    style: modalShellStyle
                 },
-                React.createElement('div', { id: 'import-header-container', style: { padding: '18px 17px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e4e4e4' } },
-                    React.createElement('button', { id: 'import-back-button', onClick: handleClose, style: { width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e4e4e4', borderRadius: '10px', backgroundColor: '#ffffff', cursor: 'pointer' } },
-                        React.createElement('img', { id: 'import-back-icon', src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg', style: { width: '20px', height: '20px' } })
+                React.createElement('div', { id: 'import-header-container', style: { padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', borderBottom: '1px solid #e4e4e4' } },
+                    React.createElement('button', { id: 'import-back-button', onClick: handleClose, style: { width: '32px', height: '32px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e4e4e4', borderRadius: '8px', backgroundColor: '#ffffff', cursor: 'pointer' } },
+                        React.createElement('img', { id: 'import-back-icon', src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg', style: { width: '18px', height: '18px' } })
                     ),
-                    React.createElement('div', { id: 'import-title-text', style: { fontFamily: '"SF Pro-Bold", Helvetica', fontWeight: '400', fontSize: '18px', color: '#000000', marginLeft: '10px' } }, 'Import Files'),
-                    React.createElement('button', { id: 'import-next-button', onClick: handleNextClick, disabled: selectedFiles.length === 0, style: { padding: '8px 24px', backgroundColor: selectedFiles.length > 0 ? 'rgb(30, 41, 59)' : '#e4e4e4', borderRadius: '50px', border: 'none', fontFamily: '"Inter-Bold", Helvetica', fontWeight: '700', fontSize: '15px', color: selectedFiles.length > 0 ? '#ffffff' : '#1c1d21', cursor: selectedFiles.length > 0 ? 'pointer' : 'not-allowed', marginLeft: 'auto' } }, 'Next')
+                    React.createElement('div', { id: 'import-title-text', style: { fontFamily: '"SF Pro-Bold", Helvetica', fontWeight: '400', fontSize: '16px', color: '#000000', marginLeft: '6px', flex: '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, 'Import Files'),
+                    React.createElement('button', { id: 'import-next-button', onClick: handleNextClick, disabled: selectedFiles.length === 0, style: { padding: '8px 16px', flexShrink: 0, lineHeight: 1.25, backgroundColor: selectedFiles.length > 0 ? 'rgb(30, 41, 59)' : '#e4e4e4', borderRadius: '8px', border: 'none', fontFamily: '"Inter-SemiBold", "Inter-Bold", Helvetica', fontWeight: '400', fontSize: '14px', color: selectedFiles.length > 0 ? '#ffffff' : '#1c1d21', cursor: selectedFiles.length > 0 ? 'pointer' : 'not-allowed', marginLeft: 'auto' } }, 'Next')
                 ),
-                React.createElement('div', { id: 'import-content-container', style: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' } },
+                React.createElement('div', { id: 'import-content-container', style: { flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(12px, 4vw, 20px)' } },
                     selectedFiles.length > 0 ?
-                        React.createElement('div', { id: 'import-file-list-container', style: { width: '100%', maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' } },
+                        React.createElement('div', { id: 'import-file-list-container', style: { width: '100%', maxHeight: 'min(300px, calc(50vh - 100px))', minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' } },
                             selectedFiles.map((file) =>
                                 React.createElement('div', { id: `import-file-item-${file.tempID}`, key: file.tempID, style: { padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' } },
                                     React.createElement('div', { id: `import-file-icon-bg-${file.tempID}`, style: { width: '40px', height: '40px', backgroundColor: file.isAudio ? '#876fc3' : '#e4e4e4', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontFamily: '"Inter-Bold", Helvetica', color: file.isAudio ? '#fff' : '#666', fontWeight: '600', textTransform: 'uppercase' } }, file.fileExt || '?'),
@@ -476,24 +555,16 @@
         // Upload stage
         return React.createElement('div', {
                 id: 'upload-modal-root',
-                style: {
-                    width: '650px',
-                    minWidth: '350px',
-                    height: '422px',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    position: 'relative'
-                }
+                style: modalShellStyle
             },
             React.createElement('div', {
                     id: 'upload-header-container',
                     style: {
-                        padding: '18px 17px',
+                        padding: '12px 14px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        gap: '10px',
                         borderBottom: '1px solid #e4e4e4'
                     }
                 },
@@ -501,13 +572,14 @@
                         id: 'upload-back-button',
                         onClick: isUploading ? handleClose : () => setUploadStage('initial'),
                         style: {
-                            width: '35px',
-                            height: '35px',
+                            width: '32px',
+                            height: '32px',
+                            flexShrink: 0,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             border: '1px solid #e4e4e4',
-                            borderRadius: '10px',
+                            borderRadius: '8px',
                             backgroundColor: '#ffffff',
                             cursor: 'pointer'
                         }
@@ -515,7 +587,7 @@
                     React.createElement('img', {
                         id: 'upload-back-icon',
                         src: './img/arrow_back_48dp_1F1F1F_FILL0_wght400_GRAD0_opsz48 1.svg',
-                        style: { width: '20px', height: '20px' }
+                        style: { width: '18px', height: '18px' }
                     })
                 ),
                 React.createElement('div', {
@@ -523,14 +595,19 @@
                     style: {
                         fontFamily: '"SF Pro-Bold", Helvetica',
                         fontWeight: '400',
-                        fontSize: '18px',
+                        fontSize: '16px',
                         color: '#000000',
-                        marginLeft: '10px'
+                        marginLeft: '6px',
+                        flex: '1 1 auto',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
                     }
                 }, 'Upload Files'),
                 React.createElement('div', {
                         id: 'upload-header-buttons-container',
-                        style: { display: 'flex', gap: '12px', marginLeft: 'auto' }
+                        style: { display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexShrink: 0 }
                     },
                     React.createElement('button', {
                             id: 'upload-reupload-button',
@@ -538,17 +615,19 @@
                             disabled: isUploading,
                             style: {
                                 padding: '8px 16px',
+                                minHeight: '30px',
                                 backgroundColor: '#ffffff',
-                                borderRadius: '50px',
+                                borderRadius: '8px',
                                 border: '1px solid #e4e4e4',
                                 fontFamily: '"Inter-Medium", Helvetica',
                                 fontWeight: '500',
                                 fontSize: '14px',
+                                lineHeight: 1.2,
                                 color: '#000',
                                 cursor: isUploading ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '6px'
+                                gap: '4px'
                             },
                             onMouseEnter: (e) => {
                                 if (!isUploading) {
@@ -564,7 +643,7 @@
                         React.createElement('img', {
                             id: 'upload-reupload-icon',
                             src: './img/reupload-icon.svg',
-                            style: { width: '24px', height: '24px', transform: 'rotate(180deg)' }
+                            style: { width: '16px', height: '16px', flexShrink: 0, transform: 'rotate(180deg)' }
                         }),
                         React.createElement('span', { id: 'upload-reupload-text' }, 'Reupload')
                     ),
@@ -573,13 +652,15 @@
                         onClick: handleUpload,
                         disabled: isUploading,
                         style: {
-                            padding: '8px 24px',
+                            padding: '8px 16px',
+                            minHeight: '30px',
+                            lineHeight: 1.2,
                             backgroundColor: isUploading ? '#e4e4e4' : 'rgb(30, 41, 59)',
-                            borderRadius: '50px',
+                            borderRadius: '8px',
                             border: 'none',
-                            fontFamily: '"Inter-Bold", Helvetica',
-                            fontWeight: '700',
-                            fontSize: '15px',
+                            fontFamily: '"Inter-SemiBold", "Inter-Bold", Helvetica',
+                            fontWeight: '600',
+                            fontSize: '13px',
                             color: isUploading ? '#1c1d21' : '#ffffff',
                             cursor: isUploading ? 'not-allowed' : 'pointer'
                         }
@@ -588,11 +669,11 @@
             ),
             React.createElement('div', {
                     id: 'upload-file-list-outer-container',
-                    style: { flex: 1, overflowY: 'auto', padding: '20px' }
+                    style: { flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: 'clamp(12px, 4vw, 20px)' }
                 },
                 selectedFiles.length === 0
                     ? React.createElement('div', { id: 'upload-empty-state-container', style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999', fontSize: '14px' } }, 'No files selected')
-                    : React.createElement('div', { id: 'upload-file-list-inner-container' },
+                    : React.createElement('div', { id: 'upload-file-list-inner-container', className: 'upload-file-table-wrapper' },
                         React.createElement('div', {
                                 id: 'upload-table-header-row',
                                 style: {
@@ -624,7 +705,7 @@
                             React.createElement('div', { id: 'upload-header-type-cell', style: { fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: '#666' } }, 'Type'),
                             React.createElement('div', { id: 'upload-header-duration-size-cell', style: { fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: '#666' } }, 'Duration/Size'),
                             React.createElement('div', { id: 'upload-header-date-cell', style: { fontFamily: '"Inter-Medium", Helvetica', fontSize: '13px', color: '#666' } }, 'Date Uploaded'),
-                            React.createElement('div', { id: 'upload-header-actions-cell' })
+                            React.createElement('div', { id: 'upload-header-actions-cell', className: 'upload-file-row-actions' })
                         ),
                         selectedFiles.map(file => {
                             const isChecked = checkedTempIDs.has(file.tempID);
@@ -634,6 +715,7 @@
                             return React.createElement('div', {
                                     id: `upload-file-row-${file.tempID}`,
                                     key: file.tempID,
+                                    'data-upload-row-editing': isEditing ? 'true' : 'false',
                                     style: {
                                         display: 'grid',
                                         gridTemplateColumns: 'minmax(150px, 1fr) 80px 120px 150px 50px',
@@ -656,7 +738,14 @@
                                 },
                                 React.createElement('div', {
                                         id: `upload-filename-cell-${file.tempID}`,
-                                        style: { display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }
+                                        style: {
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            minWidth: 0,
+                                            overflowX: isEditing ? 'auto' : 'hidden',
+                                            overflowY: 'hidden'
+                                        }
                                     },
                                     !isEditing && React.createElement('input', {
                                         id: `upload-checkbox-${file.tempID}`,
@@ -678,7 +767,15 @@
                                     isEditing
                                         ? React.createElement('div', {
                                                 ref: renameContainerRef,
-                                                style: { display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }
+                                                id: `upload-rename-controls-${file.tempID}`,
+                                                style: {
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    flex: '1 1 auto',
+                                                    minWidth: 'min-content',
+                                                    flexWrap: 'nowrap'
+                                                }
                                             },
                                             React.createElement('input', {
                                                 id: `upload-rename-input-${file.tempID}`,
@@ -692,64 +789,70 @@
                                                 onFocus: (e) => e.target.select(),
                                                 onTouchStart: (e) => e.stopPropagation(),
                                                 autoFocus: true,
-                                                style: (() => {
-                                                    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-                                                    return {
-                                                        flex: 1,
-                                                        minWidth: '120px',
-                                                        padding: isMobile ? '6px 8px' : '1px 8px',
-                                                        fontSize: '13px',
-                                                        fontFamily: '"Inter-Medium", Helvetica',
-                                                        border: '1px solid rgb(30, 41, 59)',
-                                                        borderRadius: '4px',
-                                                        outline: 'none',
-                                                        boxSizing: 'border-box'
-                                                    };
-                                                })()
+                                                style: {
+                                                    flex: '1 1 0%',
+                                                    minWidth: '48px',
+                                                    width: 0,
+                                                    padding: '4px 8px',
+                                                    minHeight: '26px',
+                                                    fontSize: '13px',
+                                                    fontFamily: '"Inter-Medium", Helvetica',
+                                                    border: '1px solid rgb(30, 41, 59)',
+                                                    borderRadius: '6px',
+                                                    outline: 'none',
+                                                    boxSizing: 'border-box'
+                                                }
                                             }),
-                                            file.fileExt && React.createElement('span', {
-                                                id: `upload-rename-extension-${file.tempID}`,
-                                                style: { color: '#666', fontSize: '13px', whiteSpace: 'nowrap' }
-                                            }, `.${file.fileExt}`),
-                                            // Only show buttons on mobile, desktop uses Enter/Escape keys
-                                            ('ontouchstart' in window || navigator.maxTouchPoints > 0) && React.createElement('button', {
+                                            React.createElement('div', {
+                                                id: `upload-rename-actions-${file.tempID}`,
+                                                style: {
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    flexShrink: 0
+                                                }
+                                            },
+                                            React.createElement('button', {
                                                 id: `upload-rename-save-button-${file.tempID}`,
+                                                type: 'button',
+                                                className: 'upload-rename-action-btn',
+                                                'aria-label': 'Save name',
+                                                title: 'Save (Enter)',
                                                 onClick: (e) => { e.stopPropagation(); saveRename(); },
                                                 style: {
-                                                    padding: '6px 12px',
-                                                    minWidth: '36px',
-                                                    minHeight: '36px',
-                                                    backgroundColor: 'rgb(30, 41, 59)',
-                                                    color: '#fff',
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    padding: 0,
                                                     borderRadius: '6px',
-                                                    fontSize: '14px',
-                                                    border: 'none',
+                                                    lineHeight: 0,
                                                     cursor: 'pointer',
-                                                    flexShrink: 0,
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center'
+                                                    justifyContent: 'center',
+                                                    color: 'inherit'
                                                 }
-                                            }, '✓'),
-                                            ('ontouchstart' in window || navigator.maxTouchPoints > 0) && React.createElement('button', {
+                                            }, uploadRenameCheckIcon),
+                                            React.createElement('button', {
                                                 id: `upload-rename-cancel-button-${file.tempID}`,
+                                                type: 'button',
+                                                className: 'upload-rename-action-btn',
+                                                'aria-label': 'Cancel rename',
+                                                title: 'Cancel (Escape)',
                                                 onClick: (e) => { e.stopPropagation(); cancelRename(); },
                                                 style: {
-                                                    padding: '6px 12px',
-                                                    minWidth: '36px',
-                                                    minHeight: '36px',
-                                                    backgroundColor: '#e4e4e4',
-                                                    color: '#666',
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    padding: 0,
                                                     borderRadius: '6px',
-                                                    fontSize: '14px',
-                                                    border: 'none',
+                                                    lineHeight: 0,
                                                     cursor: 'pointer',
-                                                    flexShrink: 0,
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center'
+                                                    justifyContent: 'center',
+                                                    color: 'inherit'
                                                 }
-                                            }, '✕')
+                                            }, uploadRenameCloseIcon)
+                                            )
                                         )
                                         : React.createElement('div', {
                                             id: `upload-filename-text-${file.tempID}`,
@@ -764,15 +867,27 @@
                                             title: file.originalName
                                         }, file.originalName)
                                 ),
-                                React.createElement('div', { id: `upload-type-cell-${file.tempID}`, style: { fontSize: '13px', color: isEditing ? '#999' : '#666' } }, file.fileExt ? file.fileExt.toLowerCase() : '-'),
-                                React.createElement('div', { id: `upload-duration-size-cell-${file.tempID}`, style: { fontSize: '13px', color: isEditing ? '#999' : '#666' } }, file.isAudio && file.duration ? formatDuration(file.duration) : formatFileSize(file.fileSize)),
-                                React.createElement('div', { id: `upload-date-cell-${file.tempID}`, style: { fontSize: '13px', color: isEditing ? '#999' : '#666' } }, formatDate(file.uploadDate)),
+                                React.createElement('div', {
+                                    id: `upload-type-cell-${file.tempID}`,
+                                    style: { fontSize: '13px', color: isEditing ? '#999' : '#666' }
+                                }, file.fileExt ? file.fileExt.toLowerCase() : '-'),
+                                React.createElement('div', {
+                                    id: `upload-duration-size-cell-${file.tempID}`,
+                                    style: { fontSize: '13px', color: isEditing ? '#999' : '#666' }
+                                }, file.isAudio && file.duration ? formatDuration(file.duration) : formatFileSize(file.fileSize)),
+                                React.createElement('div', {
+                                    id: `upload-date-cell-${file.tempID}`,
+                                    style: { fontSize: '13px', color: isEditing ? '#999' : '#666' }
+                                }, formatDate(file.uploadDate)),
                                 isEditing || !isChecked
-                                    ? React.createElement('div', { id: `upload-menu-placeholder-${file.tempID}` })
-                                    : React.createElement('div', { className: 'file-menu-container', id: `upload-menu-wrapper-${file.tempID}`, style: { position: 'relative', display: 'flex', justifyContent: 'center' } },
+                                    ? React.createElement('div', { id: `upload-menu-placeholder-${file.tempID}`, className: 'upload-file-row-actions' })
+                                    : React.createElement('div', { className: 'file-menu-container upload-file-row-actions', id: `upload-menu-wrapper-${file.tempID}`, style: { position: 'relative', display: 'flex', justifyContent: 'center' } },
                                         React.createElement('button', {
                                                 id: `upload-menu-toggle-button-${file.tempID}`,
-                                                onClick: () => setMenuOpen(isMenuOpen ? null : file.tempID),
+                                                onClick: (e) => {
+                                                    e.stopPropagation();
+                                                    toggleFileRowMenu(file.tempID, e.currentTarget);
+                                                },
                                                 style: {
                                                     width: '20px',
                                                     height: '20px',
@@ -794,18 +909,19 @@
                                             },
                                             React.createElement('img', { id: `upload-menu-icon-${file.tempID}`, src: './img/more_vert_24.svg', style: { width: '24px', height: '24px' } })
                                         ),
-                                        isMenuOpen && React.createElement('div', {
+                                        isMenuOpen && menuFixedPos && React.createElement('div', {
                                                 id: `upload-menu-dropdown-${file.tempID}`,
+                                                className: 'upload-file-menu-dropdown-fixed',
                                                 style: {
-                                                    position: 'absolute',
-                                                    top: '35px',
-                                                    right: '0',
+                                                    position: 'fixed',
+                                                    top: `${menuFixedPos.top}px`,
+                                                    left: `${menuFixedPos.left}px`,
                                                     width: '150px',
                                                     backgroundColor: '#ffffff',
                                                     border: '1px solid #e4e4e4',
                                                     borderRadius: '8px',
                                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                                    zIndex: 1000,
+                                                    zIndex: 10050,
                                                     overflow: 'hidden'
                                                 }
                                             },
@@ -821,7 +937,10 @@
                                             }, 'Rename'),
                                             React.createElement('button', {
                                                 id: `upload-menu-delete-button-${file.tempID}`,
-                                                onClick: () => handleDelete(file.tempID),
+                                                onClick: () => {
+                                                    closeFileMenu();
+                                                    handleDelete(file.tempID);
+                                                },
                                                 style: { width: '100%', padding: '10px 15px', textAlign: 'left', background: 'transparent', border: 'none', fontSize: '13px', color: '#c1281e' },
                                                 onMouseEnter: (e) => {
                                                     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -837,6 +956,104 @@
             )
         );
     };
+
+    const fileUploadResponsiveStyleEl = document.createElement('style');
+    fileUploadResponsiveStyleEl.id = 'file-upload-component-responsive-styles';
+    fileUploadResponsiveStyleEl.textContent = `
+/* ≥641px: original table layout (no sticky column, no forced horizontal scroll) */
+@media (min-width: 641px) {
+    .upload-file-table-wrapper {
+        overflow-x: visible;
+        min-width: 0;
+    }
+    .upload-file-table-wrapper #upload-table-header-row .upload-file-row-actions,
+    .upload-file-table-wrapper [id^='upload-file-row-'] .upload-file-row-actions {
+        position: static;
+        right: auto;
+        z-index: auto;
+        justify-self: stretch;
+        min-width: unset;
+        padding-left: 0;
+        margin-left: 0;
+        background-color: transparent;
+        background-clip: border-box;
+        box-shadow: none;
+    }
+}
+/* ≤640px: scroll wide table + sticky ⋮ column */
+@media (max-width: 640px) {
+    .upload-file-table-wrapper {
+        min-width: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .upload-file-table-wrapper #upload-table-header-row,
+    .upload-file-table-wrapper [id^='upload-file-row-'] {
+        min-width: 500px;
+    }
+    /* Keep ⋮ menu aligned to visible right edge — no need to scroll full width */
+    .upload-file-table-wrapper #upload-table-header-row .upload-file-row-actions,
+    .upload-file-table-wrapper [id^='upload-file-row-'] .upload-file-row-actions {
+        position: sticky;
+        right: 0;
+        z-index: 4;
+        justify-self: end;
+        min-width: 44px;
+        padding-left: 8px;
+        margin-left: -8px;
+        background-color: #ffffff;
+        background-clip: padding-box;
+        box-shadow: -8px 0 14px -6px rgba(0, 0, 0, 0.12);
+    }
+    html[data-theme='dark'] .upload-file-table-wrapper #upload-table-header-row .upload-file-row-actions,
+    html[data-theme='dark'] .upload-file-table-wrapper [id^='upload-file-row-'] .upload-file-row-actions {
+        background-color: var(--dm-surface);
+        box-shadow: -8px 0 16px -6px rgba(0, 0, 0, 0.45);
+    }
+    .upload-file-table-wrapper [id^='upload-file-row-']:hover .upload-file-row-actions {
+        background-color: #f5f5f5;
+    }
+    html[data-theme='dark'] .upload-file-table-wrapper [id^='upload-file-row-']:hover .upload-file-row-actions {
+        background-color: var(--dm-surface-3);
+    }
+    .upload-file-table-wrapper [id^='upload-file-row-'][data-upload-row-editing='true'] .upload-file-row-actions,
+    .upload-file-table-wrapper [id^='upload-file-row-'][data-upload-row-editing='true']:hover .upload-file-row-actions {
+        background-color: #f9fafb;
+    }
+    html[data-theme='dark'] .upload-file-table-wrapper [id^='upload-file-row-'][data-upload-row-editing='true'] .upload-file-row-actions,
+    html[data-theme='dark'] .upload-file-table-wrapper [id^='upload-file-row-'][data-upload-row-editing='true']:hover .upload-file-row-actions {
+        background-color: #1e293b;
+    }
+}
+@media (max-width: 540px) {
+    #upload-header-container,
+    #import-header-container {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    #upload-header-buttons-container {
+        margin-left: 0 !important;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px !important;
+    }
+    #upload-title-text,
+    #import-title-text {
+        font-size: 15px !important;
+    }
+    #upload-reupload-button,
+    #upload-submit-button,
+    #import-next-button {
+        padding-top: 5px !important;
+        padding-bottom: 5px !important;
+    }
+}
+`;
+    if (!document.getElementById('file-upload-component-responsive-styles')) {
+        document.head.appendChild(fileUploadResponsiveStyleEl);
+    }
 
     console.log('[FileUpload] FileUploadComponent exported successfully');
 })();
