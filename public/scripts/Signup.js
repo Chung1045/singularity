@@ -50,6 +50,20 @@ const Signup = ({ csrfToken }) => {
         setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
     };
 
+    /** Same bottom banner as success flow (#message in Signup.ejs). */
+    const showSlideUpMessage = (text, autoHideMs = 5000) => {
+        const messageEl = document.getElementById('message');
+        const messageTextEl = document.getElementById('messageText');
+        if (!messageEl || !messageTextEl || !text) return;
+        messageTextEl.textContent = text;
+        messageEl.classList.remove('hidden');
+        if (autoHideMs > 0) {
+            window.setTimeout(() => {
+                messageEl.classList.add('hidden');
+            }, autoHideMs);
+        }
+    };
+
     const closeModal = () => {
         setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
     };
@@ -214,28 +228,40 @@ const Signup = ({ csrfToken }) => {
             const result = await response.json();
 
             if (response.ok) {
-                const messageEl = document.getElementById('message');
-                const messageTextEl = document.getElementById('messageText');
-
-                if (messageEl && messageTextEl) {
-                    messageTextEl.textContent = `${result.message}, redirecting...`;
-                    messageEl.classList.remove('hidden');
-
-                    // Redirect after 2 seconds
-                    setTimeout(() => {
-                        window.location.href = '/home?welcome=1';
-                    }, 2000);
-                }
+                showSlideUpMessage(`${result.message || 'Account created'}, redirecting...`, 0);
+                setTimeout(() => {
+                    window.location.href = '/home?welcome=1';
+                }, 2000);
             } else {
-                if (result.field && newErrors[result.field] !== undefined) {
-                    setErrors(prev => ({ ...prev, [result.field]: result.message }));
-                } else {
-                    showAlert('Error', result.message || "An error occurred. Please try again.");
+                const slideText =
+                    result.slideUpMessage ||
+                    result.fieldMessage ||
+                    result.message ||
+                    'An error occurred. Please try again.';
+                showSlideUpMessage(slideText, 6000);
+
+                const serverField = result.field;
+                const knownFields = [
+                    'username',
+                    'email',
+                    'firstName',
+                    'lastName',
+                    'password',
+                    'confirmPassword'
+                ];
+                if (serverField && knownFields.includes(serverField)) {
+                    setErrors(prev => ({
+                        ...prev,
+                        [serverField]:
+                            result.fieldMessage ||
+                            result.message ||
+                            slideText
+                    }));
                 }
             }
         } catch (error) {
             console.error('Signup error:', error);
-            showAlert('Error', "An error occurred. Please try again.");
+            showSlideUpMessage('An error occurred. Please try again.', 6000);
         } finally {
             setIsLoading(false);
         }

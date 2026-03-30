@@ -129,7 +129,7 @@
         console.log('[FileUpload] Opening file upload modal for project:', projectID);
         if (window.FileUploadComponent) {
             const modalContainer = document.createElement('div');
-            modalContainer.id = 'file-upload-modal-container';
+            modalContainer.id = 'file-upload-overlay';
             modalContainer.style.cssText = `
                 position: fixed;
                 top: 0;
@@ -141,7 +141,10 @@
                 align-items: center;
                 justify-content: center;
                 z-index: ${window.ZIndex?.MODAL || 31};
-                padding: 20px;
+                padding-top: max(clamp(12px, 4vw, 20px), env(safe-area-inset-top, 0px));
+                padding-right: max(clamp(12px, 4vw, 20px), env(safe-area-inset-right, 0px));
+                padding-bottom: max(clamp(12px, 4vw, 20px), env(safe-area-inset-bottom, 0px));
+                padding-left: max(clamp(12px, 4vw, 20px), env(safe-area-inset-left, 0px));
             `;
             modalContainer.onclick = (e) => {
                 if (e.target === modalContainer) {

@@ -147,6 +147,37 @@ const logLoginAttempt = async (req, res, uid) => {
     }
 }
 
+/** Single JSON shape for username/email already registered. */
+function sendSignupTakenResponse(res, field) {
+    const isEmail = field === 'email';
+    return res.status(400).json({
+        success: false,
+        fieldMessage: isEmail
+            ? 'An account with this email already exists.'
+            : 'An account with this username already exists.',
+        slideUpMessage: isEmail
+            ? 'An account with this email already exists. Sign in or use a different email.'
+            : 'An account with this username already exists. Enter a different one.',
+        field: isEmail ? 'email' : 'username'
+    });
+}
+
+/**
+ * Same signup outcome ("already taken") from two places:
+ * - SIGNUP_CONFLICT: assertSignupIdentifiersAvailable() before INSERT
+ * - SQLITE_CONSTRAINT: UNIQUE on user row (e.g. race, or future unique on email in DB)
+ */
+function signupTakenFieldFromError(error) {
+    if (error.code === 'SIGNUP_CONFLICT' && (error.field === 'email' || error.field === 'username')) {
+        return error.field;
+    }
+    if (error.code === 'SQLITE_CONSTRAINT' && error.message) {
+        if (error.message.includes('user.userName')) return 'username';
+        if (error.message.includes('user.userEmail')) return 'email';
+    }
+    return null;
+}
+
 router.post('/signup', async (req, res) => {
     try{
         console.log("New requests /signup")
@@ -157,7 +188,7 @@ router.post('/signup', async (req, res) => {
         const userData = {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            userType: formData,
+            userType: formData.userType || 'general',
             userEmail: formData.email,
             userName: formData.username
         };
@@ -166,10 +197,15 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({
                 success: false,
                 fieldMessage: 'Invalid email address format',
-                slideUpMessage: 'An account with this username already exists. Please enter a different one to proceed.',
+                slideUpMessage: 'Please enter a valid email address.',
                 field: 'email'
             });
         }
+
+        await credDBService.assertSignupIdentifiersAvailable(
+            userData.userName,
+            userData.userEmail
+        );
 
         let uidResult = await credDBService.insertUserAccount(userData)
         console.log("user Data is inserted")
@@ -186,37 +222,21 @@ router.post('/signup', async (req, res) => {
         console.log(result)
         console.log("credentials is inserted")
 
-        if (await createSession(req, res, uid)){
-            console.log("Successfully created session")
-        }
+        await createSession(req, res, uid)
+        console.log("Successfully created session")
+        return res.status(200).json({ success: true, message: 'Account created successfully' })
 
     } catch (error){
         console.log(error)
 
-        // Check if it's a UNIQUE constraint error for username
-        if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('user.userName')) {
-            return res.status(400).json({
-                success: false,
-                fieldMessage: 'An account with this username already exists.',
-                slideUpMessage: 'An account with this username already exists. Please enter a different one to proceed.',
-                field: 'username'
-            });
-        }
-
-        // Check if it's a UNIQUE constraint error for email
-        if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('user.userEmail')) {
-            return res.status(400).json({
-                success: false,
-                fieldMessage: 'An account with this email already exists.',
-                slideUpMessage: 'An account with this email already exists. Please enter a different one to proceed.',
-                field: 'email'
-            });
+        const takenField = signupTakenFieldFromError(error);
+        if (takenField) {
+            return sendSignupTakenResponse(res, takenField);
         }
 
         // Generic error for other cases
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
-    return res.status(200).json({ success: true, message: 'Account created successfully' });
 });
 
 router.post("/login", async (req, res) => {

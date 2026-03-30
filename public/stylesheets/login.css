@@ -50,6 +50,191 @@ a {
   border-radius: 20px;
 }
 
+/* Login card typography: modest bump vs base .frame — balanced with inputs & buttons */
+#login-component-container .text-wrapper {
+  font-size: 21px;
+}
+#login-component-container .div {
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+#login-component-container .text-wrapper-2 {
+  font-size: 12px;
+  line-height: 1.35;
+}
+#login-component-container .text-wrapper-3 {
+  font-size: 12px;
+  line-height: 16px;
+}
+#login-component-container .text-wrapper-4 {
+  font-size: 13px;
+}
+#login-component-container .by-continuing-you {
+  font-size: 11px;
+  line-height: 1.45;
+  margin-top: 10px;
+}
+#login-component-container .text-wrapper-6,
+#login-component-container .text-wrapper-7 {
+  font-size: 12px;
+  line-height: 16px;
+}
+#login-component-container .sign-in {
+  font-size: 12px;
+}
+#login-component-container .if-you-already-have {
+  font-size: 14px;
+}
+#login-component-container .welcome {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+/* Div-based buttons: no text caret / selection */
+#login-component-container .login-2,
+#login-component-container .div-wrapper-2 {
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+}
+#login-component-container .login-2 .text-wrapper-6,
+#login-component-container .div-wrapper-2 .text-wrapper-7 {
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+/* In-flow flex layout so card height grows with form (abs-only children collapse parent) */
+#login-component-container {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: min(866px, calc(100vw - 40px));
+  max-width: 100%;
+  min-height: min(480px, calc(100vh - 48px));
+  height: auto;
+  overflow: visible;
+  position: relative;
+  box-sizing: border-box;
+}
+#login-component-container .content-background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+#login-component-container .left-content {
+  order: 1;
+  position: relative;
+  z-index: 1;
+  flex: 0 1 423px;
+  width: auto;
+  max-width: 423px;
+  min-width: 220px;
+  height: auto;
+  margin: 10px 0 10px 10px;
+  top: auto;
+  left: auto;
+  bottom: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 28px;
+  box-sizing: border-box;
+}
+#login-component-container .group {
+  margin-top: 0;
+}
+#login-component-container .right-content {
+  order: 2;
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  margin: 10px 10px 10px 0;
+  top: auto;
+  left: auto;
+  padding: 24px 28px 32px 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#login-component-container .logo {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  height: auto;
+  flex-shrink: 0;
+  min-height: 28px;
+}
+#login-component-container .logo-text {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: auto;
+  height: auto;
+  padding-left: 28px;
+}
+#login-component-container .union {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+#login-component-container .content {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 0;
+  box-sizing: border-box;
+  gap: 12px;
+  display: flex;
+  flex-direction: column;
+}
+#login-component-container .slogan {
+  margin-bottom: 2px;
+}
+#login-component-container .div-2 {
+  gap: 14px;
+  align-items: stretch;
+}
+#login-component-container .div-3 {
+  min-height: 58px;
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+#login-component-container .div-wrapper,
+#login-component-container #username-input-wrapper,
+#login-component-container #password-input-wrapper {
+  min-height: 34px;
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#login-component-container .text-wrapper-3 {
+  height: auto;
+  min-height: 22px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .frame .content-background {
   position: absolute;
   width: 97.69%;
@@ -384,6 +569,35 @@ a {
     margin: 32px auto;
   }
 
+  /* Undo desktop #login-component-container row + fixed width */
+  #login-component-container {
+    width: min(500px, calc(100vw - 24px));
+    max-width: 100%;
+    min-height: 0;
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #login-component-container .left-content {
+    order: 2;
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+  }
+  #login-component-container .right-content {
+    order: 1;
+    flex: none;
+    width: 100%;
+    margin: 0;
+    padding: 24px 24px 16px;
+    gap: 20px;
+  }
+
   .frame .content-background {
     display: none;
   }
@@ -462,22 +676,35 @@ a {
   }
 
   /* Input text — 16px prevents iOS Safari auto-zoom */
-  frame .text-wrapper-4,
+  .frame .text-wrapper-4,
   .frame .div-wrapper input {
-    font-size: 14px !important;
+    font-size: 16px !important;
   }
 
   /* Terms & conditions text */
   .frame .by-continuing-you {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .frame .text-wrapper-7 {
+    font-size: 16px;
+  }
+
+  .frame .text-wrapper-6 {
+    font-size: 16px;
+  }
+
+  #login-component-container .text-wrapper-3 {
     font-size: 15px;
   }
 
-  .frame .text-wrapper-6 { 
-    font-size: 15px; 
+  #login-component-container .text-wrapper-2 {
+    font-size: 15px;
+  }
+
+  #login-component-container .div {
+    font-size: 22px;
+    line-height: 1.25;
   }
   /* ── Left panel ──
      Remove the grey panel; only group content remains visible */
@@ -575,11 +802,11 @@ CSS FOR MESSAGE / ANIMATION HERE
   position: fixed;
   transform: translate(-50%, -24px);
   transition: transform 0.5s cubic-bezier(1, -0.5, .25, 1.25);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-width: 380px;
-  max-width: 500px;
+  max-width: min(560px, calc(100vw - 32px));
+  box-sizing: border-box;
 }
 
 #message .alert-icon {
@@ -595,8 +822,10 @@ CSS FOR MESSAGE / ANIMATION HERE
 }
 
 #message .alert-text {
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 0;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 #message.hidden {
