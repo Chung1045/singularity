@@ -56,11 +56,14 @@ async function insertUserAccount(data){
 
 /**
  * Block signup when username or email is already registered (email compared case-insensitively).
- * Throws err with code SIGNUP_CONFLICT and field 'username' | 'email'.
+ * If both are taken, throws once with field 'both' so the client shows a single message.
  */
 async function assertSignupIdentifiersAvailable(userName, userEmail) {
     const name = String(userName || '').trim();
     const emailRaw = String(userEmail || '').trim();
+
+    let nameTaken = false;
+    let emailTaken = false;
 
     if (name.length > 0) {
         const existingName = await new Promise((resolve, reject) => {
@@ -70,12 +73,7 @@ async function assertSignupIdentifiersAvailable(userName, userEmail) {
                 (err, row) => (err ? reject(err) : resolve(row || null))
             );
         });
-        if (existingName) {
-            const e = new Error('USERNAME_TAKEN');
-            e.code = 'SIGNUP_CONFLICT';
-            e.field = 'username';
-            throw e;
-        }
+        nameTaken = !!existingName;
     }
 
     if (emailRaw.length > 0) {
@@ -89,12 +87,26 @@ async function assertSignupIdentifiersAvailable(userName, userEmail) {
                 (err, row) => (err ? reject(err) : resolve(row || null))
             );
         });
-        if (existingEmail) {
-            const e = new Error('EMAIL_TAKEN');
-            e.code = 'SIGNUP_CONFLICT';
-            e.field = 'email';
-            throw e;
-        }
+        emailTaken = !!existingEmail;
+    }
+
+    if (nameTaken && emailTaken) {
+        const e = new Error('BOTH_TAKEN');
+        e.code = 'SIGNUP_CONFLICT';
+        e.field = 'both';
+        throw e;
+    }
+    if (nameTaken) {
+        const e = new Error('USERNAME_TAKEN');
+        e.code = 'SIGNUP_CONFLICT';
+        e.field = 'username';
+        throw e;
+    }
+    if (emailTaken) {
+        const e = new Error('EMAIL_TAKEN');
+        e.code = 'SIGNUP_CONFLICT';
+        e.field = 'email';
+        throw e;
     }
 }
 
