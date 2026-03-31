@@ -736,14 +736,15 @@ CSS FOR MESSAGE / ANIMATION HERE
   left: 50%;
   padding: 12px 18px;
   position: fixed;
-  transform: translate(-50%, -24px);
-  transition: transform 0.5s cubic-bezier(1, -0.5, .25, 1.25);
+  transform: translate3d(-50%, -24px, 0);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   display: inline-flex;
   align-items: center;
   gap: 10px;
   max-width: min(600px, calc(100vw - 32px));
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 10050;
+  will-change: transform;
 }
 
 #message .alert-icon {
@@ -761,11 +762,12 @@ CSS FOR MESSAGE / ANIMATION HERE
 #message .alert-text {
   flex: 0 1 auto;
   min-width: 0;
+  text-align: center;
   overflow-wrap: anywhere;
 }
 
 #message.hidden {
-  transform: translate(-50%, 100%);
+  transform: translate3d(-50%, calc(100% + 32px), 0);
 }
 
 #message #close {
@@ -793,11 +795,11 @@ CSS FOR MESSAGE / ANIMATION HERE
     bottom: auto;
     top: 0;
     max-width: calc(100vw - 32px);
-    transform: translate(-50%, 16px);
+    transform: translate3d(-50%, 16px, 0);
   }
 
   #message.hidden {
-    transform: translate(-50%, -150%);
+    transform: translate3d(-50%, -150%, 0);
   }
 }
 

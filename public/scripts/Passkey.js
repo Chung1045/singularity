@@ -1,7 +1,6 @@
 (function() {
-const { useEffect, useMemo, useState } = React;
+const { useEffect, useMemo, useState, useRef, useCallback } = React;
 const reactCreateElm = React.createElement;
-const TOAST_DURATION_MS = 3200;
 
 function formatDateTime(value) {
     if (!value) return 'Unknown';
@@ -181,17 +180,6 @@ function getSetupStatus(total) {
     };
 }
 
-function renderToast(toast) {
-    if (!toast) return null;
-
-    return reactCreateElm('div', { className: 'security-toast-stack' },
-        reactCreateElm('div', { className: `security-toast security-toast--${toast.type || 'info'}` },
-            reactCreateElm('div', { className: 'security-toast-title' }, toast.title),
-            toast.message ? reactCreateElm('div', { className: 'security-toast-copy' }, toast.message) : null
-        )
-    );
-}
-
 function renderModal(modal, closeModal, handleConfirm) {
     if (!modal.isOpen) return null;
 
@@ -259,15 +247,39 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
     }, [isOverlay]);
     const [items, setItems] = useState(() => Array.isArray(passkeys) ? passkeys : []);
     const [modal, setModal] = useState({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: null });
-    const [toast, setToast] = useState(null);
     const [isRegistering, setIsRegistering] = useState(false);
     const [deletingPasskeyID, setDeletingPasskeyID] = useState(null);
+    const slideUpTimerRef = useRef(null);
 
-    useEffect(() => {
-        if (!toast) return undefined;
-        const timer = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
-        return () => window.clearTimeout(timer);
-    }, [toast]);
+    const showSlideUpMessage = useCallback((text, autoHideMs = 5000) => {
+        const messageEl = document.getElementById('message');
+        const messageTextEl = document.getElementById('messageText');
+        if (!messageEl || !messageTextEl || !text) return;
+        if (slideUpTimerRef.current) {
+            window.clearTimeout(slideUpTimerRef.current);
+            slideUpTimerRef.current = null;
+        }
+        messageTextEl.textContent = text;
+        messageEl.classList.add('hidden');
+        void messageEl.offsetHeight;
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                messageEl.classList.remove('hidden');
+            });
+        });
+        if (autoHideMs > 0) {
+            slideUpTimerRef.current = window.setTimeout(() => {
+                messageEl.classList.add('hidden');
+                slideUpTimerRef.current = null;
+            }, autoHideMs);
+        }
+    }, []);
+
+    useEffect(() => () => {
+        if (slideUpTimerRef.current) {
+            window.clearTimeout(slideUpTimerRef.current);
+        }
+    }, []);
 
     const username = userInfo?.userName || userInfo?.email || 'User';
 
@@ -286,8 +298,10 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
 
     const setupStatus = getSetupStatus(items.length);
 
-    const showToast = (type, title, message = '') => {
-        setToast({ id: Date.now(), type, title, message });
+    const showToast = (type, title, message = '', autoHideMs) => {
+        const text = message ? `${title} ${message}` : title;
+        const ms = autoHideMs !== undefined ? autoHideMs : (type === 'danger' ? 6000 : 5000);
+        showSlideUpMessage(text, ms);
     };
 
     const showAlert = (title, message, onConfirm = null) => {
@@ -336,10 +350,14 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                 return;
             }
 
-            showToast('success', 'Signed out', 'Redirecting to the home page.');
-            window.setTimeout(() => {
-                window.location = '/?loggedout=1';
-            }, 900);
+            if (typeof window.showLogoutSuccessSlideUpAndRedirect === 'function') {
+                window.showLogoutSuccessSlideUpAndRedirect();
+            } else {
+                showToast('success', 'Signed out', 'Redirecting to the home page.', 0);
+                window.setTimeout(() => {
+                    window.location = '/?loggedout=1';
+                }, 3000);
+            }
         } catch (error) {
             showAlert('Unable to sign out', 'An error occurred during logout. Please try again.');
         }
@@ -394,7 +412,7 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                 throw new Error(errorData.message || 'Passkey registration failed.');
             }
 
-            showToast('success', 'Passkey added', 'Refreshing your passkey list...');
+            showToast('success', 'Passkey added', 'Refreshing your passkey list...', 0);
             window.setTimeout(() => window.location.reload(), 1000);
         } catch (error) {
             let message = error?.message || 'Passkey registration failed. Please try again.';
@@ -645,8 +663,7 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                     )
                 )
             ),
-            renderModal(modal, closeModal, handleModalConfirm),
-            renderToast(toast)
+            renderModal(modal, closeModal, handleModalConfirm)
         )
     );
 };

@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 
 const Signup = ({ csrfToken }) => {
     const [formData, setFormData] = useState({
@@ -30,6 +30,37 @@ const Signup = ({ csrfToken }) => {
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
     const [messageShown, setMessageShown] = useState(false);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const slideUpTimerRef = useRef(null);
+
+    const showSlideUpMessage = useCallback((text, autoHideMs = 5000) => {
+        const messageEl = document.getElementById('message');
+        const messageTextEl = document.getElementById('messageText');
+        if (!messageEl || !messageTextEl || !text) return;
+        if (slideUpTimerRef.current) {
+            window.clearTimeout(slideUpTimerRef.current);
+            slideUpTimerRef.current = null;
+        }
+        messageTextEl.textContent = text;
+        messageEl.classList.add('hidden');
+        void messageEl.offsetHeight;
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                messageEl.classList.remove('hidden');
+            });
+        });
+        if (autoHideMs > 0) {
+            slideUpTimerRef.current = window.setTimeout(() => {
+                messageEl.classList.add('hidden');
+                slideUpTimerRef.current = null;
+            }, autoHideMs);
+        }
+    }, []);
+
+    useEffect(() => () => {
+        if (slideUpTimerRef.current) {
+            window.clearTimeout(slideUpTimerRef.current);
+        }
+    }, []);
 
     // Show validation errors in message notification
     useEffect(() => {
@@ -40,28 +71,13 @@ const Signup = ({ csrfToken }) => {
         const messageTextEl = document.getElementById('messageText');
 
         if (errorFields.length > 0 && !messageShown && messageEl && messageTextEl) {
-            messageTextEl.textContent = `Warning: Please fill in your credentials`;
-            messageEl.classList.remove('hidden');
+            showSlideUpMessage('Warning: Please fill in your credentials', 0);
             setMessageShown(true);
         }
-    }, [errors, messageShown]);
+    }, [errors, messageShown, showSlideUpMessage]);
 
     const showAlert = (title, message, onConfirm = null) => {
         setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
-    };
-
-    /** Same bottom banner as success flow (#message in Signup.ejs). */
-    const showSlideUpMessage = (text, autoHideMs = 5000) => {
-        const messageEl = document.getElementById('message');
-        const messageTextEl = document.getElementById('messageText');
-        if (!messageEl || !messageTextEl || !text) return;
-        messageTextEl.textContent = text;
-        messageEl.classList.remove('hidden');
-        if (autoHideMs > 0) {
-            window.setTimeout(() => {
-                messageEl.classList.add('hidden');
-            }, autoHideMs);
-        }
     };
 
     const closeModal = () => {

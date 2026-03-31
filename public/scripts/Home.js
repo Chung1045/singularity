@@ -491,8 +491,12 @@ const Home = ({ csrfToken, userInfo }) => {
             data: JSON.stringify({}),
             contentType: 'application/json',
             success: () => {
-                showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
-                setTimeout(() => window.location = "/?loggedout=1", 3000);
+                if (typeof window.showLogoutSuccessSlideUpAndRedirect === 'function') {
+                    window.showLogoutSuccessSlideUpAndRedirect();
+                } else {
+                    showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
+                    setTimeout(() => window.location = '/?loggedout=1', 3000);
+                }
             },
             error: (xhr) => {
                 showAlert('Error', xhr.responseJSON?.message || "An error occurred. Please try again.");
