@@ -63,7 +63,7 @@ passport.use(new GoogleStrategy({
             }
 
             console.log(`Retrieved UID: ${uidResponse}`);
-            return done(null, { uid: uidResponse });
+            return done(null, { uid: uidResponse, isNewUser: false });
         } else {
             console.log("User is not found, proceeding to sign up the user")
             const newUser = await credDBService.insertGoogleOAuthUserAccount(profile);
@@ -74,7 +74,7 @@ passport.use(new GoogleStrategy({
             }
 
             console.log(" New user created:", newUser.uid);
-            return done(null, { uid: newUser.uid });
+            return done(null, { uid: newUser.uid, isNewUser: true });
         }
     } catch (error) {
         console.error(" OAuth error:", error);
@@ -346,7 +346,13 @@ router.get('/auth/google/callback',
             console.log(req.user.uid)
             await createSession(req, res, req.user.uid)
             console.log("SessionID successfully created, redirecting to home")
-            res.redirect("/home")
+
+            if (req.user.isNewUser) {
+                res.redirect("/home?welcome=1")
+            } else {
+                res.redirect("/home")
+            }
+
         } catch (e) {
             throw new Error("Unable to Login")
         }

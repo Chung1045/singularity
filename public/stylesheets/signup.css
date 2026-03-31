@@ -56,7 +56,7 @@ a {
     border-radius: 20px;
     align-items: center;
 }
-    
+
 
 
 .frame .content-background {
@@ -214,7 +214,7 @@ display: flex;
   font-size: 20px;
   letter-spacing: 1.00px;
     margin-top: 1px;
-    
+
 }
 
 .frame .union {
@@ -741,7 +741,7 @@ CSS FOR MESSAGE / ANIMATION HERE
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  max-width: min(560px, calc(100vw - 32px));
+  max-width: min(600px, calc(100vw - 32px));
   box-sizing: border-box;
   z-index: 1;
 }
