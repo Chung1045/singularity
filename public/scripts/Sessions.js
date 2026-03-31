@@ -333,7 +333,7 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
             if (typeof window.showLogoutSuccessSlideUpAndRedirect === 'function') {
                 window.showLogoutSuccessSlideUpAndRedirect();
             } else {
-                showToast('success', 'Signed out', 'Redirecting to the home page.', 0);
+                showToast('success', 'Signed out. ', 'Redirecting to the home page.', 0);
                 window.setTimeout(() => {
                     window.location = '/?loggedout=1';
                 }, 3000);

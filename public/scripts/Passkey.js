@@ -353,7 +353,7 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
             if (typeof window.showLogoutSuccessSlideUpAndRedirect === 'function') {
                 window.showLogoutSuccessSlideUpAndRedirect();
             } else {
-                showToast('success', 'Signed out', 'Redirecting to the home page.', 0);
+                showToast('success', 'Signed out. ', 'Redirecting to the home page.', 0);
                 window.setTimeout(() => {
                     window.location = '/?loggedout=1';
                 }, 3000);
@@ -412,7 +412,7 @@ const Passkey = ({ csrfToken, passkeys, userInfo }) => {
                 throw new Error(errorData.message || 'Passkey registration failed.');
             }
 
-            showToast('success', 'Passkey added', 'Refreshing your passkey list...', 0);
+            showToast('success', 'Passkey added, ', 'Refreshing your passkey list...', 0);
             window.setTimeout(() => window.location.reload(), 1000);
         } catch (error) {
             let message = error?.message || 'Passkey registration failed. Please try again.';
