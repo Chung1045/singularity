@@ -249,7 +249,22 @@ const Signup = ({ csrfToken }) => {
                     'password',
                     'confirmPassword'
                 ];
-                if (serverField && knownFields.includes(serverField)) {
+                if (serverField === 'both') {
+                    const bothInline =
+                        result.fieldMessage ||
+                        slideText ||
+                        'An account with this username and email is already registered.';
+                    setValidFields(prev => ({
+                        ...prev,
+                        username: false,
+                        email: false
+                    }));
+                    setErrors(prev => ({
+                        ...prev,
+                        username: bothInline,
+                        email: bothInline
+                    }));
+                } else if (serverField && knownFields.includes(serverField)) {
                     setErrors(prev => ({
                         ...prev,
                         [serverField]:

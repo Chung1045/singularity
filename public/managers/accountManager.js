@@ -149,6 +149,16 @@ const logLoginAttempt = async (req, res, uid) => {
 
 /** Single JSON shape for username/email already registered. */
 function sendSignupTakenResponse(res, field) {
+    if (field === 'both') {
+        return res.status(400).json({
+            success: false,
+            fieldMessage:
+                'An account with this username and email is already registered.',
+            slideUpMessage:
+                'An account already uses this username and email. Please choose a new one',
+            field: 'both'
+        });
+    }
     const isEmail = field === 'email';
     return res.status(400).json({
         success: false,
@@ -168,7 +178,10 @@ function sendSignupTakenResponse(res, field) {
  * - SQLITE_CONSTRAINT: UNIQUE on user row (e.g. race, or future unique on email in DB)
  */
 function signupTakenFieldFromError(error) {
-    if (error.code === 'SIGNUP_CONFLICT' && (error.field === 'email' || error.field === 'username')) {
+    if (
+        error.code === 'SIGNUP_CONFLICT' &&
+        (error.field === 'email' || error.field === 'username' || error.field === 'both')
+    ) {
         return error.field;
     }
     if (error.code === 'SQLITE_CONSTRAINT' && error.message) {
@@ -237,6 +250,7 @@ router.post('/signup', async (req, res) => {
         // Generic error for other cases
         return res.status(500).json({success: false, message: `Server Returned Error: ${error}`})
     }
+    return res.status(200).json({ success: true, message: 'Account created successfully' });
 });
 
 router.post("/login", async (req, res) => {
