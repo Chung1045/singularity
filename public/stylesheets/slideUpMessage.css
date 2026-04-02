@@ -1,0 +1,84 @@
+/*
+ * Shared bottom slide-up banner (#message, #messageText, #close).
+ * Same motion and layout as login.css / signup.css / home.css.
+ */
+#message {
+  background: #fff;
+  border-radius: 10px;
+  bottom: 0;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.12);
+  color: #4a4a4a;
+  font-weight: 600;
+  font-size: 13px;
+  left: 50%;
+  padding: 12px 18px;
+  position: fixed;
+  transform: translate3d(-50%, -24px, 0);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(600px, calc(100vw - 32px));
+  box-sizing: border-box;
+  z-index: 30;
+  will-change: transform;
+}
+
+#message .alert-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+#message .alert-icon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+#message .alert-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+#message.hidden {
+  transform: translate3d(-50%, calc(100% + 32px), 0);
+}
+
+#message #close,
+#message #message-close-btn {
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.4;
+  padding: 0 2px;
+  transition: opacity 0.15s ease;
+}
+
+#message #close img,
+#message #message-close-btn img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+#message #close:hover,
+#message #message-close-btn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 500px) {
+  #message {
+    bottom: auto;
+    top: 0;
+    max-width: calc(100vw - 32px);
+    transform: translate3d(-50%, 16px, 0);
+  }
+
+  #message.hidden {
+    transform: translate3d(-50%, -150%, 0);
+  }
+}

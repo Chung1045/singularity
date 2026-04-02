@@ -831,6 +831,10 @@ html[data-theme='dark'] .home-alert-modal-card {
     box-shadow: var(--dm-shadow) !important;
 }
 
+html[data-theme='dark'] .home-alert-modal-title {
+    color: var(--dm-text) !important;
+}
+
 html[data-theme='dark'] .home-alert-modal-message {
     color: var(--dm-muted-strong) !important;
 }
@@ -1516,17 +1520,32 @@ html[data-theme='dark'] .file-upload-dropzone.dragging {
 }
 
 /* ============================================
-   LOGIN PAGE ALERTS - DARK MODE
+   SLIDE-UP #message - DARK MODE (Home, Sessions, Passkeys)
+   Login / Signup stay light (no body class).
    ============================================ */
-html[data-theme='dark'] #message {
+html[data-theme='dark'] body:is(.app-home, .app-session, .app-passkey, .app-profile) #message {
     background: var(--dm-surface) !important;
     border: 1px solid var(--dm-border) !important;
     color: var(--dm-text) !important;
     box-shadow: var(--dm-shadow) !important;
 }
 
-html[data-theme='dark'] #message .alert-text {
+html[data-theme='dark'] body:is(.app-home, .app-session, .app-passkey, .app-profile) #message .alert-text {
     color: var(--dm-text) !important;
+}
+
+html[data-theme='dark'] body:is(.app-home, .app-session, .app-passkey, .app-profile) #message .alert-icon img,
+html[data-theme='dark'] body:is(.app-home, .app-session, .app-passkey, .app-profile) #message #close img {
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+}
+
+html[data-theme='dark'] body:is(.app-home, .app-session, .app-passkey, .app-profile) #message #close {
+    opacity: 0.55;
+}
+
+html[data-theme='dark'] body:is(.app-home, .app-session, .app-passkey, .app-profile) #message #close:hover {
+    opacity: 0.95;
 }
 
 /* ============================================
@@ -2597,4 +2616,14 @@ html, html *, html *::before, html *::after {
     transition: none !important;
     transition-duration: 0s !important;
     transition-property: none !important;
+}
+
+/* Slide-up #message must still animate (global rule above uses !important) */
+#message {
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+#message #close,
+#message #message-close-btn {
+    transition: opacity 0.15s ease !important;
 }

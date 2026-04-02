@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 
 const Message = ({ text, visible, onClose, showClose = true }) => {
     return React.createElement(
@@ -29,19 +29,47 @@ const Login = ({ csrfToken }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [message, setMessage] = useState({ text: '', visible: false, showClose: true, emoji: undefined });
+    const slideUpAutoHideRef = useRef(null);
 
-    const showSlideUpMessage = (text, showClose = true, autoHideDuration = 5000, emoji = undefined) => {
-        setMessage({ text, visible: true, showClose, emoji });
-        if (autoHideDuration > 0) {
-            setTimeout(() => {
-                hideSlideUpMessage();
-            }, autoHideDuration);
+    const hideSlideUpMessage = useCallback(() => {
+        if (slideUpAutoHideRef.current) {
+            window.clearTimeout(slideUpAutoHideRef.current);
+            slideUpAutoHideRef.current = null;
         }
-    };
-
-    const hideSlideUpMessage = () => {
         setMessage(prev => ({ ...prev, visible: false }));
-    };
+    }, []);
+
+    const showSlideUpMessage = useCallback((text, showClose = true, autoHideDuration = 5000, emoji = undefined) => {
+        if (slideUpAutoHideRef.current) {
+            window.clearTimeout(slideUpAutoHideRef.current);
+            slideUpAutoHideRef.current = null;
+        }
+        // Flush so the DOM paints with .hidden before we show; otherwise the slide-up transition often does not run (React 18 batching).
+        const hide = () => {
+            setMessage(prev => ({ ...prev, text, showClose, emoji, visible: false }));
+        };
+        if (typeof ReactDOM !== 'undefined' && typeof ReactDOM.flushSync === 'function') {
+            ReactDOM.flushSync(hide);
+        } else {
+            hide();
+        }
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                setMessage(prev => ({ ...prev, text, showClose, emoji, visible: true }));
+                if (autoHideDuration > 0) {
+                    slideUpAutoHideRef.current = window.setTimeout(() => {
+                        hideSlideUpMessage();
+                    }, autoHideDuration);
+                }
+            });
+        });
+    }, [hideSlideUpMessage]);
+
+    useEffect(() => () => {
+        if (slideUpAutoHideRef.current) {
+            window.clearTimeout(slideUpAutoHideRef.current);
+        }
+    }, []);
 
     const handleLoginSuccess = () => {
         showSlideUpMessage('Login successful! Redirecting...', false, 0, '!');

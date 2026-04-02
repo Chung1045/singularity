@@ -1,6 +1,55 @@
 (function () {
     const {useState, useEffect, useRef, useCallback} = React;
 
+    /** Pages with Sidebar but no #message (e.g. profile) still need project-create feedback. */
+    function injectSlideUpMessageHost() {
+        if (document.getElementById('message')) return;
+        if (!document.body) return;
+        if (!document.querySelector('link[href*="slideUpMessage.css"]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = '/stylesheets/slideUpMessage.css';
+            document.head.appendChild(link);
+        }
+        const messageEl = document.createElement('div');
+        messageEl.id = 'message';
+        messageEl.className = 'hidden';
+
+        const iconWrap = document.createElement('span');
+        iconWrap.className = 'alert-icon';
+        const iconImg = document.createElement('img');
+        iconImg.src = '/img/Info.svg';
+        iconImg.alt = '';
+        iconWrap.appendChild(iconImg);
+
+        const textEl = document.createElement('span');
+        textEl.className = 'alert-text';
+        textEl.id = 'messageText';
+
+        const closeBtn = document.createElement('span');
+        closeBtn.id = 'close';
+        const closeImg = document.createElement('img');
+        closeImg.src = '/img/close.svg';
+        closeImg.alt = 'close';
+        closeBtn.appendChild(closeImg);
+        closeBtn.addEventListener('click', () => {
+            messageEl.classList.add('hidden');
+        });
+
+        messageEl.appendChild(iconWrap);
+        messageEl.appendChild(textEl);
+        messageEl.appendChild(closeBtn);
+        document.body.insertBefore(messageEl, document.body.firstChild);
+    }
+
+    window.injectSlideUpMessageHost = injectSlideUpMessageHost;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectSlideUpMessageHost);
+    } else {
+        injectSlideUpMessageHost();
+    }
+
     // Project Options Button Component
     const ProjectOptionsButton = ({selectedProjectID, projects, onProjectDeleted, onProjectRenamed}) => {
         const [menuOpen, setMenuOpen] = useState(false);
@@ -964,10 +1013,13 @@
         // Create project modal state
         const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
         const [newProjectName, setNewProjectName] = useState('');
-        const [showSuccessNotification, setShowSuccessNotification] = useState(false);
-        const [successMessage, setSuccessMessage] = useState('');
-        const [showErrorNotification, setShowErrorNotification] = useState(false);
-        const [errorMessage, setErrorMessage] = useState('');
+        const slideUpHideTimerRef = useRef(null);
+
+        useEffect(() => () => {
+            if (slideUpHideTimerRef.current) {
+                clearTimeout(slideUpHideTimerRef.current);
+            }
+        }, []);
 
         // Notification panel state
         const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
@@ -1499,21 +1551,35 @@
             );
         };
 
-        const showError = (message) => {
-            setErrorMessage(message);
-            setShowErrorNotification(true);
-            setTimeout(() => { setShowErrorNotification(false); }, 3000);
-        };
-
-        const showSuccess = (message) => {
-            setSuccessMessage(message);
-            setShowSuccessNotification(true);
-            setTimeout(() => { setShowSuccessNotification(false); }, 3000);
+        /** Same bottom slide-up as Signup.js (#message, #messageText); host may be injected for non-Home shells. */
+        const showSlideUpMessage = (text, autoHideMs = 5000) => {
+            injectSlideUpMessageHost();
+            const messageEl = document.getElementById('message');
+            const messageTextEl = document.getElementById('messageText');
+            if (!messageEl || !messageTextEl || !text) return;
+            if (slideUpHideTimerRef.current) {
+                clearTimeout(slideUpHideTimerRef.current);
+                slideUpHideTimerRef.current = null;
+            }
+            messageTextEl.textContent = text;
+            messageEl.classList.add('hidden');
+            void messageEl.offsetHeight;
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    messageEl.classList.remove('hidden');
+                });
+            });
+            if (autoHideMs > 0) {
+                slideUpHideTimerRef.current = setTimeout(() => {
+                    messageEl.classList.add('hidden');
+                    slideUpHideTimerRef.current = null;
+                }, autoHideMs);
+            }
         };
 
         const handleCreateProject = async () => {
             if (!newProjectName.trim()) {
-                showError('Please enter a project name');
+                showSlideUpMessage('Please enter a project name', 6000);
                 return;
             }
             try {
@@ -1532,7 +1598,7 @@
                     const newProjectID = data.projectID;
                     setShowCreateProjectModal(false);
                     setNewProjectName('');
-                    showSuccess('Project created successfully!');
+                    showSlideUpMessage('Project created successfully!');
                     setHasProjects(true);
 
                     window.currentChatID = null;
@@ -1599,11 +1665,11 @@
 
                     setTimeout(() => { window.skipProjectDataLoad = false; }, 300);
                 } else {
-                    showError(data.message || 'Failed to create project');
+                    showSlideUpMessage(data.message || 'Failed to create project', 6000);
                 }
             } catch (error) {
                 console.error('Error creating project:', error);
-                showError('Error creating project');
+                showSlideUpMessage('Error creating project', 6000);
             }
         };
 
@@ -3512,64 +3578,6 @@
                         }, 'Create Project')
                     )
                 )
-            ),
-
-            // Success Notification
-            showSuccessNotification && React.createElement('div', {
-                    id: 'sidebar-success-notification',
-                    style: {
-                        position: 'fixed',
-                        top: '20px',
-                        right: '20px',
-                        backgroundColor: '#4CAF50',
-                        color: '#ffffff',
-                        padding: '16px 24px',
-                        borderRadius: '10px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        zIndex: 10001,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        fontFamily: 'Inter, Helvetica',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        animation: 'slideInRight 0.3s ease-out'
-                    }
-                },
-                React.createElement('span', {
-                    id: 'sidebar-success-notification-icon',
-                    style: { fontSize: '20px', fontWeight: 'bold' }
-                }, '✓'),
-                React.createElement('span', { id: 'sidebar-success-notification-message' }, successMessage)
-            ),
-
-            // Error Notification
-            showErrorNotification && React.createElement('div', {
-                    id: 'sidebar-error-notification',
-                    style: {
-                        position: 'fixed',
-                        top: '20px',
-                        right: '20px',
-                        backgroundColor: '#f44336',
-                        color: '#ffffff',
-                        padding: '16px 24px',
-                        borderRadius: '10px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        zIndex: 10001,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        fontFamily: 'Inter, Helvetica',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        animation: 'slideInRight 0.3s ease-out'
-                    }
-                },
-                React.createElement('span', {
-                    id: 'sidebar-error-notification-icon',
-                    style: { fontSize: '20px', fontWeight: 'bold' }
-                }, '✕'),
-                React.createElement('span', { id: 'sidebar-error-notification-message' }, errorMessage)
             )
         );
     };

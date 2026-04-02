@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/stylesheets/session.css">
     <link rel="stylesheet" href="/stylesheets/security-pages.css">
     <link rel="stylesheet" href="/stylesheets/z-index.css">
+    <link rel="stylesheet" href="/stylesheets/slideUpMessage.css">
     <link rel="stylesheet" href="/stylesheets/skeleton.css">
     <link rel="stylesheet" href="/stylesheets/theme.css?v=<%= Date.now() %>">
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
@@ -45,7 +46,12 @@
     <script src="/components/addInviteComponent.js"></script>
     <script src="/components/projectShareComponent.js"></script>
 </head>
-<body>
+<body class="app-session">
+<div id="message" class="hidden">
+    <span class="alert-icon"><img src="/img/Info.svg" alt="" /></span>
+    <span class="alert-text" id="messageText"></span>
+    <span id="close"><img src="/img/close.svg" alt="close" /></span>
+</div>
 <div id="root">
     <div class="sk-page">
         <div class="sk-sidebar">
@@ -109,6 +115,7 @@
     </div>
 </div>
 
+<script src="/scripts/logoutSlideUpBanner.js"></script>
 <script src="/scripts/Sessions.js"></script>
 <script id="session-page-data" type="application/json"><%- JSON.stringify({ sessions: sessions || [], loginAttempts: loginAttempts || [], currentSessionID: currentSessionID || '', userInfo: userInfo || {} }) %></script>
 
@@ -184,6 +191,14 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(React.createElement(window.Session, { csrfToken, sessions, loginAttempts, currentSessionID, userInfo }));
+</script>
+
+<script>
+    $(function () {
+        $('#close').on('click', function () {
+            $('#message').addClass('hidden');
+        });
+    });
 </script>
 
 <!-- Socket.io initialization for real-time notifications - load AFTER userInfo is set -->

@@ -803,10 +803,14 @@ const UserProfile = ({ userInfo, csrfToken }) => {
             data: JSON.stringify({}),
             contentType: 'application/json',
             success: function () {
-                showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
-                setTimeout(() => {
-                    window.location = '/?loggedout=1';
-                }, 3000);
+                if (typeof window.showLogoutSuccessSlideUpAndRedirect === 'function') {
+                    window.showLogoutSuccessSlideUpAndRedirect();
+                } else {
+                    showAlert('Logout Successful', 'Press OK to proceed or wait for redirect.');
+                    setTimeout(() => {
+                        window.location = '/?loggedout=1';
+                    }, 3000);
+                }
             },
             error: function (xhr) {
                 const errorMessage = xhr.responseJSON?.message || 'An error occurred. Please try again.';
