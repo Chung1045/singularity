@@ -45,64 +45,50 @@ async function documentPreprocessing(buffer, documentExt) {
 
         // Check file type
         if (supportedVideoAudioFormats.includes(documentExt)) {
-            // Create dynamic temp WAV path
-            tempWavPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.wav`);
 
-            // Benchmark WAV conversion
+            const totalStart = Date.now();
+
+            console.log("Starting audio extraction...");
+
             const conversionStart = Date.now();
 
-            // Convert to WAV
-            await convert_ffmpeg(tempFilePath, tempWavPath, 'wav');
+            const audioData = await extractAudioFloat32(tempFilePath);
 
-            const conversionTime = ((Date.now() - conversionStart) / 1000).toFixed(2);
-            console.log(`WAV conversion completed in ${conversionTime}s`);
+            console.log(
+                `Audio extraction completed in ${
+                    ((Date.now() - conversionStart)/1000).toFixed(2)
+                }s`
+            );
 
-            // Read and process WAV file
-            const wavBuffer = await fs.readFile(tempWavPath);
-            const wav = new WaveFile(wavBuffer);
-            wav.toBitDepth('32f');
-            wav.toSampleRate(16000);
+            console.log(
+                `Audio length: ${(audioData.length/16000).toFixed(1)}s`
+            );
 
-            let audioData = wav.getSamples();
-            if (Array.isArray(audioData)) {
-                if (audioData.length > 1) {
-                    const SCALING_FACTOR = Math.sqrt(2);
-                    for (let i = 0; i < audioData[0].length; i++) {
-                        audioData[0][i] = SCALING_FACTOR * (audioData[0][i] + audioData[1][i]) / 2;
-                    }
-                }
-                audioData = audioData[0];
-            }
 
-            let maxAbs = 0;
-            for (const v of audioData) {
-                maxAbs = Math.max(maxAbs, Math.abs(v));
-            }
-            if (maxAbs > 0 && maxAbs < 0.9) {
-                const gain = 0.9 / maxAbs;
-                for (let i = 0; i < audioData.length; i++) {
-                    audioData[i] *= gain;
-                }
-            }
+            console.log("Starting transcription...");
 
-            // Benchmark transcription
             const transcriptionStart = Date.now();
 
-            // Transcribe audio
-            const model = transcriber;
-            console.log("Video / audio is now being transcribed");
-
-            const output = await model(audioData, {
+            const output = await transcriber(audioData, {
                 chunk_length_s: 30,
-                stride_length_s: 5,
+                stride_length_s: 10,
+                language: "en"
             });
 
-            const transcriptionTime = ((Date.now() - transcriptionStart) / 1000).toFixed(2);
-            console.log(`Video / audio transcription completed in ${transcriptionTime}s`);
+            console.log(
+                `Transcription completed in ${
+                    ((Date.now() - transcriptionStart)/1000).toFixed(2)
+                }s`
+            );
 
-            // Cleanup temp files
-            await fs.unlink(tempWavPath).catch(() => {});
-            await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+
+            console.log(
+                `Total processing time ${
+                    ((Date.now() - totalStart)/1000).toFixed(2)
+                }s`
+            );
+
+            await fs.rm(tempDir, { recursive: true, force: true });
 
             return output.text?.trim();
         } else if (supportedDocumentFormats.includes(documentExt)) {
@@ -382,6 +368,52 @@ Report File ${report}
     } catch (err) {
         console.error('Grouping report failed:', err.message);
     }
+}
+
+async function extractAudioFloat32(inputPath) {
+
+    return new Promise((resolve, reject) => {
+
+        const chunks = [];
+
+        const command = ffmpeg(inputPath)
+            .noVideo()
+            .audioFrequency(16000)
+            .audioChannels(1)
+            .audioCodec('pcm_f32le')
+            .format('f32le')
+            .on('start', cmd => console.log("ffmpeg cmd:", cmd))
+
+            .on('error', err => {
+                console.error("ffmpeg error:", err.message);
+
+                // ignore pipe closed error (normal behaviour)
+                if (err.message.includes("Output stream closed")) {
+                    return;
+                }
+
+                reject(err);
+            })
+
+            .on('end', () => {
+
+                const buffer = Buffer.concat(chunks);
+
+                const audioData = new Float32Array(
+                    buffer.buffer,
+                    buffer.byteOffset,
+                    buffer.length / 4
+                );
+
+                resolve(audioData);
+            });
+
+        const stream = command.pipe();
+
+        stream.on('data', chunk => chunks.push(chunk));
+
+        stream.on('error', reject);
+    });
 }
 
 init()
