@@ -56,7 +56,7 @@ const ChatUtils = {
                 <img src="./img/union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
             </div>
             <div style="padding: 8px 4px;">
-                <div class="loader-text">Loading...</div>
+                <div class="loader-text"></div>
                 <!-- 3-minute warning, hidden by default -->
                 <div id="loading-warning" style="margin-top:6px; font-size:12px; color:#9ca3af; display:none;">
                     This may take a moment, please wait.
