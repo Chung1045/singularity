@@ -1,8 +1,11 @@
 /**
  * ChatUtils - Utility functions for chat
  */
-
 const ChatUtils = {
+    // ADDED: Track loading timeout
+    loadingTimeoutRef: null,
+    LOADING_WARNING_DELAY: 3 * 60 * 1000, // 3 minutes
+
     /**
      * Render markdown to HTML
      * @param {string} text
@@ -42,26 +45,45 @@ const ChatUtils = {
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
 
+        // Clear any existing loader first
+        this.removeLoadingIndicator();
+
         const loadingDiv = document.createElement('div');
         loadingDiv.id = 'ai-loading-indicator';
         loadingDiv.className = 'message ai-message';
-        // Avatar + "Loading..." text + 3x3 grid spinner with staggered animation
         loadingDiv.innerHTML = `
             <div class="message-avatar">
                 <img src="./img/union.svg" alt="AI" style="width: 50%; height: 50%; object-fit: contain;">
             </div>
             <div style="padding: 8px 4px;">
-                <div class="loader-text"></div>
+                <div class="loader-text">Loading...</div>
+                <!-- 3-minute warning, hidden by default -->
+                <div id="loading-warning" style="margin-top:6px; font-size:12px; color:#9ca3af; display:none;">
+                    This may take a moment, please wait.
+                </div>
             </div>
         `;
         messagesContainer.appendChild(loadingDiv);
         this.scrollToBottom();
+
+        // Show warning after 3 minutes of loading
+        this.loadingTimeoutRef = setTimeout(() => {
+            const warning = document.getElementById('loading-warning');
+            if (warning) warning.style.display = 'block';
+            this.scrollToBottom();
+        }, this.LOADING_WARNING_DELAY);
     },
 
     /**
-     * Remove loading indicator
+     * Remove loading indicator & clear timeout
      */
     removeLoadingIndicator() {
+        // Clear the 3-minute timeout
+        if (this.loadingTimeoutRef) {
+            clearTimeout(this.loadingTimeoutRef);
+            this.loadingTimeoutRef = null;
+        }
+
         const loader = document.getElementById('ai-loading-indicator');
         if (loader) loader.remove();
     },
