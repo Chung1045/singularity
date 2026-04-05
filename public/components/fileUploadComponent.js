@@ -41,6 +41,12 @@
         const renameContainerRef = useRef(null);
         const uploadAbortController = useRef(null);
 
+        const hasMediaFile = selectedFiles.some(file =>
+            file.isAudio === true ||
+            (file.type && (file.type.startsWith("audio/") || file.type.startsWith("video/"))) ||
+            (file.file && file.file.type && (file.file.type.startsWith("audio/") || file.file.type.startsWith("video/")))
+        );
+
         // config check
         const [enforceTimeLimit, setEnforceTimeLimit] = useState(true);
         const [maxDurationMin, setMaxDuration] = useState(5);
@@ -848,6 +854,14 @@
                     }, isUploading ? 'Uploading...' : 'Upload')
                 )
             ),
+            hasMediaFile && React.createElement("p", {
+                style: {
+                    alignSelf: "center",
+                    color: "#666666",
+                    fontSize: "14px",
+                    paddingTop: "12px"
+                }
+            }, "Video and audio files are processed on a queue basis. This may take a while." ),
             React.createElement('div', {
                     id: 'upload-file-list-outer-container',
                     style: { flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: 'clamp(12px, 4vw, 20px)' }

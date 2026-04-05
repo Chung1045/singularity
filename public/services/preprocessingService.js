@@ -17,6 +17,10 @@ const supportedDocumentFormats = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xl
 // Environment Setting
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
+const transcribeQueue = new PQueue({
+    concurrency: 1
+});
+
 // MAIN PRE-PROCESSING HELPER FUNCTION - GROUPED
 // CAN USE DIRECTLY
 // InputPath: ALL DOCUMENT, VIDEO, AUDIO TYPE
@@ -41,31 +45,74 @@ async function documentPreprocessing(buffer, documentExt) {
             serviceLogger.info(`[Pre-processing] Staring preprocess Job ${jobID}, kind: ${documentExt}`);
             const totalStart = Date.now();
 
+            // if (supportedVideoFormats.includes(documentExt)) {
+            //     serviceLogger.info(`[Pre-processing] JobID ${jobID} video to audio conversion started...`);
+            //     const conversionStart = Date.now();
+            //     const wavPath = path.join(tempDir, `audio-${jobID}.wav`);
+            //
+            //     await new Promise((resolve, reject) => {
+            //         ffmpeg(tempFilePath)
+            //             .audioFrequency(16000)
+            //             .audioChannels(1)
+            //             .audioCodec('pcm_s16le')
+            //             .format('wav')
+            //             .audioBitrate('128k')
+            //             .on('end', resolve)
+            //             .on('error', reject)
+            //             .save(wavPath);
+            //     });
+            //
+            //     serviceLogger.info(`[Pre-processing] JobID ${jobID} video to audio conversion finished, elapsed time: ${
+            //         ((Date.now() - conversionStart)/1000).toFixed(2)}s`)
+            //     tempFilePath = wavPath;
+            // }
+
             if (supportedVideoFormats.includes(documentExt)) {
-                serviceLogger.info(`[Pre-processing] JobID ${jobID} video to audio conversion started...`);
-                const conversionStart = Date.now();
+
                 const wavPath = path.join(tempDir, `audio-${jobID}.wav`);
 
                 await new Promise((resolve, reject) => {
+
                     ffmpeg(tempFilePath)
+                        .noVideo()
                         .audioFrequency(16000)
                         .audioChannels(1)
                         .audioCodec('pcm_s16le')
                         .format('wav')
-                        .audioBitrate('128k')
                         .on('end', resolve)
                         .on('error', reject)
                         .save(wavPath);
+
                 });
 
-                serviceLogger.info(`[Pre-processing] JobID ${jobID} video to audio conversion finished, elapsed time: ${
-                    ((Date.now() - conversionStart)/1000).toFixed(2)}s`)
                 tempFilePath = wavPath;
             }
 
             const transcriptionStart = Date.now();
             serviceLogger.info(`[Pre-processing] JobID ${jobID} transcription started...`);
-            await transcribeFile(tempFilePath, documentExt, jobID);
+
+            await transcribeQueue.add(() =>
+                transcribeFile(tempFilePath, jobID)
+            );
+
+            transcribeQueue.on('add', () => {
+                serviceLogger.info(
+                    `[Queue] added → waiting: ${transcribeQueue.size}, processing: ${transcribeQueue.pending}`
+                );
+            });
+
+            transcribeQueue.on('active', () => {
+                serviceLogger.info(
+                    `[Queue] started → waiting: ${transcribeQueue.size}, processing: ${transcribeQueue.pending}`
+                );
+            });
+
+            transcribeQueue.on('completed', () => {
+                serviceLogger.info(
+                    `[Queue] completed → waiting: ${transcribeQueue.size}, processing: ${transcribeQueue.pending}`
+                );
+            });
+
             serviceLogger.info(`[Pre-processing] JobID ${jobID} transcription finished, elapsed time: ${
                 ((Date.now() - transcriptionStart)/1000).toFixed(2)}s`);
 
@@ -196,7 +243,7 @@ Report File ${report}
     }
 }
 
-async function transcribeFile(filePath, originalExt, jobId) {
+async function transcribeFile(filePath, jobId) {
 
     try {
 
