@@ -239,7 +239,6 @@
             setEditingFilename('');
         };
 
-        // TODO new
         const getMediaDuration = (file) => {
             return new Promise((resolve, reject) => {
 

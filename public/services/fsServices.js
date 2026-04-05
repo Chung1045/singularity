@@ -268,7 +268,7 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         console.log(`Inserted file metadata: ${documentID}`);
         console.log(`Ext is ${documentExt}`)
 
-        if (preprocessService.supportedDocumentFormats.includes(documentExt) || preprocessService.supportedVideoAudioFormats.includes(documentExt)) {
+        if (preprocessService.supportedDocumentFormats.includes(documentExt) || preprocessService.supportedAudioFormats.includes(documentExt) || preprocessService.supportedVideoFormats.includes(documentExt)) {
             await createAliasFile(projectID, documentID, documentExt)
         } else {
             console.log(`Skipping file creation for unsupported format: ${documentExt}`)
