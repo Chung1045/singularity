@@ -24,6 +24,7 @@ const accountManagerRouter = require("./public/managers/accountManager");
 const aiAgentManagerRouter = require("./public/managers/aiAgentManager");
 const projectManagerRouter = require("./public/managers/projectManager");
 const notifManager = require("./public/managers/notificationManager");
+const statusManager = require("./public/managers/statusManager");
 
 const PORT = process.env.PORT || 9090;
 
@@ -137,6 +138,7 @@ async function serverSetUp() {
                 formAction:      ["'self'"],
                 objectSrc:       ["'none'"],
                 baseUri:         ["'self'"],
+                mediaSrc:        ["'self'", "blob:"]
             },
         },
         crossOriginEmbedderPolicy: false,
@@ -196,6 +198,7 @@ async function serverSetUp() {
     app.use("/api", projectManagerRouter);
     app.use("/api", notifManager);
     app.use("/api", aiAgentManagerRouter);
+    app.use("/api", statusManager);
     app.use("/", routeManager);
 
     app.use((req, res) => {

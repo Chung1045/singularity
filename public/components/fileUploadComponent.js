@@ -41,6 +41,36 @@
         const renameContainerRef = useRef(null);
         const uploadAbortController = useRef(null);
 
+        // config check
+        const [enforceTimeLimit, setEnforceTimeLimit] = useState(true);
+        const [maxDurationMin, setMaxDuration] = useState(5);
+
+        useEffect(() => {
+            // Fetch both config values
+            Promise.all([
+                fetch('/api/status/ENFORCE_TRANSCRIPT_TIME_LIMIT').then(r => r.json()),
+                fetch('/api/status/ENFORCE_TRANSCRIPT_TIME_LIMIT_MAX').then(r => r.json())
+            ])
+                .then(([limitConfig, maxConfig]) => {
+                    const enforce = limitConfig.value === 1; // Backend returns 1 or 0, not boolean
+                    const maxMin = maxConfig.value;
+
+                    console.log(`✅ Config loaded: Enforce=${JSON.stringify(limitConfig)}, MaxDuration=${JSON.stringify(maxConfig)}`)
+
+                    setEnforceTimeLimit(enforce);
+                    setMaxDuration(maxMin);
+
+                    // Fixed typo: maxDu -> maxMin
+                    console.log(`✅ Config loaded: Enforce=${enforce}, MaxDuration=${maxMin} minutes`);
+                })
+                .catch(err => {
+                    console.error('❌ Failed to load config:', err);
+                    // Set defaults on error
+                    setEnforceTimeLimit(true);
+                    setMaxDuration(5);
+                });
+        }, []);
+
         const modalShellStyle = {
             width: '100%',
             maxWidth: 'min(650px, calc(100vw - 32px))',
@@ -209,71 +239,210 @@
             setEditingFilename('');
         };
 
+        // TODO new
+        const getMediaDuration = (file) => {
+            return new Promise((resolve, reject) => {
+
+                console.log('File type:', file.type);
+                console.log('Starts with audio?', file.type.startsWith("audio"));
+
+                const media = document.createElement(
+                    file.type.startsWith("video") ? "video" : "audio"
+                );
+
+                media.preload = "metadata";
+
+                media.onloadedmetadata = () => {
+                    if (!isFinite(media.duration)) {
+                        reject(new Error("Invalid duration"));
+                        return;
+                    }
+
+                    const duration = media.duration;
+                    URL.revokeObjectURL(media.src);
+                    resolve(duration);
+                };
+
+                media.onerror = (e) => {
+                    console.error(`Failed to load: ${file.name}`, e);
+                    URL.revokeObjectURL(media.src);
+                    reject(new Error("Failed to load media metadata"));
+                };
+
+                media.src = URL.createObjectURL(file);
+                console.log(`Loading metadata for: ${file.name}`);
+            });
+        };
+
         const handleUpload = async () => {
-            const filesToUpload = selectedFiles.filter(f => checkedTempIDs.has(f.tempID));
+
+            const filesToUpload =
+                selectedFiles.filter(f =>
+                    checkedTempIDs.has(f.tempID)
+                );
 
             if (filesToUpload.length === 0) {
+
                 window.showNotification({
                     type: 'info',
                     title: 'No Files Selected',
-                    message: 'Please select at least one file to upload by checking the checkbox next to it.',
+                    message: 'Please select at least one file.',
                     actionText: 'OK'
                 });
+
                 return;
             }
 
             let uploadThese = filesToUpload;
 
-            const allChecked = filesToUpload.length === selectedFiles.length;
+            // ask whether to upload all files first
+            const allChecked =
+                filesToUpload.length === selectedFiles.length;
 
             if (!allChecked && selectedFiles.length > 1) {
-                const selectedList = filesToUpload.map(f => `• ${f.originalName}`).join('\n');
-                const uncheckedFiles = selectedFiles.filter(f => !checkedTempIDs.has(f.tempID));
-                const uncheckedList = uncheckedFiles.map(f => `• ${f.originalName}`).join('\n');
 
-                const uploadAll = await window.showNotification({
-                    type: 'confirm',
-                    title: 'Upload Selection',
-                    message: `You have selected ${filesToUpload.length} of ${selectedFiles.length} file(s).\n\n Checked (${filesToUpload.length}):\n${selectedList}\n\n Unchecked (${uncheckedFiles.length}):\n${uncheckedList}\n\nChoose:\n• Click "Upload All" to upload all ${selectedFiles.length} files\n• Click "Cancel" to upload only the checked ones`,
-                    actionText: 'Upload All'
-                });
+                const uploadAll =
+                    await window.showNotification({
+                        type: 'confirm',
+                        title: 'Upload Selection',
+                        message:
+                            `Upload all ${selectedFiles.length} files?`,
+                        actionText: 'Upload All'
+                    });
 
                 if (uploadAll) {
                     uploadThese = [...selectedFiles];
                 }
             }
 
+            // Declare validFiles here, outside the if block
+            let validFiles = uploadThese;
+
+            if (enforceTimeLimit) {
+                const tempValidFiles = [];
+                const rejectedFiles = [];
+
+                console.log('=== Starting Duration Check ===');
+                console.log('Files to check:', uploadThese.map(f => f.originalName));
+
+                for (const fileData of uploadThese) {
+                    const file = fileData.file;
+
+                    console.log(`\nChecking: ${fileData.originalName}, Type: ${file.type}`);
+
+                    if (file.type.startsWith("audio") || file.type.startsWith("video")) {
+                        try {
+                            const duration = await getMediaDuration(file);
+
+                            if (duration > maxDurationMin * 60) {
+                                rejectedFiles.push({
+                                    name: fileData.originalName,
+                                    duration
+                                });
+                                continue;
+                            }
+                        }
+                        catch (err) {
+                            console.error(`ERROR reading duration:`, err);
+                            rejectedFiles.push({
+                                name: fileData.originalName,
+                                duration: "unknown"
+                            });
+                            continue;
+                        }
+                    } else {
+                        console.log(`Skipping (not audio/video)`);
+                    }
+
+                    tempValidFiles.push(fileData);
+                }
+
+                if (rejectedFiles.length > 0) {
+                    const rejectedList = rejectedFiles
+                        .map(f => {
+                            const d = f.duration;
+
+                            return `• ${f.name} (${
+                                typeof d === "number"
+                                    ? `${(d / 60).toFixed(0)}m ${(d % 60).toFixed(0)}s`
+                                    : "unknown"
+                            })`;
+                        })
+                        .join("\n");
+
+                    await window.showNotification({
+                        type: 'warning',
+                        title: `${maxDurationMin} Minute Limit`,
+                        message:
+                            `These files exceed ${maxDurationMin} minutes and will not be uploaded:\n\n${rejectedList}`,
+                        actionText: 'OK'
+                    });
+                }
+
+                if (tempValidFiles.length === 0) {
+                    return;
+                }
+
+                // Update validFiles with filtered results
+                validFiles = tempValidFiles;
+            }
+
             setIsUploading(true);
-            uploadAbortController.current = new AbortController();
+
+            uploadAbortController.current =
+                new AbortController();
+
             const uploadedFiles = [];
 
-            for (const fileData of uploadThese) {
+            for (const fileData of validFiles) {
+
                 try {
                     const formData = new FormData();
-                    const renamedFile = new File([fileData.file], fileData.originalName, { type: fileData.file.type });
+                    const renamedFile =
+                        new File(
+                            [fileData.file],
+                            fileData.originalName,
+                            {
+                                type: fileData.file.type
+                            }
+                        );
+
                     formData.append('file', renamedFile);
                     formData.append('projectID', projectID);
-                    const response = await fetch('/api/project/file/upload', {
-                        method: 'POST',
-                        headers: {
-                            'CSRF-Token': window.csrfToken
-                        },
-                        body: formData,
-                        signal: uploadAbortController.current.signal
-                    });
+
+                    const response = await fetch(
+                        '/api/project/file/upload',
+                        {
+                            method: 'POST',
+                            headers: {
+                                'CSRF-Token':
+                                window.csrfToken
+                            },
+                            body: formData,
+                            signal:
+                            uploadAbortController.current.signal
+                        }
+                    );
+
                     const data = await response.json();
                     if (data.successful) {
-                        uploadedFiles.push({ ...fileData, documentID: data.documentID });
+                        uploadedFiles.push({
+                            ...fileData,
+                            documentID:
+                            data.documentID
+                        });
                     }
-                } catch (error) {
+
+                }
+                catch (error) {
                     if (error.name === 'AbortError') {
-                        console.log('Upload cancelled by user');
                         break;
                     }
-                    console.error('Error uploading file:', error);
-                    window.showNotification({ type: 'error', title: 'Upload Failed', message: `Failed to upload ${fileData.originalName}.`, actionText: 'OK' });
+                    console.error(error);
+
                 }
             }
+
             setIsUploading(false);
             uploadAbortController.current = null;
 
@@ -283,10 +452,14 @@
 
             window.showNotification({
                 type: 'success',
-                title: 'Upload Complete!',
-                message: `${uploadedFiles.length} file(s) uploaded successfully.`,
+                title: 'Upload Complete',
+                message:
+                    `${uploadedFiles.length} file(s) uploaded.`,
                 actionText: 'Done'
-            }).then(() => { onClose(); });
+            }).then(() => {
+                onClose();
+            });
+
         };
 
         const handleClose = async () => {
@@ -542,7 +715,16 @@
                                 React.createElement('img', { id: 'import-empty-icon-img', src: './img/cloud-upload.svg', style: { width: '85px', height: '85px', filter: isDragging ? 'brightness(0) invert(0)' : 'none' } })
                             ),
                             React.createElement('div', { id: 'import-empty-title-text', style: { fontFamily: '"Inter-Bold", Helvetica', fontSize: '16px', fontWeight: '400', color: '#000', textAlign: 'center' } }, isDragging ? 'Drop files here' : 'Import Files for Analysis'),
-                            // React.createElement('div', { id: 'import-empty-subtitle-text', style: { fontFamily: '"Inter-Regular", Helvetica', fontSize: '13px', color: '#666', textAlign: 'center' } }, 'All file types supported')
+                            enforceTimeLimit && React.createElement('div', {
+                                id: 'import-empty-title-text',
+                                style: {
+                                    fontFamily: '"Inter-Bold", Helvetica',
+                                    fontSize: '16px',
+                                    fontWeight: '400',
+                                    color: '#000',
+                                    textAlign: 'center'
+                                }
+                            }, `Maximum ${maxDurationMin} minutes of audio or video per file`)
                         )
                 )
             );

@@ -7,6 +7,7 @@ const { pipeline, env } = require('@huggingface/transformers');
 const { WaveFile } = require('wavefile');
 const libre = require('libreoffice-convert');
 const crypto = require('crypto');
+const {serverLogger, serviceLogger} = require("./loggingService");
 libre.convertAsync = require('util').promisify(libre.convert);
 
 const supportedVideoAudioFormats = ['.mp4', '.mov', '.avi', '.mkv', '.mp3', '.wav', '.flac', '.aac', '.m4a'];
@@ -39,33 +40,33 @@ async function documentPreprocessing(buffer, documentExt) {
     // Create temporary directory
     try {
         const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'docx-'));
-        const tempFileName = crypto.randomUUID() + documentExt;
+        const jobID = crypto.randomUUID();
+        const tempFileName = jobID + documentExt;
         tempFilePath = path.join(tempDir, tempFileName);
         await fs.writeFile(tempFilePath, buffer);
 
         // Check file type
         if (supportedVideoAudioFormats.includes(documentExt)) {
-
+            serviceLogger.info(`[Pre-processing] Staring preprocess Job ${jobID}, kind: ${documentExt}`);
             const totalStart = Date.now();
 
-            console.log("Starting audio extraction...");
+            serviceLogger.info(`[Pre-processing] JobID ${jobID} audio extraction started...`);
 
             const conversionStart = Date.now();
-
             const audioData = await extractAudioFloat32(tempFilePath);
+            const audioLength = (audioData.length/16000).toFixed(1)
 
-            console.log(
-                `Audio extraction completed in ${
-                    ((Date.now() - conversionStart)/1000).toFixed(2)
-                }s`
-            );
-
-            console.log(
-                `Audio length: ${(audioData.length/16000).toFixed(1)}s`
-            );
+            serviceLogger.info(`[Pre-processing] JobID ${jobID} audio extraction finished, elapsed time: ${
+                ((Date.now() - conversionStart)/1000).toFixed(2)
+            }s, length: ${audioLength}s`);
 
 
-            console.log("Starting transcription...");
+            if (process.env.ENFORCE_TRANSCRIPT_TIME_LIMIT === 'true' && audioLength > process.env.ENFORCE_TRANSCRIPT_TIME_LIMIT_MAX * 60) {
+                serviceLogger.error(`[Pre-processing] JobID ${jobID} audio / video length exceeds the maximum allowed time limit. Transcription aborted`)
+                throw new Error("Audio / Video length exceeds the maximum allowed time limit.")
+            }
+
+            serviceLogger.info(`[Pre-processing] JobID ${jobID} audio / video transcription started`)
 
             const transcriptionStart = Date.now();
 
@@ -75,15 +76,10 @@ async function documentPreprocessing(buffer, documentExt) {
                 language: "en"
             });
 
-            console.log(
-                `Transcription completed in ${
+            serviceLogger.info(
+                `[Pre-processing] JobID ${jobID} Transcription completed, time elapsed: ${
                     ((Date.now() - transcriptionStart)/1000).toFixed(2)
-                }s`
-            );
-
-
-            console.log(
-                `Total processing time ${
+                }s, total processing time: ${
                     ((Date.now() - totalStart)/1000).toFixed(2)
                 }s`
             );
