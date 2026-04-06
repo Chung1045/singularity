@@ -13,6 +13,21 @@
 
 const { useState } = React;
 
+/**
+ * Use Enter-to-send only when input looks keyboard/mouse-first.
+ * Touch-primary devices (typical phones): keep default Enter = newline; send via the button.
+ * Fine pointer + hover (desktops, most laptops): Enter sends, Shift+Enter newline.
+ */
+function shouldChatEnterSend() {
+    try {
+        const finePointer = window.matchMedia('(pointer: fine)').matches;
+        const canHover = window.matchMedia('(hover: hover)').matches;
+        return finePointer && canHover;
+    } catch {
+        return true;
+    }
+}
+
 // ===== GLOBAL HANDLERS =====
 
 /**
@@ -752,11 +767,11 @@ const Home = ({ csrfToken, userInfo }) => {
                             placeholder: "What's on your mind?",
                             rows: 1,
                             onKeyDown: (e) => {
-                                const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-                                if (e.key === 'Enter' && !isTouchDevice && !e.shiftKey) {
-                                    e.preventDefault();
-                                    submitConversationRequest();
-                                }
+                                if (e.key !== 'Enter' || e.shiftKey) return;
+                                if (e.nativeEvent.isComposing) return;
+                                if (!shouldChatEnterSend()) return;
+                                e.preventDefault();
+                                submitConversationRequest();
                             },
                             onInput: (e) => {
                                 e.target.style.height = 'auto';
