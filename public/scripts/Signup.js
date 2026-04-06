@@ -28,7 +28,6 @@ const Signup = ({ csrfToken }) => {
         confirmPassword: false
     });
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
-    const [messageShown, setMessageShown] = useState(false);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const slideUpTimerRef = useRef(null);
 
@@ -61,20 +60,6 @@ const Signup = ({ csrfToken }) => {
             window.clearTimeout(slideUpTimerRef.current);
         }
     }, []);
-
-    // Show validation errors in message notification
-    useEffect(() => {
-        const errorFields = Object.entries(errors)
-            .filter(([_, value]) => value !== '');
-
-        const messageEl = document.getElementById('message');
-        const messageTextEl = document.getElementById('messageText');
-
-        if (errorFields.length > 0 && !messageShown && messageEl && messageTextEl) {
-            showSlideUpMessage('Warning: Please fill in your credentials', 0);
-            setMessageShown(true);
-        }
-    }, [errors, messageShown, showSlideUpMessage]);
 
     const showAlert = (title, message, onConfirm = null) => {
         setModal({ isOpen: true, title, message, type: 'alert', onConfirm });
@@ -223,9 +208,10 @@ const Signup = ({ csrfToken }) => {
             newErrors.confirmPassword = 'Passwords do not match!';
         }
 
-        // If there are errors, set them and return
+        // If there are errors, set them, show slide-up once (not on every errors change — avoids firing on email focus)
         if (Object.values(newErrors).some(error => error !== '')) {
             setErrors(newErrors);
+            showSlideUpMessage('Please fill in your credentials.', 6000);
             return;
         }
 
