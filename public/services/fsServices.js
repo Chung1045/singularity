@@ -269,7 +269,14 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         console.log(`Ext is ${documentExt}`)
 
         if (preprocessService.supportedDocumentFormats.includes(documentExt) || preprocessService.supportedAudioFormats.includes(documentExt) || preprocessService.supportedVideoFormats.includes(documentExt)) {
-            await createAliasFile(projectID, documentID, documentExt)
+            try {
+                await createAliasFile(projectID, documentID, documentExt);
+            } catch (aliasErr) {
+                console.warn(
+                    `[insertFileData] Transcription/alias skipped for ${documentID} (${documentExt}): ${aliasErr.message}`
+                );
+                // File remains stored; documentAlias stays null until Whisper is available or a retry job runs.
+            }
         } else {
             console.log(`Skipping file creation for unsupported format: ${documentExt}`)
         }
@@ -277,6 +284,11 @@ async function insertFileData(projectID, documentID, documentName, documentExt) 
         return {successful: true};
     } catch (err) {
         console.error("Database insert error:", err);
+        try {
+            await deleteProjectFile(documentID, projectID);
+        } catch (cleanupErr) {
+            console.error("Cleanup after failed file registration:", cleanupErr);
+        }
         throw err;
     }
 }
@@ -744,19 +756,9 @@ async function getFileContext(projectID, documentID) {
     const documentExt = result[0].documentExt;
     console.log("Document alias:", documentAlias);
 
-    if (!documentAlias && !documentExt === ".txt") {
-        console.log("Document alias is null/empty");
-        return `Context is not available.`;
-    } else {
-
-        let objectPath = "";
-
-        if (documentExt === ".txt") {
-            objectPath = `project/${projectID}/${documentID}`
-        } else {
-            // Note: Alias files are stored WITHOUT extension (just the UUID)
-            objectPath = `project/${projectID}/alias/${documentAlias}`;
-        }
+    // .txt uses the uploaded object; everything else needs a processed alias (text/transcript) in MinIO
+    if (documentExt === ".txt") {
+        let objectPath = `project/${projectID}/${documentID}`;
         console.log("Fetching from MinIO:", objectPath);
 
         let stream;
@@ -778,6 +780,33 @@ async function getFileContext(projectID, documentID) {
 
         return content;
     }
+
+    if (!documentAlias) {
+        console.log("Document alias is null/empty (transcription may be skipped or pending)");
+        return `Context is not available.`;
+    }
+
+    const objectPath = `project/${projectID}/alias/${documentAlias}`;
+    console.log("Fetching from MinIO:", objectPath);
+
+    let stream;
+    try {
+        stream = await minioClient.getObject(bucket, objectPath);
+    } catch (error) {
+        console.error(`Error fetching file from MinIO:`, error.message);
+        console.error(`Path attempted: ${objectPath}`);
+        throw new Error(`Failed to retrieve file content: ${error.message}`);
+    }
+
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+
+    const content = Buffer.concat(chunks).toString('utf-8');
+    console.log("Content length:", content.length);
+
+    return content;
 }
 
 async function testConnection() {
@@ -791,14 +820,26 @@ async function createAliasFile(projectID, documentID, documentExt) {
         chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);
-    const data = await preprocessService.documentPreprocessing(buffer, documentExt);
+    const raw = await preprocessService.documentPreprocessing(buffer, documentExt);
+
+    let textContent;
+    if (raw == null) {
+        throw new Error('Preprocessing produced no text output (transcription or extraction failed).');
+    }
+    if (typeof raw === 'string') {
+        textContent = raw;
+    } else if (raw instanceof Error) {
+        throw raw;
+    } else {
+        throw new Error('Preprocessing returned invalid output (expected a text string).');
+    }
 
     // Generate alias ID and path
     const aliasID = uuid();
     const textPath = `project/${projectID}/alias/${aliasID}`;
 
-    // Save extracted text to MinIO
-    const textBuffer = Buffer.from(data, 'utf-8');
+    // Save extracted text to MinIO (must be a real string — never pass through ambiguous values to Buffer.from)
+    const textBuffer = Buffer.from(textContent, 'utf-8');
     await minioClient.putObject(bucket, textPath, textBuffer, textBuffer.length, {
         'Content-Type': 'text/plain; charset=utf-8'
     });
@@ -818,7 +859,7 @@ async function createAliasFile(projectID, documentID, documentExt) {
     return {
         aliasID: aliasID,
         minioPath: textPath,
-        textLength: data.length
+        textLength: textContent.length
     };
 }
 

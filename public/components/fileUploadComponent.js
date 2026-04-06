@@ -77,6 +77,22 @@
                 });
         }, []);
 
+        // Abort in-flight uploads on refresh/navigation/unmount so the server is less likely to finish after the user leaves.
+        useEffect(() => {
+            const abortInFlight = () => {
+                if (uploadAbortController.current) {
+                    uploadAbortController.current.abort();
+                }
+            };
+            window.addEventListener('pagehide', abortInFlight);
+            window.addEventListener('beforeunload', abortInFlight);
+            return () => {
+                window.removeEventListener('pagehide', abortInFlight);
+                window.removeEventListener('beforeunload', abortInFlight);
+                abortInFlight();
+            };
+        }, []);
+
         const modalShellStyle = {
             width: '100%',
             maxWidth: 'min(650px, calc(100vw - 32px))',
@@ -398,6 +414,7 @@
                 new AbortController();
 
             const uploadedFiles = [];
+            const uploadErrors = [];
 
             for (const fileData of validFiles) {
 
@@ -429,12 +446,34 @@
                         }
                     );
 
-                    const data = await response.json();
-                    if (data.successful) {
+                    let data = {};
+                    try {
+                        data = await response.json();
+                    } catch (parseErr) {
+                        uploadErrors.push({
+                            name: fileData.originalName,
+                            message: 'Invalid server response'
+                        });
+                        continue;
+                    }
+
+                    const explicitFailure =
+                        data &&
+                        (data.successful === false || data.success === false);
+                    const accepted =
+                        response.ok &&
+                        Boolean(data && data.documentID) &&
+                        !explicitFailure;
+
+                    if (accepted) {
                         uploadedFiles.push({
                             ...fileData,
-                            documentID:
-                            data.documentID
+                            documentID: data.documentID
+                        });
+                    } else {
+                        uploadErrors.push({
+                            name: fileData.originalName,
+                            message: data.message || `Upload failed (${response.status})`
                         });
                     }
 
@@ -444,6 +483,10 @@
                         break;
                     }
                     console.error(error);
+                    uploadErrors.push({
+                        name: fileData.originalName,
+                        message: error.message || 'Upload failed'
+                    });
 
                 }
             }
@@ -455,11 +498,32 @@
                 onFilesUploaded(uploadedFiles);
             }
 
+            const n = uploadedFiles.length;
+            if (n === 0) {
+                const detail = uploadErrors.length
+                    ? uploadErrors.map((e) => `• ${e.name}: ${e.message}`).join('\n')
+                    : 'No files could be uploaded. Please try again.';
+                window.showNotification({
+                    type: 'error',
+                    title: 'Upload failed',
+                    message: detail,
+                    actionText: 'OK'
+                });
+                return;
+            }
+
+            let successMessage =
+                n === 1
+                    ? '1 file uploaded successfully.'
+                    : `${n} files uploaded successfully.`;
+            if (uploadErrors.length > 0) {
+                successMessage += `\n\n${uploadErrors.length} file(s) could not be uploaded.`;
+            }
+
             window.showNotification({
                 type: 'success',
-                title: 'Upload Complete',
-                message:
-                    `${uploadedFiles.length} file(s) uploaded.`,
+                title: 'Upload complete',
+                message: successMessage,
                 actionText: 'Done'
             }).then(() => {
                 onClose();
