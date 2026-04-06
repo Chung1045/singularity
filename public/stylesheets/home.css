@@ -59,6 +59,24 @@ a {
   overflow: hidden;
 }
 
+/* Initial state — stack grows and centers; AI disclaimer sits below as footer */
+.main-screen-content-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+}
+
+.sidebar-expand .main-screen.chat-mode .main-screen-content-stack {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  gap: 0;
+}
+
 /* Initial state - centered */
 .sidebar-expand .main-screen {
   flex: 1 1 auto;
@@ -68,9 +86,9 @@ a {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  align-items: center;
-  justify-content: center;
+  gap: 0;
+  align-items: stretch;
+  justify-content: flex-start;
   padding: 24px;
   background: linear-gradient(135deg,
     rgba(255, 255, 255, 0.75) 0%,
@@ -201,6 +219,30 @@ a {
   width: 100%;
   max-width: none;
   margin: 0;
+}
+
+/* Below Quick Prompts; footer of main view (initial) / under input row (chat) */
+.input-ai-disclaimer {
+  margin: 0;
+  padding: 16px 8px 8px;
+  width: 90%;
+  max-width: 650px;
+  align-self: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.sidebar-expand .main-screen.chat-mode .input-ai-disclaimer {
+  padding: 10px 8px 0;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .sidebar-expand .main-screen.chat-mode #input-area-wrapper {

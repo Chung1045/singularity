@@ -13,6 +13,7 @@ const WELCOME_STEPS = [
         title: 'Your workspace',
         heading: null,
         paragraphs: [
+            'Singularity is built for software requirements: capture, refine, and manage what to build before you ship.',
             'This is the full Singularity layout behind the dimmed overlay.',
             'Left: project dropdown, New chat, Source, and Upload files.',
             'Center: chat, attachments, and Quick prompts (e.g. Analyze Documents).',
@@ -181,13 +182,13 @@ function WelcomeOverlay({ onComplete }) {
                 }, 'Welcome!'),
                 React.createElement('div', { className: 'welcome-overlay-body welcome-overlay-home-body' },
                     React.createElement('p', null,
-                        'This is Singularity, an agent powered requirement conversation platform.'
+                        'This is Singularity—an agent-powered workspace catered to software requirements.'
                     ),
                     React.createElement('p', null,
-                        'Brainstorm your business / project ideas with Singularity, your go to intelligent requirement manager.'
+                        'Brainstorm and structure what to build: user stories, requirements, and reports grounded in your documents.'
                     ),
                     React.createElement('p', null,
-                        'Feel free to start a project and chat to the agent with documentations for requirement suggestions.'
+                        'Start a project and chat with the agent using your documentation to shape clear, actionable requirement suggestions.'
                     )
                 ),
                 React.createElement('div', { className: 'welcome-overlay-footer welcome-overlay-footer--landing' },

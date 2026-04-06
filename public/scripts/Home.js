@@ -647,6 +647,7 @@ const Home = ({ csrfToken, userInfo }) => {
             // Main content
             React.createElement('main', { className: 'right-container' },
                 React.createElement('section', { className: 'main-screen' },
+                    React.createElement('div', { className: 'main-screen-content-stack' },
                     // Welcome header
                     React.createElement('header', { className: 'main-screen-title' },
                         React.createElement('img', { className: 'bouncy-logo', src: './img/bouncy-logo-animation.svg', alt: 'Singularity Logo' }),
@@ -792,6 +793,13 @@ const Home = ({ csrfToken, userInfo }) => {
 
                     // Quick Prompts Component
                     React.createElement(window.QuickPrompts)
+                    ),
+
+                    React.createElement('p', {
+                        id: 'main-ai-disclaimer',
+                        className: 'input-ai-disclaimer',
+                        role: 'note'
+                    }, 'Singularity uses AI. Check for mistakes.')
                 )
             ),
 
