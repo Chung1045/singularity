@@ -510,9 +510,9 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                         ),
                         reactCreateElm('p', { className: 'security-row-description' }, activeSession.sessionOS || 'Unknown operating system'),
                         reactCreateElm('div', { className: 'security-row-meta' },
-                            reactCreateElm('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(activeSession.sessionIP)}`),
+                            reactCreateElm('span', { className: 'security-row-meta-item' }, `IP: ${normalizeIP(activeSession.sessionIP)} `),
                             reactCreateElm('span', { className: 'security-row-meta-item' },
-                                `Last active ${formatRelativeDate(activeSession.lastSeenTime)}`
+                                `Last active: ${formatRelativeDate(activeSession.lastSeenTime)} `
                             )
                         )
                     )
@@ -545,9 +545,9 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                             ),
                             reactCreateElm('p', { className: 'security-row-description' }, session.sessionOS || 'Unknown operating system'),
                             reactCreateElm('div', { className: 'security-row-meta' },
-                                reactCreateElm('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(session.sessionIP)}`),
+                                reactCreateElm('span', { className: 'security-row-meta-item' }, `IP: ${normalizeIP(session.sessionIP)} `),
                                 reactCreateElm('span', { className: 'security-row-meta-item' },
-                                    `Last active ${formatRelativeDate(session.lastSeenTime)}`
+                                    `Last active: ${formatRelativeDate(session.lastSeenTime)}: `
                                 )
                             )
                         )
@@ -595,7 +595,7 @@ const Session = ({ csrfToken, sessions, loginAttempts, currentSessionID, userInf
                             ),
                             reactCreateElm('p', { className: 'security-row-description' }, attempt.attemptOS || 'Unknown operating system'),
                             reactCreateElm('div', { className: 'security-row-meta' },
-                                reactCreateElm('span', { className: 'security-row-meta-item' }, `IP ${normalizeIP(attempt.attemptIP)}`),
+                                reactCreateElm('span', { className: 'security-row-meta-item' }, `IP: ${normalizeIP(attempt.attemptIP)}`),
                                 reactCreateElm('span', { className: 'security-row-meta-item' }, formatDateTime(attempt.attemptDate))
                             )
                         )
