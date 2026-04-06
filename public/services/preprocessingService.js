@@ -156,7 +156,7 @@ async function documentPreprocessing(buffer, documentExt) {
         } else {
             console.error('Unsupported file format');
             await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-            return null;
+            throw new Error(`Unsupported file format for preprocessing: ${documentExt}`);
         }
     } catch (err) {
         serviceLogger.warn(`[Pre-processing] Document preprocessing failed`);
@@ -168,7 +168,7 @@ async function documentPreprocessing(buffer, documentExt) {
             const tempDir = path.dirname(tempFilePath);
             await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
         }
-        return null;
+        throw err;
     }
 }
 
@@ -185,7 +185,7 @@ async function documentToPdf_libreofficeconvert(inputPath, outputPath) {
         await fs.writeFile(outputPath, pdfBuf);
     } catch (err) {
         console.error('Document to PDF conversion failed:', err.message);
-        return err;
+        throw err;
     }
 }
 
@@ -212,8 +212,8 @@ async function pdfExtracted_pdfjslib(inputPath){
 
         return extractedText.join('\n\n');
     } catch (err) {
-        console.error('Document to PDF conversion failed:', err.message);
-        return err;
+        console.error('PDF text extraction failed:', err.message);
+        throw err;
     }
 }
 
@@ -250,7 +250,7 @@ async function transcribeFile(filePath, jobId) {
         console.log(`Transcribing ${filePath}`);
         const startTime = Date.now();
 
-        await nodewhisper(filePath, {
+        const whisperResult = await nodewhisper(filePath, {
             modelName: "base.en",
             autoDownloadModelName: "base.en",
             removeWavFileAfterTranscription: true,
@@ -264,13 +264,41 @@ async function transcribeFile(filePath, jobId) {
 
         const dir = path.dirname(filePath);
         const baseName = path.parse(filePath).name;
-        let oldPath = path.join(dir, `${baseName}.wav.txt`);
-
         const newPath = path.join(dir, `${jobId}.txt`);
 
-        await fs.rename(oldPath, newPath);
+        const sidecarCandidates = [
+            path.join(dir, `${baseName}.wav.txt`),
+            path.join(dir, `${baseName}.txt`),
+            path.join(dir, `${path.basename(filePath)}.txt`)
+        ];
 
-        console.log(`Renamed transcript to ${newPath}`);
+        let sidecar = null;
+        for (const p of sidecarCandidates) {
+            try {
+                await fs.access(p);
+                sidecar = p;
+                break;
+            } catch {
+                /* try next */
+            }
+        }
+
+        if (sidecar) {
+            if (sidecar !== newPath) {
+                await fs.rename(sidecar, newPath);
+            }
+        } else if (whisperResult != null && String(whisperResult).trim().length > 0) {
+            await fs.writeFile(newPath, String(whisperResult).trim(), 'utf8');
+        } else {
+            const listed = await fs.readdir(dir).catch(() => []);
+            const txtInDir = listed.filter((f) => f.endsWith('.txt'));
+            throw new Error(
+                `Whisper did not leave a transcript file. Tried: ${sidecarCandidates.join(', ')}. ` +
+                `Directory had: ${txtInDir.length ? txtInDir.join(', ') : '(no .txt files)'}.`
+            );
+        }
+
+        console.log(`Transcript ready at ${newPath}`);
 
         console.log(
             `Completed in ${
