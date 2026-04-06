@@ -1066,6 +1066,10 @@ html[data-theme='dark'] .quick-prompt-item:active {
     color: var(--dm-text) !important;
 }
 
+html[data-theme='dark'] .input-ai-disclaimer {
+    color: var(--dm-muted) !important;
+}
+
 html[data-theme='dark'] #div-requirements-list-right,
 html[data-theme='dark'] #div-requirements-list-right *,
 html[data-theme='dark'] [id^='sidebar-report-item-'],

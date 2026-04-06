@@ -201,6 +201,7 @@
                 popover: {
                     title: 'Your workspace',
                     description:
+                        'Singularity is tailored for software requirements: turn ideas and documents into structured specs, stories, and exports.\n\n' +
                         'This is the full Singularity layout behind the dimmed overlay.\n\n' +
                         'Left: project dropdown, New chat, Source, and Upload files.\n\n' +
                         'Center: chat, attachments, and Quick prompts (e.g. Analyze Documents).\n\n' +
