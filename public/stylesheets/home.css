@@ -186,9 +186,6 @@ a {
   -webkit-backdrop-filter: blur(24px);
   border-radius: 50px;
   border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.08),
-              0px 2px 4px rgba(0, 0, 0, 0.04),
-              0 20px 40px -5px rgba(0, 0, 0, 0.1);
   transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
