@@ -2036,13 +2036,12 @@
                             justifyContent: 'center',
                             gap: '8px',
                             position: 'relative',
-                            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.2)'
                         },
                         onMouseEnter: (e) => {
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.3)';
-                        },
+                            e.currentTarget.style.backgroundColor = 'rgba(51, 65, 85)';
+                        }, 
                         onMouseLeave: (e) => {
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.2)';
+                            e.currentTarget.style.backgroundColor = 'rgb(30, 41, 59)';
                         }
                     },
                     React.createElement('img', {
