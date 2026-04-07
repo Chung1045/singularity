@@ -128,10 +128,7 @@ a {
 .sidebar-expand .input-field-button:hover {
   opacity: 0.8;
 }
-.sidebar-expand .input-field-button:focus {
-  outline: 2px solid #4a90e2;
-  outline-offset: 2px;
-}
+
 .sidebar-expand .vector {
   position: relative;
   width: 14.99px;
