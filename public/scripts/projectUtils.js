@@ -125,6 +125,9 @@ async function fetchProjectChats(projectID) {
     }
 }
 
+/** Min width for chat / source / report ⋮ dropdowns in the sidebar (matches projectUtils row menus). */
+const SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX = 120;
+
 /**
  * Create a React element for a chat history item with full menu functionality
  * @param {string} threadName - The name of the chat thread
@@ -394,7 +397,9 @@ function createChatHistoryItem(threadName, chatID) {
                         border: '1.67px solid #e4e4e4',
                         borderRadius: '11.12px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        minWidth: '120px',
+                        boxSizing: 'border-box',
+                        width: `${SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX}px`,
+                        minWidth: `${SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX}px`,
                         zIndex: 1000,
                         overflow: 'hidden'
                     }
@@ -778,7 +783,9 @@ function createFileItem(fileName, documentID) {
                         border: '1.67px solid #e4e4e4',
                         borderRadius: '11.12px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        minWidth: '120px',
+                        boxSizing: 'border-box',
+                        width: `${SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX}px`,
+                        minWidth: `${SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX}px`,
                         zIndex: 1000,
                         overflow: 'hidden'
                     }
@@ -1081,11 +1088,16 @@ async function fetchProjectReports(projectID) {
  * @param {string} reportType - The type of report ('requirements' or 'userStories')
  */
 function createReportItem(reportName, reportID, projectID, reportType) {
-    const { useState, useRef, useEffect, useMemo } = React;
+    const { useState, useRef, useEffect, useLayoutEffect, useMemo } = React;
+
+    /** Session / non-home sidebars clip overflow; home keeps in-flow absolute menu. */
+    const isHomePage = () =>
+        window.location.pathname === '/' || window.location.pathname === '/home';
 
     const ReportItemComponent = () => {
         const [menuOpen, setMenuOpen] = useState(false);
         const [isChecked, setIsChecked] = useState(false);
+        const [menuFixedPos, setMenuFixedPos] = useState(null);
         const menuRef = useRef(null);
 
         // Determine icon based on report type - use useMemo to ensure stability
@@ -1112,6 +1124,36 @@ function createReportItem(reportName, reportID, projectID, reportType) {
 
             return () => {
                 document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [menuOpen]);
+
+        useLayoutEffect(() => {
+            if (!menuOpen) {
+                setMenuFixedPos(null);
+                return;
+            }
+            if (isHomePage()) {
+                setMenuFixedPos(null);
+                return;
+            }
+
+            const updatePosition = () => {
+                if (!menuRef.current) {
+                    return;
+                }
+                const rect = menuRef.current.getBoundingClientRect();
+                setMenuFixedPos({
+                    top: rect.bottom + 4,
+                    left: rect.right - SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX
+                });
+            };
+
+            updatePosition();
+            window.addEventListener('resize', updatePosition);
+            document.addEventListener('scroll', updatePosition, true);
+            return () => {
+                window.removeEventListener('resize', updatePosition);
+                document.removeEventListener('scroll', updatePosition, true);
             };
         }, [menuOpen]);
 
@@ -1311,93 +1353,112 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                 // Options button (three dots) - always visible
                 React.createElement('img', {
                     id: `sidebar-report-options-btn-${reportID}`,
-                    className: 'report-menu-btn',
+                    className: 'report-menu-btn chat-menu-btn',
                     src: './img/more_vert_24.svg',
                     alt: 'Options',
                     style: {
-                        width: '28px',
-                        height: '28px',
+                        width: '30px',
+                        height: '30px',
                         padding: '4px',
                         flexShrink: 0,
-                        borderRadius: '4px',
+                        borderRadius: '5px',
                         transition: 'background-color 0.2s',
                         backgroundColor: 'transparent',
                         cursor: 'pointer'
                     },
                     onMouseEnter: (e) => {
                         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e4e4e4';
+                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#8e8e8e';
                     },
-                    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                     onClick: (e) => {
                         e.stopPropagation();
                         setMenuOpen(!menuOpen);
                     }
                 }),
 
-                // Dropdown menu
-                menuOpen && React.createElement('div', {
+                // Dropdown: on non-home, position:fixed escapes .side-bar/nav overflow (chat/source stay absolute).
+                // Fixed + only `left` + minWidth can resolve width:auto differently than absolute + `right:0`,
+                // so we set explicit width + border-box to match other ⋮ menus (SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX).
+                menuOpen && (isHomePage() || menuFixedPos) && React.createElement('div', {
                     id: `sidebar-report-options-menu-${reportID}`,
-                    style: {
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '4px',
-                        backgroundColor: '#ffffff',
-                        border: '1.67px solid #e4e4e4',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        minWidth: '120px',
-                        zIndex: 1000,
-                        overflow: 'hidden'
-                    }
+                    className: 'chat-menu-dropdown',
+                    style: (() => {
+                        const base = {
+                            backgroundColor: '#ffffff',
+                            border: '1.67px solid #e4e4e4',
+                            borderRadius: '11.12px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            boxSizing: 'border-box',
+                            width: `${SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX}px`,
+                            minWidth: `${SIDEBAR_KEBAB_MENU_MIN_WIDTH_PX}px`,
+                            zIndex: 1000,
+                            overflow: 'hidden'
+                        };
+                        if (!isHomePage() && menuFixedPos) {
+                            return {
+                                ...base,
+                                position: 'fixed',
+                                top: menuFixedPos.top,
+                                left: menuFixedPos.left,
+                                marginTop: 0,
+                                right: 'auto'
+                            };
+                        }
+                        return {
+                            ...base,
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            marginTop: '4px'
+                        };
+                    })()
                 },
                     // Download option
                     React.createElement('button', {
                         id: `sidebar-report-download-btn-${reportID}`,
                         style: {
                             width: '100%',
-                            padding: '10px 14px',
+                            padding: '12px 14.5px',
                             border: 'none',
                             backgroundColor: 'transparent',
                             textAlign: 'left',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            color: '#1c1d21',
-                            fontWeight: '400',
-                            fontFamily: 'Inter, Helvetica',
-                            transition: 'background-color 0.2s',
+                            fontSize: '13.3px',
+                            fontWeight: '500',
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease',
                             borderBottom: '1px solid #f0f0f0'
                         },
                         onMouseEnter: (e) => {
                             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                             e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f5f5f5';
                         },
-                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                         onClick: handleDownload
                     }, 'Download'),
 
-                    // Delete option
+                    // Delete option (matches chat history delete row)
                     React.createElement('button', {
                         id: `sidebar-report-delete-btn-${reportID}`,
                         style: {
                             width: '100%',
-                            padding: '10px 14px',
+                            padding: '12px 14.5px',
                             border: 'none',
                             backgroundColor: 'transparent',
                             textAlign: 'left',
-                            color: 'rgb(193, 40, 30)',
                             cursor: 'pointer',
-                            fontSize: '12px',
+                            fontSize: '13.3px',
+                            color: '#c1281e',
                             fontWeight: '500',
-                            fontFamily: 'Inter, Helvetica',
-                            transition: 'background-color 0.2s'
+                            fontFamily: '"Inter", Helvetica',
+                            transition: 'background-color 0.2s ease'
                         },
                         onMouseEnter: (e) => {
                             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                             e.currentTarget.style.backgroundColor = isDark ? 'rgba(127, 29, 29, 0.3)' : '#f5f5f5';
                         },
-                        onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent',
+                        onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
                         onClick: handleDelete
                     }, 'Delete')
                 )
