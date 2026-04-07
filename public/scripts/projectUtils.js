@@ -1386,6 +1386,7 @@ function createReportItem(reportName, reportID, projectID, reportType) {
                             border: 'none',
                             backgroundColor: 'transparent',
                             textAlign: 'left',
+                            color: 'rgb(193, 40, 30)',
                             cursor: 'pointer',
                             fontSize: '12px',
                             fontWeight: '500',
