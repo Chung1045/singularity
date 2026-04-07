@@ -186,9 +186,6 @@ a {
   -webkit-backdrop-filter: blur(24px);
   border-radius: 50px;
   border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.08),
-              0px 2px 4px rgba(0, 0, 0, 0.04),
-              0 20px 40px -5px rgba(0, 0, 0, 0.1);
   transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
@@ -311,10 +308,6 @@ a {
 .sidebar-expand .input-field-button:hover {
   opacity: 0.8;
 }
-.sidebar-expand .input-field-button:focus {
-  outline: 2px solid #4a90e2;
-  outline-offset: 2px;
-}
 .sidebar-expand .vector {
   position: relative;
   width: 14.99px;
@@ -386,7 +379,7 @@ a {
   gap: 10px;
   max-width: min(560px, calc(100vw - 32px));
   box-sizing: border-box;
-  z-index: 10050;
+  z-index: var(--z-slide-up-message);
   will-change: transform;
 }
 
