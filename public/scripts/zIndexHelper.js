@@ -31,7 +31,10 @@ window.ZIndex = {
     NOTIFICATION: 40,
 
     // Critical Layer (50+)
-    CRITICAL: 50
+    CRITICAL: 50,
+
+    // Slide-up banner #message (above ~50 overlays)
+    SLIDE_UP_MESSAGE: 55
 };
 
 // Freeze the object to prevent modifications

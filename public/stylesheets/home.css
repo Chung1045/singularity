@@ -379,7 +379,7 @@ a {
   gap: 10px;
   max-width: min(560px, calc(100vw - 32px));
   box-sizing: border-box;
-  z-index: 10050;
+  z-index: var(--z-slide-up-message);
   will-change: transform;
 }
 
