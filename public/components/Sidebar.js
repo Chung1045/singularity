@@ -835,9 +835,7 @@
                         border: '1.67px solid #e4e4e4',
                         borderRadius: '11.12px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        boxSizing: 'border-box',
-                        width: '120px',
-                        minWidth: '120px',
+                        minWidth: '160px',
                         zIndex: 1000,
                         overflow: 'hidden'
                     }
