@@ -33,6 +33,9 @@
         const [successMessage, setSuccessMessage] = useState(null);
         const [theme, setTheme] = useState(getCurrentTheme);
         const isDarkTheme = theme === 'dark';
+        /** Counts for enabling report buttons (full project, not sub-tab filter). */
+        const [reportableRequirementsCount, setReportableRequirementsCount] = useState(0);
+        const [totalUserStoriesCount, setTotalUserStoriesCount] = useState(0);
 
         useEffect(() => {
             const handleThemeChanged = (event) => {
@@ -70,10 +73,22 @@
             };
         }, [projectID, mainTab, subTab]);
 
+        const refreshEligibilityCounts = useCallback(async () => {
+            if (!projectID || typeof window.fetchProjectReportEligibilityCounts !== 'function') {
+                setReportableRequirementsCount(0);
+                setTotalUserStoriesCount(0);
+                return;
+            }
+            const { requirements, userStories } = await window.fetchProjectReportEligibilityCounts(projectID);
+            setReportableRequirementsCount(requirements);
+            setTotalUserStoriesCount(userStories);
+        }, [projectID]);
+
         const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
+                await refreshEligibilityCounts();
                 if (mainTab === 'requirements') {
                     await fetchRequirements();
                 } else {
@@ -165,16 +180,32 @@
         };
 
         const generateRequirementsReport = async () => {
+            if (!projectID) {
+                return;
+            }
+            if (typeof window.fetchProjectReportEligibilityCounts === 'function') {
+                const counts = await window.fetchProjectReportEligibilityCounts(projectID);
+                if (counts.requirements === 0) {
+                    window.showNotification?.({
+                        type: 'error',
+                        title: 'No requirements',
+                        message: 'Add functional or non-functional requirements before generating a report.',
+                        actionText: 'OK'
+                    });
+                    return;
+                }
+            }
             setGenerating(true);
             setError(null);
             setSuccessMessage(null);
             try {
                 const response = await fetch('/api/agent/document-generation/requirements', {
                     method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'CSRF-Token': window.csrfToken
-                        },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
+                    credentials: 'include',
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -197,6 +228,21 @@
         };
 
         const generateUserStoriesReport = async () => {
+            if (!projectID) {
+                return;
+            }
+            if (typeof window.fetchProjectReportEligibilityCounts === 'function') {
+                const counts = await window.fetchProjectReportEligibilityCounts(projectID);
+                if (counts.userStories === 0) {
+                    window.showNotification?.({
+                        type: 'error',
+                        title: 'No user stories',
+                        message: 'Add user stories before generating a report.',
+                        actionText: 'OK'
+                    });
+                    return;
+                }
+            }
             setGenerating(true);
             setError(null);
             setSuccessMessage(null);
@@ -207,6 +253,7 @@
                         'Content-Type': 'application/json',
                         'CSRF-Token': window.csrfToken
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -347,8 +394,9 @@
                 const data = await response.json();
                 const type = mainTab === "requirements" ? "Requirement" : "User story"
                 if (response.ok && data.successful) {
-                    await fetchRequirements()
-                    await fetchUserStories()
+                    await fetchRequirements();
+                    await fetchUserStories();
+                    await refreshEligibilityCounts();
                     setSuccessMessage(`${type} deleted successfully`);
                     setTimeout(() => setSuccessMessage(null), 3000);
                 } else {
@@ -442,6 +490,11 @@
             dangerButtonHoverBg: '#fee2e2',
             dangerText: '#dc2626'
         };
+
+        const canGenerateRequirementsReport = reportableRequirementsCount > 0;
+        const canGenerateUserStoriesReport = totalUserStoriesCount > 0;
+        const requirementsReportButtonDisabled = generating;
+        const userStoriesReportButtonDisabled = generating;
 
         // Get current data to display
         const currentData = mainTab === 'requirements' ? requirements : userStories;
@@ -1100,18 +1153,21 @@
                         React.createElement('button', {
                             id: 'requirements-panel-btn-generate-requirements',
                             onClick: generateRequirementsReport,
-                            disabled: generating,
+                            disabled: requirementsReportButtonDisabled,
+                            title: !canGenerateRequirementsReport && !generating
+                                ? 'Add functional or non-functional requirements first'
+                                : undefined,
                             style: {
                                 flex: 1,
                                 padding: '12px 16px',
-                                backgroundColor: generating ? colors.generateDisabledBg : colors.generateBg,
+                                backgroundColor: requirementsReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
                                 fontSize: '13px',
-                                cursor: generating ? 'not-allowed' : 'pointer',
+                                cursor: requirementsReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1119,13 +1175,13 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) {
+                                if (!requirementsReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
                                 }
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) {
+                                if (!requirementsReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateBg;
                                 }
@@ -1146,18 +1202,21 @@
                         React.createElement('button', {
                             id: 'requirements-panel-btn-generate-userstories',
                             onClick: generateUserStoriesReport,
-                            disabled: generating,
+                            disabled: userStoriesReportButtonDisabled,
+                            title: !canGenerateUserStoriesReport && !generating
+                                ? 'Add user stories first'
+                                : undefined,
                             style: {
                                 flex: 1,
                                 padding: '12px 16px',
-                                backgroundColor: generating ? colors.generateDisabledBg : colors.generateBg,
+                                backgroundColor: userStoriesReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
                                 fontSize: '13px',
-                                cursor: generating ? 'not-allowed' : 'pointer',
+                                cursor: userStoriesReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1165,13 +1224,13 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) {
+                                if (!userStoriesReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
                                 }
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) {
+                                if (!userStoriesReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateBg;
                                 }

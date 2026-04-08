@@ -1559,10 +1559,65 @@ async function downloadFile(documentID, fileName) {
     }
 }
 
+/**
+ * Counts data eligible for report generation (matches docGenerationService rules).
+ * @param {string} projectID
+ * @returns {Promise<{ requirements: number, userStories: number }>}
+ */
+async function fetchProjectReportEligibilityCounts(projectID) {
+    if (!projectID) {
+        return { requirements: 0, userStories: 0 };
+    }
+    const csrf =
+        (typeof window !== 'undefined' && window.csrfToken) ||
+        (typeof csrfToken !== 'undefined' ? csrfToken : '');
+    const headers = {
+        'Content-Type': 'application/json',
+        'CSRF-Token': csrf
+    };
+    try {
+        const [reqRes, usRes] = await Promise.all([
+            fetch('/api/project/list/requirements', {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ projectID })
+            }),
+            fetch('/api/project/list/user-stories', {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ projectID })
+            })
+        ]);
+        const reqData = await reqRes.json().catch(() => ({}));
+        const usData = await usRes.json().catch(() => ({}));
+
+        let requirements = 0;
+        if (reqRes.ok && Array.isArray(reqData.reports)) {
+            requirements = reqData.reports.filter((req) => {
+                const t = (req.details?.requirementType ?? '').toString().toLowerCase().trim();
+                return t === 'functional' || t === 'fr' || t === 'non-functional' || t === 'nfr';
+            }).length;
+        }
+
+        let userStories = 0;
+        if (usRes.ok && Array.isArray(usData.reports)) {
+            userStories = usData.reports.length;
+        }
+
+        return { requirements, userStories };
+    } catch (err) {
+        console.warn('fetchProjectReportEligibilityCounts:', err);
+        return { requirements: 0, userStories: 0 };
+    }
+}
+
 // Make functions available globally
 window.fetchProjectChats = fetchProjectChats;
 window.fetchProjectFiles = fetchProjectFiles;
 window.fetchProjectReports = fetchProjectReports;
+window.fetchProjectReportEligibilityCounts = fetchProjectReportEligibilityCounts;
 window.refreshProjectFiles = fetchProjectFiles; // Alias for refreshing files after upload
 window.createChatHistoryItem = createChatHistoryItem;
 window.createFileItem = createFileItem;

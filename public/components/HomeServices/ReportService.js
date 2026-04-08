@@ -2,6 +2,49 @@
  * ReportService - API calls for report functionality
  */
 
+async function fetchReportEligibilityCountsForService(projectID) {
+    if (typeof window.fetchProjectReportEligibilityCounts === 'function') {
+        return window.fetchProjectReportEligibilityCounts(projectID);
+    }
+    const headers = {
+        'Content-Type': 'application/json',
+        'CSRF-Token': window.csrfToken || ''
+    };
+    try {
+        const [reqRes, usRes] = await Promise.all([
+            fetch('/api/project/list/requirements', {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ projectID })
+            }),
+            fetch('/api/project/list/user-stories', {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ projectID })
+            })
+        ]);
+        const reqData = await reqRes.json().catch(() => ({}));
+        const usData = await usRes.json().catch(() => ({}));
+        let requirements = 0;
+        if (reqRes.ok && Array.isArray(reqData.reports)) {
+            requirements = reqData.reports.filter((req) => {
+                const t = (req.details?.requirementType ?? '').toString().toLowerCase().trim();
+                return t === 'functional' || t === 'fr' || t === 'non-functional' || t === 'nfr';
+            }).length;
+        }
+        let userStories = 0;
+        if (usRes.ok && Array.isArray(usData.reports)) {
+            userStories = usData.reports.length;
+        }
+        return { requirements, userStories };
+    } catch (e) {
+        console.warn('[ReportService] eligibility fetch failed', e);
+        return { requirements: 0, userStories: 0 };
+    }
+}
+
 const ReportService = {
     /**
      * Generate user stories report
@@ -20,6 +63,17 @@ const ReportService = {
             return;
         }
 
+        const { userStories } = await fetchReportEligibilityCountsForService(projectID);
+        if (userStories === 0) {
+            window.showNotification?.({
+                type: 'error',
+                title: 'No user stories',
+                message: 'Add user stories before generating a report.',
+                actionText: 'OK'
+            });
+            return;
+        }
+
         try {
             const response = await fetch('/api/agent/document-generation/user-stories', {
                 method: 'POST',
@@ -27,6 +81,7 @@ const ReportService = {
                     'Content-Type': 'application/json',
                     'CSRF-Token': window.csrfToken
                 },
+                credentials: 'include',
                 body: JSON.stringify({ projectID })
             });
 
@@ -75,6 +130,17 @@ const ReportService = {
             return;
         }
 
+        const { requirements } = await fetchReportEligibilityCountsForService(projectID);
+        if (requirements === 0) {
+            window.showNotification?.({
+                type: 'error',
+                title: 'No requirements',
+                message: 'Add functional or non-functional requirements before generating a report.',
+                actionText: 'OK'
+            });
+            return;
+        }
+
         try {
             const response = await fetch('/api/agent/document-generation/requirements', {
                 method: 'POST',
@@ -82,6 +148,7 @@ const ReportService = {
                     'Content-Type': 'application/json',
                     'CSRF-Token': window.csrfToken
                 },
+                credentials: 'include',
                 body: JSON.stringify({ projectID })
             });
 

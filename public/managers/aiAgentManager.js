@@ -755,9 +755,16 @@ router.post("/agent/document-generation/requirements", async (req, res) => {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
-    let requirementsData = await getProjectRequirements(projectID)
-    console.log(`Requirement data : ${requirementsData}`)
-    let result = await docGen.generateRequirementsDocument(projectID, requirementsData)
+    let requirementsData = await getProjectRequirements(projectID);
+    console.log(`Requirement data : ${requirementsData}`);
+    if (!requirementsData || !Array.isArray(requirementsData) || requirementsData.length === 0) {
+        return res.status(400).json({
+            successful: false,
+            message: "No requirements to include. Add requirements before generating a report."
+        });
+    }
+
+    let result = await docGen.generateRequirementsDocument(projectID, requirementsData);
 
     if (result) {
         return res.status(200).json({ successful: true });
@@ -784,9 +791,16 @@ router.post("/agent/document-generation/user-stories", async (req, res) => {
         return res.status(403).json({ successful: false, message: "Unauthorized" });
     }
 
-    let userStoriesData = await getProjectUserStories(projectID)
-    console.log(`User stories data : ${JSON.stringify(userStoriesData)}`)
-    let result = await docGen.generateUserStoriesDocument(projectID, userStoriesData)
+    let userStoriesData = await getProjectUserStories(projectID);
+    console.log(`User stories data : ${JSON.stringify(userStoriesData)}`);
+    if (!userStoriesData || !Array.isArray(userStoriesData) || userStoriesData.length === 0) {
+        return res.status(400).json({
+            successful: false,
+            message: "No user stories to include. Add user stories before generating a report."
+        });
+    }
+
+    let result = await docGen.generateUserStoriesDocument(projectID, userStoriesData);
 
     if (result) {
         return res.status(200).json({ successful: true });
