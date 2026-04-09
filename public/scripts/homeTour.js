@@ -9,7 +9,7 @@
  *
  * window.startSingularityHomeTour()
  *
- * Steps after overview: 1–5 unchanged, 6 = full #right-sidebar, 8 = report actions + list (#right-sidebar-tour-reports-spotlight).
+ * Steps after overview: 1–5 unchanged, 6 = full #right-sidebar, 8 = report actions + list (#right-sidebar-tour-reports-spotlight), 9 = #singularity-faq-pip (reopen welcome).
  */
 (function () {
     var TOUR_PROJECT_NAME_PREFIX = 'Singularity tour';
@@ -303,6 +303,17 @@
                     side: 'left',
                     align: 'start'
                 }
+            },
+            {
+                element: '#singularity-faq-pip',
+                popover: {
+                    title: '9 · Welcome & tips',
+                    description:
+                        'This strip sits on the right edge of the screen: move the pointer there to reveal the help control (?).\n\n' +
+                        'Click it anytime to reopen the welcome tutorial and tips (on Home). You can run this tour again from the last step of that flow.',
+                    side: 'left',
+                    align: 'center'
+                }
             }
         ];
     }
@@ -319,6 +330,12 @@
             seedTourDemoProject(function () {
                 window.setTimeout(function () {
                     var driverObj = factory({
+                        onHighlightStarted: function (element) {
+                            var pip = element && element.id === 'singularity-faq-pip';
+                            window.dispatchEvent(
+                                new CustomEvent('singularity-faq-pip-tour-pin', { detail: { pinned: !!pip } })
+                            );
+                        },
                         showProgress: true,
                         smoothScroll: true,
                         animate: true,
@@ -340,6 +357,9 @@
                         doneBtnText: 'Done',
                         steps: buildSteps(),
                         onDestroyed: function () {
+                            window.dispatchEvent(
+                                new CustomEvent('singularity-faq-pip-tour-pin', { detail: { pinned: false } })
+                            );
                             window.__singularityTourDriver = null;
                             cleanupTourDemoProject();
                         }

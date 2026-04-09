@@ -281,7 +281,9 @@ const AlertModalComponent = ({ modal, closeModal, isMobile }) => {
 
 const Home = ({ csrfToken, userInfo }) => {
     window.csrfToken = csrfToken;
-    const shouldShowWelcomeOnLoad = new URLSearchParams(window.location.search).get('welcome') === '1';
+    const initialSearch = new URLSearchParams(window.location.search);
+    const shouldShowWelcomeOnLoad = initialSearch.get('welcome') === '1';
+    const shouldStartTourOnLoad = initialSearch.get('tour') === '1';
     // ===== STATE =====
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         if (window.innerWidth <= 1040) return true;
@@ -313,6 +315,21 @@ const Home = ({ csrfToken, userInfo }) => {
     React.useEffect(() => {
         window.showWelcomeOverlay = () => setShowWelcomeOverlay(true);
         return () => { delete window.showWelcomeOverlay; };
+    }, []);
+
+    React.useEffect(() => {
+        if (!shouldStartTourOnLoad) return undefined;
+        const timer = window.setTimeout(() => {
+            if (typeof window.startSingularityHomeTour === 'function') {
+                window.startSingularityHomeTour();
+            }
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('tour');
+                window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+            } catch (_) {}
+        }, 650);
+        return () => window.clearTimeout(timer);
     }, []);
 
     const isMobile = windowWidth <= 480;
