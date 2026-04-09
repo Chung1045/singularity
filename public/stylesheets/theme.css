@@ -611,20 +611,48 @@ html[data-theme='dark'] #requirements-panel-empty-state,
 html[data-theme='dark'] #requirements-panel-empty-text,
 html[data-theme='dark'] #requirements-panel-reports-empty,
 html[data-theme='dark'] [id^='requirements-panel-item-description-'],
-html[data-theme='dark'] [id^='requirements-panel-source-location-'],
 html[data-theme='dark'] [id^='requirements-panel-report-type-'] {
     color: var(--dm-muted-strong) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-location-'] {
+    color: #ffffff !important;
 }
 
 html[data-theme='dark'] #requirements-panel-list-count,
 html[data-theme='dark'] #requirements-panel-reports-count,
 html[data-theme='dark'] [id^='requirements-panel-item-badge-'],
-html[data-theme='dark'] [id^='requirements-panel-item-sources-'] > [id^='requirements-panel-source-'],
 html[data-theme='dark'] button[id^='requirements-panel-report-download-'],
 html[data-theme='dark'] button[id^='requirements-panel-report-delete-'] {
     background: var(--dm-surface-3) !important;
     color: var(--dm-muted-strong) !important;
     border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-item-sources-'] > [id^='requirements-panel-source-'] {
+    background: #0f172a !important;
+    border-color: rgba(51, 65, 85, 0.45) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-header-'] {
+    background: #0f172a !important;
+    border-bottom-color: rgba(51, 65, 85, 0.35) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-body-'] {
+    background: #1a1d25  !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-quote-'] {
+    background: #030820 !important;
+    border-color: #6366f1 !important;
+    border-radius: 6px !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-icon-wrap-'] {
+    background: rgba(30, 41, 59, 0.85) !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
+    color: #ffffff !important;
 }
 
 html[data-theme='dark'] button[id^='requirements-panel-item-delete-'] {

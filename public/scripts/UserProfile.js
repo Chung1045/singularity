@@ -789,7 +789,10 @@ const UserProfile = ({ userInfo, csrfToken }) => {
     };
 
     const handleSupport = () => {
-        window.location.href = '/support';
+        const url =
+            (typeof window !== 'undefined' && window.SINGULARITY_NOTION_SUPPORT_URL) ||
+            'https://www.notion.so/chungsat/Singularity-31792c4b044d801fb5aedf2b529353b8';
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const logout = async () => {

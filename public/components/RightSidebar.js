@@ -34,6 +34,12 @@
         const sidebarRef = useRef(null);
         const effectiveWidth = isCollapsed ? COLLAPSED_WIDTH : sidebarWidth;
 
+        const [reportEligibility, setReportEligibility] = useState({
+            requirements: 0,
+            userStories: 0,
+            loading: true
+        });
+
         console.log('[RightSidebar] selectedProjectID:', selectedProjectID);
 
         // Refresh reports when selectedProjectID changes
@@ -55,6 +61,49 @@
                 }, 100);
             }
         }, [selectedProjectID, isCollapsed]);
+
+        useEffect(() => {
+            let cancelled = false;
+
+            async function loadEligibility() {
+                if (!selectedProjectID || typeof window.fetchProjectReportEligibilityCounts !== 'function') {
+                    if (!cancelled) {
+                        setReportEligibility({ requirements: 0, userStories: 0, loading: false });
+                    }
+                    return;
+                }
+                if (!cancelled) {
+                    setReportEligibility((prev) => ({ ...prev, loading: true }));
+                }
+                const { requirements, userStories } = await window.fetchProjectReportEligibilityCounts(selectedProjectID);
+                if (!cancelled) {
+                    setReportEligibility({ requirements, userStories, loading: false });
+                }
+            }
+
+            loadEligibility();
+            return () => {
+                cancelled = true;
+            };
+        }, [selectedProjectID]);
+
+        useEffect(() => {
+            const refreshEligibility = () => {
+                if (!selectedProjectID || typeof window.fetchProjectReportEligibilityCounts !== 'function') {
+                    return;
+                }
+                window.fetchProjectReportEligibilityCounts(selectedProjectID).then(({ requirements, userStories }) => {
+                    setReportEligibility({ requirements, userStories, loading: false });
+                });
+            };
+
+            window.addEventListener('requirementsUpdated', refreshEligibility);
+            window.addEventListener('reportGenerated', refreshEligibility);
+            return () => {
+                window.removeEventListener('requirementsUpdated', refreshEligibility);
+                window.removeEventListener('reportGenerated', refreshEligibility);
+            };
+        }, [selectedProjectID]);
 
         // Listen for reportGenerated event to refresh reports list
         useEffect(() => {
@@ -141,6 +190,8 @@
             return () => window.removeEventListener('singularity-tour-expand-right', expandForTour);
         }, []);
         // -----------------------
+
+        const reportActionsBlocked = !selectedProjectID || reportEligibility.loading;
 
         return React.createElement(
             'aside',
@@ -253,10 +304,34 @@
                                 },
                             React.createElement('button', {
                                     id: 'btn-generate-user-stories',
+                                    type: 'button',
+                                    disabled: reportActionsBlocked,
                                     'aria-label': 'Generate User Stories Report',
+                                    title: reportEligibility.loading
+                                        ? 'Loading…'
+                                        : reportEligibility.userStories === 0
+                                            ? 'Add user stories before generating a report'
+                                            : undefined,
                                     onClick: async () => {
+                                        if (reportActionsBlocked) {
+                                            return;
+                                        }
+                                        const pid = selectedProjectID;
+                                        const counts =
+                                            typeof window.fetchProjectReportEligibilityCounts === 'function'
+                                                ? await window.fetchProjectReportEligibilityCounts(pid)
+                                                : { userStories: 0, requirements: 0 };
+                                        if (counts.userStories === 0) {
+                                            window.showNotification?.({
+                                                type: 'error',
+                                                title: 'No user stories',
+                                                message: 'Add user stories before generating a report.',
+                                                actionText: 'OK'
+                                            });
+                                            return;
+                                        }
                                         if (typeof window.generateUserStoryReport === 'function') {
-                                            await window.generateUserStoryReport();
+                                            await window.generateUserStoryReport(pid);
                                         }
                                     },
                                     style: {
@@ -267,18 +342,24 @@
                                         backgroundColor: '#ffffff',
                                         border: '1.67px solid #e4e4e4',
                                         borderRadius: '15px',
-                                        cursor: 'pointer',
+                                        cursor: reportActionsBlocked ? 'not-allowed' : 'pointer',
                                         marginBottom: '10px',
                                         transition: 'background-color 0.2s, border-color 0.2s',
                                         width: '100%',
                                         boxSizing: 'border-box'
                                     },
                                     onMouseEnter: (e) => {
+                                        if (reportActionsBlocked) {
+                                            return;
+                                        }
                                         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                                         e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f5f5f5';
                                         e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#d0d0d0';
                                     },
                                     onMouseLeave: (e) => {
+                                        if (reportActionsBlocked) {
+                                            return;
+                                        }
                                         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                                         e.currentTarget.style.backgroundColor = isDark ? 'var(--dm-surface-2, #162033)' : '#ffffff';
                                         e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#e4e4e4';
@@ -304,10 +385,34 @@
                             ),
                             React.createElement('button', {
                                     id: 'btn-generate-requirements',
+                                    type: 'button',
+                                    disabled: reportActionsBlocked,
                                     'aria-label': 'Generate Requirement Report',
+                                    title: reportEligibility.loading
+                                        ? 'Loading…'
+                                        : reportEligibility.requirements === 0
+                                            ? 'Add requirements before generating a report'
+                                            : undefined,
                                     onClick: async () => {
+                                        if (reportActionsBlocked) {
+                                            return;
+                                        }
+                                        const pid = selectedProjectID;
+                                        const counts =
+                                            typeof window.fetchProjectReportEligibilityCounts === 'function'
+                                                ? await window.fetchProjectReportEligibilityCounts(pid)
+                                                : { userStories: 0, requirements: 0 };
+                                        if (counts.requirements === 0) {
+                                            window.showNotification?.({
+                                                type: 'error',
+                                                title: 'No requirements',
+                                                message: 'Add functional or non-functional requirements before generating a report.',
+                                                actionText: 'OK'
+                                            });
+                                            return;
+                                        }
                                         if (typeof window.generateRequirementsReport === 'function') {
-                                            await window.generateRequirementsReport();
+                                            await window.generateRequirementsReport(pid);
                                         }
                                     },
                                     style: {
@@ -318,18 +423,24 @@
                                         backgroundColor: '#ffffff',
                                         border: '1.67px solid #e4e4e4',
                                         borderRadius: '15px',
-                                        cursor: 'pointer',
+                                        cursor: reportActionsBlocked ? 'not-allowed' : 'pointer',
                                         marginBottom: '20px',
                                         transition: 'background-color 0.2s, border-color 0.2s',
                                         width: '100%',
                                         boxSizing: 'border-box'
                                     },
                                     onMouseEnter: (e) => {
+                                        if (reportActionsBlocked) {
+                                            return;
+                                        }
                                         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                                         e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f5f5f5';
                                         e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#d0d0d0';
                                     },
                                     onMouseLeave: (e) => {
+                                        if (reportActionsBlocked) {
+                                            return;
+                                        }
                                         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                                         e.currentTarget.style.backgroundColor = isDark ? 'var(--dm-surface-2, #162033)' : '#ffffff';
                                         e.currentTarget.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.3)' : '#e4e4e4';

@@ -1,8 +1,10 @@
 const NOTION_SUPPORT_URL = 'https://www.notion.so/chungsat/Singularity-31792c4b044d801fb5aedf2b529353b8';
+window.SINGULARITY_NOTION_SUPPORT_URL = NOTION_SUPPORT_URL;
 
 const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
   // mode: 'hidden' | 'collapsed' | 'expanded'
   const [mode, setMode] = React.useState('hidden');
+  const [tourPinned, setTourPinned] = React.useState(false);
   const modeRef = React.useRef('hidden');
   const hideTimerRef = React.useRef(null);
 
@@ -47,23 +49,38 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
     };
   }, []);
 
+  React.useEffect(() => {
+    const onTourPin = (e) => {
+      setTourPinned(!!(e && e.detail && e.detail.pinned));
+    };
+    window.addEventListener('singularity-faq-pip-tour-pin', onTourPin);
+    return () => window.removeEventListener('singularity-faq-pip-tour-pin', onTourPin);
+  }, []);
+
   const handleClick = (e) => {
     e.preventDefault();
     if (modeRef.current === 'collapsed') {
       applyMode('expanded');
     } else if (modeRef.current === 'expanded') {
-      window.open(href, '_blank', 'noopener,noreferrer');
+      if (typeof window.showWelcomeOverlay === 'function') {
+        window.showWelcomeOverlay();
+      } else {
+        window.location.href = '/home?welcome=1';
+      }
       applyMode('collapsed');
     }
   };
 
-  const isVisible = mode !== 'hidden';
-  const width = mode === 'expanded' ? '44px' : '10px';
+  const isVisible = mode !== 'hidden' || tourPinned;
+  const showExpandedChrome = tourPinned || mode === 'expanded';
+  const width = showExpandedChrome ? '44px' : '10px';
 
   return React.createElement('a', {
-    href,
-    target: '_blank',
+    id: 'singularity-faq-pip',
+    href: '/home?welcome=1',
+    title: 'Welcome & tips',
     rel: 'noopener noreferrer',
+    'data-singularity-faq-pip': '1',
     style: {
       position: 'fixed',
       right: 0,
@@ -85,13 +102,13 @@ const FaqPipComponent = ({ href = NOTION_SUPPORT_URL } = {}) => {
       transition: 'width 0.26s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease, box-shadow 0.22s ease',
       overflow: 'hidden',
       cursor: 'pointer',
-      zIndex: 1,
+      zIndex: tourPinned ? 100003 : 1,
       pointerEvents: isVisible ? 'auto' : 'none',
       WebkitTapHighlightColor: 'transparent',
     },
     onClick: handleClick,
   },
-    mode === 'expanded'
+    showExpandedChrome
       ? React.createElement('img', {
           src: './img/Help circle.svg',
           alt: 'Help',

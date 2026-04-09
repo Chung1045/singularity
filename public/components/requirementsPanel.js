@@ -33,6 +33,9 @@
         const [successMessage, setSuccessMessage] = useState(null);
         const [theme, setTheme] = useState(getCurrentTheme);
         const isDarkTheme = theme === 'dark';
+        /** Counts for enabling report buttons (full project, not sub-tab filter). */
+        const [reportableRequirementsCount, setReportableRequirementsCount] = useState(0);
+        const [totalUserStoriesCount, setTotalUserStoriesCount] = useState(0);
 
         useEffect(() => {
             const handleThemeChanged = (event) => {
@@ -70,10 +73,22 @@
             };
         }, [projectID, mainTab, subTab]);
 
+        const refreshEligibilityCounts = useCallback(async () => {
+            if (!projectID || typeof window.fetchProjectReportEligibilityCounts !== 'function') {
+                setReportableRequirementsCount(0);
+                setTotalUserStoriesCount(0);
+                return;
+            }
+            const { requirements, userStories } = await window.fetchProjectReportEligibilityCounts(projectID);
+            setReportableRequirementsCount(requirements);
+            setTotalUserStoriesCount(userStories);
+        }, [projectID]);
+
         const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
+                await refreshEligibilityCounts();
                 if (mainTab === 'requirements') {
                     await fetchRequirements();
                 } else {
@@ -165,16 +180,32 @@
         };
 
         const generateRequirementsReport = async () => {
+            if (!projectID) {
+                return;
+            }
+            if (typeof window.fetchProjectReportEligibilityCounts === 'function') {
+                const counts = await window.fetchProjectReportEligibilityCounts(projectID);
+                if (counts.requirements === 0) {
+                    window.showNotification?.({
+                        type: 'error',
+                        title: 'No requirements',
+                        message: 'Add functional or non-functional requirements before generating a report.',
+                        actionText: 'OK'
+                    });
+                    return;
+                }
+            }
             setGenerating(true);
             setError(null);
             setSuccessMessage(null);
             try {
                 const response = await fetch('/api/agent/document-generation/requirements', {
                     method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'CSRF-Token': window.csrfToken
-                        },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': window.csrfToken
+                    },
+                    credentials: 'include',
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -197,6 +228,21 @@
         };
 
         const generateUserStoriesReport = async () => {
+            if (!projectID) {
+                return;
+            }
+            if (typeof window.fetchProjectReportEligibilityCounts === 'function') {
+                const counts = await window.fetchProjectReportEligibilityCounts(projectID);
+                if (counts.userStories === 0) {
+                    window.showNotification?.({
+                        type: 'error',
+                        title: 'No user stories',
+                        message: 'Add user stories before generating a report.',
+                        actionText: 'OK'
+                    });
+                    return;
+                }
+            }
             setGenerating(true);
             setError(null);
             setSuccessMessage(null);
@@ -207,6 +253,7 @@
                         'Content-Type': 'application/json',
                         'CSRF-Token': window.csrfToken
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ projectID: projectID })
                 });
 
@@ -347,8 +394,9 @@
                 const data = await response.json();
                 const type = mainTab === "requirements" ? "Requirement" : "User story"
                 if (response.ok && data.successful) {
-                    await fetchRequirements()
-                    await fetchUserStories()
+                    await fetchRequirements();
+                    await fetchUserStories();
+                    await refreshEligibilityCounts();
                     setSuccessMessage(`${type} deleted successfully`);
                     setTimeout(() => setSuccessMessage(null), 3000);
                 } else {
@@ -383,11 +431,18 @@
             roleBg: 'rgba(79, 70, 229, 0.18)',
             roleIcon: '#a5b4fc',
             roleText: '#c7d2fe',
-            sourceBg: 'rgba(22, 163, 74, 0.14)',
-            sourceBorder: '1px solid rgba(34, 197, 94, 0.24)',
-            sourceIcon: '#4ade80',
-            sourceText: '#86efac',
-            sourceLocation: '#4ade80',
+            sourceCardBg: '#0f172a',
+            sourceCardBorder: '1px solid rgba(51, 65, 85, 0.45)',
+            sourceHeaderBg: '#0f172a',
+            sourceHeaderBorderBottom: '1px solid rgba(51, 65, 85, 0.35)',
+            sourceBodyBg: '#0f172a',
+            sourceIconBoxBg: 'rgba(30, 41, 59, 0.85)',
+            sourceIconBoxBorder: '1px solid rgba(148, 163, 184, 0.25)',
+            sourceIcon: '#ffffff',
+            sourceText: '#ffffff',
+            sourceQuoteBg: '#020617',
+            sourceQuoteBorder: '1px solid #6366f1',
+            sourceLocation: '#ffffff',
             errorBg: 'rgba(127, 29, 29, 0.3)',
             errorText: '#fca5a5',
             successBg: 'rgba(20, 83, 45, 0.28)',
@@ -421,11 +476,18 @@
             roleBg: '#e0e7ff',
             roleIcon: '#4f46e5',
             roleText: '#4f46e5',
-            sourceBg: '#f0fdf4',
-            sourceBorder: '1px solid #bbf7d0',
-            sourceIcon: '#16a34a',
-            sourceText: '#15803d',
-            sourceLocation: '#22c55e',
+            sourceCardBg: '#ffffff',
+            sourceCardBorder: '1px solid #e2e8f0',
+            sourceHeaderBg: '#f0f5ff',
+            sourceHeaderBorderBottom: '1px solid #e2e8f0',
+            sourceBodyBg: '#ffffff',
+            sourceIconBoxBg: '#ffffff',
+            sourceIconBoxBorder: '1px solid #93c5fd',
+            sourceIcon: '#3b82f6',
+            sourceText: '#1a202c',
+            sourceQuoteBg: '#ffffff',
+            sourceQuoteBorder: '1px solid #5a67d8',
+            sourceLocation: '#4a5568',
             errorBg: '#fee2e2',
             errorText: '#dc2626',
             successBg: '#dcfce7',
@@ -442,6 +504,11 @@
             dangerButtonHoverBg: '#fee2e2',
             dangerText: '#dc2626'
         };
+
+        const canGenerateRequirementsReport = reportableRequirementsCount > 0;
+        const canGenerateUserStoriesReport = totalUserStoriesCount > 0;
+        const requirementsReportButtonDisabled = generating;
+        const userStoriesReportButtonDisabled = generating;
 
         // Get current data to display
         const currentData = mainTab === 'requirements' ? requirements : userStories;
@@ -917,16 +984,13 @@
                                             }, title),
                                             React.createElement('p', {
                                                 id: `requirements-panel-item-description-${itemId}`,
+                                                className: 'requirements-panel-item-description',
                                                 style: {
                                                     margin: '0 0 8px 0',
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontSize: '12px',
                                                     color: colors.muted,
-                                                    lineHeight: '1.5',
-                                                    display: '-webkit-box',
-                                                    WebkitLineClamp: 2,
-                                                    WebkitBoxOrient: 'vertical',
-                                                    overflow: 'hidden'
+                                                    lineHeight: '1.5'
                                                 }
                                             }, description),
                                             // Role badge (if available)
@@ -973,8 +1037,10 @@
                                                 style: {
                                                     display: 'flex',
                                                     flexDirection: 'column',
-                                                    gap: '4px',
-                                                    marginTop: role ? '0' : '8px'
+                                                    gap: '8px',
+                                                    marginTop: role ? '0' : '8px',
+                                                    width: '100%',
+                                                    maxWidth: '100%'
                                                 }
                                             },
                                                 sourceReferences.map((src, srcIndex) =>
@@ -984,62 +1050,105 @@
                                                         id: `requirements-panel-source-${itemId}-${srcIndex}`,
                                                         style: {
                                                             display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '6px',
-                                                            padding: '4px 8px',
-                                                            backgroundColor: colors.sourceBg,
-                                                            borderRadius: '4px',
-                                                            border: colors.sourceBorder
+                                                            flexDirection: 'column',
+                                                            alignItems: 'stretch',
+                                                            overflow: 'hidden',
+                                                            backgroundColor: colors.sourceCardBg,
+                                                            borderRadius: '12px',
+                                                            border: colors.sourceCardBorder
                                                         }
                                                     },
-                                                        // Document icon
-                                                        React.createElement('svg', {
-                                                            id: `requirements-panel-source-icon-${itemId}-${srcIndex}`,
-                                                            width: '14',
-                                                            height: '14',
-                                                            viewBox: '0 0 24 24',
-                                                            fill: 'none',
-                                                            style: { flexShrink: 0 }
-                                                        },
-                                                            React.createElement('path', {
-                                                                d: 'M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z',
-                                                                stroke: colors.sourceIcon,
-                                                                strokeWidth: '2',
-                                                                strokeLinecap: 'round',
-                                                                strokeLinejoin: 'round'
-                                                            }),
-                                                            React.createElement('path', {
-                                                                d: 'M14 2V8H20',
-                                                                stroke: colors.sourceIcon,
-                                                                strokeWidth: '2',
-                                                                strokeLinecap: 'round',
-                                                                strokeLinejoin: 'round'
-                                                            })
-                                                        ),
-                                                        // Document name
-                                                        React.createElement('span', {
-                                                            id: `requirements-panel-source-name-${itemId}-${srcIndex}`,
+                                                        React.createElement('div', {
+                                                            id: `requirements-panel-source-header-${itemId}-${srcIndex}`,
                                                             style: {
-                                                                fontFamily: 'Inter, Helvetica',
-                                                                fontSize: '14px',
-                                                                fontWeight: '500',
-                                                                color: colors.sourceText,
-                                                                whiteSpace: 'nowrap',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                maxWidth: '200px'
-                                                            },
-                                                            title: src.documentName || 'Unknown Document'
-                                                        }, src.documentName || 'Unknown Document'),
-                                                        // Location (if available)
-                                                        src.location && React.createElement('span', {
-                                                            id: `requirements-panel-source-location-${itemId}-${srcIndex}`,
-                                                            style: {
-                                                                fontFamily: 'Inter, Helvetica',
-                                                                fontSize: '14px',
-                                                                color: colors.sourceLocation
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '12px',
+                                                                padding: '14px 16px',
+                                                                backgroundColor: colors.sourceHeaderBg,
+                                                                borderBottom: src.location ? colors.sourceHeaderBorderBottom : 'none'
                                                             }
-                                                        }, `• ${src.location}`)
+                                                        },
+                                                            React.createElement('div', {
+                                                                id: `requirements-panel-source-icon-wrap-${itemId}-${srcIndex}`,
+                                                                style: {
+                                                                    flexShrink: 0,
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    borderRadius: '8px',
+                                                                    border: colors.sourceIconBoxBorder,
+                                                                    backgroundColor: colors.sourceIconBoxBg,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center'
+                                                                }
+                                                            },
+                                                                React.createElement('svg', {
+                                                                    id: `requirements-panel-source-icon-${itemId}-${srcIndex}`,
+                                                                    width: '16',
+                                                                    height: '16',
+                                                                    viewBox: '0 0 24 24',
+                                                                    fill: 'none',
+                                                                    style: { flexShrink: 0 }
+                                                                },
+                                                                    React.createElement('path', {
+                                                                        d: 'M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z',
+                                                                        stroke: colors.sourceIcon,
+                                                                        strokeWidth: '2',
+                                                                        strokeLinecap: 'round',
+                                                                        strokeLinejoin: 'round'
+                                                                    }),
+                                                                    React.createElement('path', {
+                                                                        d: 'M14 2V8H20',
+                                                                        stroke: colors.sourceIcon,
+                                                                        strokeWidth: '2',
+                                                                        strokeLinecap: 'round',
+                                                                        strokeLinejoin: 'round'
+                                                                    })
+                                                                )
+                                                            ),
+                                                            React.createElement('span', {
+                                                                id: `requirements-panel-source-name-${itemId}-${srcIndex}`,
+                                                                style: {
+                                                                    fontFamily: 'Inter, Helvetica',
+                                                                    fontSize: '14px',
+                                                                    fontWeight: '700',
+                                                                    color: colors.sourceText,
+                                                                    lineHeight: '1.35',
+                                                                    flex: 1,
+                                                                    minWidth: 0
+                                                                },
+                                                                title: src.documentName || 'Unknown Document'
+                                                            }, src.documentName || 'Unknown Document')
+                                                        ),
+                                                        src.location && React.createElement('div', {
+                                                            id: `requirements-panel-source-body-${itemId}-${srcIndex}`,
+                                                            style: {
+                                                                padding: isDarkTheme ? '16px' : '12px 14px',
+                                                                backgroundColor: colors.sourceBodyBg
+                                                            }
+                                                        },
+                                                            React.createElement('div', {
+                                                                id: `requirements-panel-source-quote-${itemId}-${srcIndex}`,
+                                                                style: {
+                                                                    border: colors.sourceQuoteBorder,
+                                                                    borderRadius: isDarkTheme ? '6px' : '8px',
+                                                                    padding: isDarkTheme ? '12px 14px' : '10px 15px',
+                                                                    backgroundColor: colors.sourceQuoteBg
+                                                                }
+                                                            },
+                                                                React.createElement('span', {
+                                                                    id: `requirements-panel-source-location-${itemId}-${srcIndex}`,
+                                                                    style: {
+                                                                        fontFamily: 'Inter, Helvetica',
+                                                                        fontSize: '13px',
+                                                                        fontWeight: '400',
+                                                                        color: colors.sourceLocation,
+                                                                        lineHeight: '1.4'
+                                                                    }
+                                                                }, `"${src.location}"`)
+                                                            )
+                                                        )
                                                     )
                                                 )
                                             )
@@ -1100,18 +1209,21 @@
                         React.createElement('button', {
                             id: 'requirements-panel-btn-generate-requirements',
                             onClick: generateRequirementsReport,
-                            disabled: generating,
+                            disabled: requirementsReportButtonDisabled,
+                            title: !canGenerateRequirementsReport && !generating
+                                ? 'Add functional or non-functional requirements first'
+                                : undefined,
                             style: {
                                 flex: 1,
                                 padding: '12px 16px',
-                                backgroundColor: generating ? colors.generateDisabledBg : colors.generateBg,
+                                backgroundColor: requirementsReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
                                 fontSize: '13px',
-                                cursor: generating ? 'not-allowed' : 'pointer',
+                                cursor: requirementsReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1119,13 +1231,13 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) {
+                                if (!requirementsReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
                                 }
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) {
+                                if (!requirementsReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateBg;
                                 }
@@ -1146,18 +1258,21 @@
                         React.createElement('button', {
                             id: 'requirements-panel-btn-generate-userstories',
                             onClick: generateUserStoriesReport,
-                            disabled: generating,
+                            disabled: userStoriesReportButtonDisabled,
+                            title: !canGenerateUserStoriesReport && !generating
+                                ? 'Add user stories first'
+                                : undefined,
                             style: {
                                 flex: 1,
                                 padding: '12px 16px',
-                                backgroundColor: generating ? colors.generateDisabledBg : colors.generateBg,
+                                backgroundColor: userStoriesReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
                                 fontSize: '13px',
-                                cursor: generating ? 'not-allowed' : 'pointer',
+                                cursor: userStoriesReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1165,13 +1280,13 @@
                                 transition: 'all 0.2s'
                             },
                             onMouseEnter: (e) => {
-                                if (!generating) {
+                                if (!userStoriesReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateHoverBg;
                                 }
                             },
                             onMouseLeave: (e) => {
-                                if (!generating) {
+                                if (!userStoriesReportButtonDisabled) {
                                     const dk = document.documentElement.getAttribute('data-theme') === 'dark';
                                     if (!dk) e.currentTarget.style.backgroundColor = colors.generateBg;
                                 }

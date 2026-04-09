@@ -1,7 +1,7 @@
 /**
  * Post-signup welcome / onboarding — text + optional static media per step (`media.src`).
  *
- * Compliance with homeTour.js: live tour has nine driver steps (overview + eight targets); these slides are eight welcome topics.
+ * Compliance with homeTour.js: live tour has ten driver steps (overview + nine targets); these slides are eight welcome topics.
  * Use images, GIFs, or short videos per step; no built-in wireframe UI.
  *
  * Do not destructure useState/useCallback at top level — classic scripts share
@@ -93,7 +93,7 @@ const WELCOME_STEPS = [
         heading: 'User Stories, Requirements, Manage',
         paragraphs: [
             'In the right column, use “Generate User Stories Report” or “Generate Requirement Report”, then “Manage Requirements / Stories”. Completed exports show in the list under that block.',
-            'Finish with “Get started”, or choose “Interactive tour” to walk the real UI in nine steps (overview → … → full right sidebar → report actions).'
+            'Finish with “Get started”, or choose “Interactive tour” to walk the real UI in ten steps (overview → … → reports → help control to reopen this tutorial).'
         ],
         media: null
     }
@@ -264,7 +264,15 @@ function WelcomeOverlay({ onComplete }) {
                         React.createElement('button', {
                             type: 'button',
                             className: 'welcome-overlay-btn welcome-overlay-btn--ghost',
-                            onClick: () => onComplete?.({ liveTour: true })
+                            onClick: () => {
+                                const path = window.location.pathname || '';
+                                const onAppHome = path === '/' || path === '/home';
+                                if (!onAppHome) {
+                                    window.location.href = '/home?tour=1';
+                                    return;
+                                }
+                                onComplete?.({ liveTour: true });
+                            }
                         }, 'Interactive tour'),
                         React.createElement('button', {
                             type: 'button',

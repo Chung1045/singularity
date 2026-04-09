@@ -304,6 +304,11 @@ async function createUserStoryTable(story, projectID) {
 
 async function generateRequirementsDocument(projectID, requirements) {
     console.log(` generateRequirementsDocument called: projectID=${projectID}, requirements count=${requirements?.length}`);
+    if (!requirements || !Array.isArray(requirements) || requirements.length === 0) {
+        console.warn(` generateRequirementsDocument: no requirements — not creating a report`);
+        return false;
+    }
+
     const projectName = await projectDB.fetchProjectName(projectID);
     console.log(` Project name: ${projectName}`);
 
@@ -329,8 +334,19 @@ async function generateRequirementsDocument(projectID, requirements) {
         new Paragraph(""), // spacing
     ];
 
-    let functionalRequirements = requirements.filter(req => req.details?.requirementType === 'functional');
-    let nonFunctionalRequirements = requirements.filter(req => req.details?.requirementType === 'non-functional');
+    const functionalRequirements = requirements.filter((req) => {
+        const t = (req.details?.requirementType ?? '').toString().toLowerCase().trim();
+        return t === 'functional' || t === 'fr';
+    });
+    const nonFunctionalRequirements = requirements.filter((req) => {
+        const t = (req.details?.requirementType ?? '').toString().toLowerCase().trim();
+        return t === 'non-functional' || t === 'nfr';
+    });
+
+    if (functionalRequirements.length === 0 && nonFunctionalRequirements.length === 0) {
+        console.warn(` generateRequirementsDocument: no functional or non-functional rows — not creating a report`);
+        return false;
+    }
 
     console.log(`Functional requirements filtered: ${functionalRequirements.length}`)
     console.log(`Function requirements content: ${JSON.stringify(functionalRequirements)}`)
@@ -378,6 +394,11 @@ async function generateRequirementsDocument(projectID, requirements) {
 }
 
 async function generateUserStoriesDocument(projectID, userStories) {
+    if (!userStories || !Array.isArray(userStories) || userStories.length === 0) {
+        console.warn(` generateUserStoriesDocument: no user stories — not creating a report`);
+        return false;
+    }
+
     const projectName = await projectDB.fetchProjectName(projectID);
 
     const userStoryDocContent = [
