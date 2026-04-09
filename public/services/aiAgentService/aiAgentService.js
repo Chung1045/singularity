@@ -44,9 +44,6 @@ async function requirementAnalysisModel(documentData, title) {
     }
 }
 
-/** Same rule as requirementsPanel.js: only split on `;` when a new citation starts (Page/Table/Section). */
-const CITATION_SEMICOLON_BOUNDARY = /;\s*(?=(?:Page|Table)\s+\d+|Section\s)/i;
-
 // parse the requirement output to json file
 async function parseRequirementsToJSON(documentID, documentData) {
     const requirements = [];
@@ -78,18 +75,15 @@ async function parseRequirementsToJSON(documentID, documentData) {
         const roleMatch = block.match(/Role:\s*(.+)/);
         const titleMatch = block.match(/Requirement Title:\s*(.+)/);
         const descriptionMatch = block.match(/Requirement Description:\s*(.+?)(?=\nCitation:)/s);
-        // `.` in /Citation:\s*(.+)/ stops at newlines — model output often breaks after "Table 1:"; capture full multiline citation to end of block.
-        const citationMatch = block.match(/Citation:\s*([\s\S]*)/i);
+        const citationMatch = block.match(/Citation:\s*(.+)/);
 
         if (roleMatch && idMatch && titleMatch && descriptionMatch) {
             let sourceReference = [];
 
             if (citationMatch) {
-                const citationText = (citationMatch[1] || '').trim();
+                const citationText = citationMatch[1].trim();
 
-                const citationParts = citationText.length
-                    ? citationText.split(CITATION_SEMICOLON_BOUNDARY).map((part) => part.trim()).filter(Boolean)
-                    : [];
+                const citationParts = citationText.split(';').map(part => part.trim());
 
                 const locations = [];
                 const remarks = [];
