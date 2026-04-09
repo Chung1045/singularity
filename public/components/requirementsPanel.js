@@ -431,18 +431,18 @@
             roleBg: 'rgba(79, 70, 229, 0.18)',
             roleIcon: '#a5b4fc',
             roleText: '#c7d2fe',
-            sourceCardBg: '#1a2332',
-            sourceCardBorder: '1px solid rgba(148, 163, 184, 0.22)',
-            sourceHeaderBg: 'rgba(59, 130, 246, 0.12)',
-            sourceHeaderBorderBottom: '1px solid rgba(148, 163, 184, 0.15)',
-            sourceBodyBg: '#1a2332',
-            sourceIconBoxBg: 'rgba(15, 23, 42, 0.6)',
-            sourceIconBoxBorder: '1px solid rgba(96, 165, 250, 0.45)',
-            sourceIcon: '#93c5fd',
-            sourceText: '#f1f5f9',
-            sourceQuoteBg: 'rgba(15, 23, 42, 0.35)',
-            sourceQuoteBorder: '1px solid rgba(129, 140, 248, 0.55)',
-            sourceLocation: '#cbd5e1',
+            sourceCardBg: '#0f172a',
+            sourceCardBorder: '1px solid rgba(51, 65, 85, 0.45)',
+            sourceHeaderBg: '#0f172a',
+            sourceHeaderBorderBottom: '1px solid rgba(51, 65, 85, 0.35)',
+            sourceBodyBg: '#0f172a',
+            sourceIconBoxBg: 'rgba(30, 41, 59, 0.85)',
+            sourceIconBoxBorder: '1px solid rgba(148, 163, 184, 0.25)',
+            sourceIcon: '#ffffff',
+            sourceText: '#ffffff',
+            sourceQuoteBg: '#020617',
+            sourceQuoteBorder: '1px solid #6366f1',
+            sourceLocation: '#ffffff',
             errorBg: 'rgba(127, 29, 29, 0.3)',
             errorText: '#fca5a5',
             successBg: 'rgba(20, 83, 45, 0.28)',
@@ -1111,10 +1111,10 @@
                                                                 id: `requirements-panel-source-name-${itemId}-${srcIndex}`,
                                                                 style: {
                                                                     fontFamily: 'Inter, Helvetica',
-                                                                    fontSize: '12px',
-                                                                    fontWeight: '400',
+                                                                    fontSize: '14px',
+                                                                    fontWeight: '700',
                                                                     color: colors.sourceText,
-                                                                    lineHeight: '1.3',
+                                                                    lineHeight: '1.35',
                                                                     flex: 1,
                                                                     minWidth: 0
                                                                 },
@@ -1124,7 +1124,7 @@
                                                         src.location && React.createElement('div', {
                                                             id: `requirements-panel-source-body-${itemId}-${srcIndex}`,
                                                             style: {
-                                                                padding: '12px 14px',
+                                                                padding: isDarkTheme ? '16px' : '12px 14px',
                                                                 backgroundColor: colors.sourceBodyBg
                                                             }
                                                         },
@@ -1132,8 +1132,8 @@
                                                                 id: `requirements-panel-source-quote-${itemId}-${srcIndex}`,
                                                                 style: {
                                                                     border: colors.sourceQuoteBorder,
-                                                                    borderRadius: '8px',
-                                                                    padding: '10px 15px',
+                                                                    borderRadius: isDarkTheme ? '6px' : '8px',
+                                                                    padding: isDarkTheme ? '12px 14px' : '10px 15px',
                                                                     backgroundColor: colors.sourceQuoteBg
                                                                 }
                                                             },
