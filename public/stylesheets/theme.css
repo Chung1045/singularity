@@ -619,12 +619,35 @@ html[data-theme='dark'] [id^='requirements-panel-report-type-'] {
 html[data-theme='dark'] #requirements-panel-list-count,
 html[data-theme='dark'] #requirements-panel-reports-count,
 html[data-theme='dark'] [id^='requirements-panel-item-badge-'],
-html[data-theme='dark'] [id^='requirements-panel-item-sources-'] > [id^='requirements-panel-source-'],
 html[data-theme='dark'] button[id^='requirements-panel-report-download-'],
 html[data-theme='dark'] button[id^='requirements-panel-report-delete-'] {
     background: var(--dm-surface-3) !important;
     color: var(--dm-muted-strong) !important;
     border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-item-sources-'] > [id^='requirements-panel-source-'] {
+    background: var(--dm-surface-2) !important;
+    border-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-header-'] {
+    background: rgba(59, 130, 246, 0.1) !important;
+    border-bottom-color: var(--dm-border) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-body-'] {
+    background: var(--dm-surface-2) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-quote-'] {
+    background: rgba(15, 23, 42, 0.45) !important;
+    border-color: rgba(129, 140, 248, 0.45) !important;
+}
+
+html[data-theme='dark'] [id^='requirements-panel-source-icon-wrap-'] {
+    background: rgba(15, 23, 42, 0.55) !important;
+    border-color: rgba(96, 165, 250, 0.4) !important;
 }
 
 html[data-theme='dark'] button[id^='requirements-panel-item-delete-'] {

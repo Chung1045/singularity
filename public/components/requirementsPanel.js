@@ -431,11 +431,18 @@
             roleBg: 'rgba(79, 70, 229, 0.18)',
             roleIcon: '#a5b4fc',
             roleText: '#c7d2fe',
-            sourceBg: 'rgba(22, 163, 74, 0.14)',
-            sourceBorder: '1px solid rgba(34, 197, 94, 0.24)',
-            sourceIcon: '#4ade80',
-            sourceText: '#86efac',
-            sourceLocation: '#4ade80',
+            sourceCardBg: '#1a2332',
+            sourceCardBorder: '1px solid rgba(148, 163, 184, 0.22)',
+            sourceHeaderBg: 'rgba(59, 130, 246, 0.12)',
+            sourceHeaderBorderBottom: '1px solid rgba(148, 163, 184, 0.15)',
+            sourceBodyBg: '#1a2332',
+            sourceIconBoxBg: 'rgba(15, 23, 42, 0.6)',
+            sourceIconBoxBorder: '1px solid rgba(96, 165, 250, 0.45)',
+            sourceIcon: '#93c5fd',
+            sourceText: '#f1f5f9',
+            sourceQuoteBg: 'rgba(15, 23, 42, 0.35)',
+            sourceQuoteBorder: '1px solid rgba(129, 140, 248, 0.55)',
+            sourceLocation: '#cbd5e1',
             errorBg: 'rgba(127, 29, 29, 0.3)',
             errorText: '#fca5a5',
             successBg: 'rgba(20, 83, 45, 0.28)',
@@ -469,11 +476,18 @@
             roleBg: '#e0e7ff',
             roleIcon: '#4f46e5',
             roleText: '#4f46e5',
-            sourceBg: '#f0fdf4',
-            sourceBorder: '1px solid #bbf7d0',
-            sourceIcon: '#16a34a',
-            sourceText: '#15803d',
-            sourceLocation: '#22c55e',
+            sourceCardBg: '#ffffff',
+            sourceCardBorder: '1px solid #e2e8f0',
+            sourceHeaderBg: '#f0f5ff',
+            sourceHeaderBorderBottom: '1px solid #e2e8f0',
+            sourceBodyBg: '#ffffff',
+            sourceIconBoxBg: '#ffffff',
+            sourceIconBoxBorder: '1px solid #93c5fd',
+            sourceIcon: '#3b82f6',
+            sourceText: '#1a202c',
+            sourceQuoteBg: '#ffffff',
+            sourceQuoteBorder: '1px solid #5a67d8',
+            sourceLocation: '#4a5568',
             errorBg: '#fee2e2',
             errorText: '#dc2626',
             successBg: '#dcfce7',
@@ -970,16 +984,13 @@
                                             }, title),
                                             React.createElement('p', {
                                                 id: `requirements-panel-item-description-${itemId}`,
+                                                className: 'requirements-panel-item-description',
                                                 style: {
                                                     margin: '0 0 8px 0',
                                                     fontFamily: 'Inter, Helvetica',
                                                     fontSize: '12px',
                                                     color: colors.muted,
-                                                    lineHeight: '1.5',
-                                                    display: '-webkit-box',
-                                                    WebkitLineClamp: 2,
-                                                    WebkitBoxOrient: 'vertical',
-                                                    overflow: 'hidden'
+                                                    lineHeight: '1.5'
                                                 }
                                             }, description),
                                             // Role badge (if available)
@@ -1026,8 +1037,10 @@
                                                 style: {
                                                     display: 'flex',
                                                     flexDirection: 'column',
-                                                    gap: '4px',
-                                                    marginTop: role ? '0' : '8px'
+                                                    gap: '8px',
+                                                    marginTop: role ? '0' : '8px',
+                                                    width: '100%',
+                                                    maxWidth: '100%'
                                                 }
                                             },
                                                 sourceReferences.map((src, srcIndex) =>
@@ -1037,62 +1050,105 @@
                                                         id: `requirements-panel-source-${itemId}-${srcIndex}`,
                                                         style: {
                                                             display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '6px',
-                                                            padding: '4px 8px',
-                                                            backgroundColor: colors.sourceBg,
-                                                            borderRadius: '4px',
-                                                            border: colors.sourceBorder
+                                                            flexDirection: 'column',
+                                                            alignItems: 'stretch',
+                                                            overflow: 'hidden',
+                                                            backgroundColor: colors.sourceCardBg,
+                                                            borderRadius: '12px',
+                                                            border: colors.sourceCardBorder
                                                         }
                                                     },
-                                                        // Document icon
-                                                        React.createElement('svg', {
-                                                            id: `requirements-panel-source-icon-${itemId}-${srcIndex}`,
-                                                            width: '14',
-                                                            height: '14',
-                                                            viewBox: '0 0 24 24',
-                                                            fill: 'none',
-                                                            style: { flexShrink: 0 }
-                                                        },
-                                                            React.createElement('path', {
-                                                                d: 'M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z',
-                                                                stroke: colors.sourceIcon,
-                                                                strokeWidth: '2',
-                                                                strokeLinecap: 'round',
-                                                                strokeLinejoin: 'round'
-                                                            }),
-                                                            React.createElement('path', {
-                                                                d: 'M14 2V8H20',
-                                                                stroke: colors.sourceIcon,
-                                                                strokeWidth: '2',
-                                                                strokeLinecap: 'round',
-                                                                strokeLinejoin: 'round'
-                                                            })
-                                                        ),
-                                                        // Document name
-                                                        React.createElement('span', {
-                                                            id: `requirements-panel-source-name-${itemId}-${srcIndex}`,
+                                                        React.createElement('div', {
+                                                            id: `requirements-panel-source-header-${itemId}-${srcIndex}`,
                                                             style: {
-                                                                fontFamily: 'Inter, Helvetica',
-                                                                fontSize: '14px',
-                                                                fontWeight: '500',
-                                                                color: colors.sourceText,
-                                                                whiteSpace: 'nowrap',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                maxWidth: '200px'
-                                                            },
-                                                            title: src.documentName || 'Unknown Document'
-                                                        }, src.documentName || 'Unknown Document'),
-                                                        // Location (if available)
-                                                        src.location && React.createElement('span', {
-                                                            id: `requirements-panel-source-location-${itemId}-${srcIndex}`,
-                                                            style: {
-                                                                fontFamily: 'Inter, Helvetica',
-                                                                fontSize: '14px',
-                                                                color: colors.sourceLocation
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '12px',
+                                                                padding: '14px 16px',
+                                                                backgroundColor: colors.sourceHeaderBg,
+                                                                borderBottom: src.location ? colors.sourceHeaderBorderBottom : 'none'
                                                             }
-                                                        }, `• ${src.location}`)
+                                                        },
+                                                            React.createElement('div', {
+                                                                id: `requirements-panel-source-icon-wrap-${itemId}-${srcIndex}`,
+                                                                style: {
+                                                                    flexShrink: 0,
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    borderRadius: '8px',
+                                                                    border: colors.sourceIconBoxBorder,
+                                                                    backgroundColor: colors.sourceIconBoxBg,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center'
+                                                                }
+                                                            },
+                                                                React.createElement('svg', {
+                                                                    id: `requirements-panel-source-icon-${itemId}-${srcIndex}`,
+                                                                    width: '16',
+                                                                    height: '16',
+                                                                    viewBox: '0 0 24 24',
+                                                                    fill: 'none',
+                                                                    style: { flexShrink: 0 }
+                                                                },
+                                                                    React.createElement('path', {
+                                                                        d: 'M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z',
+                                                                        stroke: colors.sourceIcon,
+                                                                        strokeWidth: '2',
+                                                                        strokeLinecap: 'round',
+                                                                        strokeLinejoin: 'round'
+                                                                    }),
+                                                                    React.createElement('path', {
+                                                                        d: 'M14 2V8H20',
+                                                                        stroke: colors.sourceIcon,
+                                                                        strokeWidth: '2',
+                                                                        strokeLinecap: 'round',
+                                                                        strokeLinejoin: 'round'
+                                                                    })
+                                                                )
+                                                            ),
+                                                            React.createElement('span', {
+                                                                id: `requirements-panel-source-name-${itemId}-${srcIndex}`,
+                                                                style: {
+                                                                    fontFamily: 'Inter, Helvetica',
+                                                                    fontSize: '12px',
+                                                                    fontWeight: '400',
+                                                                    color: colors.sourceText,
+                                                                    lineHeight: '1.3',
+                                                                    flex: 1,
+                                                                    minWidth: 0
+                                                                },
+                                                                title: src.documentName || 'Unknown Document'
+                                                            }, src.documentName || 'Unknown Document')
+                                                        ),
+                                                        src.location && React.createElement('div', {
+                                                            id: `requirements-panel-source-body-${itemId}-${srcIndex}`,
+                                                            style: {
+                                                                padding: '12px 14px',
+                                                                backgroundColor: colors.sourceBodyBg
+                                                            }
+                                                        },
+                                                            React.createElement('div', {
+                                                                id: `requirements-panel-source-quote-${itemId}-${srcIndex}`,
+                                                                style: {
+                                                                    border: colors.sourceQuoteBorder,
+                                                                    borderRadius: '8px',
+                                                                    padding: '10px 15px',
+                                                                    backgroundColor: colors.sourceQuoteBg
+                                                                }
+                                                            },
+                                                                React.createElement('span', {
+                                                                    id: `requirements-panel-source-location-${itemId}-${srcIndex}`,
+                                                                    style: {
+                                                                        fontFamily: 'Inter, Helvetica',
+                                                                        fontSize: '13px',
+                                                                        fontWeight: '400',
+                                                                        color: colors.sourceLocation,
+                                                                        lineHeight: '1.4'
+                                                                    }
+                                                                }, `"${src.location}"`)
+                                                            )
+                                                        )
                                                     )
                                                 )
                                             )
