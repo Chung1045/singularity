@@ -610,6 +610,8 @@
             iconButtonIcon: '#f8fafc',
             dangerButtonBg: 'rgba(127, 29, 29, 0.3)',
             dangerButtonHoverBg: 'rgba(153, 27, 27, 0.38)',
+            dangerBulkShadow:
+                '0 1px 2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
             dangerText: '#f87171'
         } : {
             panelSectionBg: '#ffffff',
@@ -653,8 +655,10 @@
             iconButtonBg: '#f2f2f7',
             iconButtonHoverBg: '#e8e8ed',
             iconButtonIcon: '#1c1d21',
-            dangerButtonBg: '#fef2f2',
-            dangerButtonHoverBg: '#fee2e2',
+            dangerButtonBg: '#fff1f2',
+            dangerButtonHoverBg: '#ffe4e6',
+            dangerBulkBorder: '1px solid rgba(225, 29, 72, 0.28)',
+            dangerBulkShadow: '0 1px 2px rgba(225, 29, 72, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05)',
             dangerText: '#dc2626'
         };
 
@@ -1097,53 +1101,68 @@
                                         flexShrink: 0,
                                         padding: '8px 14px',
                                         backgroundColor: bulkDeleteArmed ? colors.dangerButtonBg : colors.generateDisabledBg,
-                                        border: 'none',
-                                        borderRadius: '10px',
+                                        border:
+                                            bulkDeleteArmed && !isDarkTheme ? colors.dangerBulkBorder : 'none',
+                                        borderRadius: '8px',
                                         fontFamily: 'Inter, Helvetica',
                                         fontWeight: '600',
                                         fontSize: '12px',
+                                        letterSpacing: '0.02em',
+                                        lineHeight: 1,
                                         color: bulkDeleteArmed ? colors.dangerText : colors.muted,
                                         cursor: bulkDeleteArmed ? 'pointer' : 'not-allowed',
-                                        transition: 'all 0.2s',
-                                        display: 'flex',
+                                        transition:
+                                            'background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease',
+                                        display: 'inline-flex',
                                         alignItems: 'center',
-                                        gap: '6px',
+                                        justifyContent: 'center',
+                                        gap: '7px',
                                         boxShadow: bulkDeleteArmed
-                                            ? (isDarkTheme
-                                                ? '0 0 0 1px rgba(248, 113, 113, 0.45), 0 0 14px rgba(220, 38, 38, 0.18)'
-                                                : '0 0 0 1px rgba(220, 38, 38, 0.3), 0 2px 8px rgba(220, 38, 38, 0.12)')
+                                            ? (isDarkTheme ? colors.dangerBulkShadow : colors.dangerBulkShadow)
                                             : 'none',
-                                        opacity: bulkDeleteArmed ? 1 : 0.92
+                                        opacity: 1
                                     },
                                     onMouseEnter: (e) => {
-                                        if (!bulkDeleteArmed) {
+                                        if (!bulkDeleteArmed || isDarkTheme) {
                                             return;
                                         }
                                         e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
+                                        e.currentTarget.style.borderColor = 'rgba(225, 29, 72, 0.42)';
                                     },
                                     onMouseLeave: (e) => {
-                                        if (!bulkDeleteArmed) {
+                                        if (!bulkDeleteArmed || isDarkTheme) {
                                             return;
                                         }
                                         e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
+                                        e.currentTarget.style.borderColor = 'rgba(225, 29, 72, 0.28)';
                                     }
                                 },
                                     React.createElement('svg', {
-                                        width: '14',
-                                        height: '14',
+                                        width: '15',
+                                        height: '15',
                                         viewBox: '0 0 24 24',
                                         fill: 'none',
-                                        'aria-hidden': true
+                                        'aria-hidden': true,
+                                        style: {
+                                            display: 'block',
+                                            flexShrink: 0
+                                        }
                                     },
                                         React.createElement('path', {
                                             d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
                                             stroke: 'currentColor',
-                                            strokeWidth: '2',
+                                            strokeWidth: '1.75',
                                             strokeLinecap: 'round',
                                             strokeLinejoin: 'round'
                                         })
                                     ),
-                                    bulkDeleteButtonLabel
+                                    React.createElement('span', {
+                                        style: {
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            lineHeight: 1
+                                        }
+                                    }, bulkDeleteButtonLabel)
                                 )
                             )
                         ),
