@@ -40,6 +40,7 @@
         const headerCheckboxRef = useRef(null);
         const renameContainerRef = useRef(null);
         const uploadAbortController = useRef(null);
+        const prevListedTempIDsRef = useRef(new Set());
 
         const hasMediaFile = selectedFiles.some(file =>
             file.isAudio === true ||
@@ -135,16 +136,24 @@
             setMenuOpen(tempID);
         };
 
-        // Preserve existing checked state - new files start unchecked
+        // Auto-select newly added files; preserve check state for files already in the list
         useEffect(() => {
-            setCheckedTempIDs(prev => {
-                const newSet = new Set();
+            const prevIds = prevListedTempIDsRef.current;
+            const addedTempIDs = new Set(
+                selectedFiles.filter(f => !prevIds.has(f.tempID)).map(f => f.tempID)
+            );
+            prevListedTempIDsRef.current = new Set(selectedFiles.map(f => f.tempID));
+
+            setCheckedTempIDs(prevChecked => {
+                const next = new Set();
                 selectedFiles.forEach(file => {
-                    if (prev.has(file.tempID)) {
-                        newSet.add(file.tempID);
+                    if (addedTempIDs.has(file.tempID)) {
+                        next.add(file.tempID);
+                    } else if (prevChecked.has(file.tempID)) {
+                        next.add(file.tempID);
                     }
                 });
-                return newSet;
+                return next;
             });
         }, [selectedFiles]);
 

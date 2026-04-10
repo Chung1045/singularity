@@ -1,5 +1,5 @@
 (function () {
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
 
     const getCurrentTheme = () => {
         if (window.themeManager && typeof window.themeManager.getTheme === 'function') {
@@ -36,6 +36,9 @@
         /** Counts for enabling report buttons (full project, not sub-tab filter). */
         const [reportableRequirementsCount, setReportableRequirementsCount] = useState(0);
         const [totalUserStoriesCount, setTotalUserStoriesCount] = useState(0);
+        /** Row IDs whose per-item delete button is shown (after checking the row checkbox). */
+        const [revealedDeleteEntryIds, setRevealedDeleteEntryIds] = useState([]);
+        const selectAllDeleteRevealRef = useRef(null);
 
         useEffect(() => {
             const handleThemeChanged = (event) => {
@@ -72,6 +75,33 @@
                 window.removeEventListener('requirementsUpdated', handleRequirementsUpdated);
             };
         }, [projectID, mainTab, subTab]);
+
+        useEffect(() => {
+            setRevealedDeleteEntryIds([]);
+        }, [mainTab, subTab]);
+
+        useEffect(() => {
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const valid = new Set(
+                list.map((item, index) => item.requirementID || item.storyID || `item-${index}`)
+            );
+            setRevealedDeleteEntryIds((prev) => {
+                const next = prev.filter((id) => valid.has(id));
+                return next.length === prev.length ? prev : next;
+            });
+        }, [requirements, userStories, mainTab]);
+
+        useEffect(() => {
+            const node = selectAllDeleteRevealRef.current;
+            if (!node) {
+                return;
+            }
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const ids = list.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+            const n = ids.length;
+            const revealed = ids.filter((id) => revealedDeleteEntryIds.includes(id)).length;
+            node.indeterminate = n > 0 && revealed > 0 && revealed < n;
+        }, [requirements, userStories, mainTab, revealedDeleteEntryIds]);
 
         const refreshEligibilityCounts = useCallback(async () => {
             if (!projectID || typeof window.fetchProjectReportEligibilityCounts !== 'function') {
@@ -413,6 +443,129 @@
 
         }
 
+        const toggleRowDeleteReveal = (entryId) => {
+            setRevealedDeleteEntryIds((prev) =>
+                prev.includes(entryId) ? prev.filter((id) => id !== entryId) : [...prev, entryId]
+            );
+        };
+
+        const toggleSelectAllDeleteReveal = () => {
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const ids = list.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+            if (ids.length === 0) {
+                return;
+            }
+            const allRevealed = ids.every((id) => revealedDeleteEntryIds.includes(id));
+            if (allRevealed) {
+                setRevealedDeleteEntryIds((prev) => prev.filter((id) => !ids.includes(id)));
+            } else {
+                setRevealedDeleteEntryIds((prev) => Array.from(new Set([...prev, ...ids])));
+            }
+        };
+
+        const bulkDeleteEntries = async () => {
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const allIds = list.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+            const valid = new Set(allIds);
+            const selected = revealedDeleteEntryIds.filter((id) => valid.has(id));
+            const n = selected.length;
+            const total = allIds.length;
+            if (total === 0 || n === 0) {
+                return;
+            }
+            const allSelectedMode = n === total;
+            const partialMultiMode = n >= 2 && n < total;
+            if (!allSelectedMode && !partialMultiMode) {
+                return;
+            }
+
+            const ids = allSelectedMode ? allIds : selected;
+
+            const isReq = mainTab === 'requirements';
+            const typePlural = isReq ? 'requirements' : 'user stories';
+            const confirmMessage = allSelectedMode
+                ? `Are you sure you want to delete all ${ids.length} ${typePlural} in this list forever?`
+                : `Are you sure you want to delete ${ids.length} selected ${typePlural} forever?`;
+
+            const confirmDelete = await window.ConfirmModal.show({
+                title: 'Warning',
+                message: confirmMessage,
+                confirmText: 'Delete',
+                cancelText: 'Cancel'
+            });
+
+            if (!confirmDelete) {
+                return;
+            }
+
+            let failures = 0;
+            try {
+                for (const id of ids) {
+                    let response = null;
+                    if (isReq) {
+                        response = await fetch('/api/project/delete/requirements', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': window.csrfToken
+                            },
+                            body: JSON.stringify({
+                                projectID: projectID,
+                                requirementID: id
+                            })
+                        });
+                    } else {
+                        response = await fetch('/api/project/delete/user-stories', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': window.csrfToken
+                            },
+                            body: JSON.stringify({
+                                projectID: projectID,
+                                storyID: id
+                            })
+                        });
+                    }
+                    const data = await response.json();
+                    if (!response.ok || !data.successful) {
+                        failures += 1;
+                    }
+                }
+
+                await fetchRequirements();
+                await fetchUserStories();
+                await refreshEligibilityCounts();
+
+                const typeLabel = isReq ? 'Requirement' : 'User story';
+                const pluralLabel = isReq ? 'Requirements' : 'User stories';
+                if (failures === 0) {
+                    setError(null);
+                    setSuccessMessage(
+                        ids.length === 1
+                            ? `${typeLabel} deleted successfully`
+                            : `${ids.length} ${pluralLabel.toLowerCase()} deleted successfully`
+                    );
+                    setTimeout(() => setSuccessMessage(null), 3000);
+                } else {
+                    setSuccessMessage(null);
+                    const deleted = ids.length - failures;
+                    setError(
+                        deleted > 0
+                            ? `${deleted} deleted; ${failures} could not be deleted.`
+                            : 'Could not delete entries.'
+                    );
+                }
+            } catch (err) {
+                console.error('Bulk delete error:', err);
+                await window.ConfirmModal.show({
+                    title: 'Error',
+                    message: 'Unable to delete entries',
+                    confirmText: 'OK'
+                });
+            }
+        };
+
         const colors = isDarkTheme ? {
             panelSectionBg: '#162033',
             panelSectionBorder: '1px solid rgba(148, 163, 184, 0.18)',
@@ -512,6 +665,23 @@
 
         // Get current data to display
         const currentData = mainTab === 'requirements' ? requirements : userStories;
+        const visibleEntryIds = currentData.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+        const validIdSet = new Set(visibleEntryIds);
+        const selectedBulkCount = revealedDeleteEntryIds.filter((id) => validIdSet.has(id)).length;
+        const allDeleteSlotsRevealed =
+            visibleEntryIds.length > 0 && visibleEntryIds.every((id) => revealedDeleteEntryIds.includes(id));
+        /** Every row checked → "Delete all"; 2+ but not all → "Delete selected". */
+        const allSelectedBulkMode =
+            visibleEntryIds.length > 0 && selectedBulkCount === visibleEntryIds.length;
+        const partialMultiBulkMode =
+            selectedBulkCount >= 2 && selectedBulkCount < visibleEntryIds.length;
+        const bulkDeleteArmed = allSelectedBulkMode || partialMultiBulkMode;
+        const isRequirementsList = mainTab === 'requirements';
+        const bulkDeleteButtonLabel = bulkDeleteArmed
+            ? (allSelectedBulkMode
+                ? (isRequirementsList ? 'Delete all' : 'Delete all')
+                : (isRequirementsList ? 'Delete selected' : 'Delete selected'))
+            : 'Delete all';
 
         // Render component
         return React.createElement('div', {
@@ -830,34 +1000,152 @@
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
+                                gap: '12px',
                                 marginBottom: '12px',
-                                flexShrink: 0
+                                flexShrink: 0,
+                                flexWrap: 'wrap'
                             }
                         },
-                            React.createElement('h3', {
-                                id: 'requirements-panel-list-title',
+                            React.createElement('div', {
+                                id: 'requirements-panel-list-header-left',
                                 style: {
-                                    margin: 0,
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontWeight: '600',
-                                    fontSize: '15px',
-                                    color: colors.text
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    flex: '1 1 auto',
+                                    minWidth: 0
                                 }
-                            }, mainTab === 'requirements'
-                                ? (subTab === 'functional' ? 'Functional Requirements' : 'Non-Functional Requirements')
-                                : 'User Stories'),
-                            React.createElement('span', {
-                                id: 'requirements-panel-list-count',
+                            },
+                                React.createElement('h3', {
+                                    id: 'requirements-panel-list-title',
+                                    style: {
+                                        margin: 0,
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontWeight: '600',
+                                        fontSize: '15px',
+                                        color: colors.text
+                                    }
+                                }, mainTab === 'requirements'
+                                    ? (subTab === 'functional' ? 'Functional Requirements' : 'Non-Functional Requirements')
+                                    : 'User Stories'),
+                                React.createElement('span', {
+                                    id: 'requirements-panel-list-count',
+                                    style: {
+                                        padding: '4px 10px',
+                                        backgroundColor: colors.countBg,
+                                        borderRadius: '12px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: colors.countText
+                                    }
+                                }, `${currentData.length} items`)
+                            ),
+                            currentData.length > 0 && React.createElement('div', {
+                                id: 'requirements-panel-list-header-actions',
                                 style: {
-                                    padding: '4px 10px',
-                                    backgroundColor: colors.countBg,
-                                    borderRadius: '12px',
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontSize: '12px',
-                                    fontWeight: '500',
-                                    color: colors.countText
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    flexShrink: 0
                                 }
-                            }, `${currentData.length} items`)
+                            },
+                                React.createElement('label', {
+                                    id: 'requirements-panel-select-all-delete-reveal',
+                                    htmlFor: 'requirements-panel-select-all-delete-reveal-input',
+                                    style: {
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        cursor: 'pointer',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: colors.muted,
+                                        userSelect: 'none',
+                                        flexShrink: 0
+                                    }
+                                },
+                                    React.createElement('input', {
+                                        id: 'requirements-panel-select-all-delete-reveal-input',
+                                        ref: selectAllDeleteRevealRef,
+                                        type: 'checkbox',
+                                        checked: allDeleteSlotsRevealed,
+                                        onChange: toggleSelectAllDeleteReveal,
+                                        'aria-label': 'Select all rows to show delete buttons',
+                                        style: {
+                                            width: '18px',
+                                            height: '18px',
+                                            margin: 0,
+                                            cursor: 'pointer',
+                                            accentColor: isDarkTheme ? '#818cf8' : '#4f46e5'
+                                        }
+                                    }),
+                                    React.createElement('span', null, isRequirementsList ? 'Select all requirements' : 'Select all user stories')
+                                ),
+                                React.createElement('button', {
+                                    id: 'requirements-panel-delete-choice',
+                                    type: 'button',
+                                    disabled: !bulkDeleteArmed,
+                                    onClick: bulkDeleteEntries,
+                                    title: bulkDeleteArmed
+                                        ? (allSelectedBulkMode
+                                            ? `Delete all ${currentData.length} items in this list`
+                                            : `Delete ${selectedBulkCount} selected items`)
+                                        : 'Select all rows, or choose two or more rows, to enable bulk delete',
+                                    style: {
+                                        flexShrink: 0,
+                                        padding: '8px 14px',
+                                        backgroundColor: bulkDeleteArmed ? colors.dangerButtonBg : colors.generateDisabledBg,
+                                        border: 'none',
+                                        borderRadius: '10px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontWeight: '600',
+                                        fontSize: '12px',
+                                        color: bulkDeleteArmed ? colors.dangerText : colors.muted,
+                                        cursor: bulkDeleteArmed ? 'pointer' : 'not-allowed',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        boxShadow: bulkDeleteArmed
+                                            ? (isDarkTheme
+                                                ? '0 0 0 1px rgba(248, 113, 113, 0.45), 0 0 14px rgba(220, 38, 38, 0.18)'
+                                                : '0 0 0 1px rgba(220, 38, 38, 0.3), 0 2px 8px rgba(220, 38, 38, 0.12)')
+                                            : 'none',
+                                        opacity: bulkDeleteArmed ? 1 : 0.92
+                                    },
+                                    onMouseEnter: (e) => {
+                                        if (!bulkDeleteArmed) {
+                                            return;
+                                        }
+                                        e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
+                                    },
+                                    onMouseLeave: (e) => {
+                                        if (!bulkDeleteArmed) {
+                                            return;
+                                        }
+                                        e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
+                                    }
+                                },
+                                    React.createElement('svg', {
+                                        width: '14',
+                                        height: '14',
+                                        viewBox: '0 0 24 24',
+                                        fill: 'none',
+                                        'aria-hidden': true
+                                    },
+                                        React.createElement('path', {
+                                            d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
+                                            stroke: 'currentColor',
+                                            strokeWidth: '2',
+                                            strokeLinecap: 'round',
+                                            strokeLinejoin: 'round'
+                                        })
+                                    ),
+                                    bulkDeleteButtonLabel
+                                )
+                            )
                         ),
 
                         // Scrollable List
@@ -950,9 +1238,29 @@
                                         style: {
                                             display: 'flex',
                                             alignItems: 'flex-start',
-                                            gap: '12px'
+                                            gap: '12px',
+                                            width: '100%',
+                                            minWidth: 0
                                         }
                                     },
+                                        React.createElement('input', {
+                                            id: `requirements-panel-item-select-${itemId}`,
+                                            type: 'checkbox',
+                                            'aria-label': `Show delete for ${prefix}-${String(seqNum).padStart(2, '0')}`,
+                                            checked: revealedDeleteEntryIds.includes(itemId),
+                                            onChange: () => toggleRowDeleteReveal(itemId),
+                                            onClick: (e) => e.stopPropagation(),
+                                            style: {
+                                                width: '18px',
+                                                height: '18px',
+                                                marginTop: '2px',
+                                                flexShrink: 0,
+                                                cursor: 'pointer',
+                                                accentColor: isDarkTheme ? '#818cf8' : '#4f46e5',
+                                                position: 'relative',
+                                                zIndex: 1
+                                            }
+                                        }),
                                         // Sequence badge
                                         React.createElement('div', {
                                             id: `requirements-panel-item-badge-${itemId}`,
@@ -1153,42 +1461,67 @@
                                                 )
                                             )
                                         ),
-                                        React.createElement('button', {
-                                                id: `requirements-panel-item-delete-${itemId}`,
-                                                onClick: () => deleteEntry(itemId),
-                                                'aria-label': 'Delete entry',
-                                                style: {
-                                                    width: '32px',
-                                                    height: '32px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    backgroundColor: colors.dangerButtonBg,
-                                                    border: 'none',
-                                                    borderRadius: '8px',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s'
+                                        React.createElement('div', {
+                                            id: `requirements-panel-item-delete-slot-${itemId}`,
+                                            style: {
+                                                width: '32px',
+                                                minWidth: '32px',
+                                                height: '32px',
+                                                flexShrink: 0,
+                                                marginLeft: 'auto',
+                                                display: 'flex',
+                                                alignItems: 'flex-start',
+                                                justifyContent: 'center',
+                                                boxSizing: 'border-box'
+                                            }
+                                        },
+                                            revealedDeleteEntryIds.includes(itemId) &&
+                                                React.createElement('button', {
+                                                    id: `requirements-panel-item-delete-${itemId}`,
+                                                    type: 'button',
+                                                    onClick: (e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        void deleteEntry(itemId);
+                                                    },
+                                                    onMouseDown: (e) => e.stopPropagation(),
+                                                    'aria-label': 'Delete entry',
+                                                    style: {
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        backgroundColor: colors.dangerButtonBg,
+                                                        border: 'none',
+                                                        borderRadius: '8px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s',
+                                                        flexShrink: 0,
+                                                        position: 'relative',
+                                                        zIndex: 2
+                                                    },
+                                                    onMouseEnter: (e) => {
+                                                        e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
+                                                    },
+                                                    onMouseLeave: (e) => {
+                                                        e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
+                                                    }
                                                 },
-                                                onMouseEnter: (e) => {
-                                                    e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
-                                                },
-                                                onMouseLeave: (e) => {
-                                                    e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
-                                                }
-                                            },
-                                            React.createElement('svg', {
-                                                    width: '16',
-                                                    height: '16',
-                                                    viewBox: '0 0 24 24',
-                                                    fill: 'none'
-                                                },
-                                                React.createElement('path', {
-                                                    d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
-                                                    stroke: colors.dangerText,
-                                                    strokeWidth: '2',
-                                                    strokeLinecap: 'round',
-                                                    strokeLinejoin: 'round'
-                                                })
+                                                React.createElement('svg', {
+                                                        width: '16',
+                                                        height: '16',
+                                                        viewBox: '0 0 24 24',
+                                                        fill: 'none'
+                                                    },
+                                                    React.createElement('path', {
+                                                        d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
+                                                        stroke: colors.dangerText,
+                                                        strokeWidth: '2',
+                                                        strokeLinecap: 'round',
+                                                        strokeLinejoin: 'round'
+                                                    })
+                                                )
                                             )
                                         )
                                     )
