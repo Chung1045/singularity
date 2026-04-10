@@ -194,6 +194,12 @@ html[data-theme='dark'] .profile-danger-button {
     border-color: var(--dm-border-strong) !important;
 }
 
+html[data-theme='dark'] [id^='requirements-panel-tab-'][aria-selected='true'],
+html[data-theme='dark'] [id^='requirements-panel-subtab-'][aria-selected='true'] {
+    background: #020817 !important;
+    border: none !important;
+}
+
 html[data-theme='dark'] .sidebar-expand .history:hover,
 html[data-theme='dark'] .sidebar-expand .search-file-field:hover,
 html[data-theme='dark'] .profile-shell .history:hover,

@@ -51,6 +51,17 @@
             };
         }, []);
 
+        const [viewportWidth, setViewportWidth] = useState(() =>
+            typeof window !== 'undefined' ? window.innerWidth : 1024
+        );
+        useEffect(() => {
+            const onResize = () => setViewportWidth(window.innerWidth);
+            window.addEventListener('resize', onResize);
+            return () => window.removeEventListener('resize', onResize);
+        }, []);
+        /** Narrow viewports: full-width panel, stacked actions, touch-friendly tabs. */
+        const isMobile = viewportWidth <= 640;
+
         // Fetch data when component mounts or tabs change
         useEffect(() => {
             if (projectID) {
@@ -701,7 +712,9 @@
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 10001,
-                padding: '20px'
+                padding: isMobile ? '16px' : '20px',
+                paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 0px))' : undefined,
+                boxSizing: 'border-box'
             },
             onClick: (e) => {
                 if (e.target.id === 'requirements-panel-overlay') {
@@ -714,12 +727,12 @@
                 className: 'requirement-list',
                 style: {
                     position: 'relative',
-                    width: '720px',
-                    maxWidth: '95%',
-                    height: '85vh',
-                    maxHeight: '85vh',
+                    width: isMobile ? '100%' : '720px',
+                    maxWidth: isMobile ? 'min(100%, 400px)' : '95%',
+                    height: isMobile ? 'min(92dvh, min(680px, calc(100dvh - 16px)))' : '85vh',
+                    maxHeight: isMobile ? 'min(92dvh, min(680px, calc(100dvh - 16px)))' : '85vh',
                     backgroundColor: '#f7f7f7',
-                    borderRadius: '20px',
+                    borderRadius: isMobile ? '14px' : '20px',
                     border: '1px solid #f0f0f080',
                     display: 'flex',
                     flexDirection: 'column',
@@ -734,7 +747,9 @@
                     className: 'header',
                     style: {
                         width: '100%',
-                        minHeight: mainTab === 'requirements' ? '110px' : '70px',
+                        minHeight: isMobile
+                            ? (mainTab === 'requirements' ? '112px' : '62px')
+                            : (mainTab === 'requirements' ? '110px' : '70px'),
                         position: 'relative',
                         backgroundColor: '#ffffff',
                         overflow: 'visible',
@@ -750,10 +765,10 @@
                         'aria-label': 'Close panel',
                         style: {
                             position: 'absolute',
-                            top: '12px',
-                            left: '12px',
-                            width: '36px',
-                            height: '36px',
+                            top: isMobile ? '14px' : '12px',
+                            left: isMobile ? '10px' : '12px',
+                            width: isMobile ? '40px' : '36px',
+                            height: isMobile ? '40px' : '36px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -787,24 +802,31 @@
                         id: 'requirements-panel-main-tabs',
                         style: {
                             position: 'absolute',
-                            top: '14px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
+                            top: isMobile ? '12px' : '14px',
+                            left: isMobile ? '54px' : '50%',
+                            right: isMobile ? '12px' : 'auto',
+                            transform: isMobile ? 'none' : 'translateX(-50%)',
                             display: 'flex',
-                            gap: '10px',
-                            zIndex: 5
+                            flexDirection: 'row',
+                            flexWrap: 'nowrap',
+                            alignItems: 'stretch',
+                            gap: isMobile ? '8px' : '10px',
+                            zIndex: 5,
+                            minWidth: 0
                         }
                     },
                         React.createElement('button', {
                             id: 'requirements-panel-tab-requirements',
+                            'aria-selected': mainTab === 'requirements',
                             onClick: () => {
                                 setMainTab('requirements');
                                 setSubTab('functional');
                             },
                             style: {
-                                minWidth: '140px',
-                                height: '36px',
-                                padding: '0 20px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '140px',
+                                height: isMobile ? '40px' : '36px',
+                                padding: isMobile ? '0 10px' : '0 20px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -815,7 +837,7 @@
                                 transition: 'all 0.2s',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 color: mainTab === 'requirements' ? '#ffffff' : '#1c1d21'
                             },
                             onMouseEnter: (e) => {
@@ -829,11 +851,13 @@
                         }, 'Requirements'),
                         React.createElement('button', {
                             id: 'requirements-panel-tab-user-stories',
+                            'aria-selected': mainTab === 'user-stories',
                             onClick: () => setMainTab('user-stories'),
                             style: {
-                                minWidth: '140px',
-                                height: '36px',
-                                padding: '0 20px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '140px',
+                                height: isMobile ? '40px' : '36px',
+                                padding: isMobile ? '0 10px' : '0 20px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -844,7 +868,7 @@
                                 transition: 'all 0.2s',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 color: mainTab === 'user-stories' ? '#ffffff' : '#1c1d21'
                             },
                             onMouseEnter: (e) => {
@@ -863,22 +887,28 @@
                         id: 'requirements-panel-sub-tabs',
                         style: {
                             position: 'absolute',
-                            top: '64px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
+                            top: isMobile ? '62px' : '64px',
+                            left: isMobile ? '12px' : '50%',
+                            right: isMobile ? '12px' : 'auto',
+                            transform: isMobile ? 'none' : 'translateX(-50%)',
                             display: 'flex',
-                            gap: '10px',
+                            flexDirection: 'row',
+                            flexWrap: 'nowrap',
+                            gap: isMobile ? '8px' : '10px',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            minWidth: 0
                         }
                     },
                         React.createElement('button', {
                             id: 'requirements-panel-subtab-functional',
+                            'aria-selected': subTab === 'functional',
                             onClick: () => setSubTab('functional'),
                             style: {
-                                minWidth: '130px',
-                                height: '32px',
-                                padding: '0 16px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '130px',
+                                height: isMobile ? '36px' : '32px',
+                                padding: isMobile ? '0 10px' : '0 16px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -888,7 +918,7 @@
                                 cursor: 'pointer',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '500',
-                                fontSize: '12px',
+                                fontSize: isMobile ? '11px' : '12px',
                                 color: '#1c1d21',
                                 transition: 'all 0.2s'
                             },
@@ -903,11 +933,13 @@
                         }, 'Functional'),
                         React.createElement('button', {
                             id: 'requirements-panel-subtab-non-functional',
+                            'aria-selected': subTab === 'non-functional',
                             onClick: () => setSubTab('non-functional'),
                             style: {
-                                minWidth: '130px',
-                                height: '32px',
-                                padding: '0 16px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '130px',
+                                height: isMobile ? '36px' : '32px',
+                                padding: isMobile ? '0 10px' : '0 16px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -917,7 +949,7 @@
                                 cursor: 'pointer',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '500',
-                                fontSize: '12px',
+                                fontSize: isMobile ? '11px' : '12px',
                                 color: '#1c1d21',
                                 transition: 'all 0.2s'
                             },
@@ -939,10 +971,11 @@
                     style: {
                         display: 'flex',
                         flexDirection: 'column',
-                        flex: 1,
+                        flex: '1 1 0%',
                         overflow: 'hidden',
-                        padding: '20px',
-                        gap: '16px'
+                        padding: isMobile ? '12px' : '20px',
+                        gap: isMobile ? '12px' : '16px',
+                        minHeight: 0
                     }
                 },
                     // Error/Success Messages
@@ -988,11 +1021,12 @@
                         style: {
                             backgroundColor: colors.panelSectionBg,
                             borderRadius: '16px',
-                            padding: '16px',
-                            flex: 1,
+                            padding: isMobile ? '12px' : '16px',
+                            flex: '1 1 0%',
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
+                            minHeight: 0,
                             boxShadow: colors.panelSectionShadow,
                             border: colors.panelSectionBorder
                         }
@@ -1085,7 +1119,9 @@
                                             accentColor: isDarkTheme ? '#818cf8' : '#4f46e5'
                                         }
                                     }),
-                                    React.createElement('span', null, isRequirementsList ? 'Select all requirements' : 'Select all user stories')
+                                    React.createElement('span', null, isMobile
+                                        ? 'Select all'
+                                        : (isRequirementsList ? 'Select all requirements' : 'Select all user stories'))
                                 ),
                                 React.createElement('button', {
                                     id: 'requirements-panel-delete-choice',
@@ -1171,8 +1207,11 @@
                         React.createElement('div', {
                             id: 'requirements-panel-list-scroll',
                             style: {
-                                flex: 1,
+                                flex: '1 1 auto',
+                                minHeight: 0,
                                 overflowY: 'auto',
+                                overflowX: 'hidden',
+                                WebkitOverflowScrolling: 'touch',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '10px',
@@ -1238,7 +1277,7 @@
                                     style: {
                                         backgroundColor: colors.rowBg,
                                         borderRadius: '12px',
-                                        padding: '14px 16px',
+                                        padding: isMobile ? '12px' : '14px 16px',
                                         border: `1px solid ${colors.rowBorder}`,
                                         transition: 'all 0.2s'
                                     },
@@ -1554,7 +1593,8 @@
                         id: 'requirements-panel-report-buttons',
                         style: {
                             display: 'flex',
-                            gap: '12px',
+                            flexDirection: isMobile ? 'column' : 'row',
+                            gap: isMobile ? '10px' : '12px',
                             flexShrink: 0
                         }
                     },
@@ -1567,14 +1607,16 @@
                                 : undefined,
                             style: {
                                 flex: 1,
-                                padding: '12px 16px',
+                                width: isMobile ? '100%' : undefined,
+                                minHeight: isMobile ? '44px' : undefined,
+                                padding: isMobile ? '12px 14px' : '12px 16px',
                                 backgroundColor: requirementsReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 cursor: requirementsReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1605,7 +1647,7 @@
                                     filter: 'brightness(0) invert(1)'
                                 }
                             }),
-                            generating ? 'Generating...' : 'Generate Requirements Report'
+                            generating ? 'Generating...' : (isMobile ? 'Generate requirements report' : 'Generate Requirements Report')
                         ),
                         React.createElement('button', {
                             id: 'requirements-panel-btn-generate-userstories',
@@ -1616,14 +1658,16 @@
                                 : undefined,
                             style: {
                                 flex: 1,
-                                padding: '12px 16px',
+                                width: isMobile ? '100%' : undefined,
+                                minHeight: isMobile ? '44px' : undefined,
+                                padding: isMobile ? '12px 14px' : '12px 16px',
                                 backgroundColor: userStoriesReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 cursor: userStoriesReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1654,7 +1698,7 @@
                                     filter: 'brightness(0) invert(1)'
                                 }
                             }),
-                            generating ? 'Generating...' : 'Generate User Stories Report'
+                            generating ? 'Generating...' : (isMobile ? 'Generate user stories report' : 'Generate User Stories Report')
                         )
                     ),
 
@@ -1664,12 +1708,13 @@
                         style: {
                             backgroundColor: colors.panelSectionBg,
                             borderRadius: '16px',
-                            padding: '16px',
+                            padding: isMobile ? '12px' : '16px',
                             flexShrink: 0,
-                            maxHeight: '200px',
+                            maxHeight: isMobile ? 'min(125px, 30vh)' : '200px',
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
+                            minHeight: 0,
                             boxShadow: colors.panelSectionShadow,
                             border: colors.panelSectionBorder
                         }
@@ -1713,7 +1758,8 @@
                         React.createElement('div', {
                             id: 'requirements-panel-reports-list',
                             style: {
-                                flex: 1,
+                                flex: '1 1 auto',
+                                minHeight: 0,
                                 overflowY: 'auto',
                                 display: 'flex',
                                 flexDirection: 'column',
