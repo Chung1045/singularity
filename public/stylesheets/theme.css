@@ -194,6 +194,12 @@ html[data-theme='dark'] .profile-danger-button {
     border-color: var(--dm-border-strong) !important;
 }
 
+html[data-theme='dark'] [id^='requirements-panel-tab-'][aria-selected='true'],
+html[data-theme='dark'] [id^='requirements-panel-subtab-'][aria-selected='true'] {
+    background: #020817 !important;
+    border: none !important;
+}
+
 html[data-theme='dark'] .sidebar-expand .history:hover,
 html[data-theme='dark'] .sidebar-expand .search-file-field:hover,
 html[data-theme='dark'] .profile-shell .history:hover,
@@ -662,6 +668,49 @@ html[data-theme='dark'] button[id^='requirements-panel-item-delete-'] {
 html[data-theme='dark'] button[id^='requirements-panel-report-delete-'],
 html[data-theme='dark'] [id^='requirements-panel-report-delete-icon-'] {
     color: var(--dm-danger-text) !important;
+}
+
+/* Bulk delete — armed: red fill + border; disabled: no border (rules below) */
+html[data-theme='dark'] #requirements-panel-delete-choice:not(:disabled) {
+    background: rgba(127, 29, 29, 0.34) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(248, 113, 113, 0.4) !important;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme='dark'] #requirements-panel-delete-choice:not(:disabled):hover {
+    background: rgba(153, 27, 27, 0.44) !important;
+    border-color: rgba(252, 165, 165, 0.52) !important;
+}
+
+html[data-theme='dark'] #requirements-panel-delete-choice:focus-visible {
+    outline: 2px solid rgba(248, 113, 113, 0.55);
+    outline-offset: 2px;
+}
+
+/* Disabled: soft neutral — no border */
+#requirements-panel-delete-choice:disabled {
+    background: #eef0f4 !important;
+    color: #9ca3af !important;
+    border: none !important;
+   
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+}
+
+html[data-theme='dark'] #requirements-panel-delete-choice:disabled {
+    background: rgba(30, 41, 59, 0.78) !important;
+    color: #94a3b8 !important;
+    border: none !important;
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+}
+
+#requirements-panel-delete-choice:focus-visible:not(:disabled) {
+    outline: 2px solid rgba(220, 38, 38, 0.4);
+    outline-offset: 2px;
 }
 
 html[data-theme='dark'] .security-modal-backdrop {

@@ -148,36 +148,24 @@
     }
 }
 
-/* Responsive design */
+/* Responsive design — panel dimensions come from inline styles; do not override with fullscreen rules */
 @media (max-width: 768px) {
-    #requirements-panel-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-        border-radius: 0 !important;
-    }
-    
-    #requirements-panel-container .header {
-        min-height: auto !important;
-        padding-bottom: 80px;
-    }
-
-    /* Stack report generation buttons on mobile */
-    #requirements-panel-container > div > div:nth-child(3) {
+    #requirements-panel-report-buttons {
         flex-direction: column !important;
     }
 }
 
 @media (max-width: 480px) {
-    #requirements-panel-container .header > div:nth-child(2) {
-        flex-direction: column !important;
-        gap: 6px !important;
+    /* Legacy rule stacked main tabs vertically; keep both rows side-by-side */
+    #requirements-panel-main-tabs,
+    #requirements-panel-sub-tabs {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
     }
 
-    #requirements-panel-container .header > div:nth-child(2) button {
-        min-width: 100px !important;
-        font-size: 11px !important;
+    #requirements-panel-main-tabs button,
+    #requirements-panel-sub-tabs button {
+        min-width: 0 !important;
     }
 }
 

@@ -1,5 +1,5 @@
 (function () {
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
 
     const getCurrentTheme = () => {
         if (window.themeManager && typeof window.themeManager.getTheme === 'function') {
@@ -36,6 +36,9 @@
         /** Counts for enabling report buttons (full project, not sub-tab filter). */
         const [reportableRequirementsCount, setReportableRequirementsCount] = useState(0);
         const [totalUserStoriesCount, setTotalUserStoriesCount] = useState(0);
+        /** Row IDs whose per-item delete button is shown (after checking the row checkbox). */
+        const [revealedDeleteEntryIds, setRevealedDeleteEntryIds] = useState([]);
+        const selectAllDeleteRevealRef = useRef(null);
 
         useEffect(() => {
             const handleThemeChanged = (event) => {
@@ -47,6 +50,17 @@
                 window.removeEventListener('appThemeChanged', handleThemeChanged);
             };
         }, []);
+
+        const [viewportWidth, setViewportWidth] = useState(() =>
+            typeof window !== 'undefined' ? window.innerWidth : 1024
+        );
+        useEffect(() => {
+            const onResize = () => setViewportWidth(window.innerWidth);
+            window.addEventListener('resize', onResize);
+            return () => window.removeEventListener('resize', onResize);
+        }, []);
+        /** Narrow viewports: full-width panel, stacked actions, touch-friendly tabs. */
+        const isMobile = viewportWidth <= 640;
 
         // Fetch data when component mounts or tabs change
         useEffect(() => {
@@ -72,6 +86,33 @@
                 window.removeEventListener('requirementsUpdated', handleRequirementsUpdated);
             };
         }, [projectID, mainTab, subTab]);
+
+        useEffect(() => {
+            setRevealedDeleteEntryIds([]);
+        }, [mainTab, subTab]);
+
+        useEffect(() => {
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const valid = new Set(
+                list.map((item, index) => item.requirementID || item.storyID || `item-${index}`)
+            );
+            setRevealedDeleteEntryIds((prev) => {
+                const next = prev.filter((id) => valid.has(id));
+                return next.length === prev.length ? prev : next;
+            });
+        }, [requirements, userStories, mainTab]);
+
+        useEffect(() => {
+            const node = selectAllDeleteRevealRef.current;
+            if (!node) {
+                return;
+            }
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const ids = list.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+            const n = ids.length;
+            const revealed = ids.filter((id) => revealedDeleteEntryIds.includes(id)).length;
+            node.indeterminate = n > 0 && revealed > 0 && revealed < n;
+        }, [requirements, userStories, mainTab, revealedDeleteEntryIds]);
 
         const refreshEligibilityCounts = useCallback(async () => {
             if (!projectID || typeof window.fetchProjectReportEligibilityCounts !== 'function') {
@@ -413,6 +454,129 @@
 
         }
 
+        const toggleRowDeleteReveal = (entryId) => {
+            setRevealedDeleteEntryIds((prev) =>
+                prev.includes(entryId) ? prev.filter((id) => id !== entryId) : [...prev, entryId]
+            );
+        };
+
+        const toggleSelectAllDeleteReveal = () => {
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const ids = list.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+            if (ids.length === 0) {
+                return;
+            }
+            const allRevealed = ids.every((id) => revealedDeleteEntryIds.includes(id));
+            if (allRevealed) {
+                setRevealedDeleteEntryIds((prev) => prev.filter((id) => !ids.includes(id)));
+            } else {
+                setRevealedDeleteEntryIds((prev) => Array.from(new Set([...prev, ...ids])));
+            }
+        };
+
+        const bulkDeleteEntries = async () => {
+            const list = mainTab === 'requirements' ? requirements : userStories;
+            const allIds = list.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+            const valid = new Set(allIds);
+            const selected = revealedDeleteEntryIds.filter((id) => valid.has(id));
+            const n = selected.length;
+            const total = allIds.length;
+            if (total === 0 || n === 0) {
+                return;
+            }
+            const allSelectedMode = n === total;
+            const partialMultiMode = n >= 2 && n < total;
+            if (!allSelectedMode && !partialMultiMode) {
+                return;
+            }
+
+            const ids = allSelectedMode ? allIds : selected;
+
+            const isReq = mainTab === 'requirements';
+            const typePlural = isReq ? 'requirements' : 'user stories';
+            const confirmMessage = allSelectedMode
+                ? `Are you sure you want to delete all ${ids.length} ${typePlural} in this list forever?`
+                : `Are you sure you want to delete ${ids.length} selected ${typePlural} forever?`;
+
+            const confirmDelete = await window.ConfirmModal.show({
+                title: 'Warning',
+                message: confirmMessage,
+                confirmText: 'Delete',
+                cancelText: 'Cancel'
+            });
+
+            if (!confirmDelete) {
+                return;
+            }
+
+            let failures = 0;
+            try {
+                for (const id of ids) {
+                    let response = null;
+                    if (isReq) {
+                        response = await fetch('/api/project/delete/requirements', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': window.csrfToken
+                            },
+                            body: JSON.stringify({
+                                projectID: projectID,
+                                requirementID: id
+                            })
+                        });
+                    } else {
+                        response = await fetch('/api/project/delete/user-stories', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'CSRF-Token': window.csrfToken
+                            },
+                            body: JSON.stringify({
+                                projectID: projectID,
+                                storyID: id
+                            })
+                        });
+                    }
+                    const data = await response.json();
+                    if (!response.ok || !data.successful) {
+                        failures += 1;
+                    }
+                }
+
+                await fetchRequirements();
+                await fetchUserStories();
+                await refreshEligibilityCounts();
+
+                const typeLabel = isReq ? 'Requirement' : 'User story';
+                const pluralLabel = isReq ? 'Requirements' : 'User stories';
+                if (failures === 0) {
+                    setError(null);
+                    setSuccessMessage(
+                        ids.length === 1
+                            ? `${typeLabel} deleted successfully`
+                            : `${ids.length} ${pluralLabel.toLowerCase()} deleted successfully`
+                    );
+                    setTimeout(() => setSuccessMessage(null), 3000);
+                } else {
+                    setSuccessMessage(null);
+                    const deleted = ids.length - failures;
+                    setError(
+                        deleted > 0
+                            ? `${deleted} deleted; ${failures} could not be deleted.`
+                            : 'Could not delete entries.'
+                    );
+                }
+            } catch (err) {
+                console.error('Bulk delete error:', err);
+                await window.ConfirmModal.show({
+                    title: 'Error',
+                    message: 'Unable to delete entries',
+                    confirmText: 'OK'
+                });
+            }
+        };
+
         const colors = isDarkTheme ? {
             panelSectionBg: '#162033',
             panelSectionBorder: '1px solid rgba(148, 163, 184, 0.18)',
@@ -457,6 +621,8 @@
             iconButtonIcon: '#f8fafc',
             dangerButtonBg: 'rgba(127, 29, 29, 0.3)',
             dangerButtonHoverBg: 'rgba(153, 27, 27, 0.38)',
+            dangerBulkShadow:
+                '0 1px 2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
             dangerText: '#f87171'
         } : {
             panelSectionBg: '#ffffff',
@@ -500,8 +666,10 @@
             iconButtonBg: '#f2f2f7',
             iconButtonHoverBg: '#e8e8ed',
             iconButtonIcon: '#1c1d21',
-            dangerButtonBg: '#fef2f2',
-            dangerButtonHoverBg: '#fee2e2',
+            dangerButtonBg: '#fff1f2',
+            dangerButtonHoverBg: '#ffe4e6',
+            dangerBulkBorder: '1px solid rgba(225, 29, 72, 0.28)',
+            dangerBulkShadow: '0 1px 2px rgba(225, 29, 72, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05)',
             dangerText: '#dc2626'
         };
 
@@ -512,6 +680,23 @@
 
         // Get current data to display
         const currentData = mainTab === 'requirements' ? requirements : userStories;
+        const visibleEntryIds = currentData.map((item, index) => item.requirementID || item.storyID || `item-${index}`);
+        const validIdSet = new Set(visibleEntryIds);
+        const selectedBulkCount = revealedDeleteEntryIds.filter((id) => validIdSet.has(id)).length;
+        const allDeleteSlotsRevealed =
+            visibleEntryIds.length > 0 && visibleEntryIds.every((id) => revealedDeleteEntryIds.includes(id));
+        /** Every row checked → "Delete all"; 2+ but not all → "Delete selected". */
+        const allSelectedBulkMode =
+            visibleEntryIds.length > 0 && selectedBulkCount === visibleEntryIds.length;
+        const partialMultiBulkMode =
+            selectedBulkCount >= 2 && selectedBulkCount < visibleEntryIds.length;
+        const bulkDeleteArmed = allSelectedBulkMode || partialMultiBulkMode;
+        const isRequirementsList = mainTab === 'requirements';
+        const bulkDeleteButtonLabel = bulkDeleteArmed
+            ? (allSelectedBulkMode
+                ? (isRequirementsList ? 'Delete all' : 'Delete all')
+                : (isRequirementsList ? 'Delete selected' : 'Delete selected'))
+            : 'Delete all';
 
         // Render component
         return React.createElement('div', {
@@ -527,7 +712,9 @@
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 10001,
-                padding: '20px'
+                padding: isMobile ? '16px' : '20px',
+                paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 0px))' : undefined,
+                boxSizing: 'border-box'
             },
             onClick: (e) => {
                 if (e.target.id === 'requirements-panel-overlay') {
@@ -540,12 +727,12 @@
                 className: 'requirement-list',
                 style: {
                     position: 'relative',
-                    width: '720px',
-                    maxWidth: '95%',
-                    height: '85vh',
-                    maxHeight: '85vh',
+                    width: isMobile ? '100%' : '720px',
+                    maxWidth: isMobile ? 'min(100%, 400px)' : '95%',
+                    height: isMobile ? 'min(92dvh, min(680px, calc(100dvh - 16px)))' : '85vh',
+                    maxHeight: isMobile ? 'min(92dvh, min(680px, calc(100dvh - 16px)))' : '85vh',
                     backgroundColor: '#f7f7f7',
-                    borderRadius: '20px',
+                    borderRadius: isMobile ? '14px' : '20px',
                     border: '1px solid #f0f0f080',
                     display: 'flex',
                     flexDirection: 'column',
@@ -560,7 +747,9 @@
                     className: 'header',
                     style: {
                         width: '100%',
-                        minHeight: mainTab === 'requirements' ? '110px' : '70px',
+                        minHeight: isMobile
+                            ? (mainTab === 'requirements' ? '112px' : '62px')
+                            : (mainTab === 'requirements' ? '110px' : '70px'),
                         position: 'relative',
                         backgroundColor: '#ffffff',
                         overflow: 'visible',
@@ -576,10 +765,10 @@
                         'aria-label': 'Close panel',
                         style: {
                             position: 'absolute',
-                            top: '12px',
-                            left: '12px',
-                            width: '36px',
-                            height: '36px',
+                            top: isMobile ? '14px' : '12px',
+                            left: isMobile ? '10px' : '12px',
+                            width: isMobile ? '40px' : '36px',
+                            height: isMobile ? '40px' : '36px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -613,24 +802,31 @@
                         id: 'requirements-panel-main-tabs',
                         style: {
                             position: 'absolute',
-                            top: '14px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
+                            top: isMobile ? '12px' : '14px',
+                            left: isMobile ? '54px' : '50%',
+                            right: isMobile ? '12px' : 'auto',
+                            transform: isMobile ? 'none' : 'translateX(-50%)',
                             display: 'flex',
-                            gap: '10px',
-                            zIndex: 5
+                            flexDirection: 'row',
+                            flexWrap: 'nowrap',
+                            alignItems: 'stretch',
+                            gap: isMobile ? '8px' : '10px',
+                            zIndex: 5,
+                            minWidth: 0
                         }
                     },
                         React.createElement('button', {
                             id: 'requirements-panel-tab-requirements',
+                            'aria-selected': mainTab === 'requirements',
                             onClick: () => {
                                 setMainTab('requirements');
                                 setSubTab('functional');
                             },
                             style: {
-                                minWidth: '140px',
-                                height: '36px',
-                                padding: '0 20px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '140px',
+                                height: isMobile ? '40px' : '36px',
+                                padding: isMobile ? '0 10px' : '0 20px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -641,7 +837,7 @@
                                 transition: 'all 0.2s',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 color: mainTab === 'requirements' ? '#ffffff' : '#1c1d21'
                             },
                             onMouseEnter: (e) => {
@@ -655,11 +851,13 @@
                         }, 'Requirements'),
                         React.createElement('button', {
                             id: 'requirements-panel-tab-user-stories',
+                            'aria-selected': mainTab === 'user-stories',
                             onClick: () => setMainTab('user-stories'),
                             style: {
-                                minWidth: '140px',
-                                height: '36px',
-                                padding: '0 20px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '140px',
+                                height: isMobile ? '40px' : '36px',
+                                padding: isMobile ? '0 10px' : '0 20px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -670,7 +868,7 @@
                                 transition: 'all 0.2s',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 color: mainTab === 'user-stories' ? '#ffffff' : '#1c1d21'
                             },
                             onMouseEnter: (e) => {
@@ -689,22 +887,28 @@
                         id: 'requirements-panel-sub-tabs',
                         style: {
                             position: 'absolute',
-                            top: '64px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
+                            top: isMobile ? '62px' : '64px',
+                            left: isMobile ? '12px' : '50%',
+                            right: isMobile ? '12px' : 'auto',
+                            transform: isMobile ? 'none' : 'translateX(-50%)',
                             display: 'flex',
-                            gap: '10px',
+                            flexDirection: 'row',
+                            flexWrap: 'nowrap',
+                            gap: isMobile ? '8px' : '10px',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            minWidth: 0
                         }
                     },
                         React.createElement('button', {
                             id: 'requirements-panel-subtab-functional',
+                            'aria-selected': subTab === 'functional',
                             onClick: () => setSubTab('functional'),
                             style: {
-                                minWidth: '130px',
-                                height: '32px',
-                                padding: '0 16px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '130px',
+                                height: isMobile ? '36px' : '32px',
+                                padding: isMobile ? '0 10px' : '0 16px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -714,7 +918,7 @@
                                 cursor: 'pointer',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '500',
-                                fontSize: '12px',
+                                fontSize: isMobile ? '11px' : '12px',
                                 color: '#1c1d21',
                                 transition: 'all 0.2s'
                             },
@@ -729,11 +933,13 @@
                         }, 'Functional'),
                         React.createElement('button', {
                             id: 'requirements-panel-subtab-non-functional',
+                            'aria-selected': subTab === 'non-functional',
                             onClick: () => setSubTab('non-functional'),
                             style: {
-                                minWidth: '130px',
-                                height: '32px',
-                                padding: '0 16px',
+                                flex: isMobile ? 1 : undefined,
+                                minWidth: isMobile ? 0 : '130px',
+                                height: isMobile ? '36px' : '32px',
+                                padding: isMobile ? '0 10px' : '0 16px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -743,7 +949,7 @@
                                 cursor: 'pointer',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '500',
-                                fontSize: '12px',
+                                fontSize: isMobile ? '11px' : '12px',
                                 color: '#1c1d21',
                                 transition: 'all 0.2s'
                             },
@@ -765,10 +971,11 @@
                     style: {
                         display: 'flex',
                         flexDirection: 'column',
-                        flex: 1,
+                        flex: '1 1 0%',
                         overflow: 'hidden',
-                        padding: '20px',
-                        gap: '16px'
+                        padding: isMobile ? '12px' : '20px',
+                        gap: isMobile ? '12px' : '16px',
+                        minHeight: 0
                     }
                 },
                     // Error/Success Messages
@@ -814,11 +1021,12 @@
                         style: {
                             backgroundColor: colors.panelSectionBg,
                             borderRadius: '16px',
-                            padding: '16px',
-                            flex: 1,
+                            padding: isMobile ? '12px' : '16px',
+                            flex: '1 1 0%',
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
+                            minHeight: 0,
                             boxShadow: colors.panelSectionShadow,
                             border: colors.panelSectionBorder
                         }
@@ -830,42 +1038,180 @@
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
+                                gap: '12px',
                                 marginBottom: '12px',
-                                flexShrink: 0
+                                flexShrink: 0,
+                                flexWrap: 'wrap'
                             }
                         },
-                            React.createElement('h3', {
-                                id: 'requirements-panel-list-title',
+                            React.createElement('div', {
+                                id: 'requirements-panel-list-header-left',
                                 style: {
-                                    margin: 0,
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontWeight: '600',
-                                    fontSize: '15px',
-                                    color: colors.text
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    flex: '1 1 auto',
+                                    minWidth: 0
                                 }
-                            }, mainTab === 'requirements'
-                                ? (subTab === 'functional' ? 'Functional Requirements' : 'Non-Functional Requirements')
-                                : 'User Stories'),
-                            React.createElement('span', {
-                                id: 'requirements-panel-list-count',
+                            },
+                                React.createElement('h3', {
+                                    id: 'requirements-panel-list-title',
+                                    style: {
+                                        margin: 0,
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontWeight: '600',
+                                        fontSize: '15px',
+                                        color: colors.text
+                                    }
+                                }, mainTab === 'requirements'
+                                    ? (subTab === 'functional' ? 'Functional Requirements' : 'Non-Functional Requirements')
+                                    : 'User Stories'),
+                                React.createElement('span', {
+                                    id: 'requirements-panel-list-count',
+                                    style: {
+                                        padding: '4px 10px',
+                                        backgroundColor: colors.countBg,
+                                        borderRadius: '12px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: colors.countText
+                                    }
+                                }, `${currentData.length} items`)
+                            ),
+                            currentData.length > 0 && React.createElement('div', {
+                                id: 'requirements-panel-list-header-actions',
                                 style: {
-                                    padding: '4px 10px',
-                                    backgroundColor: colors.countBg,
-                                    borderRadius: '12px',
-                                    fontFamily: 'Inter, Helvetica',
-                                    fontSize: '12px',
-                                    fontWeight: '500',
-                                    color: colors.countText
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    flexShrink: 0
                                 }
-                            }, `${currentData.length} items`)
+                            },
+                                React.createElement('label', {
+                                    id: 'requirements-panel-select-all-delete-reveal',
+                                    htmlFor: 'requirements-panel-select-all-delete-reveal-input',
+                                    style: {
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        cursor: 'pointer',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: colors.muted,
+                                        userSelect: 'none',
+                                        flexShrink: 0
+                                    }
+                                },
+                                    React.createElement('input', {
+                                        id: 'requirements-panel-select-all-delete-reveal-input',
+                                        ref: selectAllDeleteRevealRef,
+                                        type: 'checkbox',
+                                        checked: allDeleteSlotsRevealed,
+                                        onChange: toggleSelectAllDeleteReveal,
+                                        'aria-label': 'Select all rows to show delete buttons',
+                                        style: {
+                                            width: '18px',
+                                            height: '18px',
+                                            margin: 0,
+                                            cursor: 'pointer',
+                                            accentColor: isDarkTheme ? '#818cf8' : '#4f46e5'
+                                        }
+                                    }),
+                                    React.createElement('span', null, isMobile
+                                        ? 'Select all'
+                                        : (isRequirementsList ? 'Select all requirements' : 'Select all user stories'))
+                                ),
+                                React.createElement('button', {
+                                    id: 'requirements-panel-delete-choice',
+                                    type: 'button',
+                                    disabled: !bulkDeleteArmed,
+                                    onClick: bulkDeleteEntries,
+                                    title: bulkDeleteArmed
+                                        ? (allSelectedBulkMode
+                                            ? `Delete all ${currentData.length} items in this list`
+                                            : `Delete ${selectedBulkCount} selected items`)
+                                        : 'Select all rows, or choose two or more rows, to enable bulk delete',
+                                    style: {
+                                        flexShrink: 0,
+                                        padding: '8px 14px',
+                                        backgroundColor: bulkDeleteArmed ? colors.dangerButtonBg : colors.generateDisabledBg,
+                                        border:
+                                            bulkDeleteArmed && !isDarkTheme ? colors.dangerBulkBorder : 'none',
+                                        borderRadius: '8px',
+                                        fontFamily: 'Inter, Helvetica',
+                                        fontWeight: '600',
+                                        fontSize: '12px',
+                                        letterSpacing: '0.02em',
+                                        lineHeight: 1,
+                                        color: bulkDeleteArmed ? colors.dangerText : colors.muted,
+                                        cursor: bulkDeleteArmed ? 'pointer' : 'not-allowed',
+                                        transition:
+                                            'background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '7px',
+                                        boxShadow: bulkDeleteArmed
+                                            ? (isDarkTheme ? colors.dangerBulkShadow : colors.dangerBulkShadow)
+                                            : 'none',
+                                        opacity: 1
+                                    },
+                                    onMouseEnter: (e) => {
+                                        if (!bulkDeleteArmed || isDarkTheme) {
+                                            return;
+                                        }
+                                        e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
+                                        e.currentTarget.style.borderColor = 'rgba(225, 29, 72, 0.42)';
+                                    },
+                                    onMouseLeave: (e) => {
+                                        if (!bulkDeleteArmed || isDarkTheme) {
+                                            return;
+                                        }
+                                        e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
+                                        e.currentTarget.style.borderColor = 'rgba(225, 29, 72, 0.28)';
+                                    }
+                                },
+                                    React.createElement('svg', {
+                                        width: '15',
+                                        height: '15',
+                                        viewBox: '0 0 24 24',
+                                        fill: 'none',
+                                        'aria-hidden': true,
+                                        style: {
+                                            display: 'block',
+                                            flexShrink: 0
+                                        }
+                                    },
+                                        React.createElement('path', {
+                                            d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
+                                            stroke: 'currentColor',
+                                            strokeWidth: '1.75',
+                                            strokeLinecap: 'round',
+                                            strokeLinejoin: 'round'
+                                        })
+                                    ),
+                                    React.createElement('span', {
+                                        style: {
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            lineHeight: 1
+                                        }
+                                    }, bulkDeleteButtonLabel)
+                                )
+                            )
                         ),
 
                         // Scrollable List
                         React.createElement('div', {
                             id: 'requirements-panel-list-scroll',
                             style: {
-                                flex: 1,
+                                flex: '1 1 auto',
+                                minHeight: 0,
                                 overflowY: 'auto',
+                                overflowX: 'hidden',
+                                WebkitOverflowScrolling: 'touch',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '10px',
@@ -931,7 +1277,7 @@
                                     style: {
                                         backgroundColor: colors.rowBg,
                                         borderRadius: '12px',
-                                        padding: '14px 16px',
+                                        padding: isMobile ? '12px' : '14px 16px',
                                         border: `1px solid ${colors.rowBorder}`,
                                         transition: 'all 0.2s'
                                     },
@@ -950,9 +1296,29 @@
                                         style: {
                                             display: 'flex',
                                             alignItems: 'flex-start',
-                                            gap: '12px'
+                                            gap: '12px',
+                                            width: '100%',
+                                            minWidth: 0
                                         }
                                     },
+                                        React.createElement('input', {
+                                            id: `requirements-panel-item-select-${itemId}`,
+                                            type: 'checkbox',
+                                            'aria-label': `Show delete for ${prefix}-${String(seqNum).padStart(2, '0')}`,
+                                            checked: revealedDeleteEntryIds.includes(itemId),
+                                            onChange: () => toggleRowDeleteReveal(itemId),
+                                            onClick: (e) => e.stopPropagation(),
+                                            style: {
+                                                width: '18px',
+                                                height: '18px',
+                                                marginTop: '2px',
+                                                flexShrink: 0,
+                                                cursor: 'pointer',
+                                                accentColor: isDarkTheme ? '#818cf8' : '#4f46e5',
+                                                position: 'relative',
+                                                zIndex: 1
+                                            }
+                                        }),
                                         // Sequence badge
                                         React.createElement('div', {
                                             id: `requirements-panel-item-badge-${itemId}`,
@@ -1153,42 +1519,67 @@
                                                 )
                                             )
                                         ),
-                                        React.createElement('button', {
-                                                id: `requirements-panel-item-delete-${itemId}`,
-                                                onClick: () => deleteEntry(itemId),
-                                                'aria-label': 'Delete entry',
-                                                style: {
-                                                    width: '32px',
-                                                    height: '32px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    backgroundColor: colors.dangerButtonBg,
-                                                    border: 'none',
-                                                    borderRadius: '8px',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s'
+                                        React.createElement('div', {
+                                            id: `requirements-panel-item-delete-slot-${itemId}`,
+                                            style: {
+                                                width: '32px',
+                                                minWidth: '32px',
+                                                height: '32px',
+                                                flexShrink: 0,
+                                                marginLeft: 'auto',
+                                                display: 'flex',
+                                                alignItems: 'flex-start',
+                                                justifyContent: 'center',
+                                                boxSizing: 'border-box'
+                                            }
+                                        },
+                                            revealedDeleteEntryIds.includes(itemId) &&
+                                                React.createElement('button', {
+                                                    id: `requirements-panel-item-delete-${itemId}`,
+                                                    type: 'button',
+                                                    onClick: (e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        void deleteEntry(itemId);
+                                                    },
+                                                    onMouseDown: (e) => e.stopPropagation(),
+                                                    'aria-label': 'Delete entry',
+                                                    style: {
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        backgroundColor: colors.dangerButtonBg,
+                                                        border: 'none',
+                                                        borderRadius: '8px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s',
+                                                        flexShrink: 0,
+                                                        position: 'relative',
+                                                        zIndex: 2
+                                                    },
+                                                    onMouseEnter: (e) => {
+                                                        e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
+                                                    },
+                                                    onMouseLeave: (e) => {
+                                                        e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
+                                                    }
                                                 },
-                                                onMouseEnter: (e) => {
-                                                    e.currentTarget.style.backgroundColor = colors.dangerButtonHoverBg;
-                                                },
-                                                onMouseLeave: (e) => {
-                                                    e.currentTarget.style.backgroundColor = colors.dangerButtonBg;
-                                                }
-                                            },
-                                            React.createElement('svg', {
-                                                    width: '16',
-                                                    height: '16',
-                                                    viewBox: '0 0 24 24',
-                                                    fill: 'none'
-                                                },
-                                                React.createElement('path', {
-                                                    d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
-                                                    stroke: colors.dangerText,
-                                                    strokeWidth: '2',
-                                                    strokeLinecap: 'round',
-                                                    strokeLinejoin: 'round'
-                                                })
+                                                React.createElement('svg', {
+                                                        width: '16',
+                                                        height: '16',
+                                                        viewBox: '0 0 24 24',
+                                                        fill: 'none'
+                                                    },
+                                                    React.createElement('path', {
+                                                        d: 'M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z',
+                                                        stroke: colors.dangerText,
+                                                        strokeWidth: '2',
+                                                        strokeLinecap: 'round',
+                                                        strokeLinejoin: 'round'
+                                                    })
+                                                )
                                             )
                                         )
                                     )
@@ -1202,7 +1593,8 @@
                         id: 'requirements-panel-report-buttons',
                         style: {
                             display: 'flex',
-                            gap: '12px',
+                            flexDirection: isMobile ? 'column' : 'row',
+                            gap: isMobile ? '10px' : '12px',
                             flexShrink: 0
                         }
                     },
@@ -1215,14 +1607,16 @@
                                 : undefined,
                             style: {
                                 flex: 1,
-                                padding: '12px 16px',
+                                width: isMobile ? '100%' : undefined,
+                                minHeight: isMobile ? '44px' : undefined,
+                                padding: isMobile ? '12px 14px' : '12px 16px',
                                 backgroundColor: requirementsReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 cursor: requirementsReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1253,7 +1647,7 @@
                                     filter: 'brightness(0) invert(1)'
                                 }
                             }),
-                            generating ? 'Generating...' : 'Generate Requirements Report'
+                            generating ? 'Generating...' : (isMobile ? 'Generate requirements report' : 'Generate Requirements Report')
                         ),
                         React.createElement('button', {
                             id: 'requirements-panel-btn-generate-userstories',
@@ -1264,14 +1658,16 @@
                                 : undefined,
                             style: {
                                 flex: 1,
-                                padding: '12px 16px',
+                                width: isMobile ? '100%' : undefined,
+                                minHeight: isMobile ? '44px' : undefined,
+                                padding: isMobile ? '12px 14px' : '12px 16px',
                                 backgroundColor: userStoriesReportButtonDisabled ? colors.generateDisabledBg : colors.generateBg,
                                 border: 'none',
                                 borderRadius: '12px',
                                 color: '#ffffff',
                                 fontFamily: 'Inter, Helvetica',
                                 fontWeight: '600',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '12px' : '13px',
                                 cursor: userStoriesReportButtonDisabled ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1302,7 +1698,7 @@
                                     filter: 'brightness(0) invert(1)'
                                 }
                             }),
-                            generating ? 'Generating...' : 'Generate User Stories Report'
+                            generating ? 'Generating...' : (isMobile ? 'Generate user stories report' : 'Generate User Stories Report')
                         )
                     ),
 
@@ -1312,12 +1708,13 @@
                         style: {
                             backgroundColor: colors.panelSectionBg,
                             borderRadius: '16px',
-                            padding: '16px',
+                            padding: isMobile ? '12px' : '16px',
                             flexShrink: 0,
-                            maxHeight: '200px',
+                            maxHeight: isMobile ? 'min(125px, 30vh)' : '200px',
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
+                            minHeight: 0,
                             boxShadow: colors.panelSectionShadow,
                             border: colors.panelSectionBorder
                         }
@@ -1361,7 +1758,8 @@
                         React.createElement('div', {
                             id: 'requirements-panel-reports-list',
                             style: {
-                                flex: 1,
+                                flex: '1 1 auto',
+                                minHeight: 0,
                                 overflowY: 'auto',
                                 display: 'flex',
                                 flexDirection: 'column',
