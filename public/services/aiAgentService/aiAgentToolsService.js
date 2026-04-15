@@ -192,13 +192,48 @@ const tools = [
         type: "function",
         function: {
             name: "update_requirements_story_ref",
-            description: "Insert, or delete software requirements story reference in a project. Accepts a list of requirement operations (INSERT, or DELETE). Use get_requirement_story_update_format() tool to see the exact format required.",
+            description: "Insert or delete requirement-story references in a project. CRITICAL: All IDs must be actual UUIDs from the database, not descriptive names.",
             parameters: {
                 type: "object",
                 properties: {
                     jsonList: {
                         type: "array",
-                        description: "Array of requirement document source operations to perform. please refer to get_requirement_story_update_format() to see the required format."
+                        description: "List of requirement-story reference operations",
+                        items: {
+                            type: "object",
+                            properties: {
+                                projectID: {
+                                    type: "string",
+                                    format: "uuid",  // Add this
+                                    description: "Actual UUID of the project (e.g., '74aa7338-5b42-4d8d-a6b8-3f7c4868d1af')"
+                                },
+                                requirementID: {
+                                    type: "string",
+                                    format: "uuid",  // Add this
+                                    description: "Actual UUID of the requirement from the requirements table (NOT a descriptive ID like 'req-login')"
+                                },
+                                sourceReference: {
+                                    type: "array",
+                                    description: "List of story reference operations",
+                                    items: {
+                                        type: "object",
+                                        properties: {
+                                            operation: {
+                                                type: "string",
+                                                enum: ["INSERT", "DELETE"]  // Remove UPDATE if not supported
+                                            },
+                                            storyID: {
+                                                type: "string",
+                                                format: "uuid",  // Add this
+                                                description: "Actual UUID of the story from the user_stories table (NOT a descriptive ID like 'story-login'). Must exist in database."
+                                            }
+                                        },
+                                        required: ["operation", "storyID"]
+                                    }
+                                }
+                            },
+                            required: ["projectID", "requirementID", "sourceReference"]
+                        }
                     }
                 },
                 required: ["jsonList"]
