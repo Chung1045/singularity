@@ -656,28 +656,49 @@ async function getProjectUserStories(projectID) {
     );
 }
 
-async function updateProjectRequirementStoryRef(jsonList){
+async function updateProjectRequirementStoryRef(jsonList) {
     const insertSQL = `INSERT INTO requirementsStoryRef (refID, requirementsID, projectID, storyID) VALUES (?, ?, ?, ?)`
     const deleteSQL = `DELETE FROM requirementsStoryRef WHERE requirementsID = ? AND projectID = ? AND storyID = ?`
 
     try {
-        // Loop through each item in jsonList
         for (const data of jsonList) {
-            const { projectID, requirementID, sourceReference } = data;
+            const { requirementID, projectID, sourceReference } = data;
 
-            // Process each source reference operation
+            console.log("RequirementID:", requirementID);
+            console.log("ProjectID:", projectID);
+            console.log("sourceReference:", sourceReference);
+
+            if (!Array.isArray(sourceReference)) {
+                console.warn("sourceReference is invalid:", data);
+                continue;
+            }
+
             for (const ref of sourceReference) {
                 const { operation, storyID } = ref;
 
+                console.log("Operation:", operation);
+                console.log("StoryID:", storyID);
+
                 switch (operation) {
                     case 'INSERT':
-                        const refID = uuid();
-                        await dbRun(insertSQL, [refID, requirementID, projectID, storyID]);
+                        await dbRun(insertSQL, [
+                            uuid(),
+                            requirementID,
+                            projectID,
+                            storyID
+                        ]);
                         break;
 
                     case 'DELETE':
-                        await dbRun(deleteSQL, [requirementID, projectID, storyID]);
+                        await dbRun(deleteSQL, [
+                            requirementID,
+                            projectID,
+                            storyID
+                        ]);
                         break;
+
+                    default:
+                        console.warn("Unknown operation:", operation);
                 }
             }
         }
