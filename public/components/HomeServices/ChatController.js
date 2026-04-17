@@ -134,7 +134,7 @@ const ChatController = {
         const messageTimestamp = Date.now();
         const messageDiv = document.createElement('div');
         messageDiv.id = `chat-message-ai-edit-${messageTimestamp}`;
-        messageDiv.className = 'message ai-message';
+        messageDiv.className = 'message ai-message message--streaming';
         messageDiv.style.display = 'none';
 
         // build the avatar element
@@ -196,10 +196,11 @@ const ChatController = {
                     // add the content to the full response
                     fullResponse += jsonData.content || '';
                     ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
-                    ChatUtils.scrollToBottom();
+                    ChatUtils.scheduleScrollToBottomDuringStream();
                 } else if (jsonData.type === 'done') {
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
+                    messageDiv.classList.remove('message--streaming');
 
                     // Refresh reports (in case reports were generated during edit)
                     console.log('[Edit done] Refreshing project reports...');
@@ -235,6 +236,7 @@ const ChatController = {
                 } else if (jsonData.type === 'error') {
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
+                    messageDiv.classList.remove('message--streaming');
                     ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                     bubble.style.color = '#f44336';
 
@@ -395,7 +397,7 @@ const ChatController = {
         const messageTimestamp = Date.now();
         const messageDiv = document.createElement('div');
         messageDiv.id = `chat-message-ai-stream-${messageTimestamp}`;
-        messageDiv.className = 'message ai-message';
+        messageDiv.className = 'message ai-message message--streaming';
         messageDiv.style.display = 'none';
 
         // build the avatar element
@@ -479,12 +481,12 @@ const ChatController = {
                     fullResponse += jsonData.content || '';
                     // set the bubble content
                     ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
-                    // scroll to bottom
-                    ChatUtils.scrollToBottom();
+                    ChatUtils.scheduleScrollToBottomDuringStream();
                 } else if (jsonData.type === 'done') {
                     // Ensure loading indicator is removed and message is visible
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
+                    messageDiv.classList.remove('message--streaming');
                     // if the conversation ID and chat sequence are received, set the conversation ID and chat sequence
                     if (jsonData.conversationID && jsonData.chatSeq) {
                         conversationIDReceived = jsonData.conversationID;
@@ -565,6 +567,7 @@ const ChatController = {
                 } else if (jsonData.type === 'error') {
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
+                    messageDiv.classList.remove('message--streaming');
                     ChatUtils.setBubbleContent(bubble, `Unable to respond at the moment, please try again`, { allowMarkdown: false });
                     // ChatUtils.setBubbleContent(bubble, `Error: ${jsonData.message}`, { allowMarkdown: false });
                     bubble.style.color = '#f44336';

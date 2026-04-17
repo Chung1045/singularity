@@ -138,6 +138,11 @@
     animation: slideIn 0.3s ease-out;
 }
 
+/* Skip entrance animation while tokens stream — it fights growing content and causes scroll jump */
+.message.message--streaming {
+    animation: none;
+}
+
 @keyframes slideIn {
     from {
         opacity: 0;
