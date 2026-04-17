@@ -164,6 +164,22 @@ const ChatController = {
         let fullResponse = '';
         let buffer = '';
 
+        let streamRenderRaf = null;
+        const scheduleStreamBubbleRender = () => {
+            if (streamRenderRaf != null) return;
+            streamRenderRaf = requestAnimationFrame(() => {
+                streamRenderRaf = null;
+                ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
+                ChatUtils.scrollToBottom();
+            });
+        };
+        const cancelStreamBubbleRender = () => {
+            if (streamRenderRaf != null) {
+                cancelAnimationFrame(streamRenderRaf);
+                streamRenderRaf = null;
+            }
+        };
+
         // get the reader and decoder
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -193,11 +209,11 @@ const ChatController = {
                     // console.log('[Edit] Received chunk:', jsonData.content?.substring(0, 50));
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
-                    // add the content to the full response
                     fullResponse += jsonData.content || '';
-                    ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
-                    ChatUtils.scheduleScrollToBottomDuringStream();
+                    scheduleStreamBubbleRender();
                 } else if (jsonData.type === 'done') {
+                    cancelStreamBubbleRender();
+                    ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
                     messageDiv.classList.remove('message--streaming');
@@ -234,6 +250,7 @@ const ChatController = {
                     appendSuggestionChips(streamContentWrapper, jsonData.suggestedNextAction);
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'error') {
+                    cancelStreamBubbleRender();
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
                     messageDiv.classList.remove('message--streaming');
@@ -430,6 +447,22 @@ const ChatController = {
         let chatSeqReceived = null;
         let buffer = '';
 
+        let streamRenderRaf = null;
+        const scheduleStreamBubbleRender = () => {
+            if (streamRenderRaf != null) return;
+            streamRenderRaf = requestAnimationFrame(() => {
+                streamRenderRaf = null;
+                ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
+                ChatUtils.scrollToBottom();
+            });
+        };
+        const cancelStreamBubbleRender = () => {
+            if (streamRenderRaf != null) {
+                cancelAnimationFrame(streamRenderRaf);
+                streamRenderRaf = null;
+            }
+        };
+
         // get the reader and decoder
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -477,12 +510,11 @@ const ChatController = {
                     // Remove the loading indicator and show the real message on first chunk
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
-                    // add the content to the full response
                     fullResponse += jsonData.content || '';
-                    // set the bubble content
-                    ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
-                    ChatUtils.scheduleScrollToBottomDuringStream();
+                    scheduleStreamBubbleRender();
                 } else if (jsonData.type === 'done') {
+                    cancelStreamBubbleRender();
+                    ChatUtils.setBubbleContent(bubble, fullResponse, { allowMarkdown: true });
                     // Ensure loading indicator is removed and message is visible
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
@@ -565,6 +597,7 @@ const ChatController = {
                     appendSuggestionChips(streamContentWrapper, jsonData.suggestedNextAction);
                     ChatUtils.scrollToBottom();
                 } else if (jsonData.type === 'error') {
+                    cancelStreamBubbleRender();
                     ChatUtils.removeLoadingIndicator();
                     messageDiv.style.display = '';
                     messageDiv.classList.remove('message--streaming');
