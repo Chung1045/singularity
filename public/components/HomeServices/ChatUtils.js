@@ -6,6 +6,9 @@ const ChatUtils = {
     loadingTimeoutRef: null,
     LOADING_WARNING_DELAY: 3 * 60 * 1000, // 3 minutes
 
+    /** rAF id for coalesced scroll during token streaming */
+    _streamScrollRafId: null,
+
     /**
      * Render markdown to HTML
      * @param {string} text
@@ -29,13 +32,28 @@ const ChatUtils = {
     },
 
     /**
-     * Scroll chat to bottom
+     * Scroll chat to bottom (instant; avoids overlapping smooth scroll during rapid updates)
      */
     scrollToBottom() {
         const chatInterface = document.getElementById('chat-interface');
-        if (chatInterface) {
-            chatInterface.scrollTop = chatInterface.scrollHeight;
+        if (!chatInterface) return;
+        const top = chatInterface.scrollHeight;
+        if (typeof chatInterface.scrollTo === 'function') {
+            chatInterface.scrollTo({ top, behavior: 'auto' });
+        } else {
+            chatInterface.scrollTop = top;
         }
+    },
+
+    /**
+     * During SSE streaming, scroll at most once per frame to avoid layout thrash and visible jumping.
+     */
+    scheduleScrollToBottomDuringStream() {
+        if (this._streamScrollRafId != null) return;
+        this._streamScrollRafId = requestAnimationFrame(() => {
+            this._streamScrollRafId = null;
+            this.scrollToBottom();
+        });
     },
 
     /**
@@ -237,6 +255,7 @@ Object.assign(window, {
     // Aliases for backward compatibility
     renderMarkdownContent: ChatUtils.renderMarkdown.bind(ChatUtils),
     scrollToBottom: ChatUtils.scrollToBottom.bind(ChatUtils),
+    scheduleScrollToBottomDuringStream: ChatUtils.scheduleScrollToBottomDuringStream.bind(ChatUtils),
     showLoadingIndicator: ChatUtils.showLoadingIndicator.bind(ChatUtils),
     removeLoadingIndicator: ChatUtils.removeLoadingIndicator.bind(ChatUtils),
     showChatInterface: ChatUtils.showChatInterface.bind(ChatUtils),

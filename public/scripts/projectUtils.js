@@ -900,7 +900,7 @@ async function fetchProjectReports(projectID) {
     }
 
     if (reportsListContainer) injectSidebarSkeleton(reportsListContainer, 3);
-    if (reportsListContainerRight) injectSidebarSkeleton(reportsListContainerRight, 3);
+    // if (reportsListContainerRight) injectSidebarSkeleton(reportsListContainerRight, 3);
 
     console.log(` Found reportsListContainer (left):`, reportsListContainer ? 'yes' : 'no');
     console.log(` Found reportsListContainerRight:`, reportsListContainerRight ? 'yes' : 'no');

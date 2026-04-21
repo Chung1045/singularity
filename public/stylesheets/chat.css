@@ -14,7 +14,8 @@
     position: relative;
     overflow-y: auto; /* Allow vertical scrolling on the container */
     overflow-x: hidden;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
+    overflow-anchor: none;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -136,6 +137,15 @@
     gap: 12px;
     align-items: flex-start;
     animation: slideIn 0.3s ease-out;
+}
+
+/* Skip entrance animation while tokens stream — it fights growing content and causes scroll jump */
+.message.message--streaming {
+    animation: none;
+}
+
+.message.message--streaming .message-bubble {
+    contain: layout;
 }
 
 @keyframes slideIn {
