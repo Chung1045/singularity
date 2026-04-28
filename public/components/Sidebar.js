@@ -1314,9 +1314,23 @@
             const onTourDemoDeleted = async () => {
                 await fetchProjects();
                 const nextId = localStorage.getItem('selectedProjectID');
+
+                setSelectedProjectID(nextId || null);
                 window.dispatchEvent(
                     new CustomEvent('projectSelected', { detail: { projectID: nextId || null } })
                 );
+
+                if (!nextId) {
+                    return;
+                }
+
+                try {
+                    if (typeof window.fetchProjectFiles === 'function') await window.fetchProjectFiles(nextId);
+                    if (typeof window.fetchProjectReports === 'function') await window.fetchProjectReports(nextId);
+                    if (typeof window.fetchProjectChats === 'function') await window.fetchProjectChats(nextId);
+                } catch (error) {
+                    console.error('[Sidebar] Failed restoring project data after tour cleanup:', error);
+                }
             };
 
             document.addEventListener('singularity-tour-demo-project-ready', onTourDemoReady);
