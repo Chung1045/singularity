@@ -1,11 +1,11 @@
-HKMU 2025/2026 COMP S456F Final Year Project
-AI-Assisted Chatbot for Streamlined Software Requirements Gathering
----
-HKMU FYP 2025/26 Yishu-2
+# HKMU 2025/2026 COMP S456F Final Year Project
+# AI-Assisted Chatbot for Streamlined Software Requirements Gathering
 
-13514988 Leung Wai Chung
-13588511 Wong Sin Ngai
-13506718 Chow Cheuk Wai
+HKMU FYP 2025/26 Yishu-2\
+\
+13514988 Leung Wai Chung\
+13588511 Wong Sin Ngai\
+13506718 Chow Cheuk Wai\
 13653626 Tong Sum Long
 
 Supervisor: Dr. Yishu Li
@@ -138,9 +138,3 @@ The server will start on port `9090` by default (or the `PORT` specified in your
 *   **CSRF Protection:** The `.env` file contains an `ENABLE_USER_CHECKING` flag. Disabling this turns off CSRF checks. **Never disable this in a production environment.**
 *   **Session Management:** Ensure you are using secure cookies (handled automatically when running over HTTPS).
 *   **Rate Limiting & File Size:** Be mindful of the `ENFORCE_TRANSCRIPT_TIME_LIMIT` and `ENFORCE_TRANSCRIPT_TIME_MAX` settings to prevent abuse of the Whisper transcription service.
-
----
-
-## License
-
-This project is licensed under the **ISC License**. See the `package.json` for details.
