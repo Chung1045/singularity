@@ -83,7 +83,8 @@ Before setting up the project, ensure the system meets the following requirement
 2.  **MinIO Server:** A running instance of MinIO (or equivalent S3-compatible storage) is required for file handling.
 3.  **FFmpeg:** Must be installed on the host machine for audio/video processing and transcriptions.
 4.  **LibreOffice:** Must be installed on the host machine for document format conversions (`libreoffice-convert`).
-5.  Dedicated GPU is highly recommend.
+5.  xAI API key for enabling system functionality.
+6.  Dedicated GPU is highly recommended.
 
 ---
 
@@ -136,11 +137,11 @@ To start the application:
 ```bash
 npm start
 ```
-*(Note: If you are doing development, you may want to set up `nodemon` or a similar tool, though it is not included in the default scripts).*
+*(Note: If you are doing development, you may want to set up `nodemon` or a similar tool, though it is not included in the default script).*
 
 The server will start on port `9090` by default (or the `PORT` specified in your environment). 
 
-> **Important Note on HTTPS:** Singularity enforces secure connections. If you start the server without `USE_NGINX_SSL=true` or without valid `SSL_CERT_PATH` and `SSL_KEY_PATH` while `ENABLE_HTTPS=true` is set, the server will output severe warnings. **Never run unencrypted HTTP in production.**
+> **Important Note on HTTPS:** Singularity enforces secure connections. If you start the server without `USE_NGINX_SSL=true` or without vaild `SSL_CERT_PATH` and `SSL_KEY_PATH` while `ENABLE_HTTPS=true` is set, the server will output severe warnings. **Never run unencrypted HTTP in production.**
 
 ---
 
