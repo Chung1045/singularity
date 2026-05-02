@@ -77,12 +77,13 @@ singularity/
 
 ## Prerequisites & System Requirements
 
-Before setting up the project, ensure your environment meets the following requirements:
+Before setting up the project, ensure the system meets the following requirements:
 
 1.  **Node.js:** v16.x or higher recommended.
 2.  **MinIO Server:** A running instance of MinIO (or equivalent S3-compatible storage) is required for file handling.
 3.  **FFmpeg:** Must be installed on the host machine for audio/video processing and transcriptions.
 4.  **LibreOffice:** Must be installed on the host machine for document format conversions (`libreoffice-convert`).
+5.  Dedicated GPU is highly recommend.
 
 ---
 
@@ -99,8 +100,16 @@ cd singularity
 npm install
 ```
 
-### 3. Environment Configuration
-The application relies heavily on environment variables for security and configuration. 
+### 3. Config Whisper library
+The system requires whisper model to be download for system services, start by typing
+```bash
+npx nodejs-whisper download
+```
+in the terminal, then follow the prompts for selecting the whisper model to download, and configure the whisper module.
+
+
+### 4. Environment Configuration
+The system relies heavily on environment variables for security and configuration. 
 
 Copy the sample environment file:
 ```bash
@@ -117,6 +126,8 @@ Open `.env` and configure the following key sections:
 *   **Storage (MinIO):** Provide your `MINIO_ACCESSKEY`, `MINIO_SECRETKEY`, `MINIO_BUCKET`, `MINIO_END_POINT`, and `MINIO_PORT`.
 *   **OAuth (Google):** Configure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 *   **AI API Keys:** Supply `HUGGING_FACE_TOKEN` and `XAI_API_KEY`.
+
+You can refer to the `.env.example` for configuration.
 
 ### 4. Running the Server
 
