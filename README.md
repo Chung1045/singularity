@@ -84,7 +84,7 @@ The platform is designed for complex enterprise workflows, featuring modern auth
 | **Runtime** | Node.js (v16+) |
 | **Backend Framework** | Express.js |
 | **Database** | SQLite3 |
-| **Frontend** | EJS Templates, Vanilla JS, CSS |
+| **Frontend** | EJS Templates, React, Vanilla JS, CSS |
 | **Real-Time** | Socket.IO |
 | **Object Storage** | MinIO |
 | **AI Services** | OpenAI API, xAI (Grok), Hugging Face |
